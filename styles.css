@@ -1,127 +1,164 @@
-body {
-  background-color: #f7f9fc;
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* ── Parameter controls panel ────────────────────────────────────── */
+/* Composable primitives: .ojs-panel is chrome only, .ojs-row/.ojs-grid are
+ * layout only. Combine them (e.g. class="ojs-panel ojs-row") for a
+ * standalone panel, or nest a bare .ojs-row/.ojs-grid inside a .ojs-panel
+ * for a control group within a larger panel — nesting two .ojs-panels
+ * would double up the border/background. */
+
+.ojs-panel {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  border-radius: var(--bs-border-radius, 0.375rem);
+  background: var(--bs-light, #f8f9fa);
 }
 
-/* Hero section */
-
-.hero {
-  padding: 2.5rem;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #eaf3ff, #ffffff);
-  margin-bottom: 2rem;
-  border: 1px solid #d8e8ff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+.ojs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: flex-end;
 }
 
-.hero h1 {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  color: #123c69;
-}
+/* First control grows to fill the row; later ones (e.g. a button) keep their natural width */
+.ojs-row > div { margin: 0; }
+.ojs-row > div:first-child { flex: 1 1 200px; }
+.ojs-row > div:last-child { flex: 0 0 auto; }
 
-.hero p {
-  font-size: 1.15rem;
-  max-width: 950px;
-  color: #334155;
-  line-height: 1.6;
-}
-
-/* Card layout */
-
-.card-grid {
+/* auto-fit so empty tracks collapse instead of pinning real ones to the minmax floor */
+.ojs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 520px));
-  gap: 1.5rem;
-  margin-top: 2rem;
-  margin-bottom: 2.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.25rem 0.5rem;
+  align-items: end;
 }
 
-.topic-card {
-  min-height: 150px;
-  padding: 1.5rem;
-  border-radius: 18px;
-  background: #ffffff;
-  border: 1px solid #d9e2ec;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+/* Skin every native input inside a panel to match its chrome */
+.ojs-panel input {
+  border: 1px solid var(--bs-border-color, #ced4da);
+  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  background: white;
 }
 
-.topic-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
-  border-color: #74b9ff;
+/* !important overrides Observable Inputs' own flex-shrink on the number spinner */
+.ojs-panel input[type="number"] {
+  width: 5.5em;
+  flex: none !important;
 }
 
-.topic-card h3 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
-  font-weight: 750;
-  font-size: 1.35rem;
+.ojs-panel input[type="text"] {
+  width: 28em;
+  max-width: 100%;
+  flex: none !important;
 }
 
-.topic-card h3 a {
-  color: #0d6efd;
-  text-decoration: none;
+.ojs-panel input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.2);
 }
 
-.topic-card h3 a:hover {
-  text-decoration: underline;
-}
-
-.topic-card p {
-  color: #475569;
-  font-size: 1rem;
-  line-height: 1.55;
-  margin-bottom: 0;
-}
-
-/* Shiny app area */
-
-.app-container {
+.ojs-panel input[type="range"] {
+  border: none;
+  padding: 0;
+  background: none;
+  accent-color: #2563eb;
   width: 100%;
-  border: 1px solid #d9e2ec;
-  border-radius: 18px;
-  padding: 1rem;
-  background: #ffffff;
-  margin-bottom: 2.5rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
-.shinylive-container {
-  width: 100% !important;
+/* Observable Inputs' button has no class of its own to skin, and its
+ * browser-default text color doesn't adapt to the dark theme's panel
+ * background — style it explicitly instead of relying on defaults.
+ * Scoped to Observable Inputs' generated form (class^="oi-", per
+ * quarto-ojs.css) so this doesn't also catch Quarto's own per-cell
+ * "Copy to Clipboard" button, which lives in the same panel. */
+.ojs-panel form[class^="oi-"] button {
+  border: 1px solid #2563eb;
+  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
 }
 
-/* Explanation box */
-
-.explanation {
-  max-width: 1050px;
-  margin: 0 auto 3rem auto;
-  font-size: 1.05rem;
-  line-height: 1.75;
-  background: #ffffff;
-  border: 1px solid #d9e2ec;
-  border-radius: 18px;
-  padding: 2rem;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+.ojs-panel form[class^="oi-"] button:hover {
+  background: #1d4ed8;
 }
 
-.explanation h2,
-.explanation h3 {
-  color: #123c69;
+.ojs-panel form[class^="oi-"] button:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.35);
 }
 
-/* Cleaner code blocks */
+/* Attach to an Inputs.* wrapper div to make it fill the row, overriding
+ * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
+.ojs-fill { width: 100% !important; max-width: none !important; }
 
-pre {
-  border-radius: 12px;
+/* Attach to an Inputs.* wrapper div to keep it at its natural width instead
+ * of Observable Inputs' 100%-wide default, which would otherwise force the
+ * row to wrap. */
+.ojs-auto { width: auto !important; flex: none !important; }
+
+/* ── Output area ─────────────────────────────────────────────────── */
+
+/* Let layout-ncol cells shrink below the Plotly chart's intrinsic width */
+.quarto-layout-cell {
+  min-width: 0;
 }
 
-/* Make sure links inside cards never disappear */
+.plotly-box-large {
+  width: 100%;
+  height: 78vh;
+  min-height: 500px;
+}
 
-a.topic-card,
-a.topic-card:visited,
-a.topic-card:hover,
-a.topic-card:active {
-  color: #1e293b !important;
+/* ── Listing cards ───────────────────────────────────────────────── */
+
+.quarto-grid-item {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.07);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: pointer;
+}
+
+.quarto-grid-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.13), 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.quarto-grid-item:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+}
+
+/* ── Iteration table ─────────────────────────────────────────────── */
+
+.ojs-table-container {
+  overflow-x: auto;
+}
+
+.ojs-table-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .page-layout-full main.content { padding-inline: 0.75rem; }
+  .plotly-box-large { height: 65vh; min-height: 400px; }
+  .ojs-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .ojs-grid { grid-template-columns: 1fr; }
 }

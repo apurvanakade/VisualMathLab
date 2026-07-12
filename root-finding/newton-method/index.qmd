@@ -1,0 +1,510 @@
+---
+title: "Newton's Method"
+order: 3
+image: newton-method.png
+categories:
+  - Derivatives
+  - Fast convergence
+  - Quadratic convergence
+  - Root finding
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad, Apurva Nakade
+-->
+
+
+```{ojs}
+//| output: false
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+// It provides makeFunction, makeDerivative, paddedRange, renderTable.
+VM = window.VM
+```
+
+
+Newton's method is one of the most common methods for solving equations of the form
+Newton's method finds roots of $f(x) = 0$ by repeatedly linearizing the function: starting from a guess $x_0$, it draws the tangent line at $(x_n, f(x_n))$ and uses its $x$-intercept as the next guess.
+
+$$
+f(x)=0.
+$$
+
+Starting from an initial guess $x_0$, the method produces new approximations using
+
+$$
+x_{n+1}=x_n-\frac{f(x_n)}{f'(x_n)}.
+$$
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof fText = {
+  const params = new URLSearchParams(window.location.search)
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  fTextInput.classList.add("ojs-fill")
+  return fTextInput
+}
+```
+
+<div class="ojs-row">
+
+```{ojs}
+viewof x0 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("x0")
+  let value = 1.5
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₀", value})
+}
+```
+
+```{ojs}
+// Plot commits the current function/x₀ fields — edits above don't take
+// effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The step slider below is unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+</div>
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof stepControl = {
+  const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "Step"})
+  stepSlider.classList.add("ojs-fill")
+  return stepSlider
+}
+```
+
+```{ojs}
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/x₀ fields clicks Plot instead of
+// submitting the field's own (invisible) form. Depends only on the stable
+// views, so this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof fText, viewof x0]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots fText/x0 only when Plot is clicked, and writes them
+// back into the URL so the address bar stays a shareable link. It reads
+// `viewof fText`/`viewof x0` (the stable DOM views) rather than `fText`/`x0`
+// (the reactive values), so it does NOT rerun on every keystroke — only
+// when `plotTrigger` changes. It still runs once on initial page load, so
+// the first render uses the URL-provided (or default) values with no click.
+committed = {
+  plotTrigger
+  const fVal = (viewof fText).value
+  const x0Val = Number((viewof x0).value)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("f", fVal)
+  params.set("x0", String(x0Val))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {fText: fVal, x0: x0Val}
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs Newton's method with the current committed inputs.
+//   rows — array of { i, x, fx, dfx, xNext, error }, one entry per iteration
+//   f, df — parsed functions, reused for curve sampling in setup
+result = {
+  const math = window.math
+
+  // Parse f(x) and its symbolic derivative from the committed string.
+  // makeFunction / makeDerivative return null if the expression is invalid.
+  const f  = VM.makeFunction(math, committed.fText)
+  const df = VM.makeDerivative(math, committed.fText)
+  const fallback = x => NaN
+
+  if (!f || !df) return {rows: [], f: fallback, df: fallback}
+
+  const rows  = []
+  const initialGuess = Number(committed.x0)
+
+  if (!Number.isFinite(initialGuess)) return {rows: [], f, df}
+
+  let x = initialGuess
+  let i = 0
+  while (i < maxIterations) {
+    const fx  = f(x)
+    const dfx = df(x)
+
+    // Stop if f or f' blows up — the method has diverged.
+    if (!Number.isFinite(fx) || !Number.isFinite(dfx)) {
+      rows.push({i, x, fx, dfx, xNext: NaN, error: NaN})
+      return {rows, f, df}
+    }
+
+    // Stop if the tangent is nearly flat — dividing by dfx would be unstable.
+    if (Math.abs(dfx) < 1e-14) {
+      rows.push({i, x, fx, dfx, xNext: NaN, error: NaN})
+      return {rows, f, df}
+    }
+
+    const xNext = x - fx / dfx        // Newton update: x-intercept of the tangent
+    const error = Math.abs(xNext - x)
+    rows.push({i, x, fx, dfx, xNext, error})
+
+    x = xNext
+    i++
+  }
+  return {rows, f, df}
+}
+```
+
+```{ojs}
+//| output: false
+// setup computes the data shared by all three plots below: which rows are
+// visible at the current step, and the axis ranges / curve samples for the
+// main chart.
+setup = {
+  const visibleRows = result.rows.slice(0, Math.min(Number(stepControl), result.rows.length) + 1)
+
+  // Axis ranges are computed from ALL rows, not just visibleRows,
+  // so the axes stay fixed as the user steps through iterations.
+  const xValues = [Number(committed.x0)]
+  for (const row of result.rows) xValues.push(row.x, row.xNext)
+  const xRange = VM.paddedRange(xValues, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: 0.5})
+
+  // A wider domain (double the padding of xRange) so the curve is already
+  // sampled beyond the initial view — panning/zooming out reveals more of
+  // the curve instead of blank canvas. The initial view stays xRange.
+  const xBuffer = VM.paddedRange(xValues, {emptyRange: [-6, 6], relativePadding: 0.5, minPadding: 1.0})
+
+  // Sample f across the buffer range for the smooth curve trace.
+  const sampleCount = 700
+  const sampleXs = Array.from({length: sampleCount}, (_, i) => xBuffer.lo + (xBuffer.hi - xBuffer.lo) * i / (sampleCount - 1))
+  const sampleYs = []
+  for (const x of sampleXs) {
+    const y = result.f(x)
+    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
+      sampleYs.push(y)
+    } else {
+      sampleYs.push(null)
+    }
+  }
+
+  // Collect y values for the y-axis range, including tangent line endpoints.
+  // Only samples within the initial view (xRange) count, so yRange — and
+  // the initial view — stay unaffected by the wider sampling.
+  // Cap at 1e8 so a near-vertical tangent doesn't blow up the axis range.
+  const yValues = [0]
+  for (let i = 0; i < sampleXs.length; i++) {
+    const x = sampleXs[i]
+    if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
+  }
+  for (const row of result.rows) {
+    if (Number.isFinite(row.fx) && Math.abs(row.fx) <= 1e8) yValues.push(row.fx)
+    if (Number.isFinite(row.x) && Number.isFinite(row.fx) && Number.isFinite(row.dfx) && Number.isFinite(row.xNext)) {
+      const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
+      for (const v of [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)]) {
+        if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
+      }
+    }
+  }
+  const yRange = VM.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+
+  return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws f(x), the tangent lines, the Newton points, and the
+// tangent x-intercepts.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the step changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}) => {
+    const data = [
+      // The function curve
+      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+      // The x-axis (y = 0 reference line), spanning the buffer so it's still
+      // visible when the user pans/zooms out
+      {x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: true, line: {color: "#111827", width: 2}}
+    ]
+
+    // Dotted vertical lines from the x-axis up to each Newton point
+    const newtonPoints = []
+    for (const r of visibleRows) {
+      if (Number.isFinite(r.x) && Number.isFinite(r.fx)) newtonPoints.push(r)
+    }
+    for (const r of newtonPoints) {
+      data.push({x: [r.x, r.x], y: [0, r.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+    }
+
+    // Tangent lines: previous ones faded, current one solid
+    const validTangentRows = []
+    for (const r of visibleRows) {
+      if (Number.isFinite(r.x) && Number.isFinite(r.fx) && Number.isFinite(r.dfx) && Number.isFinite(r.xNext)) {
+        validTangentRows.push(r)
+      }
+    }
+    const prevTangents = validTangentRows.slice(0, -1)
+    let currentTangent = null
+    if (validTangentRows.length > 0) currentTangent = validTangentRows[validTangentRows.length - 1]
+
+    for (const row of prevTangents) {
+      const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
+      data.push({
+        x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
+        type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
+        line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
+      })
+    }
+    if (currentTangent) {
+      const row = currentTangent
+      const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
+      data.push({
+        x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
+        type: "scatter", mode: "lines", name: "Tangent line", showlegend: true,
+        line: {color: "#dc2626", width: 2.5}
+      })
+    }
+
+    // Red markers at each (x_i, f(x_i)) Newton point
+    if (newtonPoints.length > 0) {
+      const xs = [], ys = [], labels = []
+      for (const r of newtonPoints) {
+        xs.push(r.x)
+        ys.push(r.fx)
+        labels.push(`x_${r.i}`)
+      }
+      data.push({
+        x: xs, y: ys,
+        type: "scatter", mode: "markers+text", name: "Newton points",
+        text: labels, textposition: "top center", showlegend: true,
+        marker: {color: "#dc2626", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+      })
+    }
+
+    // Green markers at each tangent x-intercept (x_{i+1})
+    const intercepts = []
+    for (const r of visibleRows) {
+      if (Number.isFinite(r.xNext)) intercepts.push({i: r.i + 1, x: r.xNext})
+    }
+    if (intercepts.length > 0) {
+      const xs = [], ys = [], labels = []
+      for (const r of intercepts) {
+        xs.push(r.x)
+        ys.push(0)
+        labels.push(`x_${r.i}`)
+      }
+      data.push({
+        x: xs, y: ys,
+        type: "scatter", mode: "markers+text", name: "Tangent x-intercepts",
+        text: labels, textposition: "bottom center", showlegend: true,
+        marker: {color: "#16a34a", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+      })
+    }
+
+    const layout = {
+      // title: {text: "Newton's Method Tangent Visualization"},
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      legend: {orientation: "h", y: -0.18},
+      hovermode: "closest",
+      uirevision: "static",  // keeps zoom/pan state across reactive updates
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    // First render: create the div. Later renders: update in place (preserves zoom).
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+mainPlot(setup)
+```
+
+:::: {.callout-note collapse="true" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot draws xₙ vs n for the entire run — it doesn't depend on the
+// current step, so it's just plotted once per run.
+iteratesPlot = {
+  const xAccessor = row => {
+    if (Number.isFinite(row.x)) return row.x
+    return null
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "n"},
+    y: {label: "xₙ"},
+    marks: [
+      Plot.lineY(result.rows, {x: "i", y: xAccessor, stroke: "#2563eb"}),
+      Plot.dot(result.rows, {x: "i", y: xAccessor, fill: "#2563eb", r: 4})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot draws log₁₀|eₙ₊₁| vs log₁₀|eₙ| (successive step sizes,
+// eₙ = |xₙ₊₁ − xₙ|) with a linear regression line, for the entire run.
+// Newton converges quadratically for a simple root (eₙ₊₁ ~ C·eₙ²), which
+// isn't a straight line vs n or log(n) — it only takes a handful of steps
+// to hit machine precision, and fitting log|error| vs n (as bisection and
+// fixed-point iteration do, since they converge linearly) gives a "slope"
+// that's just an artifact of however many points survive before underflow.
+// This log-log successive-error plot is the standard diagnostic instead:
+// its slope estimates the order of convergence p directly (≈2 for a simple
+// root, ≈1 for a multiple root, as in the default x² example).
+convergencePlot = {
+  const logRows = []
+  for (let k = 0; k < result.rows.length - 1; k++) {
+    const en  = result.rows[k].error
+    const en1 = result.rows[k + 1].error
+    if (Number.isFinite(en) && en > 0 && Number.isFinite(en1) && en1 > 0) {
+      logRows.push({x: Math.log10(en), y: Math.log10(en1)})
+    }
+  }
+
+  const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
+  const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
+  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.x
+      sy += row.y
+      sxy += row.x * row.y
+      sxx += row.x * row.x
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].x, logRows[pointCount - 1].x]
+      const lineName   = `order ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: xlo, y: slope * xlo + intercept}, {x: xhi, y: slope * xhi + intercept}],
+        {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
+  }
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "log₁₀|eₙ|"},
+    y: {label: "log₁₀|eₙ₊₁|"},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Iteration table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (const row of result.rows) {
+    let xCell = "NaN"
+    if (Number.isFinite(row.x)) xCell = row.x.toPrecision(10)
+
+    let fxCell = "NaN"
+    if (Number.isFinite(row.fx)) fxCell = row.fx.toExponential(5)
+
+    let dfxCell = "NaN"
+    if (Number.isFinite(row.dfx)) dfxCell = row.dfx.toExponential(5)
+
+    let xNextCell = "NaN"
+    if (Number.isFinite(row.xNext)) xNextCell = row.xNext.toPrecision(10)
+
+    let errorCell = "NaN"
+    if (Number.isFinite(row.error)) errorCell = row.error.toExponential(4)
+
+    formattedRows.push([row.i, xCell, fxCell, dfxCell, xNextCell, errorCell])
+  }
+
+  return VM.renderTable({
+    html,
+    headers: ["n", tex`x_n`, tex`f(x_n)`, tex`f'(x_n)`, tex`x_{n+1}`, tex`|x_{n+1} - x_n|`],
+    csvHeaders: ["n", "x_n", "f(x_n)", "f'(x_n)", "x_{n+1}", "|x_{n+1} - x_n|"],
+    filename: "newton-method-iterations.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+</div>

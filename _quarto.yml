@@ -1,40 +1,41 @@
 project:
   type: website
-  output-dir: _site
+  output-dir: docs
+
+execute:
+  echo: false
+  warning: false
+  message: false
 
 website:
-  title: "Visual Math"
+  title: "VisualMath"
+  site-url: https://apurvanakade.github.io/VisualMath
+  page-navigation: true
+  bread-crumbs: true
 
   navbar:
-    background: primary
+    background: light
     search: true
-    left:
-      - href: index.qmd
-        text: Home
-      - href: about.qmd
-        text: About
 
   sidebar:
-    - title: "Root Finding"
-      style: "docked"
-      background: light
+    - style: floating
       contents:
-        - href: root-finding/index.qmd
-          text: Overview
-        - href: root-finding/fixed-point.qmd
-          text: Fixed Point Iteration
-        - href: root-finding/newton.qmd
-          text: Newton's Method
+        - section: root-finding/index.qmd
+          contents: "root-finding/*/index.qmd"
 
 format:
   html:
-    theme: cosmo
+    theme:
+      light: cosmo
+      dark: cyborg
     css: styles.css
     toc: true
-    page-layout: full
     html-math-method: mathjax
-    grid:
-      sidebar-width: 250px
-      body-width: 1300px
-      margin-width: 250px
-
+    include-in-header:
+      - text: |
+          <script src="https://cdn.jsdelivr.net/npm/mathjs@13.2.0/lib/browser/math.js"></script>
+          <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+          <script src="../../js/make-function.js"></script>
+          <script src="../../js/make-derivative.js"></script>
+          <script src="../../js/padded-range.js"></script>
+          <script src="../../js/render-table.js"></script>

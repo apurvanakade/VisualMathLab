@@ -1,0 +1,543 @@
+---
+title: "Secant Method"
+order: 4
+image: secant-method.png
+categories:
+  - No derivatives
+  - Superlinear convergence
+  - Root finding
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+
+```{ojs}
+//| output: false
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+// It provides makeFunction, makeDerivative, paddedRange, renderTable.
+VM = window.VM
+```
+
+
+The secant method finds roots of $f(x) = 0$ the way Newton's method does — by repeatedly intersecting a line with the $x$-axis — but it replaces the tangent line with a secant line through the two most recent approximations, so no derivative is needed.
+
+$$
+f(x)=0.
+$$
+
+Starting from two initial guesses $x_0$ and $x_1$, the method produces new approximations using
+
+$$
+x_{n+1}=x_n-f(x_n)\frac{x_n-x_{n-1}}{f(x_n)-f(x_{n-1})}.
+$$
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof fText = {
+  const params = new URLSearchParams(window.location.search)
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  fTextInput.classList.add("ojs-fill")
+  return fTextInput
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof x0 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("x0")
+  let value = 1
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₀", value})
+}
+```
+
+```{ojs}
+viewof x1 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("x1")
+  let value = 2
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₁", value})
+}
+```
+
+</div>
+
+<div class="ojs-row">
+
+```{ojs}
+// Plot commits the current function/x₀/x₁ fields — edits above don't take
+// effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The step slider below is unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+</div>
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof stepControl = {
+  const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "Step"})
+  stepSlider.classList.add("ojs-fill")
+  return stepSlider
+}
+```
+
+```{ojs}
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/x₀/x₁ fields clicks Plot instead of
+// submitting the field's own (invisible) form. Depends only on the stable
+// views, so this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof fText, viewof x0, viewof x1]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots fText/x0/x1 only when Plot is clicked, and writes them
+// back into the URL so the address bar stays a shareable link. It reads
+// `viewof fText`/`viewof x0`/`viewof x1` (the stable DOM views) rather than
+// `fText`/`x0`/`x1` (the reactive values), so it does NOT rerun on every
+// keystroke — only when `plotTrigger` changes. It still runs once on
+// initial page load, so the first render uses the URL-provided (or default)
+// values with no click.
+committed = {
+  plotTrigger
+  const fVal = (viewof fText).value
+  const x0Val = Number((viewof x0).value)
+  const x1Val = Number((viewof x1).value)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("f", fVal)
+  params.set("x0", String(x0Val))
+  params.set("x1", String(x1Val))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {fText: fVal, x0: x0Val, x1: x1Val}
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs the secant method with the current committed inputs.
+//   rows   — array of { i, xPrev, x, fxPrev, fx, xNext, error }, one entry per iteration
+//   points — every x visited so far, x_0, x_1, ..., x_N (used for the
+//            iterates plot, which needs the initial guesses too)
+//   f      — parsed function, reused for curve sampling in setup
+result = {
+  const math = window.math
+
+  // Parse f(x) from the committed string. makeFunction returns null if the
+  // expression is invalid.
+  const f = VM.makeFunction(math, committed.fText)
+  const fallback = x => NaN
+
+  if (!f) return {rows: [], points: [], f: fallback}
+
+  const initialGuess0 = Number(committed.x0)
+  const initialGuess1 = Number(committed.x1)
+
+  if (!Number.isFinite(initialGuess0) || !Number.isFinite(initialGuess1)) return {rows: [], points: [], f}
+
+  const points = [{x: initialGuess0, fx: f(initialGuess0)}, {x: initialGuess1, fx: f(initialGuess1)}]
+  const rows = []
+
+  let i = 1
+  while (i <= maxIterations) {
+    const prev = points[i - 1]
+    const curr = points[i]
+
+    // Stop if either point's f-value blew up — the method has diverged.
+    if (!Number.isFinite(prev.fx) || !Number.isFinite(curr.fx)) {
+      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: NaN, error: NaN})
+      return {rows, points, f}
+    }
+
+    // Stop if the secant is nearly flat — dividing by the difference would be unstable.
+    if (Math.abs(curr.fx - prev.fx) < 1e-14) {
+      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: NaN, error: NaN})
+      return {rows, points, f}
+    }
+
+    // Secant update: x-intercept of the line through (x_{n-1}, f(x_{n-1})) and (x_n, f(x_n))
+    const xNext = curr.x - curr.fx * (curr.x - prev.x) / (curr.fx - prev.fx)
+    const error = Math.abs(xNext - curr.x)
+    rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext, error})
+
+    points.push({x: xNext, fx: f(xNext)})
+    i++
+  }
+  return {rows, points, f}
+}
+```
+
+```{ojs}
+//| output: false
+// setup computes the data shared by all three plots below: which rows are
+// visible at the current step, and the axis ranges / curve samples for the
+// main chart.
+setup = {
+  const visibleRows = result.rows.slice(0, Math.min(Number(stepControl), result.rows.length) + 1)
+
+  // Axis ranges are computed from ALL rows, not just visibleRows,
+  // so the axes stay fixed as the user steps through iterations.
+  const xValues = [Number(committed.x0), Number(committed.x1)]
+  for (const row of result.rows) xValues.push(row.x, row.xNext)
+  const xRange = VM.paddedRange(xValues, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: 0.5})
+
+  // A wider domain (double the padding of xRange) so the curve is already
+  // sampled beyond the initial view — panning/zooming out reveals more of
+  // the curve instead of blank canvas. The initial view stays xRange.
+  const xBuffer = VM.paddedRange(xValues, {emptyRange: [-6, 6], relativePadding: 0.5, minPadding: 1.0})
+
+  // Sample f across the buffer range for the smooth curve trace.
+  const sampleCount = 700
+  const sampleXs = Array.from({length: sampleCount}, (_, i) => xBuffer.lo + (xBuffer.hi - xBuffer.lo) * i / (sampleCount - 1))
+  const sampleYs = []
+  for (const x of sampleXs) {
+    const y = result.f(x)
+    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
+      sampleYs.push(y)
+    } else {
+      sampleYs.push(null)
+    }
+  }
+
+  // Collect y values for the y-axis range, including secant line endpoints.
+  // Only samples within the initial view (xRange) count, so yRange — and
+  // the initial view — stay unaffected by the wider sampling.
+  // Cap at 1e8 so a near-vertical secant doesn't blow up the axis range.
+  const yValues = [0]
+  for (let i = 0; i < sampleXs.length; i++) {
+    const x = sampleXs[i]
+    if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
+  }
+  for (const row of result.rows) {
+    if (Number.isFinite(row.fx) && Math.abs(row.fx) <= 1e8) yValues.push(row.fx)
+    if (Number.isFinite(row.fxPrev) && Math.abs(row.fxPrev) <= 1e8) yValues.push(row.fxPrev)
+    if (Number.isFinite(row.xPrev) && Number.isFinite(row.fxPrev) && Number.isFinite(row.x) && Number.isFinite(row.fx) && row.x !== row.xPrev) {
+      const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
+      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+      for (const v of [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)]) {
+        if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
+      }
+    }
+  }
+  const yRange = VM.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+
+  return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws f(x), the secant lines, the secant points, and the
+// secant x-intercepts.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the step changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}) => {
+    const data = [
+      // The function curve
+      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+      // The x-axis (y = 0 reference line), spanning the buffer so it's still
+      // visible when the user pans/zooms out
+      {x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: true, line: {color: "#111827", width: 2}}
+    ]
+
+    // Every point used so far: x_0 (from the first visible row's xPrev)
+    // followed by x_i for each visible row.
+    const secantPoints = []
+    if (visibleRows.length > 0) {
+      const first = visibleRows[0]
+      if (Number.isFinite(first.xPrev) && Number.isFinite(first.fxPrev)) {
+        secantPoints.push({i: first.i - 1, x: first.xPrev, fx: first.fxPrev})
+      }
+    }
+    for (const r of visibleRows) {
+      if (Number.isFinite(r.x) && Number.isFinite(r.fx)) secantPoints.push({i: r.i, x: r.x, fx: r.fx})
+    }
+
+    // Dotted vertical lines from the x-axis up to each secant point
+    for (const p of secantPoints) {
+      data.push({x: [p.x, p.x], y: [0, p.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+    }
+
+    // Secant lines: previous ones faded, current one solid
+    const validSecantRows = []
+    for (const r of visibleRows) {
+      if (Number.isFinite(r.xPrev) && Number.isFinite(r.fxPrev) && Number.isFinite(r.x) && Number.isFinite(r.fx) && Number.isFinite(r.xNext)) {
+        validSecantRows.push(r)
+      }
+    }
+    const prevSecants = validSecantRows.slice(0, -1)
+    let currentSecant = null
+    if (validSecantRows.length > 0) currentSecant = validSecantRows[validSecantRows.length - 1]
+
+    for (const row of prevSecants) {
+      const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
+      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+      data.push({
+        x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
+        type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
+        line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
+      })
+    }
+    if (currentSecant) {
+      const row = currentSecant
+      const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
+      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+      data.push({
+        x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
+        type: "scatter", mode: "lines", name: "Secant line", showlegend: true,
+        line: {color: "#dc2626", width: 2.5}
+      })
+    }
+
+    // Red markers at each (x_i, f(x_i)) secant point
+    if (secantPoints.length > 0) {
+      const xs = [], ys = [], labels = []
+      for (const p of secantPoints) {
+        xs.push(p.x)
+        ys.push(p.fx)
+        labels.push(`x_${p.i}`)
+      }
+      data.push({
+        x: xs, y: ys,
+        type: "scatter", mode: "markers+text", name: "Secant points",
+        text: labels, textposition: "top center", showlegend: true,
+        marker: {color: "#dc2626", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+      })
+    }
+
+    // Green markers at each secant x-intercept (x_{i+1})
+    const intercepts = []
+    for (const r of visibleRows) {
+      if (Number.isFinite(r.xNext)) intercepts.push({i: r.i + 1, x: r.xNext})
+    }
+    if (intercepts.length > 0) {
+      const xs = [], ys = [], labels = []
+      for (const r of intercepts) {
+        xs.push(r.x)
+        ys.push(0)
+        labels.push(`x_${r.i}`)
+      }
+      data.push({
+        x: xs, y: ys,
+        type: "scatter", mode: "markers+text", name: "Secant x-intercepts",
+        text: labels, textposition: "bottom center", showlegend: true,
+        marker: {color: "#16a34a", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+      })
+    }
+
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      legend: {orientation: "h", y: -0.18},
+      hovermode: "closest",
+      uirevision: "static",  // keeps zoom/pan state across reactive updates
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    // First render: create the div. Later renders: update in place (preserves zoom).
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+mainPlot(setup)
+```
+
+:::: {.callout-note collapse="true" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot draws xₙ vs n for the entire run, including the two initial
+// guesses — it doesn't depend on the current step, so it's just plotted
+// once per run.
+iteratesPlot = {
+  const pointRows = []
+  for (let k = 0; k < result.points.length; k++) {
+    const point = result.points[k]
+    if (Number.isFinite(point.x)) pointRows.push({i: k, x: point.x})
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "n"},
+    y: {label: "xₙ"},
+    marks: [
+      Plot.lineY(pointRows, {x: "i", y: "x", stroke: "#2563eb"}),
+      Plot.dot(pointRows, {x: "i", y: "x", fill: "#2563eb", r: 4})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot draws log₁₀|eₙ₊₁| vs log₁₀|eₙ| (successive step sizes,
+// eₙ = |xₙ₊₁ − xₙ|) with a linear regression line, for the entire run.
+// The secant method converges superlinearly for a simple root
+// (eₙ₊₁ ~ C·eₙ^φ with φ = (1+√5)/2 ≈ 1.618, the golden ratio) — slower than
+// Newton's quadratic order but without needing a derivative. This log-log
+// successive-error plot is the standard diagnostic: its slope estimates the
+// order of convergence p directly (≈1.618 for a simple root here).
+convergencePlot = {
+  const logRows = []
+  for (let k = 0; k < result.rows.length - 1; k++) {
+    const en  = result.rows[k].error
+    const en1 = result.rows[k + 1].error
+    if (Number.isFinite(en) && en > 0 && Number.isFinite(en1) && en1 > 0) {
+      logRows.push({x: Math.log10(en), y: Math.log10(en1)})
+    }
+  }
+
+  const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
+  const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
+  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.x
+      sy += row.y
+      sxy += row.x * row.y
+      sxx += row.x * row.x
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].x, logRows[pointCount - 1].x]
+      const lineName   = `order ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: xlo, y: slope * xlo + intercept}, {x: xhi, y: slope * xhi + intercept}],
+        {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
+  }
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "log₁₀|eₙ|"},
+    y: {label: "log₁₀|eₙ₊₁|"},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Iteration table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (const row of result.rows) {
+    let xPrevCell = "NaN"
+    if (Number.isFinite(row.xPrev)) xPrevCell = row.xPrev.toPrecision(10)
+
+    let xCell = "NaN"
+    if (Number.isFinite(row.x)) xCell = row.x.toPrecision(10)
+
+    let fxPrevCell = "NaN"
+    if (Number.isFinite(row.fxPrev)) fxPrevCell = row.fxPrev.toExponential(5)
+
+    let fxCell = "NaN"
+    if (Number.isFinite(row.fx)) fxCell = row.fx.toExponential(5)
+
+    let xNextCell = "NaN"
+    if (Number.isFinite(row.xNext)) xNextCell = row.xNext.toPrecision(10)
+
+    let errorCell = "NaN"
+    if (Number.isFinite(row.error)) errorCell = row.error.toExponential(4)
+
+    formattedRows.push([row.i, xPrevCell, xCell, fxPrevCell, fxCell, xNextCell, errorCell])
+  }
+
+  return VM.renderTable({
+    html,
+    headers: ["n", tex`x_{n-1}`, tex`x_n`, tex`f(x_{n-1})`, tex`f(x_n)`, tex`x_{n+1}`, tex`|x_{n+1} - x_n|`],
+    csvHeaders: ["n", "x_{n-1}", "x_n", "f(x_{n-1})", "f(x_n)", "x_{n+1}", "|x_{n+1} - x_n|"],
+    filename: "secant-method-iterations.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+</div>

@@ -1,0 +1,427 @@
+---
+title: "Fixed Point Iteration"
+order: 2
+image: fixed-point.png
+categories:
+  - No derivatives
+  - Fixed points
+  - Linear convergence
+  - Slow convergence
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad, Apurva Nakade
+-->
+
+
+```{ojs}
+//| output: false
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+VM = window.VM
+```
+
+Fixed point iteration is a way to solve an equation after rewriting it in the form
+
+$$
+x=g(x).
+$$
+
+Starting with an initial guess $x_0$, the method repeatedly applies $g$:
+
+$$
+x_{n+1}=g(x_n).
+$$
+
+If the sequence settles down to a value $\alpha$, then that value satisfies
+
+$$
+\alpha=g(\alpha).
+$$
+
+So $\alpha$ is called a fixed point of $g$.
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof gText = {
+  const params = new URLSearchParams(window.location.search)
+  const gTextInput = Inputs.text({label: "Function g(x)", value: params.get("g") ?? "cos(x)", placeholder: "Example: cos(x), sqrt(x + 2), exp(-x)"})
+  gTextInput.classList.add("ojs-fill")
+  return gTextInput
+}
+```
+
+<div class="ojs-row">
+
+```{ojs}
+viewof x0 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("x0")
+  let value = 1
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₀", value})
+}
+```
+
+```{ojs}
+// Plot commits the current function/x₀ fields — edits above don't take
+// effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The step slider below is unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+</div>
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof stepControl = {
+  const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "Step"})
+  stepSlider.classList.add("ojs-fill")
+  return stepSlider
+}
+```
+
+```{ojs}
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/x₀ fields clicks Plot instead of
+// submitting the field's own (invisible) form. Depends only on the stable
+// views, so this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof gText, viewof x0]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots gText/x0 only when Plot is clicked, and writes them
+// back into the URL so the address bar stays a shareable link. It reads
+// `viewof gText`/`viewof x0` (the stable DOM views) rather than `gText`/`x0`
+// (the reactive values), so it does NOT rerun on every keystroke — only
+// when `plotTrigger` changes. It still runs once on initial page load, so
+// the first render uses the URL-provided (or default) values with no click.
+committed = {
+  plotTrigger
+  const gVal = (viewof gText).value
+  const x0Val = Number((viewof x0).value)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("g", gVal)
+  params.set("x0", String(x0Val))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {gText: gVal, x0: x0Val}
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs fixed-point iteration with the current committed inputs.
+//   rows — array of { i, x, gx, error }, one entry per iteration
+//   g    — parsed function, reused for curve sampling in setup
+result = {
+  const math = window.math
+
+  const g        = VM.makeFunction(math, committed.gText)
+  const fallback = x => NaN
+
+  if (!g) return {rows: [], g: fallback}
+
+  const rows  = []
+  const initialGuess = Number(committed.x0)
+
+  if (!Number.isFinite(initialGuess)) return {rows: [], g}
+
+  let x = initialGuess
+  let i = 0
+  while (i < maxIterations) {
+    const gx = g(x)
+
+    // Stop if g(x) blows up — the iteration has diverged.
+    if (!Number.isFinite(gx)) {
+      rows.push({i, x, gx, error: NaN})
+      return {rows, g}
+    }
+
+    const error = Math.abs(gx - x)
+    rows.push({i, x, gx, error})
+
+    x = gx
+    i++
+  }
+  return {rows, g}
+}
+```
+
+```{ojs}
+//| output: false
+// setup computes the data shared by all three plots below: which rows are
+// visible at the current step, the axis range for the cobweb diagram
+// (square, since it plots y = x), and the sampled curve for g(x).
+setup = {
+  const visibleRows = result.rows.slice(0, Math.min(Number(stepControl), result.rows.length) + 1)
+
+  // Axis ranges from ALL rows so the axes stay fixed while stepping.
+  // The cobweb diagram uses a square plot (same range for x and y).
+  const rangeValues = [Number(committed.x0)]
+  for (const row of result.rows) rangeValues.push(row.x, row.gx)
+  const range = VM.paddedRange(rangeValues, {emptyRange: [-2, 2], relativePadding: 0.25, minPadding: 0.5})
+
+  // A wider domain (double the padding of range) so the curve is already
+  // sampled beyond the initial view — panning/zooming out reveals more of
+  // the curve instead of blank canvas. The initial view stays range.
+  const bufferRange = VM.paddedRange(rangeValues, {emptyRange: [-4, 4], relativePadding: 0.5, minPadding: 1.0})
+
+  // Sample g across the buffer range for the smooth curve trace.
+  const sampleCount = 500
+  const sampleXs = Array.from({length: sampleCount}, (_, i) => bufferRange.lo + (bufferRange.hi - bufferRange.lo) * i / (sampleCount - 1))
+  const sampleYs = []
+  for (const x of sampleXs) {
+    const y = result.g(x)
+    if (Number.isFinite(y)) {
+      sampleYs.push(y)
+    } else {
+      sampleYs.push(null)
+    }
+  }
+
+  return {visibleRows, range, bufferRange, sampleXs, sampleYs, x0: Number(committed.x0)}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws the cobweb diagram: g(x), the diagonal y = x, and the
+// staircase path of iterates.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the step changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({visibleRows, range, bufferRange, sampleXs, sampleYs, x0}) => {
+    const data = [
+      // The iteration function g(x)
+      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "g(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+      // The diagonal y = x — fixed points lie where g(x) crosses this line.
+      // Spans the buffer so it's still visible when the user pans/zooms out.
+      {x: [bufferRange.lo, bufferRange.hi], y: [bufferRange.lo, bufferRange.hi], type: "scatter", mode: "lines", name: "y = x", showlegend: true, line: {color: "#111827", width: 2, dash: "dash"}},
+      // The x-axis reference
+      {x: [bufferRange.lo, bufferRange.hi], y: [0, 0], type: "scatter", mode: "lines", showlegend: false, line: {color: "#94a3b8", width: 1}}
+    ]
+
+    if (visibleRows.length > 0) {
+      // Build the cobweb staircase path.
+      // From x_i on the diagonal, go vertically to (x_i, g(x_i)) on the curve,
+      // then horizontally to (g(x_i), g(x_i)) on the diagonal.
+      const cobwebX = []
+      const cobwebY = []
+      if (Number.isFinite(x0)) { cobwebX.push(x0); cobwebY.push(x0) }
+      for (const row of visibleRows) {
+        if (!Number.isFinite(row.x) || !Number.isFinite(row.gx)) continue
+        cobwebX.push(row.x,  row.gx)
+        cobwebY.push(row.gx, row.gx)
+      }
+
+      // Green dots marking each iterate x_i on the diagonal
+      const iterateXs = [], iterateLabels = []
+      for (const r of visibleRows) {
+        if (Number.isFinite(r.x)) {
+          iterateXs.push(r.x)
+          iterateLabels.push(`x_${r.i}`)
+        }
+      }
+
+      data.push(
+        // The staircase path
+        {x: cobwebX, y: cobwebY, type: "scatter", mode: "lines+markers", name: "Cobweb path", showlegend: true,
+          line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 7}},
+        {
+          x: iterateXs,
+          y: iterateXs,
+          type: "scatter", mode: "markers+text", name: "Iterates", showlegend: true,
+          text: iterateLabels,
+          textposition: "top center",
+          marker: {color: "#16a34a", size: 9, symbol: "circle", line: {color: "white", width: 1}}
+        }
+      )
+    }
+
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [range.lo, range.hi], zeroline: true},
+      yaxis: {title: "y", range: [range.lo, range.hi], zeroline: true, zerolinecolor: "#94a3b8", gridcolor: "#e2e8f0", linecolor: "#cbd5e1"},
+      legend: {orientation: "h", y: -0.18},
+      hovermode: "closest",
+      uirevision: "static",  // keeps zoom/pan state across reactive updates
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    // First render: create the div. Later renders: update in place (preserves zoom).
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+mainPlot(setup)
+```
+
+:::: {.callout-note collapse="true" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot draws xₙ vs n for the entire run — it doesn't depend on the
+// current step, so it's just plotted once per run.
+iteratesPlot = {
+  const xAccessor = row => {
+    if (Number.isFinite(row.x)) return row.x
+    return null
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "n"},
+    y: {label: "xₙ"},
+    marks: [
+      Plot.lineY(result.rows, {x: "i", y: xAccessor, stroke: "#2563eb"}),
+      Plot.dot(result.rows, {x: "i", y: xAccessor, fill: "#2563eb", r: 4})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot draws log₁₀|xₙ − g(xₙ)| vs n (semi-log) with a linear
+// regression line, for the entire run — it doesn't depend on the current
+// step, so it's just plotted once per run.
+convergencePlot = {
+  const logRows = []
+  for (const r of result.rows) {
+    if (Number.isFinite(r.error) && r.error > 0) {
+      logRows.push({n: r.i, y: Math.log10(r.error)})
+    }
+  }
+
+  const pointsName = "log₁₀|xₙ − g(xₙ)|"
+  const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
+  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.n
+      sy += row.y
+      sxy += row.n * row.y
+      sxx += row.n * row.n
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].n, logRows[pointCount - 1].n]
+      const lineName   = `slope ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{n: xlo, y: slope * xlo + intercept}, {n: xhi, y: slope * xhi + intercept}],
+        {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
+  }
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "n"},
+    y: {label: "log₁₀|xₙ − g(xₙ)|"},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Iteration table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (const row of result.rows) {
+    let xCell = "NaN"
+    if (Number.isFinite(row.x)) xCell = row.x.toPrecision(10)
+
+    let gxCell = "NaN"
+    if (Number.isFinite(row.gx)) gxCell = row.gx.toPrecision(10)
+
+    let errorCell = "NaN"
+    if (Number.isFinite(row.error)) errorCell = row.error.toExponential(4)
+
+    formattedRows.push([row.i, xCell, gxCell, errorCell])
+  }
+
+  return VM.renderTable({
+    html,
+    headers: ["n", "x_n", tex`g(x_n) = x_{n+1}`, tex`|x_{n+1} - x_n|`],
+    csvHeaders: ["n", "x_n", "g(x_n) = x_{n+1}", "|x_{n+1} - x_n|"],
+    filename: "fixed-point-iterations.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+</div>

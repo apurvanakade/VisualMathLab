@@ -1,0 +1,478 @@
+---
+title: "Bisection Method"
+order: 1
+image: bisection.png
+categories:
+  - Bracketing
+  - No derivatives
+  - Guaranteed convergence
+  - Root finding
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad, Apurva Nakade
+-->
+
+
+```{ojs}
+//| output: false
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+VM = window.VM
+```
+
+The bisection method finds a root by repeatedly halving an interval $[a, b]$ where $f$ changes sign, guaranteeing that each half still contains a root.
+At each step, the bisection method computes the midpoint
+
+$$
+m=\frac{a+b}{2}.
+$$
+
+Then it keeps the half of the interval where the sign change still occurs. Repeating this process makes the interval smaller and smaller around the root.
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof fText = {
+  const params = new URLSearchParams(window.location.search)
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  fTextInput.classList.add("ojs-fill")
+  return fTextInput
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof a0 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("a")
+  let value = 1
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Left endpoint a", value})
+}
+```
+
+</div>
+
+<div class="ojs-row">
+
+```{ojs}
+viewof b0 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("b")
+  let value = 2
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Right endpoint b", value})
+}
+```
+
+```{ojs}
+// Plot commits the current function/endpoint fields — edits above don't
+// take effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The step slider below is unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+</div>
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof stepControl = {
+  const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "Step"})
+  stepSlider.classList.add("ojs-fill")
+  return stepSlider
+}
+```
+
+```{ojs}
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/endpoint fields clicks Plot instead of
+// submitting the field's own (invisible) form. Depends only on the stable
+// views, so this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof fText, viewof a0, viewof b0]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots fText/a0/b0 only when Plot is clicked, and writes them
+// back into the URL so the address bar stays a shareable link. It reads
+// `viewof fText`/`viewof a0`/`viewof b0` (the stable DOM views) rather than
+// `fText`/`a0`/`b0` (the reactive values), so it does NOT rerun on every
+// keystroke — only when `plotTrigger` changes. It still runs once on
+// initial page load, so the first render uses the URL-provided (or
+// default) values with no click.
+committed = {
+  plotTrigger
+  const fVal = (viewof fText).value
+  const aVal = Number((viewof a0).value)
+  const bVal = Number((viewof b0).value)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("f", fVal)
+  params.set("a", String(aVal))
+  params.set("b", String(bVal))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {fText: fVal, a0: aVal, b0: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs bisection with the current committed inputs.
+//   rows — array of { n, a, b, m, fa, fb, fm, width }, one entry per iteration
+//   f    — parsed function, reused for curve sampling in setup
+result = {
+  const math = window.math
+
+  const f        = VM.makeFunction(math, committed.fText)
+  const fallback = x => NaN
+
+  if (!f) return {rows: [], f: fallback}
+
+  let a = Number(committed.a0)
+  let b = Number(committed.b0)
+
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {rows: [], f}
+  if (a > b) { const temp = a; a = b; b = temp }   // ensure a < b
+
+  const fa = f(a)
+  const fb = f(b)
+
+  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {rows: [], f}
+
+  // Bisection requires a sign change across [a, b].
+  // If an endpoint is already a root, return it immediately.
+  if (fa === 0) return {rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}], f}
+  if (fb === 0) return {rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}], f}
+  if (fa * fb > 0) return {rows: [], f}   // no sign change — can't bracket a root
+
+  const rows = []
+  let curA = a, curB = b, curFa = fa, curFb = fb
+  let n = 0
+  while (n < maxIterations) {
+    const m  = 0.5 * (curA + curB)   // midpoint of the current bracket
+    const fm = f(m)
+    rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
+
+    if (!Number.isFinite(fm)) return {rows, f}
+
+    // Keep the half that still contains a sign change
+    if (curFa * fm < 0) { curB = m; curFb = fm } else { curA = m; curFa = fm }
+    n++
+  }
+  return {rows, f}
+}
+```
+
+```{ojs}
+//| output: false
+// setup computes the data shared by all three plots below: which rows are
+// visible at the current step, and the axis ranges / curve samples for the
+// main chart.
+setup = {
+  const visibleRows = result.rows.slice(0, Math.min(Number(stepControl), result.rows.length) + 1)
+  const currentRow  = visibleRows.length === 0 ? null : visibleRows[visibleRows.length - 1]
+
+  // Axis ranges from ALL rows so the axes stay fixed while stepping.
+  const xValues = [Number(committed.a0), Number(committed.b0)]
+  for (const row of result.rows) xValues.push(row.a, row.b, row.m)
+  const xRange = VM.paddedRange(xValues, {emptyRange: [-5, 5], relativePadding: 0.25, minPadding: 0.5})
+
+  // A wider domain (double the padding of xRange) so the curve is already
+  // sampled beyond the initial view — panning/zooming out reveals more of
+  // the curve instead of blank canvas. The initial view stays xRange.
+  const xBuffer = VM.paddedRange(xValues, {emptyRange: [-10, 10], relativePadding: 0.5, minPadding: 1.0})
+
+  // Sample f across the buffer range for the smooth curve trace.
+  const sampleCount = 700
+  const sampleXs = Array.from({length: sampleCount}, (_, i) => xBuffer.lo + (xBuffer.hi - xBuffer.lo) * i / (sampleCount - 1))
+  const sampleYs = []
+  for (const x of sampleXs) {
+    const y = result.f(x)
+    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
+      sampleYs.push(y)
+    } else {
+      sampleYs.push(null)
+    }
+  }
+
+  // Cap row values at 1e8 so a near-singularity doesn't blow up the axis range.
+  // Only samples within the initial view (xRange) count, so yRange — and
+  // the initial view — stay unaffected by the wider sampling.
+  const yValues = [0]
+  for (let i = 0; i < sampleXs.length; i++) {
+    const x = sampleXs[i]
+    if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
+  }
+  for (const row of result.rows) {
+    for (const v of [row.fa, row.fb, row.fm]) {
+      if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
+    }
+  }
+  const yRange = VM.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+
+  return {visibleRows, currentRow, xRange, xBuffer, yRange, sampleXs, sampleYs}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws f(x), the current bracket [a, b], and the midpoint.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the step changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({visibleRows, currentRow, xRange, xBuffer, yRange, sampleXs, sampleYs}) => {
+    const data = [
+      // The function curve
+      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+      // The x-axis reference line, spanning the buffer so it's still visible
+      // when the user pans/zooms out
+      {x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: true, line: {color: "#111827", width: 2}}
+    ]
+
+    // Previous midpoints — all steps before the current one
+    const prevRows = []
+    for (const r of visibleRows.slice(0, -1)) {
+      if (Number.isFinite(r.m) && Number.isFinite(r.fm)) prevRows.push(r)
+    }
+    if (prevRows.length > 0) {
+      const xs = [], ys = [], labels = []
+      for (const r of prevRows) {
+        xs.push(r.m)
+        ys.push(r.fm)
+        labels.push(`m${r.n}`)
+      }
+      data.push({
+        x: xs, y: ys,
+        type: "scatter", mode: "markers+text", name: "Previous midpoints", showlegend: true,
+        text: labels, textposition: "top center",
+        marker: {color: "#f97316", size: 8, symbol: "circle", line: {color: "white", width: 1}}
+      })
+    }
+
+    if (currentRow) {
+      const row = currentRow
+      data.push(
+        // Endpoints a and b
+        {x: [row.a, row.b], y: [row.fa, row.fb], type: "scatter", mode: "markers+text", name: "Endpoints",
+          text: ["a", "b"], textposition: "top center", showlegend: true,
+          marker: {color: "#2563eb", size: 11, symbol: "circle", line: {color: "white", width: 1}}},
+        // Current midpoint m
+        {x: [row.m], y: [row.fm], type: "scatter", mode: "markers+text", name: "Midpoint",
+          text: [`m${row.n}`], textposition: "top center", showlegend: true,
+          marker: {color: "#dc2626", size: 13, symbol: "circle", line: {color: "white", width: 1}}},
+        // Dotted verticals from x-axis to each marker
+        {x: [row.a, row.a], y: [0, row.fa], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}},
+        {x: [row.b, row.b], y: [0, row.fb], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}},
+        {x: [row.m, row.m], y: [0, row.fm], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#dc2626", width: 1.5, dash: "dot"}}
+      )
+    }
+
+    // Shaded rectangle showing the current bracket [a, b]
+    let shapes = []
+    if (currentRow) {
+      shapes = [{
+        type: "rect", xref: "x", yref: "paper",
+        x0: currentRow.a, x1: currentRow.b, y0: 0, y1: 1,
+        fillcolor: "rgba(37, 99, 235, 0.14)", line: {width: 0}
+      }]
+    }
+
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      shapes,
+      legend: {orientation: "h", y: -0.18},
+      hovermode: "closest",
+      uirevision: "static",  // keeps zoom/pan state across reactive updates
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    // First render: create the div. Later renders: update in place (preserves zoom).
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+mainPlot(setup)
+```
+
+:::: {.callout-note collapse="true" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot draws the midpoint mₙ vs n for the entire run — it doesn't
+// depend on the current step, so it's just plotted once per run.
+iteratesPlot = {
+  const midpointAccessor = row => {
+    if (Number.isFinite(row.m)) return row.m
+    return null
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "n"},
+    y: {label: "mₙ"},
+    marks: [
+      Plot.lineY(result.rows, {x: "n", y: midpointAccessor, stroke: "#2563eb"}),
+      Plot.dot(result.rows, {x: "n", y: midpointAccessor, fill: "#2563eb", r: 4})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot draws log₁₀|f(mₙ)| vs n (semi-log) with a linear
+// regression line, for the entire run — it doesn't depend on the current
+// step, so it's just plotted once per run.
+convergencePlot = {
+  const logRows = []
+  for (const r of result.rows) {
+    if (Number.isFinite(r.fm) && r.fm !== 0) {
+      logRows.push({n: r.n, y: Math.log10(Math.abs(r.fm))})
+    }
+  }
+
+  const pointsName = "log₁₀|f(mₙ)|"
+  const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
+  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.n
+      sy += row.y
+      sxy += row.n * row.y
+      sxx += row.n * row.n
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].n, logRows[pointCount - 1].n]
+      const lineName   = `slope ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{n: xlo, y: slope * xlo + intercept}, {n: xhi, y: slope * xhi + intercept}],
+        {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
+  }
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "n"},
+    y: {label: "log₁₀|f(mₙ)|"},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Iteration table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (const row of result.rows) {
+    let aCell = "NaN"
+    if (Number.isFinite(row.a)) aCell = row.a.toPrecision(10)
+
+    let bCell = "NaN"
+    if (Number.isFinite(row.b)) bCell = row.b.toPrecision(10)
+
+    let mCell = "NaN"
+    if (Number.isFinite(row.m)) mCell = row.m.toPrecision(10)
+
+    let faCell = "NaN"
+    if (Number.isFinite(row.fa)) faCell = row.fa.toExponential(5)
+
+    let fbCell = "NaN"
+    if (Number.isFinite(row.fb)) fbCell = row.fb.toExponential(5)
+
+    let fmCell = "NaN"
+    if (Number.isFinite(row.fm)) fmCell = row.fm.toExponential(5)
+
+    let widthCell = "NaN"
+    if (Number.isFinite(row.width)) widthCell = row.width.toExponential(4)
+
+    formattedRows.push([row.n, aCell, bCell, mCell, faCell, fbCell, fmCell, widthCell])
+  }
+
+  return VM.renderTable({
+    html,
+    headers: ["n", tex`a_n`, tex`b_n`, tex`m_n`, tex`f(a_n)`, tex`f(b_n)`, tex`f(m_n)`, "width"],
+    csvHeaders: ["n", "a_n", "b_n", "m_n", "f(a_n)", "f(b_n)", "f(m_n)", "width"],
+    filename: "bisection-method-iterations.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+</div>

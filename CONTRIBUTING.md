@@ -52,7 +52,7 @@ For Jupyter Notebooks, create a **Markdown cell** at the very top of your notebo
 ### 4. Python / R / Configuration Files (`.py`, `.R`, `.yml`)
 
 ```python
-# Copyright (c) 2026 [Your Name]. All rights reserved.
+# Copyright (c) [Year] [Your Name]. All rights reserved.
 # Released under Apache 2.0 license as described in the file LICENSE.
 # Authors: [Your Name]
 

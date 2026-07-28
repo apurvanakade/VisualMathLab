@@ -31,6 +31,113 @@ $$
 
 Then it keeps the half of the interval where the sign change still occurs. Repeating this process makes the interval smaller and smaller around the root.
 
+## Examples
+
+The bisection method is slower than Newton's method or the secant method, but
+it has one major advantage: if $f$ is continuous and changes sign on the
+interval $[a,b]$, then a root is guaranteed to remain inside the bracket.
+
+The examples below illustrate ordinary convergence, multiple possible roots,
+endpoint roots, invalid brackets, and roots near singular-looking behavior.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?f=x%5E3%20-%20x%20-%202&a=1&b=2">
+    <div class="example-card-title">Standard guaranteed convergence</div>
+    <div class="example-card-formula">f(x) = x³ − x − 2, &nbsp; [a,b] = [1,2]</div>
+    <div class="example-card-text">
+      A classic example with a sign change across the interval. Bisection
+      steadily shrinks the bracket around the real root near 1.521.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2%20-%202&a=1&b=2">
+    <div class="example-card-title">Square root of 2</div>
+    <div class="example-card-formula">f(x) = x² − 2, &nbsp; [a,b] = [1,2]</div>
+    <div class="example-card-text">
+      The method converges to √2. This is a simple example where the interval
+      width halves at every step.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=cos(x)%20-%20x&a=0&b=1">
+    <div class="example-card-title">Transcendental equation</div>
+    <div class="example-card-formula">f(x) = cos(x) − x, &nbsp; [a,b] = [0,1]</div>
+    <div class="example-card-text">
+      Finds the root of cos(x) = x. This is the same solution that appears in
+      fixed point iteration, but here the bracket gives a guarantee.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&a=-2&b=-1">
+    <div class="example-card-title">Bracket around a negative root</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; [a,b] = [−2,−1]</div>
+    <div class="example-card-text">
+      This function can cause surprising behavior for Newton's method, but
+      bisection behaves predictably once a sign-changing bracket is provided.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=(x%20-%201)*(x%20-%202)*(x%20-%203)&a=0.5&b=1.5">
+    <div class="example-card-title">Choosing one root among many</div>
+    <div class="example-card-formula">f(x) = (x−1)(x−2)(x−3), &nbsp; [a,b] = [0.5,1.5]</div>
+    <div class="example-card-text">
+      The polynomial has three roots, but this bracket isolates the one near
+      x = 1.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=(x%20-%201)*(x%20-%202)*(x%20-%203)&a=2.5&b=3.5">
+    <div class="example-card-title">Same function, different bracket</div>
+    <div class="example-card-formula">f(x) = (x−1)(x−2)(x−3), &nbsp; [a,b] = [2.5,3.5]</div>
+    <div class="example-card-text">
+      Changing only the bracket sends the method toward a different root of the
+      same function, this time near x = 3.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%20-%201&a=1&b=3">
+    <div class="example-card-title">Endpoint is already a root</div>
+    <div class="example-card-formula">f(x) = x − 1, &nbsp; [a,b] = [1,3]</div>
+    <div class="example-card-text">
+      The left endpoint satisfies f(a) = 0, so the method has already found a
+      root before any interval halving is needed.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2%20%2B%201&a=-1&b=1">
+    <div class="example-card-title">Invalid bracket: no real root</div>
+    <div class="example-card-formula">f(x) = x² + 1, &nbsp; [a,b] = [−1,1]</div>
+    <div class="example-card-text">
+      There is no sign change and no real root. Bisection correctly refuses to
+      proceed because the guarantee does not apply.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2&a=-1&b=1">
+    <div class="example-card-title">Even-multiplicity root is missed</div>
+    <div class="example-card-formula">f(x) = x², &nbsp; [a,b] = [−1,1]</div>
+    <div class="example-card-text">
+      Although x = 0 is a root, f does not change sign across the interval.
+      This shows a limitation of sign-change bracketing.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=1%2Fx&a=-1&b=1">
+    <div class="example-card-title">Sign change without a valid root</div>
+    <div class="example-card-formula">f(x) = 1/x, &nbsp; [a,b] = [−1,1]</div>
+    <div class="example-card-text">
+      The function changes sign but is not continuous on the interval. The
+      bisection theorem requires continuity, so the usual guarantee fails.
+    </div>
+  </a>
+
+</div>
+```
+
 <div class="ojs-panel">
 
 ```{ojs}
@@ -156,40 +263,95 @@ result = {
   const f        = VM.makeFunction(math, committed.fText)
   const fallback = x => NaN
 
-  if (!f) return {rows: [], f: fallback}
+  if (!f) return {rows: [], f: fallback, status: "invalid-function"}
 
   let a = Number(committed.a0)
   let b = Number(committed.b0)
 
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {rows: [], f}
-  if (a > b) { const temp = a; a = b; b = temp }   // ensure a < b
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
+    return {rows: [], f, status: "invalid-interval"}
+  }
+
+  if (a > b) {
+    const temp = a
+    a = b
+    b = temp
+  }
 
   const fa = f(a)
   const fb = f(b)
 
-  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {rows: [], f}
+  if (!Number.isFinite(fa) || !Number.isFinite(fb)) {
+    return {rows: [], f, status: "nonfinite-endpoint"}
+  }
+
+  // If an endpoint is already a root, return it immediately.
+  if (fa === 0) {
+    return {
+      rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}],
+      f,
+      status: "endpoint-root"
+    }
+  }
+
+  if (fb === 0) {
+    return {
+      rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}],
+      f,
+      status: "endpoint-root"
+    }
+  }
 
   // Bisection requires a sign change across [a, b].
-  // If an endpoint is already a root, return it immediately.
-  if (fa === 0) return {rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}], f}
-  if (fb === 0) return {rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}], f}
-  if (fa * fb > 0) return {rows: [], f}   // no sign change — can't bracket a root
+  if (fa * fb > 0) {
+    return {rows: [], f, status: "no-sign-change"}
+  }
 
   const rows = []
-  let curA = a, curB = b, curFa = fa, curFb = fb
+  let curA = a
+  let curB = b
+  let curFa = fa
+  let curFb = fb
+
   let n = 0
+
   while (n < maxIterations) {
-    const m  = 0.5 * (curA + curB)   // midpoint of the current bracket
+    const m  = 0.5 * (curA + curB)
     const fm = f(m)
-    rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
 
-    if (!Number.isFinite(fm)) return {rows, f}
+    rows.push({
+      n,
+      a: curA,
+      b: curB,
+      m,
+      fa: curFa,
+      fb: curFb,
+      fm,
+      width: curB - curA
+    })
 
-    // Keep the half that still contains a sign change
-    if (curFa * fm < 0) { curB = m; curFb = fm } else { curA = m; curFa = fm }
+    if (!Number.isFinite(fm)) {
+      return {rows, f, status: "nonfinite-midpoint"}
+    }
+
+    // If the midpoint is exactly a root, stop.
+    if (fm === 0) {
+      return {rows, f, status: "midpoint-root"}
+    }
+
+    // Keep the half that still contains a sign change.
+    if (curFa * fm < 0) {
+      curB = m
+      curFb = fm
+    } else {
+      curA = m
+      curFa = fm
+    }
+
     n++
   }
-  return {rows, f}
+
+  return {rows, f, status: "max-iterations"}
 }
 ```
 

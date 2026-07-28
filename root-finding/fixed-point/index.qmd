@@ -42,6 +42,110 @@ $$
 
 So $\alpha$ is called a fixed point of $g$.
 
+## Examples
+
+Fixed point iteration can behave very differently depending on the function
+$g$ and the starting point $x_0$. The examples below illustrate attraction,
+repulsion, oscillation, slow convergence, and divergence.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?g=cos(x)&x0=1">
+    <div class="example-card-title">Classic convergent iteration</div>
+    <div class="example-card-formula">g(x) = cos(x), &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      The iteration xₙ₊₁ = cos(xₙ) converges to the Dottie number, the fixed
+      point of cosine.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=sqrt(x%20%2B%202)&x0=1">
+    <div class="example-card-title">Converges to the positive fixed point</div>
+    <div class="example-card-formula">g(x) = √(x + 2), &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      This converges to x = 2, solving x = √(x + 2). The cobweb path moves
+      steadily toward the intersection with y = x.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=(x%20%2B%202%2Fx)%2F2&x0=1">
+    <div class="example-card-title">Babylonian iteration for √2</div>
+    <div class="example-card-formula">g(x) = (x + 2/x)/2, &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      A very effective fixed point iteration for computing √2. It converges
+      much faster than many ordinary fixed point schemes.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1%20%2B%200.5*sin(x)&x0=0">
+    <div class="example-card-title">Gentle attraction</div>
+    <div class="example-card-formula">g(x) = 1 + 0.5 sin(x), &nbsp; x₀ = 0</div>
+    <div class="example-card-text">
+      The slope near the fixed point has magnitude less than 1, so the fixed
+      point is attractive and the iteration settles down.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=2*cos(x)&x0=1">
+    <div class="example-card-title">Oscillatory convergence</div>
+    <div class="example-card-formula">g(x) = 2 cos(x), &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      The iterates approach the fixed point while bouncing from one side to the
+      other. The cobweb diagram shows a visible zig-zag pattern.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1.2*x%20-%200.2*x%5E2&x0=0.2">
+    <div class="example-card-title">Slow attraction</div>
+    <div class="example-card-formula">g(x) = 1.2x − 0.2x², &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The fixed point at x = 1 is attractive, but convergence can be slow when
+      the slope is close to 1 in magnitude.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=2*x&x0=0.1">
+    <div class="example-card-title">Repelling fixed point</div>
+    <div class="example-card-formula">g(x) = 2x, &nbsp; x₀ = 0.1</div>
+    <div class="example-card-text">
+      Although x = 0 is a fixed point, the slope has magnitude greater than 1,
+      so nearby iterates are pushed away.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1%20-%202*x&x0=0.2">
+    <div class="example-card-title">Divergent oscillation</div>
+    <div class="example-card-formula">g(x) = 1 − 2x, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The iteration alternates across the fixed point with growing amplitude
+      because the slope has magnitude greater than 1.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1%20-%20x&x0=0.2">
+    <div class="example-card-title">Neutral two-cycle</div>
+    <div class="example-card-formula">g(x) = 1 − x, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The sequence jumps back and forth between two values. The fixed point
+      exists at x = 0.5, but the iteration does not approach it.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=x%20-%20x%5E3&x0=0.2">
+    <div class="example-card-title">Very slow convergence</div>
+    <div class="example-card-formula">g(x) = x − x³, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The fixed point x = 0 is attracting, but g′(0) = 1, so convergence is
+      much slower than linear.
+    </div>
+  </a>
+
+</div>
+```
+
 <div class="ojs-panel">
 
 ```{ojs}

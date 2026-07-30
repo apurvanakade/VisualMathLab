@@ -1,11 +1,8 @@
 ---
 title: "Secant Method"
-author: Apurva Nakade
-date: 2026-06-25
 order: 4
 image: secant-method.png
 categories:
-  - Computational math
   - No derivatives
   - Superlinear convergence
   - Root finding
@@ -20,7 +17,8 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+// It provides makeFunction, makeDerivative, paddedRange, renderTable.
 VM = window.VM
 ```
 
@@ -36,6 +34,112 @@ Starting from two initial guesses $x_0$ and $x_1$, the method produces new appro
 $$
 x_{n+1}=x_n-f(x_n)\frac{x_n-x_{n-1}}{f(x_n)-f(x_{n-1})}.
 $$
+
+## Examples
+
+The secant method avoids computing derivatives, but its behavior still depends
+strongly on the two initial guesses. The examples below illustrate fast
+superlinear convergence, poor starting pairs, nearly horizontal secants,
+oscillation, and cases where the method can appear to move away before finding
+a root.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?f=x%5E3%20-%20x%20-%202&x0=1&x1=2">
+    <div class="example-card-title">Standard superlinear convergence</div>
+    <div class="example-card-formula">f(x) = x³ − x − 2, &nbsp; x₀ = 1, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      A well-behaved example. The secant method quickly converges to the real
+      root near 1.521 without using derivatives.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=cos(x)%20-%20x&x0=0&x1=1">
+    <div class="example-card-title">Fixed-point root problem</div>
+    <div class="example-card-formula">f(x) = cos(x) − x, &nbsp; x₀ = 0, &nbsp; x₁ = 1</div>
+    <div class="example-card-text">
+      The method converges to the same famous root as fixed point iteration
+      x = cos(x), but usually in fewer steps.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2%20-%202&x0=1&x1=2">
+    <div class="example-card-title">Square root of 2</div>
+    <div class="example-card-formula">f(x) = x² − 2, &nbsp; x₀ = 1, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      A simple comparison case with Newton's method. The secant iterates
+      approach √2 using only function values.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&x0=-2&x1=0">
+    <div class="example-card-title">Sensitive starting pair</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = −2, &nbsp; x₁ = 0</div>
+    <div class="example-card-text">
+      A nonlinear example where the path depends strongly on the initial pair.
+      The method can jump before settling near the real root.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&x0=0&x1=1">
+    <div class="example-card-title">Problematic secant pair</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = 0, &nbsp; x₁ = 1</div>
+    <div class="example-card-text">
+      These two starting points give equal function values, so the secant
+      denominator is zero and the update cannot proceed.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&x0=0.7&x1=0.9">
+    <div class="example-card-title">Nearly horizontal secant</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = 0.7, &nbsp; x₁ = 0.9</div>
+    <div class="example-card-text">
+      The secant line is nearly flat, so the next x-intercept can be far away.
+      This illustrates how small denominator effects can cause large jumps.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=atan(x)&x0=1&x1=2">
+    <div class="example-card-title">Large jumps from shallow slopes</div>
+    <div class="example-card-formula">f(x) = arctan(x), &nbsp; x₀ = 1, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      When the secant slope is small, the x-intercept may be far from the
+      current points. The method can make surprisingly large moves.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3&x0=-0.5&x1=0.8">
+    <div class="example-card-title">Multiple root behavior</div>
+    <div class="example-card-formula">f(x) = x³, &nbsp; x₀ = −0.5, &nbsp; x₁ = 0.8</div>
+    <div class="example-card-text">
+      The root at x = 0 has multiplicity three, so convergence is much slower
+      than the usual superlinear behavior for simple roots.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E5%20-%20x%20-%201&x0=0&x1=2">
+    <div class="example-card-title">Higher-degree polynomial</div>
+    <div class="example-card-formula">f(x) = x⁵ − x − 1, &nbsp; x₀ = 0, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      A higher-degree polynomial with a real root. This shows the secant method
+      behaving well on a smooth nonlinear problem.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=exp(-x)%20-%20x&x0=0&x1=1">
+    <div class="example-card-title">Exponential equation</div>
+    <div class="example-card-formula">f(x) = exp(−x) − x, &nbsp; x₀ = 0, &nbsp; x₁ = 1</div>
+    <div class="example-card-text">
+      A smooth transcendental example. The method converges to the solution of
+      x = exp(−x).
+    </div>
+  </a>
+
+</div>
+```
 
 <div class="ojs-panel">
 
@@ -53,22 +157,26 @@ viewof fText = {
 ```{ojs}
 viewof x0 = {
   const params = new URLSearchParams(window.location.search)
-  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1", placeholder: "Example: 1, pi/4"})
-  return x0Input
+  const raw = params.get("x0")
+  let value = 1
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₀", value})
+}
+```
+
+```{ojs}
+viewof x1 = {
+  const params = new URLSearchParams(window.location.search)
+  const raw = params.get("x1")
+  let value = 2
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₁", value})
 }
 ```
 
 </div>
 
 <div class="ojs-row">
-
-```{ojs}
-viewof x1 = {
-  const params = new URLSearchParams(window.location.search)
-  const x1Input = Inputs.text({label: "Initial guess x₁", value: params.get("x1") ?? "2", placeholder: "Example: 2, e"})
-  return x1Input
-}
-```
 
 ```{ojs}
 // Plot commits the current function/x₀/x₁ fields — edits above don't take
@@ -95,22 +203,10 @@ viewof stepControl = {
 ```
 
 ```{ojs}
-viewof maxIterationsInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxIterations parses the Max field's expression, falling back to 20 for
-// invalid input so the step slider and result loop always get a usable bound.
-maxIterations = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 20
-  return Math.max(1, Math.round(parsed))
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
 }
 ```
 
@@ -145,17 +241,14 @@ enterToPlot = {
 // values with no click.
 committed = {
   plotTrigger
-  const math = window.math
   const fVal = (viewof fText).value
-  const x0Text = (viewof x0).value
-  const x1Text = (viewof x1).value
-  const x0Val = VM.expressions.makeNumber(math, x0Text)
-  const x1Val = VM.expressions.makeNumber(math, x1Text)
+  const x0Val = Number((viewof x0).value)
+  const x1Val = Number((viewof x1).value)
 
   const params = new URLSearchParams(window.location.search)
   params.set("f", fVal)
-  params.set("x0", x0Text)
-  params.set("x1", x1Text)
+  params.set("x0", String(x0Val))
+  params.set("x1", String(x1Val))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, x0: x0Val, x1: x1Val}
@@ -174,13 +267,13 @@ result = {
 
   // Parse f(x) from the committed string. makeFunction returns null if the
   // expression is invalid.
-  const f = VM.expressions.makeFunction(math, committed.fText)
+  const f = VM.makeFunction(math, committed.fText)
   const fallback = x => NaN
 
   if (!f) return {rows: [], points: [], f: fallback}
 
-  const initialGuess0 = committed.x0
-  const initialGuess1 = committed.x1
+  const initialGuess0 = Number(committed.x0)
+  const initialGuess1 = Number(committed.x1)
 
   if (!Number.isFinite(initialGuess0) || !Number.isFinite(initialGuess1)) return {rows: [], points: [], f}
 
@@ -226,14 +319,14 @@ setup = {
 
   // Axis ranges are computed from ALL rows, not just visibleRows,
   // so the axes stay fixed as the user steps through iterations.
-  const xValues = [committed.x0, committed.x1]
+  const xValues = [Number(committed.x0), Number(committed.x1)]
   for (const row of result.rows) xValues.push(row.x, row.xNext)
-  const xRange = VM.plotting.paddedRange(xValues, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: 0.5})
+  const xRange = VM.paddedRange(xValues, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: 0.5})
 
   // A wider domain (double the padding of xRange) so the curve is already
   // sampled beyond the initial view — panning/zooming out reveals more of
   // the curve instead of blank canvas. The initial view stays xRange.
-  const xBuffer = VM.plotting.paddedRange(xValues, {emptyRange: [-6, 6], relativePadding: 0.5, minPadding: 1.0})
+  const xBuffer = VM.paddedRange(xValues, {emptyRange: [-6, 6], relativePadding: 0.5, minPadding: 1.0})
 
   // Sample f across the buffer range for the smooth curve trace.
   const sampleCount = 700
@@ -269,7 +362,7 @@ setup = {
       }
     }
   }
-  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+  const yRange = VM.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
   return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}
 }
@@ -386,7 +479,7 @@ mainPlot = {
       margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
+      legend: {orientation: "h", y: -0.18},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -463,22 +556,29 @@ convergencePlot = {
   const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
   const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
   const colorDomain = [pointsName], colorRange = ["#dc2626"]
-  // legendDomain/legendRange hold only the regression line(s) — the legend
-  // shown below the chart displays just the fitted order, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
 
-  const fit = VM.numerical.linearRegression(logRows)
-  if (fit) {
-    const lineName = `order ≈ ${fit.slope.toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#9333ea")
-    legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.x
+      sy += row.y
+      sxy += row.x * row.y
+      sxx += row.x * row.x
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].x, logRows[pointCount - 1].x]
+      const lineName   = `order ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: xlo, y: slope * xlo + intercept}, {x: xhi, y: slope * xhi + intercept}],
+        {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
   }
 
   const chart = Plot.plot({
@@ -488,7 +588,7 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
 
   const container = document.createElement("div")
   container.append(chart, legend)
@@ -534,7 +634,7 @@ iterationTable = {
     formattedRows.push([row.i, xPrevCell, xCell, fxPrevCell, fxCell, xNextCell, errorCell])
   }
 
-  return VM.ui.renderTable({
+  return VM.renderTable({
     html,
     headers: ["n", tex`x_{n-1}`, tex`x_n`, tex`f(x_{n-1})`, tex`f(x_n)`, tex`x_{n+1}`, tex`|x_{n+1} - x_n|`],
     csvHeaders: ["n", "x_{n-1}", "x_n", "f(x_{n-1})", "f(x_n)", "x_{n+1}", "|x_{n+1} - x_n|"],

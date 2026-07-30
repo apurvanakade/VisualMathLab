@@ -1,13 +1,8 @@
 ---
 title: "Fixed Point Iteration"
-author:
-  - Dhruv Azad
-  - Apurva Nakade
-date: 2026-06-25
 order: 2
 image: fixed-point.png
 categories:
-  - Computational math
   - No derivatives
   - Fixed points
   - Linear convergence
@@ -23,7 +18,7 @@ Authors: Dhruv Azad, Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
 VM = window.VM
 ```
 
@@ -47,6 +42,110 @@ $$
 
 So $\alpha$ is called a fixed point of $g$.
 
+## Examples
+
+Fixed point iteration can behave very differently depending on the function
+$g$ and the starting point $x_0$. The examples below illustrate attraction,
+repulsion, oscillation, slow convergence, and divergence.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?g=cos(x)&x0=1">
+    <div class="example-card-title">Classic convergent iteration</div>
+    <div class="example-card-formula">g(x) = cos(x), &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      The iteration xₙ₊₁ = cos(xₙ) converges to the Dottie number, the fixed
+      point of cosine.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=sqrt(x%20%2B%202)&x0=1">
+    <div class="example-card-title">Converges to the positive fixed point</div>
+    <div class="example-card-formula">g(x) = √(x + 2), &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      This converges to x = 2, solving x = √(x + 2). The cobweb path moves
+      steadily toward the intersection with y = x.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=(x%20%2B%202%2Fx)%2F2&x0=1">
+    <div class="example-card-title">Babylonian iteration for √2</div>
+    <div class="example-card-formula">g(x) = (x + 2/x)/2, &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      A very effective fixed point iteration for computing √2. It converges
+      much faster than many ordinary fixed point schemes.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1%20%2B%200.5*sin(x)&x0=0">
+    <div class="example-card-title">Gentle attraction</div>
+    <div class="example-card-formula">g(x) = 1 + 0.5 sin(x), &nbsp; x₀ = 0</div>
+    <div class="example-card-text">
+      The slope near the fixed point has magnitude less than 1, so the fixed
+      point is attractive and the iteration settles down.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=2*cos(x)&x0=1">
+    <div class="example-card-title">Oscillatory convergence</div>
+    <div class="example-card-formula">g(x) = 2 cos(x), &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      The iterates approach the fixed point while bouncing from one side to the
+      other. The cobweb diagram shows a visible zig-zag pattern.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1.2*x%20-%200.2*x%5E2&x0=0.2">
+    <div class="example-card-title">Slow attraction</div>
+    <div class="example-card-formula">g(x) = 1.2x − 0.2x², &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The fixed point at x = 1 is attractive, but convergence can be slow when
+      the slope is close to 1 in magnitude.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=2*x&x0=0.1">
+    <div class="example-card-title">Repelling fixed point</div>
+    <div class="example-card-formula">g(x) = 2x, &nbsp; x₀ = 0.1</div>
+    <div class="example-card-text">
+      Although x = 0 is a fixed point, the slope has magnitude greater than 1,
+      so nearby iterates are pushed away.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1%20-%202*x&x0=0.2">
+    <div class="example-card-title">Divergent oscillation</div>
+    <div class="example-card-formula">g(x) = 1 − 2x, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The iteration alternates across the fixed point with growing amplitude
+      because the slope has magnitude greater than 1.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=1%20-%20x&x0=0.2">
+    <div class="example-card-title">Neutral two-cycle</div>
+    <div class="example-card-formula">g(x) = 1 − x, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The sequence jumps back and forth between two values. The fixed point
+      exists at x = 0.5, but the iteration does not approach it.
+    </div>
+  </a>
+
+  <a class="example-card" href="?g=x%20-%20x%5E3&x0=0.2">
+    <div class="example-card-title">Very slow convergence</div>
+    <div class="example-card-formula">g(x) = x − x³, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The fixed point x = 0 is attracting, but g′(0) = 1, so convergence is
+      much slower than linear.
+    </div>
+  </a>
+
+</div>
+```
+
 <div class="ojs-panel">
 
 ```{ojs}
@@ -63,8 +162,10 @@ viewof gText = {
 ```{ojs}
 viewof x0 = {
   const params = new URLSearchParams(window.location.search)
-  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1", placeholder: "Example: 1, pi/4"})
-  return x0Input
+  const raw = params.get("x0")
+  let value = 1
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Initial guess x₀", value})
 }
 ```
 
@@ -93,22 +194,10 @@ viewof stepControl = {
 ```
 
 ```{ojs}
-viewof maxIterationsInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxIterations parses the Max field's expression, falling back to 20 for
-// invalid input so the step slider and result loop always get a usable bound.
-maxIterations = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 20
-  return Math.max(1, Math.round(parsed))
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
 }
 ```
 
@@ -142,14 +231,12 @@ enterToPlot = {
 // the first render uses the URL-provided (or default) values with no click.
 committed = {
   plotTrigger
-  const math = window.math
   const gVal = (viewof gText).value
-  const x0Text = (viewof x0).value
-  const x0Val = VM.expressions.makeNumber(math, x0Text)
+  const x0Val = Number((viewof x0).value)
 
   const params = new URLSearchParams(window.location.search)
   params.set("g", gVal)
-  params.set("x0", x0Text)
+  params.set("x0", String(x0Val))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {gText: gVal, x0: x0Val}
@@ -164,13 +251,13 @@ committed = {
 result = {
   const math = window.math
 
-  const g        = VM.expressions.makeFunction(math, committed.gText)
+  const g        = VM.makeFunction(math, committed.gText)
   const fallback = x => NaN
 
   if (!g) return {rows: [], g: fallback}
 
   const rows  = []
-  const initialGuess = committed.x0
+  const initialGuess = Number(committed.x0)
 
   if (!Number.isFinite(initialGuess)) return {rows: [], g}
 
@@ -205,14 +292,14 @@ setup = {
 
   // Axis ranges from ALL rows so the axes stay fixed while stepping.
   // The cobweb diagram uses a square plot (same range for x and y).
-  const rangeValues = [committed.x0]
+  const rangeValues = [Number(committed.x0)]
   for (const row of result.rows) rangeValues.push(row.x, row.gx)
-  const range = VM.plotting.paddedRange(rangeValues, {emptyRange: [-2, 2], relativePadding: 0.25, minPadding: 0.5})
+  const range = VM.paddedRange(rangeValues, {emptyRange: [-2, 2], relativePadding: 0.25, minPadding: 0.5})
 
   // A wider domain (double the padding of range) so the curve is already
   // sampled beyond the initial view — panning/zooming out reveals more of
   // the curve instead of blank canvas. The initial view stays range.
-  const bufferRange = VM.plotting.paddedRange(rangeValues, {emptyRange: [-4, 4], relativePadding: 0.5, minPadding: 1.0})
+  const bufferRange = VM.paddedRange(rangeValues, {emptyRange: [-4, 4], relativePadding: 0.5, minPadding: 1.0})
 
   // Sample g across the buffer range for the smooth curve trace.
   const sampleCount = 500
@@ -227,7 +314,7 @@ setup = {
     }
   }
 
-  return {visibleRows, range, bufferRange, sampleXs, sampleYs, x0: committed.x0}
+  return {visibleRows, range, bufferRange, sampleXs, sampleYs, x0: Number(committed.x0)}
 }
 ```
 
@@ -294,7 +381,7 @@ mainPlot = {
       margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [range.lo, range.hi], zeroline: true},
       yaxis: {title: "y", range: [range.lo, range.hi], zeroline: true, zerolinecolor: "#94a3b8", gridcolor: "#e2e8f0", linecolor: "#cbd5e1"},
-      legend: {orientation: "h", y: -0.08},
+      legend: {orientation: "h", y: -0.18},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -360,24 +447,29 @@ convergencePlot = {
   const pointsName = "log₁₀|xₙ − g(xₙ)|"
   const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
   const colorDomain = [pointsName], colorRange = ["#dc2626"]
-  // legendDomain/legendRange hold only the regression line(s) — the legend
-  // shown below the chart displays just the fitted slope, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
 
-  const regressionPoints = []
-  for (const row of logRows) regressionPoints.push({x: row.n, y: row.y})
-  const fit = VM.numerical.linearRegression(regressionPoints)
-  if (fit) {
-    const lineName = `slope ≈ ${fit.slope.toFixed(2)}`
-    marks.push(Plot.line(
-      [{n: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {n: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
-      {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#9333ea")
-    legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.n
+      sy += row.y
+      sxy += row.n * row.y
+      sxx += row.n * row.n
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].n, logRows[pointCount - 1].n]
+      const lineName   = `slope ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{n: xlo, y: slope * xlo + intercept}, {n: xhi, y: slope * xhi + intercept}],
+        {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
   }
 
   const chart = Plot.plot({
@@ -387,7 +479,7 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
 
   const container = document.createElement("div")
   container.append(chart, legend)
@@ -424,7 +516,7 @@ iterationTable = {
     formattedRows.push([row.i, xCell, gxCell, errorCell])
   }
 
-  return VM.ui.renderTable({
+  return VM.renderTable({
     html,
     headers: ["n", "x_n", tex`g(x_n) = x_{n+1}`, tex`|x_{n+1} - x_n|`],
     csvHeaders: ["n", "x_n", "g(x_n) = x_{n+1}", "|x_{n+1} - x_n|"],

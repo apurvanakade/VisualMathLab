@@ -1,8 +1,13 @@
 ---
 title: "Fixed Point Iteration"
+author:
+  - Dhruv Azad
+  - Apurva Nakade
+date: 2026-06-25
 order: 2
 image: fixed-point.png
 categories:
+  - Computational math
   - No derivatives
   - Fixed points
   - Linear convergence
@@ -18,7 +23,7 @@ Authors: Dhruv Azad, Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
 VM = window.VM
 ```
 
@@ -162,10 +167,8 @@ viewof gText = {
 ```{ojs}
 viewof x0 = {
   const params = new URLSearchParams(window.location.search)
-  const raw = params.get("x0")
-  let value = 1
-  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
-  return Inputs.number({label: "Initial guess x₀", value})
+  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1", placeholder: "Example: 1, pi/4"})
+  return x0Input
 }
 ```
 
@@ -194,10 +197,22 @@ viewof stepControl = {
 ```
 
 ```{ojs}
-viewof maxIterations = {
-  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
-  maxIterationsInput.classList.add("ojs-auto")
-  return maxIterationsInput
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+```{ojs}
+//| output: false
+// maxIterations parses the Max field's expression, falling back to 20 for
+// invalid input so the step slider and result loop always get a usable bound.
+maxIterations = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 20
+  return Math.max(1, Math.round(parsed))
 }
 ```
 
@@ -231,12 +246,14 @@ enterToPlot = {
 // the first render uses the URL-provided (or default) values with no click.
 committed = {
   plotTrigger
+  const math = window.math
   const gVal = (viewof gText).value
-  const x0Val = Number((viewof x0).value)
+  const x0Text = (viewof x0).value
+  const x0Val = VM.expressions.makeNumber(math, x0Text)
 
   const params = new URLSearchParams(window.location.search)
   params.set("g", gVal)
-  params.set("x0", String(x0Val))
+  params.set("x0", x0Text)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {gText: gVal, x0: x0Val}
@@ -251,13 +268,13 @@ committed = {
 result = {
   const math = window.math
 
-  const g        = VM.makeFunction(math, committed.gText)
+  const g        = VM.expressions.makeFunction(math, committed.gText)
   const fallback = x => NaN
 
   if (!g) return {rows: [], g: fallback}
 
   const rows  = []
-  const initialGuess = Number(committed.x0)
+  const initialGuess = committed.x0
 
   if (!Number.isFinite(initialGuess)) return {rows: [], g}
 
@@ -292,14 +309,14 @@ setup = {
 
   // Axis ranges from ALL rows so the axes stay fixed while stepping.
   // The cobweb diagram uses a square plot (same range for x and y).
-  const rangeValues = [Number(committed.x0)]
+  const rangeValues = [committed.x0]
   for (const row of result.rows) rangeValues.push(row.x, row.gx)
-  const range = VM.paddedRange(rangeValues, {emptyRange: [-2, 2], relativePadding: 0.25, minPadding: 0.5})
+  const range = VM.plotting.paddedRange(rangeValues, {emptyRange: [-2, 2], relativePadding: 0.25, minPadding: 0.5})
 
   // A wider domain (double the padding of range) so the curve is already
   // sampled beyond the initial view — panning/zooming out reveals more of
   // the curve instead of blank canvas. The initial view stays range.
-  const bufferRange = VM.paddedRange(rangeValues, {emptyRange: [-4, 4], relativePadding: 0.5, minPadding: 1.0})
+  const bufferRange = VM.plotting.paddedRange(rangeValues, {emptyRange: [-4, 4], relativePadding: 0.5, minPadding: 1.0})
 
   // Sample g across the buffer range for the smooth curve trace.
   const sampleCount = 500
@@ -314,7 +331,7 @@ setup = {
     }
   }
 
-  return {visibleRows, range, bufferRange, sampleXs, sampleYs, x0: Number(committed.x0)}
+  return {visibleRows, range, bufferRange, sampleXs, sampleYs, x0: committed.x0}
 }
 ```
 
@@ -381,7 +398,7 @@ mainPlot = {
       margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [range.lo, range.hi], zeroline: true},
       yaxis: {title: "y", range: [range.lo, range.hi], zeroline: true, zerolinecolor: "#94a3b8", gridcolor: "#e2e8f0", linecolor: "#cbd5e1"},
-      legend: {orientation: "h", y: -0.18},
+      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -447,29 +464,24 @@ convergencePlot = {
   const pointsName = "log₁₀|xₙ − g(xₙ)|"
   const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
   const colorDomain = [pointsName], colorRange = ["#dc2626"]
+  // legendDomain/legendRange hold only the regression line(s) — the legend
+  // shown below the chart displays just the fitted slope, not the raw
+  // point series, to keep it uncluttered.
+  const legendDomain = [], legendRange = []
 
-  if (logRows.length >= 2) {
-    const pointCount = logRows.length
-    let sx = 0, sy = 0, sxy = 0, sxx = 0
-    for (const row of logRows) {
-      sx += row.n
-      sy += row.y
-      sxy += row.n * row.y
-      sxx += row.n * row.n
-    }
-    const denom = pointCount * sxx - sx * sx
-    if (denom !== 0) {
-      const slope     = (pointCount * sxy - sx * sy) / denom
-      const intercept = (sy - slope * sx) / pointCount
-      const [xlo, xhi] = [logRows[0].n, logRows[pointCount - 1].n]
-      const lineName   = `slope ≈ ${slope.toFixed(2)}`
-      marks.push(Plot.line(
-        [{n: xlo, y: slope * xlo + intercept}, {n: xhi, y: slope * xhi + intercept}],
-        {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-      ))
-      colorDomain.push(lineName)
-      colorRange.push("#9333ea")
-    }
+  const regressionPoints = []
+  for (const row of logRows) regressionPoints.push({x: row.n, y: row.y})
+  const fit = VM.numerical.linearRegression(regressionPoints)
+  if (fit) {
+    const lineName = `slope ≈ ${fit.slope.toFixed(2)}`
+    marks.push(Plot.line(
+      [{n: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {n: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
+      {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+    ))
+    colorDomain.push(lineName)
+    colorRange.push("#9333ea")
+    legendDomain.push(lineName)
+    legendRange.push("#9333ea")
   }
 
   const chart = Plot.plot({
@@ -479,7 +491,7 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
 
   const container = document.createElement("div")
   container.append(chart, legend)
@@ -516,7 +528,7 @@ iterationTable = {
     formattedRows.push([row.i, xCell, gxCell, errorCell])
   }
 
-  return VM.renderTable({
+  return VM.ui.renderTable({
     html,
     headers: ["n", "x_n", tex`g(x_n) = x_{n+1}`, tex`|x_{n+1} - x_n|`],
     csvHeaders: ["n", "x_n", "g(x_n) = x_{n+1}", "|x_{n+1} - x_n|"],

@@ -1,13 +1,8 @@
 ---
 title: "Bisection Method"
-author:
-  - Dhruv Azad
-  - Apurva Nakade
-date: 2026-06-25
 order: 1
 image: bisection.png
 categories:
-  - Computational math
   - Bracketing
   - No derivatives
   - Guaranteed convergence
@@ -23,7 +18,7 @@ Authors: Dhruv Azad, Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
 VM = window.VM
 ```
 
@@ -35,6 +30,113 @@ m=\frac{a+b}{2}.
 $$
 
 Then it keeps the half of the interval where the sign change still occurs. Repeating this process makes the interval smaller and smaller around the root.
+
+## Examples
+
+The bisection method is slower than Newton's method or the secant method, but
+it has one major advantage: if $f$ is continuous and changes sign on the
+interval $[a,b]$, then a root is guaranteed to remain inside the bracket.
+
+The examples below illustrate ordinary convergence, multiple possible roots,
+endpoint roots, invalid brackets, and roots near singular-looking behavior.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?f=x%5E3%20-%20x%20-%202&a=1&b=2">
+    <div class="example-card-title">Standard guaranteed convergence</div>
+    <div class="example-card-formula">f(x) = x³ − x − 2, &nbsp; [a,b] = [1,2]</div>
+    <div class="example-card-text">
+      A classic example with a sign change across the interval. Bisection
+      steadily shrinks the bracket around the real root near 1.521.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2%20-%202&a=1&b=2">
+    <div class="example-card-title">Square root of 2</div>
+    <div class="example-card-formula">f(x) = x² − 2, &nbsp; [a,b] = [1,2]</div>
+    <div class="example-card-text">
+      The method converges to √2. This is a simple example where the interval
+      width halves at every step.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=cos(x)%20-%20x&a=0&b=1">
+    <div class="example-card-title">Transcendental equation</div>
+    <div class="example-card-formula">f(x) = cos(x) − x, &nbsp; [a,b] = [0,1]</div>
+    <div class="example-card-text">
+      Finds the root of cos(x) = x. This is the same solution that appears in
+      fixed point iteration, but here the bracket gives a guarantee.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&a=-2&b=-1">
+    <div class="example-card-title">Bracket around a negative root</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; [a,b] = [−2,−1]</div>
+    <div class="example-card-text">
+      This function can cause surprising behavior for Newton's method, but
+      bisection behaves predictably once a sign-changing bracket is provided.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=(x%20-%201)*(x%20-%202)*(x%20-%203)&a=0.5&b=1.5">
+    <div class="example-card-title">Choosing one root among many</div>
+    <div class="example-card-formula">f(x) = (x−1)(x−2)(x−3), &nbsp; [a,b] = [0.5,1.5]</div>
+    <div class="example-card-text">
+      The polynomial has three roots, but this bracket isolates the one near
+      x = 1.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=(x%20-%201)*(x%20-%202)*(x%20-%203)&a=2.5&b=3.5">
+    <div class="example-card-title">Same function, different bracket</div>
+    <div class="example-card-formula">f(x) = (x−1)(x−2)(x−3), &nbsp; [a,b] = [2.5,3.5]</div>
+    <div class="example-card-text">
+      Changing only the bracket sends the method toward a different root of the
+      same function, this time near x = 3.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%20-%201&a=1&b=3">
+    <div class="example-card-title">Endpoint is already a root</div>
+    <div class="example-card-formula">f(x) = x − 1, &nbsp; [a,b] = [1,3]</div>
+    <div class="example-card-text">
+      The left endpoint satisfies f(a) = 0, so the method has already found a
+      root before any interval halving is needed.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2%20%2B%201&a=-1&b=1">
+    <div class="example-card-title">Invalid bracket: no real root</div>
+    <div class="example-card-formula">f(x) = x² + 1, &nbsp; [a,b] = [−1,1]</div>
+    <div class="example-card-text">
+      There is no sign change and no real root. Bisection correctly refuses to
+      proceed because the guarantee does not apply.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2&a=-1&b=1">
+    <div class="example-card-title">Even-multiplicity root is missed</div>
+    <div class="example-card-formula">f(x) = x², &nbsp; [a,b] = [−1,1]</div>
+    <div class="example-card-text">
+      Although x = 0 is a root, f does not change sign across the interval.
+      This shows a limitation of sign-change bracketing.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=1%2Fx&a=-1&b=1">
+    <div class="example-card-title">Sign change without a valid root</div>
+    <div class="example-card-formula">f(x) = 1/x, &nbsp; [a,b] = [−1,1]</div>
+    <div class="example-card-text">
+      The function changes sign but is not continuous on the interval. The
+      bisection theorem requires continuity, so the usual guarantee fails.
+    </div>
+  </a>
+
+</div>
+```
 
 <div class="ojs-panel">
 
@@ -52,8 +154,10 @@ viewof fText = {
 ```{ojs}
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
-  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "1", placeholder: "Example: 1, -pi/2"})
-  return a0Input
+  const raw = params.get("a")
+  let value = 1
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Left endpoint a", value})
 }
 ```
 
@@ -64,8 +168,10 @@ viewof a0 = {
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
-  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
-  return b0Input
+  const raw = params.get("b")
+  let value = 2
+  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
+  return Inputs.number({label: "Right endpoint b", value})
 }
 ```
 
@@ -94,22 +200,10 @@ viewof stepControl = {
 ```
 
 ```{ojs}
-viewof maxIterationsInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxIterations parses the Max field's expression, falling back to 20 for
-// invalid input so the step slider and result loop always get a usable bound.
-maxIterations = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 20
-  return Math.max(1, Math.round(parsed))
+viewof maxIterations = {
+  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
+  maxIterationsInput.classList.add("ojs-auto")
+  return maxIterationsInput
 }
 ```
 
@@ -144,17 +238,14 @@ enterToPlot = {
 // default) values with no click.
 committed = {
   plotTrigger
-  const math = window.math
   const fVal = (viewof fText).value
-  const aText = (viewof a0).value
-  const bText = (viewof b0).value
-  const aVal = VM.expressions.makeNumber(math, aText)
-  const bVal = VM.expressions.makeNumber(math, bText)
+  const aVal = Number((viewof a0).value)
+  const bVal = Number((viewof b0).value)
 
   const params = new URLSearchParams(window.location.search)
   params.set("f", fVal)
-  params.set("a", aText)
-  params.set("b", bText)
+  params.set("a", String(aVal))
+  params.set("b", String(bVal))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
@@ -169,43 +260,98 @@ committed = {
 result = {
   const math = window.math
 
-  const f        = VM.expressions.makeFunction(math, committed.fText)
+  const f        = VM.makeFunction(math, committed.fText)
   const fallback = x => NaN
 
-  if (!f) return {rows: [], f: fallback}
+  if (!f) return {rows: [], f: fallback, status: "invalid-function"}
 
-  let a = committed.a0
-  let b = committed.b0
+  let a = Number(committed.a0)
+  let b = Number(committed.b0)
 
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {rows: [], f}
-  if (a > b) { const temp = a; a = b; b = temp }   // ensure a < b
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
+    return {rows: [], f, status: "invalid-interval"}
+  }
+
+  if (a > b) {
+    const temp = a
+    a = b
+    b = temp
+  }
 
   const fa = f(a)
   const fb = f(b)
 
-  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {rows: [], f}
+  if (!Number.isFinite(fa) || !Number.isFinite(fb)) {
+    return {rows: [], f, status: "nonfinite-endpoint"}
+  }
+
+  // If an endpoint is already a root, return it immediately.
+  if (fa === 0) {
+    return {
+      rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}],
+      f,
+      status: "endpoint-root"
+    }
+  }
+
+  if (fb === 0) {
+    return {
+      rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}],
+      f,
+      status: "endpoint-root"
+    }
+  }
 
   // Bisection requires a sign change across [a, b].
-  // If an endpoint is already a root, return it immediately.
-  if (fa === 0) return {rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}], f}
-  if (fb === 0) return {rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}], f}
-  if (fa * fb > 0) return {rows: [], f}   // no sign change — can't bracket a root
+  if (fa * fb > 0) {
+    return {rows: [], f, status: "no-sign-change"}
+  }
 
   const rows = []
-  let curA = a, curB = b, curFa = fa, curFb = fb
+  let curA = a
+  let curB = b
+  let curFa = fa
+  let curFb = fb
+
   let n = 0
+
   while (n < maxIterations) {
-    const m  = 0.5 * (curA + curB)   // midpoint of the current bracket
+    const m  = 0.5 * (curA + curB)
     const fm = f(m)
-    rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
 
-    if (!Number.isFinite(fm)) return {rows, f}
+    rows.push({
+      n,
+      a: curA,
+      b: curB,
+      m,
+      fa: curFa,
+      fb: curFb,
+      fm,
+      width: curB - curA
+    })
 
-    // Keep the half that still contains a sign change
-    if (curFa * fm < 0) { curB = m; curFb = fm } else { curA = m; curFa = fm }
+    if (!Number.isFinite(fm)) {
+      return {rows, f, status: "nonfinite-midpoint"}
+    }
+
+    // If the midpoint is exactly a root, stop.
+    if (fm === 0) {
+      return {rows, f, status: "midpoint-root"}
+    }
+
+    // Keep the half that still contains a sign change.
+    if (curFa * fm < 0) {
+      curB = m
+      curFb = fm
+    } else {
+      curA = m
+      curFa = fm
+    }
+
     n++
   }
-  return {rows, f}
+
+  return {rows, f, status: "max-iterations"}
 }
 ```
 
@@ -219,14 +365,14 @@ setup = {
   const currentRow  = visibleRows.length === 0 ? null : visibleRows[visibleRows.length - 1]
 
   // Axis ranges from ALL rows so the axes stay fixed while stepping.
-  const xValues = [committed.a0, committed.b0]
+  const xValues = [Number(committed.a0), Number(committed.b0)]
   for (const row of result.rows) xValues.push(row.a, row.b, row.m)
-  const xRange = VM.plotting.paddedRange(xValues, {emptyRange: [-5, 5], relativePadding: 0.25, minPadding: 0.5})
+  const xRange = VM.paddedRange(xValues, {emptyRange: [-5, 5], relativePadding: 0.25, minPadding: 0.5})
 
   // A wider domain (double the padding of xRange) so the curve is already
   // sampled beyond the initial view — panning/zooming out reveals more of
   // the curve instead of blank canvas. The initial view stays xRange.
-  const xBuffer = VM.plotting.paddedRange(xValues, {emptyRange: [-10, 10], relativePadding: 0.5, minPadding: 1.0})
+  const xBuffer = VM.paddedRange(xValues, {emptyRange: [-10, 10], relativePadding: 0.5, minPadding: 1.0})
 
   // Sample f across the buffer range for the smooth curve trace.
   const sampleCount = 700
@@ -254,7 +400,7 @@ setup = {
       if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
     }
   }
-  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+  const yRange = VM.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
   return {visibleRows, currentRow, xRange, xBuffer, yRange, sampleXs, sampleYs}
 }
@@ -332,7 +478,7 @@ mainPlot = {
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
       shapes,
-      legend: {orientation: "h", y: -0.08},
+      legend: {orientation: "h", y: -0.18},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -398,24 +544,29 @@ convergencePlot = {
   const pointsName = "log₁₀|f(mₙ)|"
   const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
   const colorDomain = [pointsName], colorRange = ["#dc2626"]
-  // legendDomain/legendRange hold only the regression line(s) — the legend
-  // shown below the chart displays just the fitted slope, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
 
-  const regressionPoints = []
-  for (const row of logRows) regressionPoints.push({x: row.n, y: row.y})
-  const fit = VM.numerical.linearRegression(regressionPoints)
-  if (fit) {
-    const lineName = `slope ≈ ${fit.slope.toFixed(2)}`
-    marks.push(Plot.line(
-      [{n: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {n: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
-      {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#9333ea")
-    legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+  if (logRows.length >= 2) {
+    const pointCount = logRows.length
+    let sx = 0, sy = 0, sxy = 0, sxx = 0
+    for (const row of logRows) {
+      sx += row.n
+      sy += row.y
+      sxy += row.n * row.y
+      sxx += row.n * row.n
+    }
+    const denom = pointCount * sxx - sx * sx
+    if (denom !== 0) {
+      const slope     = (pointCount * sxy - sx * sy) / denom
+      const intercept = (sy - slope * sx) / pointCount
+      const [xlo, xhi] = [logRows[0].n, logRows[pointCount - 1].n]
+      const lineName   = `slope ≈ ${slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{n: xlo, y: slope * xlo + intercept}, {n: xhi, y: slope * xhi + intercept}],
+        {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+      ))
+      colorDomain.push(lineName)
+      colorRange.push("#9333ea")
+    }
   }
 
   const chart = Plot.plot({
@@ -425,7 +576,7 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
 
   const container = document.createElement("div")
   container.append(chart, legend)
@@ -474,7 +625,7 @@ iterationTable = {
     formattedRows.push([row.n, aCell, bCell, mCell, faCell, fbCell, fmCell, widthCell])
   }
 
-  return VM.ui.renderTable({
+  return VM.renderTable({
     html,
     headers: ["n", tex`a_n`, tex`b_n`, tex`m_n`, tex`f(a_n)`, tex`f(b_n)`, tex`f(m_n)`, "width"],
     csvHeaders: ["n", "a_n", "b_n", "m_n", "f(a_n)", "f(b_n)", "f(m_n)", "width"],

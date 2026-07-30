@@ -1,8 +1,13 @@
 ---
 title: "Bisection Method"
+author:
+  - Dhruv Azad
+  - Apurva Nakade
+date: 2026-06-25
 order: 1
 image: bisection.png
 categories:
+  - Computational math
   - Bracketing
   - No derivatives
   - Guaranteed convergence
@@ -18,7 +23,7 @@ Authors: Dhruv Azad, Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library loaded from js/make-function.js, js/make-derivative.js, js/padded-range.js, js/render-table.js.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
 VM = window.VM
 ```
 
@@ -154,10 +159,8 @@ viewof fText = {
 ```{ojs}
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
-  const raw = params.get("a")
-  let value = 1
-  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
-  return Inputs.number({label: "Left endpoint a", value})
+  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "1", placeholder: "Example: 1, -pi/2"})
+  return a0Input
 }
 ```
 
@@ -168,10 +171,8 @@ viewof a0 = {
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
-  const raw = params.get("b")
-  let value = 2
-  if (raw !== null && Number.isFinite(Number(raw))) value = Number(raw)
-  return Inputs.number({label: "Right endpoint b", value})
+  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
+  return b0Input
 }
 ```
 
@@ -200,10 +201,22 @@ viewof stepControl = {
 ```
 
 ```{ojs}
-viewof maxIterations = {
-  const maxIterationsInput = Inputs.number({value: 20, min: 1, step: 1, label: "Max"})
-  maxIterationsInput.classList.add("ojs-auto")
-  return maxIterationsInput
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+```{ojs}
+//| output: false
+// maxIterations parses the Max field's expression, falling back to 20 for
+// invalid input so the step slider and result loop always get a usable bound.
+maxIterations = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 20
+  return Math.max(1, Math.round(parsed))
 }
 ```
 
@@ -238,14 +251,17 @@ enterToPlot = {
 // default) values with no click.
 committed = {
   plotTrigger
+  const math = window.math
   const fVal = (viewof fText).value
-  const aVal = Number((viewof a0).value)
-  const bVal = Number((viewof b0).value)
+  const aText = (viewof a0).value
+  const bText = (viewof b0).value
+  const aVal = VM.expressions.makeNumber(math, aText)
+  const bVal = VM.expressions.makeNumber(math, bText)
 
   const params = new URLSearchParams(window.location.search)
   params.set("f", fVal)
-  params.set("a", String(aVal))
-  params.set("b", String(bVal))
+  params.set("a", aText)
+  params.set("b", bText)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
@@ -260,98 +276,43 @@ committed = {
 result = {
   const math = window.math
 
-  const f        = VM.makeFunction(math, committed.fText)
+  const f        = VM.expressions.makeFunction(math, committed.fText)
   const fallback = x => NaN
 
-  if (!f) return {rows: [], f: fallback, status: "invalid-function"}
+  if (!f) return {rows: [], f: fallback}
 
-  let a = Number(committed.a0)
-  let b = Number(committed.b0)
+  let a = committed.a0
+  let b = committed.b0
 
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
-    return {rows: [], f, status: "invalid-interval"}
-  }
-
-  if (a > b) {
-    const temp = a
-    a = b
-    b = temp
-  }
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {rows: [], f}
+  if (a > b) { const temp = a; a = b; b = temp }   // ensure a < b
 
   const fa = f(a)
   const fb = f(b)
 
-  if (!Number.isFinite(fa) || !Number.isFinite(fb)) {
-    return {rows: [], f, status: "nonfinite-endpoint"}
-  }
-
-  // If an endpoint is already a root, return it immediately.
-  if (fa === 0) {
-    return {
-      rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}],
-      f,
-      status: "endpoint-root"
-    }
-  }
-
-  if (fb === 0) {
-    return {
-      rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}],
-      f,
-      status: "endpoint-root"
-    }
-  }
+  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {rows: [], f}
 
   // Bisection requires a sign change across [a, b].
-  if (fa * fb > 0) {
-    return {rows: [], f, status: "no-sign-change"}
-  }
+  // If an endpoint is already a root, return it immediately.
+  if (fa === 0) return {rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}], f}
+  if (fb === 0) return {rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}], f}
+  if (fa * fb > 0) return {rows: [], f}   // no sign change — can't bracket a root
 
   const rows = []
-  let curA = a
-  let curB = b
-  let curFa = fa
-  let curFb = fb
-
+  let curA = a, curB = b, curFa = fa, curFb = fb
   let n = 0
-
   while (n < maxIterations) {
-    const m  = 0.5 * (curA + curB)
+    const m  = 0.5 * (curA + curB)   // midpoint of the current bracket
     const fm = f(m)
+    rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
 
-    rows.push({
-      n,
-      a: curA,
-      b: curB,
-      m,
-      fa: curFa,
-      fb: curFb,
-      fm,
-      width: curB - curA
-    })
+    if (!Number.isFinite(fm)) return {rows, f}
 
-    if (!Number.isFinite(fm)) {
-      return {rows, f, status: "nonfinite-midpoint"}
-    }
-
-    // If the midpoint is exactly a root, stop.
-    if (fm === 0) {
-      return {rows, f, status: "midpoint-root"}
-    }
-
-    // Keep the half that still contains a sign change.
-    if (curFa * fm < 0) {
-      curB = m
-      curFb = fm
-    } else {
-      curA = m
-      curFa = fm
-    }
-
+    // Keep the half that still contains a sign change
+    if (curFa * fm < 0) { curB = m; curFb = fm } else { curA = m; curFa = fm }
     n++
   }
-
-  return {rows, f, status: "max-iterations"}
+  return {rows, f}
 }
 ```
 
@@ -365,14 +326,14 @@ setup = {
   const currentRow  = visibleRows.length === 0 ? null : visibleRows[visibleRows.length - 1]
 
   // Axis ranges from ALL rows so the axes stay fixed while stepping.
-  const xValues = [Number(committed.a0), Number(committed.b0)]
+  const xValues = [committed.a0, committed.b0]
   for (const row of result.rows) xValues.push(row.a, row.b, row.m)
-  const xRange = VM.paddedRange(xValues, {emptyRange: [-5, 5], relativePadding: 0.25, minPadding: 0.5})
+  const xRange = VM.plotting.paddedRange(xValues, {emptyRange: [-5, 5], relativePadding: 0.25, minPadding: 0.5})
 
   // A wider domain (double the padding of xRange) so the curve is already
   // sampled beyond the initial view — panning/zooming out reveals more of
   // the curve instead of blank canvas. The initial view stays xRange.
-  const xBuffer = VM.paddedRange(xValues, {emptyRange: [-10, 10], relativePadding: 0.5, minPadding: 1.0})
+  const xBuffer = VM.plotting.paddedRange(xValues, {emptyRange: [-10, 10], relativePadding: 0.5, minPadding: 1.0})
 
   // Sample f across the buffer range for the smooth curve trace.
   const sampleCount = 700
@@ -400,7 +361,7 @@ setup = {
       if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
     }
   }
-  const yRange = VM.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
   return {visibleRows, currentRow, xRange, xBuffer, yRange, sampleXs, sampleYs}
 }
@@ -478,7 +439,7 @@ mainPlot = {
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
       shapes,
-      legend: {orientation: "h", y: -0.18},
+      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -544,29 +505,24 @@ convergencePlot = {
   const pointsName = "log₁₀|f(mₙ)|"
   const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
   const colorDomain = [pointsName], colorRange = ["#dc2626"]
+  // legendDomain/legendRange hold only the regression line(s) — the legend
+  // shown below the chart displays just the fitted slope, not the raw
+  // point series, to keep it uncluttered.
+  const legendDomain = [], legendRange = []
 
-  if (logRows.length >= 2) {
-    const pointCount = logRows.length
-    let sx = 0, sy = 0, sxy = 0, sxx = 0
-    for (const row of logRows) {
-      sx += row.n
-      sy += row.y
-      sxy += row.n * row.y
-      sxx += row.n * row.n
-    }
-    const denom = pointCount * sxx - sx * sx
-    if (denom !== 0) {
-      const slope     = (pointCount * sxy - sx * sy) / denom
-      const intercept = (sy - slope * sx) / pointCount
-      const [xlo, xhi] = [logRows[0].n, logRows[pointCount - 1].n]
-      const lineName   = `slope ≈ ${slope.toFixed(2)}`
-      marks.push(Plot.line(
-        [{n: xlo, y: slope * xlo + intercept}, {n: xhi, y: slope * xhi + intercept}],
-        {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-      ))
-      colorDomain.push(lineName)
-      colorRange.push("#9333ea")
-    }
+  const regressionPoints = []
+  for (const row of logRows) regressionPoints.push({x: row.n, y: row.y})
+  const fit = VM.numerical.linearRegression(regressionPoints)
+  if (fit) {
+    const lineName = `slope ≈ ${fit.slope.toFixed(2)}`
+    marks.push(Plot.line(
+      [{n: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {n: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
+      {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
+    ))
+    colorDomain.push(lineName)
+    colorRange.push("#9333ea")
+    legendDomain.push(lineName)
+    legendRange.push("#9333ea")
   }
 
   const chart = Plot.plot({
@@ -576,7 +532,7 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
 
   const container = document.createElement("div")
   container.append(chart, legend)
@@ -625,7 +581,7 @@ iterationTable = {
     formattedRows.push([row.n, aCell, bCell, mCell, faCell, fbCell, fmCell, widthCell])
   }
 
-  return VM.renderTable({
+  return VM.ui.renderTable({
     html,
     headers: ["n", tex`a_n`, tex`b_n`, tex`m_n`, tex`f(a_n)`, tex`f(b_n)`, tex`f(m_n)`, "width"],
     csvHeaders: ["n", "a_n", "b_n", "m_n", "f(a_n)", "f(b_n)", "f(m_n)", "width"],

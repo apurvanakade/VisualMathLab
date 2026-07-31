@@ -23,33 +23,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-The classical RK4 method in [Explicit Methods](../explicit-methods/index.qmd) advances with a fixed step size $h = b/n$ everywhere — spending the same effort even where the solution is nearly linear. **RKF45** (Runge–Kutta–Fehlberg) instead adapts $h$ at every step, driven by a target tolerance $\varepsilon$ rather than a fixed step count.
-
-From the same six slope evaluations,
-
-$$
-\begin{aligned}
-k_1 &= f(t_i, y_i), \\
-k_2 &= f\!\left(t_i + \tfrac{1}{4}h,\ y_i + \tfrac{1}{4}h k_1\right), \\
-k_3 &= f\!\left(t_i + \tfrac{3}{8}h,\ y_i + h\left(\tfrac{3}{32}k_1 + \tfrac{9}{32}k_2\right)\right), \\
-k_4 &= f\!\left(t_i + \tfrac{12}{13}h,\ y_i + h\left(\tfrac{1932}{2197}k_1 - \tfrac{7200}{2197}k_2 + \tfrac{7296}{2197}k_3\right)\right), \\
-k_5 &= f\!\left(t_i + h,\ y_i + h\left(\tfrac{439}{216}k_1 - 8k_2 + \tfrac{3680}{513}k_3 - \tfrac{845}{4104}k_4\right)\right), \\
-k_6 &= f\!\left(t_i + \tfrac{1}{2}h,\ y_i + h\left(-\tfrac{8}{27}k_1 + 2k_2 - \tfrac{3544}{2565}k_3 + \tfrac{1859}{4104}k_4 - \tfrac{11}{40}k_5\right)\right),
-\end{aligned}
-$$
-
-RKF45 builds two embedded estimates of $y_{i+1}$ — a fourth-order one and a fifth-order one:
-
-$$
-y_{i+1}^{(4)} = y_i + h\left(\tfrac{25}{216}k_1 + \tfrac{1408}{2565}k_3 + \tfrac{2197}{4104}k_4 - \tfrac{1}{5}k_5\right),
-$$
-
-$$
-y_{i+1}^{(5)} = y_i + h\left(\tfrac{16}{135}k_1 + \tfrac{6656}{12825}k_3 + \tfrac{28561}{56430}k_4 - \tfrac{9}{50}k_5 + \tfrac{2}{55}k_6\right).
-$$
-
-Their difference $E = \left|y_{i+1}^{(5)} - y_{i+1}^{(4)}\right|$ estimates the local error. If $E \le \varepsilon$, the step is accepted using $y_{i+1}^{(5)}$ (the higher-order "local extrapolation"), and the next step size grows by a factor of roughly $(\varepsilon/E)^{1/5}$. If $E > \varepsilon$, the step is rejected and retried with a shrunk $h$ — so every accepted step satisfies the same local error tolerance $\varepsilon$, no matter how the dynamics vary across $[0, b]$.
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -588,3 +561,5 @@ iterationTable = {
 ::::
 
 </div>
+
+**RKF45** (Runge–Kutta–Fehlberg) adapts the step size $h$ at every step, instead of the fixed $h=b/n$ used in [Explicit Methods](../explicit-methods/index.qmd). From six slope evaluations it builds two embedded estimates of $y_{i+1}$ (fourth- and fifth-order); if they disagree by more than a target tolerance $\varepsilon$, the step is rejected and retried with a smaller $h$, otherwise $h$ grows for the next step.

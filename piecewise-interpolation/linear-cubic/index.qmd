@@ -28,16 +28,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-Given a function $f$ on $[a, b]$, sample it at $n+1$ equally spaced nodes $x_0 < x_1 < \dots < x_n$ and connect the samples $(x_i, f(x_i))$ with simple pieces. A **linear interpolant** joins consecutive samples with straight segments; a **cubic spline interpolant** joins them with cubic polynomials chosen so the curve and its first two derivatives match up at each node.
-
-As $n$ grows, both interpolants should converge to $f$ — but at different rates. This page tracks that convergence through the **arc length** of each interpolant,
-
-$$
-L = \int_a^b \sqrt{1 + g'(x)^2}\, dx,
-$$
-
-comparing $L_{\text{linear}}(n)$ and $L_{\text{cubic}}(n)$ against the true arc length of $f$ as $n$ increases.
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -595,3 +585,5 @@ arcLengthTable = {
 ::::
 
 </div>
+
+Connects $n+1$ samples of $f$ on $[a,b]$ with straight segments (**linear**) or with cubics matching value and first two derivatives at each node (**cubic spline**), then compares how fast each interpolant's arc length converges to $f$'s true arc length as $n$ grows.

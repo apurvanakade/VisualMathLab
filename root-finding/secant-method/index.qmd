@@ -186,6 +186,17 @@ result = {
       return {rows, points, f}
     }
 
+    // Stop if either current secant point is already an exact root.
+    if (prev.fx === 0) {
+      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: prev.x, error: 0})
+      return {rows, points, f}
+    }
+
+    if (curr.fx === 0) {
+      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: curr.x, error: 0})
+      return {rows, points, f}
+    }
+
     // Stop if the secant is nearly flat — dividing by the difference would be unstable.
     if (Math.abs(curr.fx - prev.fx) < 1e-14) {
       rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: NaN, error: NaN})

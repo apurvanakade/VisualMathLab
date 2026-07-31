@@ -316,6 +316,25 @@ mainPlot = {
         {x: [row.b, row.b], y: [0, row.fb], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}},
         {x: [row.m, row.m], y: [0, row.fm], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#dc2626", width: 1.5, dash: "dot"}}
       )
+      // If the current midpoint is exactly a root, add a prominent success marker.
+      if (row.fm === 0) {
+        data.push({
+          x: [row.m],
+          y: [0],
+          type: "scatter",
+          mode: "markers+text",
+          name: "Exact root found",
+          text: ["root"],
+          textposition: "bottom center",
+          showlegend: true,
+          marker: {
+            color: "#16a34a",
+            size: 16,
+            symbol: "star",
+            line: {color: "white", width: 1.5}
+          }
+        })
+      }
     }
 
     // Shaded rectangle showing the current bracket [a, b]
@@ -389,23 +408,59 @@ iteratesPlot = {
 // regression line, for the entire run — it doesn't depend on the current
 // step, so it's just plotted once per run.
 convergencePlot = {
-  const logRows = []
+  const finiteLogRows = []
+  const exactZeroRows = []
+
   for (const r of result.rows) {
-    if (Number.isFinite(r.fm) && r.fm !== 0) {
-      logRows.push({n: r.n, y: Math.log10(Math.abs(r.fm))})
+    if (!Number.isFinite(r.fm)) continue
+
+    if (r.fm === 0) {
+      exactZeroRows.push(r)
+    } else {
+      finiteLogRows.push({n: r.n, y: Math.log10(Math.abs(r.fm))})
     }
   }
 
+  // log10(0) is -Infinity, so exact roots cannot be plotted literally.
+  // Instead, place exact-zero residuals one decade below the smallest
+  // nonzero residual, or at -16 if there are no nonzero residuals.
+  let zeroPlotY = -16
+  if (finiteLogRows.length > 0) {
+    zeroPlotY = Math.min(...finiteLogRows.map(d => d.y)) - 1
+  }
+
+  const zeroRows = exactZeroRows.map(r => ({
+    n: r.n,
+    y: zeroPlotY,
+    label: "exact root"
+  }))
+
   const pointsName = "log₁₀|f(mₙ)|"
-  const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
+  const exactName = "f(mₙ) = 0"
+
+  const marks = [
+    Plot.dot(finiteLogRows, {x: "n", y: "y", fill: () => pointsName, r: 4})
+  ]
+
   const colorDomain = [pointsName], colorRange = ["#dc2626"]
+
+  if (zeroRows.length > 0) {
+    marks.push(
+      Plot.dot(zeroRows, {x: "n", y: "y", fill: () => exactName, r: 6, symbol: "star"}),
+      Plot.text(zeroRows, {x: "n", y: "y", text: "label", dy: -10, fill: "#16a34a"})
+    )
+    colorDomain.push(exactName)
+    colorRange.push("#16a34a")
+  }
+
   // legendDomain/legendRange hold only the regression line(s) — the legend
   // shown below the chart displays just the fitted slope, not the raw
   // point series, to keep it uncluttered.
   const legendDomain = [], legendRange = []
 
   const regressionPoints = []
-  for (const row of logRows) regressionPoints.push({x: row.n, y: row.y})
+  for (const row of finiteLogRows) regressionPoints.push({x: row.n, y: row.y})
+
   const fit = VM.numerical.linearRegression(regressionPoints)
   if (fit) {
     const lineName = `slope ≈ ${fit.slope.toFixed(2)}`

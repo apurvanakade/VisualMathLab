@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.38">
+<meta name="generator" content="quarto-1.10.18">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -14,10 +14,13 @@
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -45,14 +48,14 @@ ul.task-list li input[type="checkbox"] {
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-0a6b7249c26820e032cb0bd839ff02b1.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-66b2d82111f3fe4211e5d03f0e4e9b60.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-a19585f3541cd72b81258332d1354d53.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-66b2d82111f3fe4211e5d03f0e4e9b60.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark-767db81d3c4dc1147bf376ccc5229356.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -124,6 +127,7 @@ Authors: Apurva Nakade
 <script src="../js/plotting/padded-range.js"></script>
 <script src="../js/plotting/plotly-fullscreen-button.js"></script>
 <script src="../js/numerical/linear-regression.js"></script>
+<script src="../js/numerical/l1-regression.js"></script>
 <script src="../js/numerical/polynomial-fit.js"></script>
 <script src="../js/numerical/euler-solve.js"></script>
 <script src="../js/numerical/rk4-solve.js"></script>
@@ -139,7 +143,7 @@ Authors: Apurva Nakade
 <script src="../js/discrete-math/triangle-fill-color.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -423,7 +427,7 @@ window.Quarto = {
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Linear vs.&nbsp;Cubic Spline Interpolation</span></a>
+ <span class="menu-text">Polynomial Interpolation</span></a>
   </div>
 </li>
           <li class="sidebar-item">
@@ -547,6 +551,12 @@ window.Quarto = {
  <span class="menu-text">Polynomial Fits</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">L1 vs.&nbsp;L2 Regression</span></a>
+  </div>
+</li>
       </ul>
   </li>
       </ul>
@@ -557,7 +567,7 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Qmlhcy12YXJpYW5jZSUyMHRyYWRlb2Zm">Bias-variance tradeoff <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RGF0YSUyMHNjaWVuY2U=">Data science <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW9kZWwlMjBjb21wbGV4aXR5">Model complexity <span class="quarto-category-count">(1)</span></div><div class="category" data-category="T3ZlcmZpdHRpbmc=">Overfitting <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UG9seW5vbWlhbCUyMHJlZ3Jlc3Npb24=">Polynomial regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="VW5kZXJmaXR0aW5n">Underfitting <span class="quarto-category-count">(1)</span></div></div></div>
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(2)</span></div><div class="category" data-category="Qmlhcy12YXJpYW5jZSUyMHRyYWRlb2Zm">Bias-variance tradeoff <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RGF0YSUyMHNjaWVuY2U=">Data science <span class="quarto-category-count">(2)</span></div><div class="category" data-category="TDElMjByZWdyZXNzaW9u">L1 regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TDIlMjByZWdyZXNzaW9u">L2 regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TGluZWFyJTIwcmVncmVzc2lvbg==">Linear regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW9kZWwlMjBjb21wbGV4aXR5">Model complexity <span class="quarto-category-count">(1)</span></div><div class="category" data-category="T3V0bGllcnM=">Outliers <span class="quarto-category-count">(1)</span></div><div class="category" data-category="T3ZlcmZpdHRpbmc=">Overfitting <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UG9seW5vbWlhbCUyMHJlZ3Jlc3Npb24=">Polynomial regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Um9idXN0JTIwcmVncmVzc2lvbg==">Robust regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="VW5kZXJmaXR0aW5n">Underfitting <span class="quarto-category-count">(1)</span></div></div></div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -605,7 +615,36 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMHNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtdmFyaWFuY2UlMjB0cmFkZW9mZiUyQ1BvbHlub21pYWwlMjByZWdyZXNzaW9uJTJDTW9kZWwlMjBjb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1784723522451" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2763">
+<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMHNjaWVuY2UlMkNSb2J1c3QlMjByZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMHJlZ3Jlc3Npb24lMkNMMiUyMHJlZ3Jlc3Npb24lMkNMaW5lYXIlMjByZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1785463544502" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="11" data-listing-word-count-sort="2099">
+<a href="../model-fitting/l1-vs-l2/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<div class="listing-item-img-placeholder card-img-top" style="height: 150px;">&nbsp;</div>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+L1 vs.&nbsp;L2 Regression
+</h5>
+<div class="listing-categories">
+
+<div class="listing-category" onclick="window.quartoListingCategory('RGF0YSUyMHNjaWVuY2U='); return false;">Data science</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('Um9idXN0JTIwcmVncmVzc2lvbg=='); return false;">Robust regression</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('T3V0bGllcnM='); return false;">Outliers</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('TDElMjByZWdyZXNzaW9u'); return false;">L1 regression</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('TDIlMjByZWdyZXNzaW9u'); return false;">L2 regression</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('TGluZWFyJTIwcmVncmVzc2lvbg=='); return false;">Linear regression</div>
+
+</div>
+<div class="card-text listing-description delink">
+Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes <span class="math inline">\(\sum_i (y_i - \hat y_i)^2\)</span>; L1 minimizes <span class="math inline">\(\sum_i |y_i - \hat y_i|\)</span>.…<strong></strong><strong></strong>
+</div>
+</div>
+</div></a>
+</div>
+<div class="g-col-1" data-index="1" data-categories="RGF0YSUyMHNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtdmFyaWFuY2UlMjB0cmFkZW9mZiUyQ1BvbHlub21pYWwlMjByZWdyZXNzaW9uJTJDTW9kZWwlMjBjb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1785463544502" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2727">
 <a href="../model-fitting/polynomial-fit/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <div class="listing-item-img-placeholder card-img-top" style="height: 150px;">&nbsp;</div>
@@ -629,7 +668,7 @@ Polynomial Fits
 
 </div>
 <div class="card-text listing-description delink">
-A low-degree polynomial (e.g.&nbsp;a line) can’t bend to match every point — high <strong>bias</strong>, low <strong>variance</strong>, <strong>underfitting</strong>. A high-degree polynomial can fit the training data almost…<strong></strong>
+A low-degree fit can’t bend to match every point — high <strong>bias</strong>, low <strong>variance</strong>, <strong>underfitting</strong>. A high-degree fit can match the training data almost perfectly but swings wildly as…<strong></strong>
 </div>
 </div>
 </div></a>

@@ -1181,8 +1181,86 @@ Authors: Dhruv Azad, Apurva Nakade
 <p><span class="math display">\[
 x_{n+1}=x_n-\frac{f(x_n)}{f'(x_n)}.
 \]</span></p>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<p>The global behavior of Newton’s method can be surprisingly sensitive to the starting point. The examples below illustrate fast convergence, slow convergence, failure near a flat tangent, and cases where the iterates appear to diverge before eventually finding a root.</p>
+<p>Click any example to load it into the app.</p>
+<div class="example-grid">
+
+  <a class="example-card" href="?f=x^2 - 2&amp;x0=1.5">
+    <div class="example-card-title">Fast quadratic convergence</div>
+    <div class="example-card-formula">f(x) = x² − 2, &nbsp; x₀ = 1.5</div>
+    <div class="example-card-text">
+      A standard well-behaved example. Newton's method rapidly converges to √2.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x^3 - 2*x %2B 2&amp;x0=0">
+    <div class="example-card-title">A two-cycle failure</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = 0</div>
+    <div class="example-card-text">
+      The iterates bounce between 0 and 1 instead of converging. This shows that
+      Newton's method is not globally reliable.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x^3 - 2*x %2B 2&amp;x0=-0.1">
+    <div class="example-card-title">Looks unstable, then converges</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = −0.1</div>
+    <div class="example-card-text">
+      A nearby starting point can behave very differently. The method may wander
+      before eventually approaching the real root.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x^3 - 2*x %2B 2&amp;x0=-1">
+    <div class="example-card-title">Good starting point for the same function</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = −1</div>
+    <div class="example-card-text">
+      For the same function as above, a different initial guess converges much
+      more predictably.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x^3&amp;x0=0.2">
+    <div class="example-card-title">Slow convergence at a multiple root</div>
+    <div class="example-card-formula">f(x) = x³, &nbsp; x₀ = 0.2</div>
+    <div class="example-card-text">
+      The root has multiplicity greater than one, so Newton's usual quadratic
+      convergence is lost.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x^3 - 2*x %2B 2&amp;x0=0.81649658">
+    <div class="example-card-title">Nearly flat tangent</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ ≈ 0.8165</div>
+    <div class="example-card-text">
+      Starting near a point where f′(x) is close to zero can send the next
+      iterate far away.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=atan(x)&amp;x0=1.4">
+    <div class="example-card-title">Large jumps from shallow slopes</div>
+    <div class="example-card-formula">f(x) = arctan(x), &nbsp; x₀ = 1.4</div>
+    <div class="example-card-text">
+      The tangent line can produce a very large step when the slope is small.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x^5 - x - 1&amp;x0=1">
+    <div class="example-card-title">Polynomial root-finding</div>
+    <div class="example-card-formula">f(x) = x⁵ − x − 1, &nbsp; x₀ = 1</div>
+    <div class="example-card-text">
+      A higher-degree polynomial with a real root. Newton's method converges
+      quickly from a reasonable starting point.
+    </div>
+  </a>
+
+</div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script type="ojs-module-contents">

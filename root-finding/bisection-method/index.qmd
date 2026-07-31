@@ -188,13 +188,23 @@ result = {
   while (n < maxIterations) {
     const m  = 0.5 * (curA + curB)   // midpoint of the current bracket
     const fm = f(m)
-    rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
-
-    if (!Number.isFinite(fm)) return {rows, f}
-
-    // Keep the half that still contains a sign change
-    if (curFa * fm < 0) { curB = m; curFb = fm } else { curA = m; curFa = fm }
-    n++
+  rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
+  
+  if (!Number.isFinite(fm)) return {rows, f}
+  
+  // If the midpoint is exactly a root, stop.
+  // Otherwise the code would keep iterating even though the root was found.
+  if (fm === 0) return {rows, f}
+  
+  // Keep the half that still contains a sign change.
+  if (curFa * fm < 0) {
+    curB = m
+    curFb = fm
+  } else {
+    curA = m
+    curFa = fm
+  }
+  n++
   }
   return {rows, f}
 }

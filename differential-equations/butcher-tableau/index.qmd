@@ -86,7 +86,8 @@ VM = window.VM
 
 ```{ojs}
 viewof stagesInput = {
-  const input = Inputs.text({label: "Number of stages (s)", value: "2", placeholder: "1-8"})
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Number of stages (s)", value: params.get("s") ?? "2", placeholder: "1-8"})
   input.classList.add("ojs-auto")
   return input
 }
@@ -208,14 +209,36 @@ formatLinearCombination = (coeffs, symbolNames) => {
 viewof tableauInput = {
   const s = stages
 
+  // Seed from the "a" (rows joined by ";", entries within a row joined by
+  // ",") / "b" / "c" URL params when present, falling back to "0" for any
+  // entry the URL doesn't cover (missing param, or a saved shape smaller
+  // than the current stage count).
+  const params = new URLSearchParams(window.location.search)
+  const aParam = params.get("a")
+  const bParam = params.get("b")
+  const cParam = params.get("c")
+  const aRows = aParam === null ? [] : aParam.split(";")
+  const bVals = bParam === null ? [] : bParam.split(",")
+  const cVals = cParam === null ? [] : cParam.split(",")
+
   const state = {a: [], b: [], c: []}
   for (let i = 0; i < s; i++) {
     const row = []
-    for (let j = 0; j < s; j++) row.push("0")
+    const savedRow = i < aRows.length ? aRows[i].split(",") : []
+    for (let j = 0; j < s; j++) {
+      if (j < savedRow.length) row.push(savedRow[j])
+      else row.push("0")
+    }
     state.a.push(row)
   }
-  for (let j = 0; j < s; j++) state.b.push("0")
-  for (let i = 0; i < s; i++) state.c.push("0")
+  for (let j = 0; j < s; j++) {
+    if (j < bVals.length) state.b.push(bVals[j])
+    else state.b.push("0")
+  }
+  for (let i = 0; i < s; i++) {
+    if (i < cVals.length) state.c.push(cVals[i])
+    else state.c.push("0")
+  }
 
   const container = document.createElement("div")
   container.className = "butcher-tableau-wrap"
@@ -281,7 +304,7 @@ viewof tableauInput = {
     const cTd = document.createElement("td")
     cTd.className = "bt-c"
     const row = i
-    const cInput = makeCoeffInput("0", value => {
+    const cInput = makeCoeffInput(state.c[row], value => {
       state.c[row] = value
       emit()
     })
@@ -292,7 +315,7 @@ viewof tableauInput = {
       const td = document.createElement("td")
       td.className = "bt-a"
       const col = j
-      const input = makeCoeffInput("0", value => {
+      const input = makeCoeffInput(state.a[row][col], value => {
         state.a[row][col] = value
         setEquationCell(eqTd, stageRowLatex(row))
         emit()
@@ -318,7 +341,7 @@ viewof tableauInput = {
     const td = document.createElement("td")
     td.className = "bt-b"
     const col = j
-    const input = makeCoeffInput("0", value => {
+    const input = makeCoeffInput(state.b[col], value => {
       state.b[col] = value
       setEquationCell(bEqTd, bRowLatex())
       emit()
@@ -364,6 +387,21 @@ tableau = {
     if (parsed === null) b.push(rat.of(0))
     else b.push(parsed)
   }
+
+  // Mirror the raw (unparsed) tableau into the URL as "s" plus "a"/"b"/"c"
+  // lists — "a" is rows joined by ";" with entries within a row joined by
+  // ",", "b"/"c" are just "," joined — so a tableau can be shared/reloaded
+  // via link, same as every other page's URL-synced inputs.
+  const aRows = []
+  for (let i = 0; i < s; i++) aRows.push(tableauInput.a[i].join(","))
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("s", String(s))
+  params.set("a", aRows.join(";"))
+  params.set("b", tableauInput.b.join(","))
+  params.set("c", tableauInput.c.join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
   return {a, b}
 }
 ```

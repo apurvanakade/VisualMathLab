@@ -24,15 +24,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-Fitting a model to data always involves a choice: how complex should the model be? A model with more free parameters can match the training data more closely — in the extreme, a polynomial with as many coefficients as data points can pass through every point exactly, leaving **zero** error. But fitting the data perfectly is not the same as capturing the underlying trend: between and around the data points, a high-degree polynomial is free to swing wildly, and that shape is extremely sensitive to the exact values of the data it was fit to.
-
-This is the core of the **bias-variance tradeoff**:
-
-- A low-degree model (e.g. a line) has high **bias** — it can't bend to match every point — but low **variance**: nudging one data point barely changes the fitted line. This is **underfitting**.
-- A high-degree model has low bias (it fits the training data almost perfectly) but high **variance**: nudging one data point can send the fitted curve swinging by orders of magnitude elsewhere. This is **overfitting**.
-
-The app below generates 6 points that lie almost exactly on a line, then fits polynomials of degree 1 through 5 to them. Drag the slider to move the *y*-coordinate of the last point (marked in orange) and watch what happens to each fit, click "Regenerate points" to draw a brand-new set of 6 points from scratch, or use the checkboxes to show or hide individual fits.
-
 ```{ojs}
 //| output: false
 // basePoints redraws whenever regenerateTrigger changes (initial load
@@ -370,10 +361,4 @@ errorPlot = {
 
 ## Why this matters
 
-The degree-5 polynomial has 6 free coefficients — exactly as many as there are data points. It can therefore pass through all 6 points exactly, no matter where you drag the slider: its training error stays pinned near zero the entire time. If you judged these three models purely by how well they fit the data you gave them, the degree-5 fit would always look best.
-
-But watch the curve itself, not just the error number. As you move the orange point, the degree-5 curve doesn't just adjust locally near that point — it can swing by large amounts across the whole domain, oscillating between the other 5 points to make room for the one you moved. The degree-1 and degree-2 fits barely react at all: they don't have enough parameters to chase a single outlier, so they stay close to the overall trend. Toggle the degree-3 and degree-4 checkboxes to see the middle ground: each extra parameter buys a little more flexibility, and a little more sensitivity to the exact data.
-
-That instability is **variance**: how much the fitted model changes when the training data changes slightly. A model that is very sensitive to its training data will not generalize well to new data — it has fit the noise in this particular sample, not the underlying line. The systematic gap between a simple model and the true trend is **bias**: the degree-1 line can never bend to match a curved pattern, even with infinite data. Choosing a model degree is choosing a point on this tradeoff — too low, and the model can't capture the pattern (underfitting); too high, and the model captures the noise along with the pattern (overfitting).
-
-In practice, you can't see this directly from training error alone, since (as the plot above shows) it only ever goes down as complexity increases. Diagnosing overfitting requires checking performance on data the model didn't get to fit — a **held-out validation or test set** — which is why train/validation/test splits and cross-validation are standard practice in model fitting.
+Drag the orange point, regenerate the points, or toggle degrees to see the **bias–variance tradeoff**. A low-degree fit can't bend to match every point (**bias**) but barely reacts when a point moves. The degree-5 fit has exactly as many coefficients as points, so it always interpolates them exactly — training error near zero — but it can swing by large amounts across the whole domain as you nudge a single point (**variance**). Training error alone can't detect this, since it only decreases as degree increases; real model selection instead checks performance on a **held-out validation or test set**.

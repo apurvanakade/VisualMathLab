@@ -23,34 +23,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-Given an initial value problem $y' = f(t, y)$, $y(0) = y_0$, an **explicit** method advances the solution step by step: each new value $y_{i+1} \approx y(t_{i+1})$ is computed directly from already-known values — no equation to solve at each step, unlike an implicit method.
-
-**Euler's method** uses the slope at the start of the step:
-
-$$
-y_{i+1} = y_i + h\, f(t_i, y_i).
-$$
-
-**Improved Euler** (the explicit trapezoidal rule) uses Euler's method as a predictor $\tilde y_{i+1}$, then averages the slope at both endpoints of the step:
-
-$$
-\tilde y_{i+1} = y_i + h\, f(t_i, y_i), \qquad y_{i+1} = y_i + \frac{h}{2}\Big(f(t_i, y_i) + f(t_{i+1}, \tilde y_{i+1})\Big).
-$$
-
-**RK4** (the classical fourth-order Runge-Kutta method) averages four slope estimates across the step:
-
-$$
-\begin{aligned}
-k_1 &= f(t_i, y_i), \\
-k_2 &= f\!\left(t_i + \tfrac{h}{2},\ y_i + \tfrac{h}{2}k_1\right), \\
-k_3 &= f\!\left(t_i + \tfrac{h}{2},\ y_i + \tfrac{h}{2}k_2\right), \\
-k_4 &= f(t_i + h,\ y_i + h k_3), \\
-y_{i+1} &= y_i + \frac{h}{6}\big(k_1 + 2k_2 + 2k_3 + k_4\big),
-\end{aligned}
-$$
-
-where $h = b/n$ is the step size for $n$ subintervals of $[0, b]$.
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -572,3 +544,5 @@ valueTable = {
 ::::
 
 </div>
+
+Given $y' = f(t, y)$, $y(0) = y_0$, an **explicit** method computes each $y_{i+1} \approx y(t_{i+1})$ directly from already-known values. Compare **Euler's method** (one slope evaluation per step), **Improved Euler** (averages the slope at both endpoints), and **RK4** (averages four slope estimates) — more evaluations per step buys higher accuracy.

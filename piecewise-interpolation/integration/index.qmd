@@ -23,32 +23,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-The definite integral $\int_a^b f(x)\, dx$ can be approximated by replacing $f$ with a simple piecewise interpolant on $n$ equally spaced subintervals $[x_0, x_1], \dots, [x_{n-1}, x_n]$ and integrating that interpolant exactly.
-
-The **left Riemann sum** replaces $f$ on each subinterval by the constant value at its left endpoint (a rectangle):
-
-$$
-L_n = \sum_{i=0}^{n-1} f(x_i)(x_{i+1} - x_i).
-$$
-
-The **midpoint Riemann sum** replaces $f$ on each subinterval by the constant value at its midpoint (a rectangle):
-
-$$
-M_n = \sum_{i=0}^{n-1} f\!\left(\frac{x_i + x_{i+1}}{2}\right)(x_{i+1} - x_i).
-$$
-
-The **trapezoidal rule** replaces $f$ on each subinterval by the linear interpolant through its endpoints:
-
-$$
-T_n = \sum_{i=0}^{n-1} \frac{f(x_i) + f(x_{i+1})}{2}(x_{i+1} - x_i).
-$$
-
-**Simpson's rule** replaces $f$ on each pair of subintervals by the quadratic interpolant through three consecutive nodes ($n$ must be even):
-
-$$
-S_n = \frac{h}{3}\left(f(x_0) + 4\!\!\sum_{i \text{ odd}} f(x_i) + 2\!\!\sum_{\substack{i \text{ even} \\ 0 < i < n}} f(x_i) + f(x_n)\right), \quad h = \frac{b-a}{n}.
-$$
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -678,3 +652,5 @@ areaTable = {
 ::::
 
 </div>
+
+Approximates $\int_a^b f(x)\, dx$ by replacing $f$ with a simple piecewise interpolant on $n$ equally spaced subintervals and integrating that interpolant exactly — a left or midpoint rectangle, a trapezoid, or (for Simpson's rule) a quadratic through each pair of subintervals.

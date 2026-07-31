@@ -1,5 +1,5 @@
 ---
-title: "Linear vs. Cubic Spline Interpolation"
+title: "Polynomial Interpolation"
 author: Apurva Nakade
 date: 2026-07-13
 order: 1
@@ -112,7 +112,7 @@ maxN = {
 
 ```{ojs}
 viewof interpolants = {
-  const options = ["Linear interpolant", "Cubic spline interpolant"]
+  const options = ["Original curve", "Linear interpolant", "Cubic spline interpolant"]
   const checkboxInput = Inputs.checkbox(options, {value: options})
   checkboxInput.classList.add("ojs-fill")
   return checkboxInput
@@ -120,6 +120,11 @@ viewof interpolants = {
 ```
 
 </div>
+
+```{ojs}
+//| output: false
+showOriginal = interpolants.includes("Original curve")
+```
 
 ```{ojs}
 //| output: false
@@ -361,12 +366,12 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data, showLinear, showCubic) => {
-    const traces = [
-      // The function curve
-      {x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
+  return (data, showOriginal, showLinear, showCubic) => {
+    const traces = []
 
+    if (showOriginal) {
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}})
+    }
     if (showLinear && data.linearX.length > 0) {
       traces.push({x: data.linearX, y: data.linearY, type: "scatter", mode: "lines", name: "Linear interpolant", showlegend: true, line: {color: "#dc2626", width: 2.5}})
     }
@@ -408,7 +413,7 @@ mainPlot = {
 <div class="ojs-output-wide">
 
 ```{ojs}
-mainPlot(setup, showLinear, showCubic)
+mainPlot(setup, showOriginal, showLinear, showCubic)
 ```
 
 :::: {.callout-note collapse="true" title="Convergence plots"}

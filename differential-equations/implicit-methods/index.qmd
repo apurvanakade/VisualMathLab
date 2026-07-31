@@ -23,22 +23,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-Given an initial value problem $y' = f(t, y)$, $y(0) = y_0$, **Euler's method** (forward/explicit Euler) uses the slope at the *start* of the step:
-
-$$
-y_{i+1} = y_i + h\, f(t_i, y_i).
-$$
-
-**Implicit Euler** (backward Euler) uses the slope at the *end* of the step instead:
-
-$$
-y_{i+1} = y_i + h\, f(t_{i+1}, y_{i+1}).
-$$
-
-Because $y_{i+1}$ appears on both sides, each step requires solving a root-finding problem $g(y_{i+1}) = y_{i+1} - y_i - h\, f(t_{i+1}, y_{i+1}) = 0$. This page solves it with a few steps of [Newton's method](../../root-finding/newton-method/index.qmd), starting from the explicit Euler step as the initial guess and using a numerical estimate of $\partial f/\partial y$ in place of $g'$.
-
-This extra work at each step buys **stability**: implicit Euler stays well-behaved even with a large step size $h$ on equations where explicit Euler oscillates or blows up. The default example below, $y' = -5y$, is chosen to make this difference visible — try dragging $n$ down to see explicit Euler destabilize while implicit Euler stays smooth.
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -544,3 +528,5 @@ valueTable = {
 ::::
 
 </div>
+
+**Implicit Euler** (backward Euler) uses the slope at the *end* of the step, $y_{i+1} = y_i + h\, f(t_{i+1}, y_{i+1})$, which requires solving for $y_{i+1}$ at each step (this page uses a few steps of [Newton's method](../../root-finding/newton-method/index.qmd)) — but buys **stability** that explicit Euler lacks. The default example, $y' = -5y$, is chosen to make this visible: try dragging $n$ down to see explicit Euler destabilize while implicit Euler stays smooth.

@@ -24,8 +24,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider below to push 6 points off a line and compare how degree 1–5 fits respond; click "Regenerate points" for a new line and noise pattern.
-
 ```{ojs}
 //| output: false
 // basePoints redraws whenever regenerateTrigger changes (initial load
@@ -466,6 +464,6 @@ errorPlot = {
 
 ## Why this matters
 
-The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — training error stays near zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degree 1 and 2 barely react to the noise at all, at the cost of never capturing real curvature either.
+A low-degree fit can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree fit can match the training data almost perfectly but swings wildly as the data changes — low bias, high variance, **overfitting**. The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — training error stays near zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degree 1 and 2 barely react to the noise at all, at the cost of never capturing real curvature either.
 
 Training error alone can't reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a **held-out validation or test set** — why train/validation/test splits and cross-validation are standard practice.

@@ -23,22 +23,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-A fixed grid of $n$ equally spaced subintervals, as in [Numerical Integration](../integration/index.qmd), spends the same effort everywhere — even on parts of $[a,b]$ where $f$ is nearly linear and a coarse panel would already be accurate. **Adaptive quadrature** instead refines the partition only where it is needed, driven by a target tolerance $\varepsilon$ rather than a fixed panel count.
-
-For an interval $[a,b]$ with midpoint $c=(a+b)/2$, Simpson's rule gives the estimate
-
-$$
-S(a,b) = \frac{b-a}{6}\Big(f(a) + 4f(c) + f(b)\Big).
-$$
-
-Splitting $[a,b]$ at $c$ and applying Simpson's rule to each half gives a second, usually more accurate estimate $S(a,c) + S(c,b)$. Comparing the two yields a cheap error estimate (via Richardson extrapolation):
-
-$$
-E \approx \frac{S(a,c) + S(c,b) - S(a,b)}{15}.
-$$
-
-If $|S(a,c) + S(c,b) - S(a,b)| \le 15\varepsilon$, the interval is accepted as a **leaf** of the partition, with estimate $S(a,c) + S(c,b) + E$. Otherwise $[a,b]$ is bisected at $c$, and each half is recursed into with tolerance $\varepsilon/2$ — so that no matter how deep the recursion goes, the sub-tolerances across all leaves never exceed the original $\varepsilon$.
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -581,3 +565,5 @@ iterationTable = {
 ::::
 
 </div>
+
+**Adaptive quadrature** refines the partition of $[a,b]$ only where it's needed, instead of the fixed grid used in [Numerical Integration](../integration/index.qmd): it compares Simpson's rule on $[a,b]$ against Simpson's rule on each half, and bisects further whenever the two disagree by more than a target tolerance $\varepsilon$.

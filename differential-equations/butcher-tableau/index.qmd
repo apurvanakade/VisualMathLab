@@ -82,30 +82,6 @@ VM = window.VM
 }
 </style>
 
-An $s$-stage single-step Runge-Kutta method is specified by its **Butcher tableau**: nodes $c_i$, coefficients $a_{ij}$ ($1 \le i, j \le s$), and weights $b_i$, arranged as
-
-$$
-\begin{array}{c|ccc}
-c_1 & a_{11} & \cdots & a_{1s} \\
-\vdots & \vdots & & \vdots \\
-c_s & a_{s1} & \cdots & a_{ss} \\
-\hline
- & b_1 & \cdots & b_s
-\end{array}
-$$
-
-For the autonomous initial value problem $y' = f(y)$, the method advances from $y_i \approx y(t_i)$ to
-
-$$
-k_i = f\!\left(y_i + h \sum_{j=1}^s a_{ij} k_j\right), \qquad y_{i+1} = y_i + h \sum_{i=1}^s b_i k_i.
-$$
-
-Since $f$ has no explicit $t$-dependence here, $c_i$ never actually enters this computation — conventionally $c_i = \sum_j a_{ij}$, but this page leaves $c_i$ for *you* to fill in (nothing stops you from just typing in that sum yourself). Enter every coefficient as an integer, a fraction like `1/3`, or a decimal like `0.25`; the panel to the right of each tableau row shows the exact $k_i$ (or $y_{i+1}$) equation your current entries construct.
-
-This page expands the **local truncation error** $y_{i+1} - y(t_i + h)$ — the gap between one step of your method and the true solution advanced by $h$ — as a formal power series in $h$, treating $f$ and its derivatives $f', f'', \ldots$ (all evaluated at $y_i$) as symbols, directly from whatever tableau you enter below, even if it's implicit ($a_{ij} \ne 0$ for $j \ge i$). It shows the leading nonzero term, followed by a Big-$O$ for the rest — if that term is $O(h^{p+1})$, your method is $p$-th order accurate.
-
-Try Euler's method ($s=1$, $b_1=1$), Heun's method ($s=2$, $a_{21}=1$, $b_1=b_2=1/2$), or classical RK4 ($s=4$, $a_{21}=a_{32}=1/2$, $a_{43}=1$, $b_1=b_4=1/6$, $b_2=b_3=1/3$).
-
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -735,4 +711,4 @@ tex.block`${errorLatex}`
 
 </div>
 
-A tableau's **order of accuracy** is the largest $p$ for which the local truncation error above is $O(h^{p+1})$ — equivalently, the largest $p$ for which every one of $y_{i+1}$'s Taylor coefficients agrees with the true solution's through $h^p$. If the leading term shown is already $O(h)$ itself (i.e. $\sum_i b_i \ne 1$), the method isn't even consistent.
+An $s$-stage Runge-Kutta method is specified by a **Butcher tableau** of nodes $c_i$, coefficients $a_{ij}$, and weights $b_i$. Enter coefficients as integers, fractions, or decimals — each row's panel shows the exact $k_i$ (or $y_{i+1}$) equation your entries construct, and the box above computes the leading term of the local truncation error $y_{i+1} - y(t_i+h)$ as a power series in $h$, even for implicit tableaus. If that leading term is $O(h^{p+1})$, the method is $p$-th order accurate. Try Euler's method ($s=1$, $b_1=1$), Heun's method ($s=2$, $a_{21}=1$, $b_1=b_2=1/2$), or classical RK4 ($s=4$, $a_{21}=a_{32}=1/2$, $a_{43}=1$, $b_1=b_4=1/6$, $b_2=b_3=1/3$).

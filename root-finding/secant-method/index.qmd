@@ -186,6 +186,17 @@ result = {
       return {rows, points, f}
     }
 
+    // Stop if either current secant point is already an exact root.
+    if (prev.fx === 0) {
+      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: prev.x, error: 0})
+      return {rows, points, f}
+    }
+
+    if (curr.fx === 0) {
+      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: curr.x, error: 0})
+      return {rows, points, f}
+    }
+
     // Stop if the secant is nearly flat — dividing by the difference would be unstable.
     if (Math.abs(curr.fx - prev.fx) < 1e-14) {
       rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: NaN, error: NaN})
@@ -541,3 +552,109 @@ The secant method finds roots of $f(x)=0$ like Newton's method, but replaces the
 $$
 x_{n+1}=x_n-f(x_n)\frac{x_n-x_{n-1}}{f(x_n)-f(x_{n-1})}.
 $$
+
+## Examples
+
+The secant method avoids computing derivatives, but its behavior still depends
+strongly on the two initial guesses. The examples below illustrate fast
+superlinear convergence, poor starting pairs, nearly horizontal secants,
+oscillation, and cases where the method can appear to move away before finding
+a root.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?f=x%5E3%20-%20x%20-%202&x0=1&x1=2">
+    <div class="example-card-title">Standard superlinear convergence</div>
+    <div class="example-card-formula">f(x) = x³ − x − 2, &nbsp; x₀ = 1, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      A well-behaved example. The secant method quickly converges to the real
+      root near 1.521 without using derivatives.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=cos(x)%20-%20x&x0=0&x1=1">
+    <div class="example-card-title">Fixed-point root problem</div>
+    <div class="example-card-formula">f(x) = cos(x) − x, &nbsp; x₀ = 0, &nbsp; x₁ = 1</div>
+    <div class="example-card-text">
+      The method converges to the same famous root as fixed point iteration
+      x = cos(x), but usually in fewer steps.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2%20-%202&x0=1&x1=2">
+    <div class="example-card-title">Square root of 2</div>
+    <div class="example-card-formula">f(x) = x² − 2, &nbsp; x₀ = 1, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      A simple comparison case with Newton's method. The secant iterates
+      approach √2 using only function values.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&x0=-2&x1=0">
+    <div class="example-card-title">Sensitive starting pair</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = −2, &nbsp; x₁ = 0</div>
+    <div class="example-card-text">
+      A nonlinear example where the path depends strongly on the initial pair.
+      The method can jump before settling near the real root.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&x0=0&x1=1">
+    <div class="example-card-title">Problematic secant pair</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = 0, &nbsp; x₁ = 1</div>
+    <div class="example-card-text">
+      These two starting points give equal function values, so the secant
+      denominator is zero and the update cannot proceed.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&x0=0.7&x1=0.9">
+    <div class="example-card-title">Nearly horizontal secant</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; x₀ = 0.7, &nbsp; x₁ = 0.9</div>
+    <div class="example-card-text">
+      The secant line is nearly flat, so the next x-intercept can be far away.
+      This illustrates how small denominator effects can cause large jumps.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=atan(x)&x0=1&x1=2">
+    <div class="example-card-title">Large jumps from shallow slopes</div>
+    <div class="example-card-formula">f(x) = arctan(x), &nbsp; x₀ = 1, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      When the secant slope is small, the x-intercept may be far from the
+      current points. The method can make surprisingly large moves.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3&x0=-0.5&x1=0.8">
+    <div class="example-card-title">Multiple root behavior</div>
+    <div class="example-card-formula">f(x) = x³, &nbsp; x₀ = −0.5, &nbsp; x₁ = 0.8</div>
+    <div class="example-card-text">
+      The root at x = 0 has multiplicity three, so convergence is much slower
+      than the usual superlinear behavior for simple roots.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E5%20-%20x%20-%201&x0=0&x1=2">
+    <div class="example-card-title">Higher-degree polynomial</div>
+    <div class="example-card-formula">f(x) = x⁵ − x − 1, &nbsp; x₀ = 0, &nbsp; x₁ = 2</div>
+    <div class="example-card-text">
+      A higher-degree polynomial with a real root. This shows the secant method
+      behaving well on a smooth nonlinear problem.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=exp(-x)%20-%20x&x0=0&x1=1">
+    <div class="example-card-title">Exponential equation</div>
+    <div class="example-card-formula">f(x) = exp(−x) − x, &nbsp; x₀ = 0, &nbsp; x₁ = 1</div>
+    <div class="example-card-text">
+      A smooth transcendental example. The method converges to the solution of
+      x = exp(−x).
+    </div>
+  </a>
+
+</div>
+```

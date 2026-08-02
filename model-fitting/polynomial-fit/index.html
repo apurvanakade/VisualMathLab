@@ -621,8 +621,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="22" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 21;"><span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="co">// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable.</span></span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>VM <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">VM</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="23" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 22;"><span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="co">// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable.</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>VM <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">VM</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-1" data-nodetype="declaration">
 
@@ -630,46 +630,46 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb2" data-startfrom="28" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 27;"><span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co">// basePoints redraws whenever regenerateTrigger changes (initial load</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">// counts as one draw), seeded from the current timestamp so each draw is a</span></span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co">// fresh, non-repeating line and set of offsets. All noise comes from</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">// `offsets`, scaled by the noise slider in `points` below — so the points</span></span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co">// are exactly colinear at noise level 0, on whatever line this draw picked.</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co">// Kept outside the ojs-row div below: an output:false cell still renders</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">// an empty .cell div, and if it sat inside the row it would become the</span></span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">// row's first child, stealing the `flex: 1 1 200px` fill rule meant for</span></span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider.</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>basePoints <span class="op">=</span> {</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  regenerateTrigger</span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Seeded PRNG (mulberry32), seeded from the current time so each</span></span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="co">// "Regenerate" click produces a different draw.</span></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> state <span class="op">=</span> <span class="bu">Date</span><span class="op">.</span><span class="fu">now</span>()</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rand <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> (state <span class="op">+</span> <span class="bn">0x6D2B79F5</span>) <span class="op">|</span> <span class="dv">0</span></span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> t <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(state <span class="op">^</span> (state <span class="op">&gt;&gt;&gt;</span> <span class="dv">15</span>)<span class="op">,</span> <span class="dv">1</span> <span class="op">|</span> state)</span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> (t <span class="op">+</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(t <span class="op">^</span> (t <span class="op">&gt;&gt;&gt;</span> <span class="dv">7</span>)<span class="op">,</span> <span class="dv">61</span> <span class="op">|</span> t)) <span class="op">^</span> t</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ((t <span class="op">^</span> (t <span class="op">&gt;&gt;&gt;</span> <span class="dv">14</span>)) <span class="op">&gt;&gt;&gt;</span> <span class="dv">0</span>) <span class="op">/</span> <span class="dv">4294967296</span></span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Box-Muller transform: turns two uniform samples into one standard-normal sample.</span></span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gaussian <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u1 <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="fu">rand</span>()<span class="op">,</span> <span class="fl">1e-12</span>)</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u2 <span class="op">=</span> <span class="fu">rand</span>()</span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="op">-</span><span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log</span>(u1)) <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">cos</span>(<span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="cn">PI</span> <span class="op">*</span> u2)</span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>  <span class="co">// slope/intercept are redrawn on every "Regenerate" click too, not just</span></span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the offsets, so the line itself looks different each time.</span></span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slope <span class="op">=</span> <span class="op">-</span><span class="dv">3</span> <span class="op">+</span> <span class="dv">6</span> <span class="op">*</span> <span class="fu">rand</span>()</span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> intercept <span class="op">=</span> <span class="op">-</span><span class="dv">5</span> <span class="op">+</span> <span class="dv">10</span> <span class="op">*</span> <span class="fu">rand</span>()</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> linePoints <span class="op">=</span> []</span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> offsets <span class="op">=</span> []</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="dv">6</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x <span class="op">=</span> i</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    linePoints<span class="op">.</span><span class="fu">push</span>({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> slope <span class="op">*</span> x <span class="op">+</span> intercept})</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    offsets<span class="op">.</span><span class="fu">push</span>(<span class="fu">gaussian</span>())</span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {linePoints<span class="op">,</span> offsets}</span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb2" data-startfrom="29" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 28;"><span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="co">// basePoints redraws whenever regenerateTrigger changes (initial load</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co">// counts as one draw), seeded from the current timestamp so each draw is a</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">// fresh, non-repeating line and set of offsets. All noise comes from</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co">// `offsets`, scaled by the noise slider in `points` below — so the points</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co">// are exactly colinear at noise level 0, on whatever line this draw picked.</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">// Kept outside the ojs-row div below: an output:false cell still renders</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">// an empty .cell div, and if it sat inside the row it would become the</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">// row's first child, stealing the `flex: 1 1 200px` fill rule meant for</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider.</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>basePoints <span class="op">=</span> {</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  regenerateTrigger</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Seeded PRNG (mulberry32), seeded from the current time so each</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>  <span class="co">// "Regenerate" click produces a different draw.</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> state <span class="op">=</span> <span class="bu">Date</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rand <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> (state <span class="op">+</span> <span class="bn">0x6D2B79F5</span>) <span class="op">|</span> <span class="dv">0</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> t <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(state <span class="op">^</span> (state <span class="op">&gt;&gt;&gt;</span> <span class="dv">15</span>)<span class="op">,</span> <span class="dv">1</span> <span class="op">|</span> state)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> (t <span class="op">+</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(t <span class="op">^</span> (t <span class="op">&gt;&gt;&gt;</span> <span class="dv">7</span>)<span class="op">,</span> <span class="dv">61</span> <span class="op">|</span> t)) <span class="op">^</span> t</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ((t <span class="op">^</span> (t <span class="op">&gt;&gt;&gt;</span> <span class="dv">14</span>)) <span class="op">&gt;&gt;&gt;</span> <span class="dv">0</span>) <span class="op">/</span> <span class="dv">4294967296</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Box-Muller transform: turns two uniform samples into one standard-normal sample.</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gaussian <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u1 <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="fu">rand</span>()<span class="op">,</span> <span class="fl">1e-12</span>)</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u2 <span class="op">=</span> <span class="fu">rand</span>()</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="op">-</span><span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log</span>(u1)) <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">cos</span>(<span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="cn">PI</span> <span class="op">*</span> u2)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  <span class="co">// slope/intercept are redrawn on every "Regenerate" click too, not just</span></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the offsets, so the line itself looks different each time.</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slope <span class="op">=</span> <span class="op">-</span><span class="dv">3</span> <span class="op">+</span> <span class="dv">6</span> <span class="op">*</span> <span class="fu">rand</span>()</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> intercept <span class="op">=</span> <span class="op">-</span><span class="dv">5</span> <span class="op">+</span> <span class="dv">10</span> <span class="op">*</span> <span class="fu">rand</span>()</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> linePoints <span class="op">=</span> []</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> offsets <span class="op">=</span> []</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> <span class="dv">6</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x <span class="op">=</span> i</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    linePoints<span class="op">.</span><span class="fu">push</span>({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> slope <span class="op">*</span> x <span class="op">+</span> intercept})</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    offsets<span class="op">.</span><span class="fu">push</span>(<span class="fu">gaussian</span>())</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {linePoints<span class="op">,</span> offsets}</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-2" data-nodetype="declaration">
 
@@ -677,31 +677,31 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb3" data-startfrom="72" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 71;"><span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="co">// baseFits: one-time (per basePoints draw) polynomial fits that let `result`</span></span>
-<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co">// below skip the matrix solve on every noise-slider tick. Least-squares</span></span>
-<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co">// coefficients are a linear function of the target y-values, and</span></span>
-<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co">// points[i].y = linePoints[i].y + noiseLevel * offsets[i] — so the</span></span>
-<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co">// degree-`d` fit's coefficients at any noiseLevel are exactly</span></span>
-<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="co">// lineFit.coeffs + noiseLevel * offsetFit.coeffs, where lineFit fits the</span></span>
-<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a><span class="co">// exact line and offsetFit fits the raw offsets (both against the same</span></span>
-<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="co">// fixed x's). No approximation: this is the same coefficients the direct</span></span>
-<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co">// solve would produce, just computed once instead of on every tick.</span></span>
-<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>baseFits <span class="op">=</span> {</span>
-<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> math <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">math</span></span>
-<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> offsetPoints <span class="op">=</span> []</span>
-<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>    offsetPoints<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">linePoints</span>[i]<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">offsets</span>[i]})</span>
-<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> fits <span class="op">=</span> {}</span>
-<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>    fits[degree] <span class="op">=</span> {</span>
-<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>      <span class="dt">lineFit</span><span class="op">:</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">polynomialFit</span>(math<span class="op">,</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">,</span> degree)<span class="op">,</span></span>
-<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>      <span class="dt">offsetFit</span><span class="op">:</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">polynomialFit</span>(math<span class="op">,</span> offsetPoints<span class="op">,</span> degree)</span>
-<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> fits</span>
-<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb3" data-startfrom="73" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 72;"><span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co">// baseFits: one-time (per basePoints draw) polynomial fits that let `result`</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co">// below skip the matrix solve on every noise-slider tick. Least-squares</span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co">// coefficients are a linear function of the target y-values, and</span></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co">// points[i].y = linePoints[i].y + noiseLevel * offsets[i] — so the</span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a><span class="co">// degree-`d` fit's coefficients at any noiseLevel are exactly</span></span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a><span class="co">// lineFit.coeffs + noiseLevel * offsetFit.coeffs, where lineFit fits the</span></span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a><span class="co">// exact line and offsetFit fits the raw offsets (both against the same</span></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a><span class="co">// fixed x's). No approximation: this is the same coefficients the direct</span></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a><span class="co">// solve would produce, just computed once instead of on every tick.</span></span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>baseFits <span class="op">=</span> {</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> math <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">math</span></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> offsetPoints <span class="op">=</span> []</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>    offsetPoints<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">linePoints</span>[i]<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">offsets</span>[i]})</span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> fits <span class="op">=</span> {}</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>    fits[degree] <span class="op">=</span> {</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>      <span class="dt">lineFit</span><span class="op">:</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">polynomialFit</span>(math<span class="op">,</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">,</span> degree)<span class="op">,</span></span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>      <span class="dt">offsetFit</span><span class="op">:</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">polynomialFit</span>(math<span class="op">,</span> offsetPoints<span class="op">,</span> degree)</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> fits</span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-3" data-nodetype="declaration">
 
@@ -709,7 +709,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="101" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 100;"><span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a>maxNoise <span class="op">=</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="102" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 101;"><span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a>maxNoise <span class="op">=</span> <span class="dv">1</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-4" data-nodetype="declaration">
 
@@ -717,20 +717,20 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="106" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 105;"><span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a><span class="co">// noiseYRange: the y-values every point can reach as the noise slider</span></span>
-<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a><span class="co">// sweeps its full [0, maxNoise] range — at noise 0 a point sits exactly on</span></span>
-<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a><span class="co">// the line, at noise maxNoise it sits at line + maxNoise * offset. setup</span></span>
-<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a><span class="co">// below uses these extremes (not the current noiseLevel) to fix the plot's</span></span>
-<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a><span class="co">// y-axis, so dragging the slider never rescales the chart out from under</span></span>
-<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a><span class="co">// you.</span></span>
-<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>noiseYRange <span class="op">=</span> {</span>
-<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ys <span class="op">=</span> []</span>
-<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">linePoints</span>) ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
-<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>    ys<span class="op">.</span><span class="fu">push</span>(basePoints<span class="op">.</span><span class="at">linePoints</span>[i]<span class="op">.</span><span class="at">y</span> <span class="op">+</span> maxNoise <span class="op">*</span> basePoints<span class="op">.</span><span class="at">offsets</span>[i])</span>
-<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ys</span>
-<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="107" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 106;"><span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a><span class="co">// noiseYRange: the y-values every point can reach as the noise slider</span></span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a><span class="co">// sweeps its full [0, maxNoise] range — at noise 0 a point sits exactly on</span></span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a><span class="co">// the line, at noise maxNoise it sits at line + maxNoise * offset. setup</span></span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a><span class="co">// below uses these extremes (not the current noiseLevel) to fix the plot's</span></span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a><span class="co">// y-axis, so dragging the slider never rescales the chart out from under</span></span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a><span class="co">// you.</span></span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>noiseYRange <span class="op">=</span> {</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ys <span class="op">=</span> []</span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">linePoints</span>) ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>    ys<span class="op">.</span><span class="fu">push</span>(basePoints<span class="op">.</span><span class="at">linePoints</span>[i]<span class="op">.</span><span class="at">y</span> <span class="op">+</span> maxNoise <span class="op">*</span> basePoints<span class="op">.</span><span class="at">offsets</span>[i])</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ys</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-5" data-nodetype="declaration">
 
@@ -738,36 +738,36 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="124" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 123;"><span id="cb6-124"><a href="#cb6-124" aria-hidden="true" tabindex="-1"></a><span class="co">// axisSetup: axis ranges and sample x-positions — all independent of</span></span>
-<span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a><span class="co">// noiseLevel, so this only recomputes when basePoints changes (regenerate</span></span>
-<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a><span class="co">// or initial load), not on every slider tick.</span></span>
-<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a>axisSetup <span class="op">=</span> {</span>
-<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xs <span class="op">=</span> []</span>
-<span id="cb6-129"><a href="#cb6-129" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">linePoints</span>) xs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
-<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a>  <span class="co">// viewXRange is the initial visible window; the curves are sampled over</span></span>
-<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the much wider bufferXRange instead, so panning or zooming out reveals</span></span>
-<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a>  <span class="co">// a high-degree curve's rapid growth/decay well beyond the fitted points</span></span>
-<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rather than running into blank space.</span></span>
-<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> viewXRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">6</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.08</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="fl">0.3</span>})</span>
-<span id="cb6-135"><a href="#cb6-135" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> bufferXRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">6</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="dv">2</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">5</span>})</span>
-<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a>  <span class="co">// A fixed y-range, set once from the full [0, maxNoise] reach of the</span></span>
-<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a>  <span class="co">// noise slider — not the current noiseLevel — so the axis never rescales</span></span>
-<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a>  <span class="co">// as the slider moves. A rescaling axis makes the slider's effect look</span></span>
-<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a>  <span class="co">// bigger or smaller than it really is at every step, which is exactly</span></span>
-<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a>  <span class="co">// what's confusing; a fixed axis instead lets a high-degree curve</span></span>
-<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a>  <span class="co">// visibly swing far outside it, or a noisy point run off the top/bottom,</span></span>
-<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rather than the whole chart chasing them.</span></span>
-<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> yRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(noiseYRange<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">5</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.15</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">2</span>})</span>
-<span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-146"><a href="#cb6-146" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sampleCount <span class="op">=</span> <span class="dv">400</span></span>
-<span id="cb6-147"><a href="#cb6-147" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sampleXs <span class="op">=</span> []</span>
-<span id="cb6-148"><a href="#cb6-148" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> sampleCount<span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb6-149"><a href="#cb6-149" aria-hidden="true" tabindex="-1"></a>    sampleXs<span class="op">.</span><span class="fu">push</span>(bufferXRange<span class="op">.</span><span class="at">lo</span> <span class="op">+</span> (bufferXRange<span class="op">.</span><span class="at">hi</span> <span class="op">-</span> bufferXRange<span class="op">.</span><span class="at">lo</span>) <span class="op">*</span> i <span class="op">/</span> (sampleCount <span class="op">-</span> <span class="dv">1</span>))</span>
-<span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb6-151"><a href="#cb6-151" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-152"><a href="#cb6-152" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {viewXRange<span class="op">,</span> yRange<span class="op">,</span> sampleXs}</span>
-<span id="cb6-153"><a href="#cb6-153" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="125" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 124;"><span id="cb6-125"><a href="#cb6-125" aria-hidden="true" tabindex="-1"></a><span class="co">// axisSetup: axis ranges and sample x-positions — all independent of</span></span>
+<span id="cb6-126"><a href="#cb6-126" aria-hidden="true" tabindex="-1"></a><span class="co">// noiseLevel, so this only recomputes when basePoints changes (regenerate</span></span>
+<span id="cb6-127"><a href="#cb6-127" aria-hidden="true" tabindex="-1"></a><span class="co">// or initial load), not on every slider tick.</span></span>
+<span id="cb6-128"><a href="#cb6-128" aria-hidden="true" tabindex="-1"></a>axisSetup <span class="op">=</span> {</span>
+<span id="cb6-129"><a href="#cb6-129" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xs <span class="op">=</span> []</span>
+<span id="cb6-130"><a href="#cb6-130" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">linePoints</span>) xs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb6-131"><a href="#cb6-131" aria-hidden="true" tabindex="-1"></a>  <span class="co">// viewXRange is the initial visible window; the curves are sampled over</span></span>
+<span id="cb6-132"><a href="#cb6-132" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the much wider bufferXRange instead, so panning or zooming out reveals</span></span>
+<span id="cb6-133"><a href="#cb6-133" aria-hidden="true" tabindex="-1"></a>  <span class="co">// a high-degree curve's rapid growth/decay well beyond the fitted points</span></span>
+<span id="cb6-134"><a href="#cb6-134" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rather than running into blank space.</span></span>
+<span id="cb6-135"><a href="#cb6-135" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> viewXRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">6</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.08</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="fl">0.3</span>})</span>
+<span id="cb6-136"><a href="#cb6-136" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> bufferXRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">6</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="dv">2</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">5</span>})</span>
+<span id="cb6-137"><a href="#cb6-137" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-138"><a href="#cb6-138" aria-hidden="true" tabindex="-1"></a>  <span class="co">// A fixed y-range, set once from the full [0, maxNoise] reach of the</span></span>
+<span id="cb6-139"><a href="#cb6-139" aria-hidden="true" tabindex="-1"></a>  <span class="co">// noise slider — not the current noiseLevel — so the axis never rescales</span></span>
+<span id="cb6-140"><a href="#cb6-140" aria-hidden="true" tabindex="-1"></a>  <span class="co">// as the slider moves. A rescaling axis makes the slider's effect look</span></span>
+<span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a>  <span class="co">// bigger or smaller than it really is at every step, which is exactly</span></span>
+<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a>  <span class="co">// what's confusing; a fixed axis instead lets a high-degree curve</span></span>
+<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a>  <span class="co">// visibly swing far outside it, or a noisy point run off the top/bottom,</span></span>
+<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rather than the whole chart chasing them.</span></span>
+<span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> yRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(noiseYRange<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">5</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.15</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">2</span>})</span>
+<span id="cb6-146"><a href="#cb6-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-147"><a href="#cb6-147" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sampleCount <span class="op">=</span> <span class="dv">400</span></span>
+<span id="cb6-148"><a href="#cb6-148" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sampleXs <span class="op">=</span> []</span>
+<span id="cb6-149"><a href="#cb6-149" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> sampleCount<span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb6-150"><a href="#cb6-150" aria-hidden="true" tabindex="-1"></a>    sampleXs<span class="op">.</span><span class="fu">push</span>(bufferXRange<span class="op">.</span><span class="at">lo</span> <span class="op">+</span> (bufferXRange<span class="op">.</span><span class="at">hi</span> <span class="op">-</span> bufferXRange<span class="op">.</span><span class="at">lo</span>) <span class="op">*</span> i <span class="op">/</span> (sampleCount <span class="op">-</span> <span class="dv">1</span>))</span>
+<span id="cb6-151"><a href="#cb6-151" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-152"><a href="#cb6-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-153"><a href="#cb6-153" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {viewXRange<span class="op">,</span> yRange<span class="op">,</span> sampleXs}</span>
+<span id="cb6-154"><a href="#cb6-154" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-6" data-nodetype="declaration">
 
@@ -775,25 +775,25 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="158" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 157;"><span id="cb7-158"><a href="#cb7-158" aria-hidden="true" tabindex="-1"></a><span class="co">// bufferCurves: per-degree sampled curves for the pure line fit and the</span></span>
-<span id="cb7-159"><a href="#cb7-159" aria-hidden="true" tabindex="-1"></a><span class="co">// pure offset fit (see baseFits) — computed once per basePoints draw.</span></span>
-<span id="cb7-160"><a href="#cb7-160" aria-hidden="true" tabindex="-1"></a><span class="co">// setup below combines these into the curve at the current noiseLevel via</span></span>
-<span id="cb7-161"><a href="#cb7-161" aria-hidden="true" tabindex="-1"></a><span class="co">// plain addition (curveLine + noiseLevel * curveOffset), instead of</span></span>
-<span id="cb7-162"><a href="#cb7-162" aria-hidden="true" tabindex="-1"></a><span class="co">// re-evaluating each polynomial from scratch on every slider tick.</span></span>
-<span id="cb7-163"><a href="#cb7-163" aria-hidden="true" tabindex="-1"></a>bufferCurves <span class="op">=</span> {</span>
-<span id="cb7-164"><a href="#cb7-164" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sampleOne <span class="op">=</span> fit <span class="kw">=&gt;</span> {</span>
-<span id="cb7-165"><a href="#cb7-165" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ys <span class="op">=</span> []</span>
-<span id="cb7-166"><a href="#cb7-166" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> x <span class="kw">of</span> axisSetup<span class="op">.</span><span class="at">sampleXs</span>) ys<span class="op">.</span><span class="fu">push</span>(fit <span class="op">?</span> fit<span class="op">.</span><span class="fu">evaluate</span>(x) <span class="op">:</span> <span class="kw">null</span>)</span>
-<span id="cb7-167"><a href="#cb7-167" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ys</span>
-<span id="cb7-168"><a href="#cb7-168" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-169"><a href="#cb7-169" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-170"><a href="#cb7-170" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> curves <span class="op">=</span> {}</span>
-<span id="cb7-171"><a href="#cb7-171" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb7-172"><a href="#cb7-172" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {lineFit<span class="op">,</span> offsetFit} <span class="op">=</span> baseFits[degree]</span>
-<span id="cb7-173"><a href="#cb7-173" aria-hidden="true" tabindex="-1"></a>    curves[degree] <span class="op">=</span> {<span class="dt">line</span><span class="op">:</span> <span class="fu">sampleOne</span>(lineFit)<span class="op">,</span> <span class="dt">offset</span><span class="op">:</span> <span class="fu">sampleOne</span>(offsetFit)}</span>
-<span id="cb7-174"><a href="#cb7-174" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-175"><a href="#cb7-175" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> curves</span>
-<span id="cb7-176"><a href="#cb7-176" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="159" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 158;"><span id="cb7-159"><a href="#cb7-159" aria-hidden="true" tabindex="-1"></a><span class="co">// bufferCurves: per-degree sampled curves for the pure line fit and the</span></span>
+<span id="cb7-160"><a href="#cb7-160" aria-hidden="true" tabindex="-1"></a><span class="co">// pure offset fit (see baseFits) — computed once per basePoints draw.</span></span>
+<span id="cb7-161"><a href="#cb7-161" aria-hidden="true" tabindex="-1"></a><span class="co">// setup below combines these into the curve at the current noiseLevel via</span></span>
+<span id="cb7-162"><a href="#cb7-162" aria-hidden="true" tabindex="-1"></a><span class="co">// plain addition (curveLine + noiseLevel * curveOffset), instead of</span></span>
+<span id="cb7-163"><a href="#cb7-163" aria-hidden="true" tabindex="-1"></a><span class="co">// re-evaluating each polynomial from scratch on every slider tick.</span></span>
+<span id="cb7-164"><a href="#cb7-164" aria-hidden="true" tabindex="-1"></a>bufferCurves <span class="op">=</span> {</span>
+<span id="cb7-165"><a href="#cb7-165" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> sampleOne <span class="op">=</span> fit <span class="kw">=&gt;</span> {</span>
+<span id="cb7-166"><a href="#cb7-166" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ys <span class="op">=</span> []</span>
+<span id="cb7-167"><a href="#cb7-167" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> x <span class="kw">of</span> axisSetup<span class="op">.</span><span class="at">sampleXs</span>) ys<span class="op">.</span><span class="fu">push</span>(fit <span class="op">?</span> fit<span class="op">.</span><span class="fu">evaluate</span>(x) <span class="op">:</span> <span class="kw">null</span>)</span>
+<span id="cb7-168"><a href="#cb7-168" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ys</span>
+<span id="cb7-169"><a href="#cb7-169" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-170"><a href="#cb7-170" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-171"><a href="#cb7-171" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> curves <span class="op">=</span> {}</span>
+<span id="cb7-172"><a href="#cb7-172" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb7-173"><a href="#cb7-173" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {lineFit<span class="op">,</span> offsetFit} <span class="op">=</span> baseFits[degree]</span>
+<span id="cb7-174"><a href="#cb7-174" aria-hidden="true" tabindex="-1"></a>    curves[degree] <span class="op">=</span> {<span class="dt">line</span><span class="op">:</span> <span class="fu">sampleOne</span>(lineFit)<span class="op">,</span> <span class="dt">offset</span><span class="op">:</span> <span class="fu">sampleOne</span>(offsetFit)}</span>
+<span id="cb7-175"><a href="#cb7-175" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-176"><a href="#cb7-176" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> curves</span>
+<span id="cb7-177"><a href="#cb7-177" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-7" data-nodetype="declaration">
 
@@ -802,11 +802,11 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-panel ojs-row">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="182" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 181;"><span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a>viewof noiseLevel <span class="op">=</span> {</span>
-<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> maxNoise]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Noise level"</span>})</span>
-<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
-<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="183" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 182;"><span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>viewof noiseLevel <span class="op">=</span> {</span>
+<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> maxNoise]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Noise level"</span>})</span>
+<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
+<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-8" data-nodetype="declaration">
 
@@ -814,14 +814,14 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="190" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 189;"><span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a><span class="co">// regenerateTrigger: clicking "Regenerate points" bumps this, which is the</span></span>
-<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a><span class="co">// only thing basePoints depends on below — that's what makes a fresh draw</span></span>
-<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a><span class="co">// happen on click instead of only once at page load.</span></span>
-<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>viewof regenerateTrigger <span class="op">=</span> {</span>
-<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate points"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
-<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
-<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
-<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="191" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 190;"><span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a><span class="co">// regenerateTrigger: clicking "Regenerate points" bumps this, which is the</span></span>
+<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a><span class="co">// only thing basePoints depends on below — that's what makes a fresh draw</span></span>
+<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a><span class="co">// happen on click instead of only once at page load.</span></span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>viewof regenerateTrigger <span class="op">=</span> {</span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate points"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-9" data-nodetype="declaration">
 
@@ -831,12 +831,12 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-panel ojs-row">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="205" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 204;"><span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a>viewof shownDegrees <span class="op">=</span> {</span>
-<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> options <span class="op">=</span> [<span class="st">"Degree 1"</span><span class="op">,</span> <span class="st">"Degree 2"</span><span class="op">,</span> <span class="st">"Degree 3"</span><span class="op">,</span> <span class="st">"Degree 4"</span><span class="op">,</span> <span class="st">"Degree 5"</span>]</span>
-<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> checkboxInput <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">checkbox</span>(options<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> [<span class="st">"Degree 5"</span>]})</span>
-<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a>  checkboxInput<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> checkboxInput</span>
-<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="206" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 205;"><span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a>viewof shownDegrees <span class="op">=</span> {</span>
+<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> options <span class="op">=</span> [<span class="st">"Degree 1"</span><span class="op">,</span> <span class="st">"Degree 2"</span><span class="op">,</span> <span class="st">"Degree 3"</span><span class="op">,</span> <span class="st">"Degree 4"</span><span class="op">,</span> <span class="st">"Degree 5"</span>]</span>
+<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> checkboxInput <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">checkbox</span>(options<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> [<span class="st">"Degree 5"</span>]})</span>
+<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a>  checkboxInput<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> checkboxInput</span>
+<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-10" data-nodetype="declaration">
 
@@ -845,7 +845,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="217" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 216;"><span id="cb11-217"><a href="#cb11-217" aria-hidden="true" tabindex="-1"></a>showDegree1 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 1"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="218" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 217;"><span id="cb11-218"><a href="#cb11-218" aria-hidden="true" tabindex="-1"></a>showDegree1 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 1"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-11" data-nodetype="declaration">
 
@@ -853,7 +853,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="222" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 221;"><span id="cb12-222"><a href="#cb12-222" aria-hidden="true" tabindex="-1"></a>showDegree2 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 2"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="223" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 222;"><span id="cb12-223"><a href="#cb12-223" aria-hidden="true" tabindex="-1"></a>showDegree2 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 2"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-12" data-nodetype="declaration">
 
@@ -861,7 +861,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="227" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 226;"><span id="cb13-227"><a href="#cb13-227" aria-hidden="true" tabindex="-1"></a>showDegree3 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 3"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="228" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 227;"><span id="cb13-228"><a href="#cb13-228" aria-hidden="true" tabindex="-1"></a>showDegree3 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 3"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-13" data-nodetype="declaration">
 
@@ -869,7 +869,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="232" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 231;"><span id="cb14-232"><a href="#cb14-232" aria-hidden="true" tabindex="-1"></a>showDegree4 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 4"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="233" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 232;"><span id="cb14-233"><a href="#cb14-233" aria-hidden="true" tabindex="-1"></a>showDegree4 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 4"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-14" data-nodetype="declaration">
 
@@ -877,7 +877,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="237" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 236;"><span id="cb15-237"><a href="#cb15-237" aria-hidden="true" tabindex="-1"></a>showDegree5 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 5"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="238" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 237;"><span id="cb15-238"><a href="#cb15-238" aria-hidden="true" tabindex="-1"></a>showDegree5 <span class="op">=</span> shownDegrees<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Degree 5"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-15" data-nodetype="declaration">
 
@@ -885,17 +885,17 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="242" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 241;"><span id="cb16-242"><a href="#cb16-242" aria-hidden="true" tabindex="-1"></a><span class="co">// points: each point sits on the line plus its fixed random offset scaled</span></span>
-<span id="cb16-243"><a href="#cb16-243" aria-hidden="true" tabindex="-1"></a><span class="co">// by the noise slider — all colinear at noiseLevel 0, drifting further</span></span>
-<span id="cb16-244"><a href="#cb16-244" aria-hidden="true" tabindex="-1"></a><span class="co">// from the line together as noiseLevel increases.</span></span>
-<span id="cb16-245"><a href="#cb16-245" aria-hidden="true" tabindex="-1"></a>points <span class="op">=</span> {</span>
-<span id="cb16-246"><a href="#cb16-246" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pts <span class="op">=</span> []</span>
-<span id="cb16-247"><a href="#cb16-247" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb16-248"><a href="#cb16-248" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {x<span class="op">,</span> y} <span class="op">=</span> basePoints<span class="op">.</span><span class="at">linePoints</span>[i]</span>
-<span id="cb16-249"><a href="#cb16-249" aria-hidden="true" tabindex="-1"></a>    pts<span class="op">.</span><span class="fu">push</span>({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> y <span class="op">+</span> noiseLevel <span class="op">*</span> basePoints<span class="op">.</span><span class="at">offsets</span>[i]})</span>
-<span id="cb16-250"><a href="#cb16-250" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-251"><a href="#cb16-251" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> pts</span>
-<span id="cb16-252"><a href="#cb16-252" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="243" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 242;"><span id="cb16-243"><a href="#cb16-243" aria-hidden="true" tabindex="-1"></a><span class="co">// points: each point sits on the line plus its fixed random offset scaled</span></span>
+<span id="cb16-244"><a href="#cb16-244" aria-hidden="true" tabindex="-1"></a><span class="co">// by the noise slider — all colinear at noiseLevel 0, drifting further</span></span>
+<span id="cb16-245"><a href="#cb16-245" aria-hidden="true" tabindex="-1"></a><span class="co">// from the line together as noiseLevel increases.</span></span>
+<span id="cb16-246"><a href="#cb16-246" aria-hidden="true" tabindex="-1"></a>points <span class="op">=</span> {</span>
+<span id="cb16-247"><a href="#cb16-247" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pts <span class="op">=</span> []</span>
+<span id="cb16-248"><a href="#cb16-248" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">linePoints</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb16-249"><a href="#cb16-249" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {x<span class="op">,</span> y} <span class="op">=</span> basePoints<span class="op">.</span><span class="at">linePoints</span>[i]</span>
+<span id="cb16-250"><a href="#cb16-250" aria-hidden="true" tabindex="-1"></a>    pts<span class="op">.</span><span class="fu">push</span>({x<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> y <span class="op">+</span> noiseLevel <span class="op">*</span> basePoints<span class="op">.</span><span class="at">offsets</span>[i]})</span>
+<span id="cb16-251"><a href="#cb16-251" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-252"><a href="#cb16-252" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> pts</span>
+<span id="cb16-253"><a href="#cb16-253" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-16" data-nodetype="declaration">
 
@@ -903,49 +903,49 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb17" data-startfrom="257" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 256;"><span id="cb17-257"><a href="#cb17-257" aria-hidden="true" tabindex="-1"></a><span class="co">// result: combines baseFits into the degree 1 through 5 fits for the</span></span>
-<span id="cb17-258"><a href="#cb17-258" aria-hidden="true" tabindex="-1"></a><span class="co">// current noiseLevel (see baseFits for why coeffs = lineFit.coeffs +</span></span>
-<span id="cb17-259"><a href="#cb17-259" aria-hidden="true" tabindex="-1"></a><span class="co">// noiseLevel * offsetFit.coeffs is exact) — cheap arithmetic on every</span></span>
-<span id="cb17-260"><a href="#cb17-260" aria-hidden="true" tabindex="-1"></a><span class="co">// slider tick, no matrix solve.</span></span>
-<span id="cb17-261"><a href="#cb17-261" aria-hidden="true" tabindex="-1"></a><span class="co">//   fits[1] — a line (2 parameters): high bias, low variance</span></span>
-<span id="cb17-262"><a href="#cb17-262" aria-hidden="true" tabindex="-1"></a><span class="co">//   fits[2] — a parabola (3 parameters): a middle ground</span></span>
-<span id="cb17-263"><a href="#cb17-263" aria-hidden="true" tabindex="-1"></a><span class="co">//   fits[5] — a degree-5 polynomial (6 parameters, one per point): this</span></span>
-<span id="cb17-264"><a href="#cb17-264" aria-hidden="true" tabindex="-1"></a><span class="co">//     exactly interpolates all 6 points, so its training error is always</span></span>
-<span id="cb17-265"><a href="#cb17-265" aria-hidden="true" tabindex="-1"></a><span class="co">//     essentially zero — but watch how much the curve itself swings as the</span></span>
-<span id="cb17-266"><a href="#cb17-266" aria-hidden="true" tabindex="-1"></a><span class="co">//     slider moves.</span></span>
-<span id="cb17-267"><a href="#cb17-267" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> {</span>
-<span id="cb17-268"><a href="#cb17-268" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> fits <span class="op">=</span> {}</span>
-<span id="cb17-269"><a href="#cb17-269" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb17-270"><a href="#cb17-270" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {lineFit<span class="op">,</span> offsetFit} <span class="op">=</span> baseFits[degree]</span>
-<span id="cb17-271"><a href="#cb17-271" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>lineFit <span class="op">||</span> <span class="op">!</span>offsetFit) {</span>
-<span id="cb17-272"><a href="#cb17-272" aria-hidden="true" tabindex="-1"></a>      fits[degree] <span class="op">=</span> <span class="kw">null</span></span>
-<span id="cb17-273"><a href="#cb17-273" aria-hidden="true" tabindex="-1"></a>      <span class="cf">continue</span></span>
-<span id="cb17-274"><a href="#cb17-274" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb17-275"><a href="#cb17-275" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-276"><a href="#cb17-276" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> coeffs <span class="op">=</span> []</span>
-<span id="cb17-277"><a href="#cb17-277" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> k <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> k <span class="op">&lt;</span> lineFit<span class="op">.</span><span class="at">coeffs</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> k<span class="op">++</span>) {</span>
-<span id="cb17-278"><a href="#cb17-278" aria-hidden="true" tabindex="-1"></a>      coeffs<span class="op">.</span><span class="fu">push</span>(lineFit<span class="op">.</span><span class="at">coeffs</span>[k] <span class="op">+</span> noiseLevel <span class="op">*</span> offsetFit<span class="op">.</span><span class="at">coeffs</span>[k])</span>
-<span id="cb17-279"><a href="#cb17-279" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb17-280"><a href="#cb17-280" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-281"><a href="#cb17-281" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> evaluate <span class="op">=</span> x <span class="kw">=&gt;</span> {</span>
-<span id="cb17-282"><a href="#cb17-282" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> y <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> power <span class="op">=</span> <span class="dv">1</span></span>
-<span id="cb17-283"><a href="#cb17-283" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (<span class="kw">let</span> k <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> k <span class="op">&lt;</span> coeffs<span class="op">.</span><span class="at">length</span><span class="op">;</span> k<span class="op">++</span>) {</span>
-<span id="cb17-284"><a href="#cb17-284" aria-hidden="true" tabindex="-1"></a>        y <span class="op">+=</span> coeffs[k] <span class="op">*</span> power</span>
-<span id="cb17-285"><a href="#cb17-285" aria-hidden="true" tabindex="-1"></a>        power <span class="op">*=</span> x</span>
-<span id="cb17-286"><a href="#cb17-286" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb17-287"><a href="#cb17-287" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> y</span>
-<span id="cb17-288"><a href="#cb17-288" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb17-289"><a href="#cb17-289" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-290"><a href="#cb17-290" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> totalSquaredError <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb17-291"><a href="#cb17-291" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
-<span id="cb17-292"><a href="#cb17-292" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> residual <span class="op">=</span> <span class="fu">evaluate</span>(p<span class="op">.</span><span class="at">x</span>) <span class="op">-</span> p<span class="op">.</span><span class="at">y</span></span>
-<span id="cb17-293"><a href="#cb17-293" aria-hidden="true" tabindex="-1"></a>      totalSquaredError <span class="op">+=</span> residual <span class="op">*</span> residual</span>
-<span id="cb17-294"><a href="#cb17-294" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb17-295"><a href="#cb17-295" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-296"><a href="#cb17-296" aria-hidden="true" tabindex="-1"></a>    fits[degree] <span class="op">=</span> {coeffs<span class="op">,</span> evaluate<span class="op">,</span> totalSquaredError}</span>
-<span id="cb17-297"><a href="#cb17-297" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb17-298"><a href="#cb17-298" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {points<span class="op">,</span> fits}</span>
-<span id="cb17-299"><a href="#cb17-299" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb17" data-startfrom="258" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 257;"><span id="cb17-258"><a href="#cb17-258" aria-hidden="true" tabindex="-1"></a><span class="co">// result: combines baseFits into the degree 1 through 5 fits for the</span></span>
+<span id="cb17-259"><a href="#cb17-259" aria-hidden="true" tabindex="-1"></a><span class="co">// current noiseLevel (see baseFits for why coeffs = lineFit.coeffs +</span></span>
+<span id="cb17-260"><a href="#cb17-260" aria-hidden="true" tabindex="-1"></a><span class="co">// noiseLevel * offsetFit.coeffs is exact) — cheap arithmetic on every</span></span>
+<span id="cb17-261"><a href="#cb17-261" aria-hidden="true" tabindex="-1"></a><span class="co">// slider tick, no matrix solve.</span></span>
+<span id="cb17-262"><a href="#cb17-262" aria-hidden="true" tabindex="-1"></a><span class="co">//   fits[1] — a line (2 parameters): high bias, low variance</span></span>
+<span id="cb17-263"><a href="#cb17-263" aria-hidden="true" tabindex="-1"></a><span class="co">//   fits[2] — a parabola (3 parameters): a middle ground</span></span>
+<span id="cb17-264"><a href="#cb17-264" aria-hidden="true" tabindex="-1"></a><span class="co">//   fits[5] — a degree-5 polynomial (6 parameters, one per point): this</span></span>
+<span id="cb17-265"><a href="#cb17-265" aria-hidden="true" tabindex="-1"></a><span class="co">//     exactly interpolates all 6 points, so its training error is always</span></span>
+<span id="cb17-266"><a href="#cb17-266" aria-hidden="true" tabindex="-1"></a><span class="co">//     essentially zero — but watch how much the curve itself swings as the</span></span>
+<span id="cb17-267"><a href="#cb17-267" aria-hidden="true" tabindex="-1"></a><span class="co">//     slider moves.</span></span>
+<span id="cb17-268"><a href="#cb17-268" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> {</span>
+<span id="cb17-269"><a href="#cb17-269" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> fits <span class="op">=</span> {}</span>
+<span id="cb17-270"><a href="#cb17-270" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb17-271"><a href="#cb17-271" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {lineFit<span class="op">,</span> offsetFit} <span class="op">=</span> baseFits[degree]</span>
+<span id="cb17-272"><a href="#cb17-272" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>lineFit <span class="op">||</span> <span class="op">!</span>offsetFit) {</span>
+<span id="cb17-273"><a href="#cb17-273" aria-hidden="true" tabindex="-1"></a>      fits[degree] <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb17-274"><a href="#cb17-274" aria-hidden="true" tabindex="-1"></a>      <span class="cf">continue</span></span>
+<span id="cb17-275"><a href="#cb17-275" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-276"><a href="#cb17-276" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-277"><a href="#cb17-277" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> coeffs <span class="op">=</span> []</span>
+<span id="cb17-278"><a href="#cb17-278" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> k <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> k <span class="op">&lt;</span> lineFit<span class="op">.</span><span class="at">coeffs</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> k<span class="op">++</span>) {</span>
+<span id="cb17-279"><a href="#cb17-279" aria-hidden="true" tabindex="-1"></a>      coeffs<span class="op">.</span><span class="fu">push</span>(lineFit<span class="op">.</span><span class="at">coeffs</span>[k] <span class="op">+</span> noiseLevel <span class="op">*</span> offsetFit<span class="op">.</span><span class="at">coeffs</span>[k])</span>
+<span id="cb17-280"><a href="#cb17-280" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-281"><a href="#cb17-281" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-282"><a href="#cb17-282" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> evaluate <span class="op">=</span> x <span class="kw">=&gt;</span> {</span>
+<span id="cb17-283"><a href="#cb17-283" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> y <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> power <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb17-284"><a href="#cb17-284" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> (<span class="kw">let</span> k <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> k <span class="op">&lt;</span> coeffs<span class="op">.</span><span class="at">length</span><span class="op">;</span> k<span class="op">++</span>) {</span>
+<span id="cb17-285"><a href="#cb17-285" aria-hidden="true" tabindex="-1"></a>        y <span class="op">+=</span> coeffs[k] <span class="op">*</span> power</span>
+<span id="cb17-286"><a href="#cb17-286" aria-hidden="true" tabindex="-1"></a>        power <span class="op">*=</span> x</span>
+<span id="cb17-287"><a href="#cb17-287" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb17-288"><a href="#cb17-288" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> y</span>
+<span id="cb17-289"><a href="#cb17-289" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-290"><a href="#cb17-290" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-291"><a href="#cb17-291" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> totalSquaredError <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb17-292"><a href="#cb17-292" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
+<span id="cb17-293"><a href="#cb17-293" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> residual <span class="op">=</span> <span class="fu">evaluate</span>(p<span class="op">.</span><span class="at">x</span>) <span class="op">-</span> p<span class="op">.</span><span class="at">y</span></span>
+<span id="cb17-294"><a href="#cb17-294" aria-hidden="true" tabindex="-1"></a>      totalSquaredError <span class="op">+=</span> residual <span class="op">*</span> residual</span>
+<span id="cb17-295"><a href="#cb17-295" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb17-296"><a href="#cb17-296" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-297"><a href="#cb17-297" aria-hidden="true" tabindex="-1"></a>    fits[degree] <span class="op">=</span> {coeffs<span class="op">,</span> evaluate<span class="op">,</span> totalSquaredError}</span>
+<span id="cb17-298"><a href="#cb17-298" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb17-299"><a href="#cb17-299" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {points<span class="op">,</span> fits}</span>
+<span id="cb17-300"><a href="#cb17-300" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-17" data-nodetype="declaration">
 
@@ -953,27 +953,27 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb18" data-startfrom="304" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 303;"><span id="cb18-304"><a href="#cb18-304" aria-hidden="true" tabindex="-1"></a><span class="co">// setup: combines bufferCurves into the curve at the current noiseLevel —</span></span>
-<span id="cb18-305"><a href="#cb18-305" aria-hidden="true" tabindex="-1"></a><span class="co">// plain addition per sample point, no polynomial evaluation or matrix</span></span>
-<span id="cb18-306"><a href="#cb18-306" aria-hidden="true" tabindex="-1"></a><span class="co">// solve, so this stays cheap on every slider tick.</span></span>
-<span id="cb18-307"><a href="#cb18-307" aria-hidden="true" tabindex="-1"></a>setup <span class="op">=</span> {</span>
-<span id="cb18-308"><a href="#cb18-308" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> curves <span class="op">=</span> {}</span>
-<span id="cb18-309"><a href="#cb18-309" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb18-310"><a href="#cb18-310" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {line<span class="op">,</span> offset} <span class="op">=</span> bufferCurves[degree]</span>
-<span id="cb18-311"><a href="#cb18-311" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ys <span class="op">=</span> []</span>
-<span id="cb18-312"><a href="#cb18-312" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> line<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb18-313"><a href="#cb18-313" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (line[i] <span class="op">===</span> <span class="kw">null</span> <span class="op">||</span> offset[i] <span class="op">===</span> <span class="kw">null</span>) {</span>
-<span id="cb18-314"><a href="#cb18-314" aria-hidden="true" tabindex="-1"></a>        ys<span class="op">.</span><span class="fu">push</span>(<span class="kw">null</span>)</span>
-<span id="cb18-315"><a href="#cb18-315" aria-hidden="true" tabindex="-1"></a>        <span class="cf">continue</span></span>
-<span id="cb18-316"><a href="#cb18-316" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb18-317"><a href="#cb18-317" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> y <span class="op">=</span> line[i] <span class="op">+</span> noiseLevel <span class="op">*</span> offset[i]</span>
-<span id="cb18-318"><a href="#cb18-318" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(y) <span class="op">&amp;&amp;</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(y) <span class="op">&lt;</span> <span class="fl">1e6</span> <span class="op">?</span> y <span class="op">:</span> <span class="kw">null</span>)</span>
-<span id="cb18-319"><a href="#cb18-319" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb18-320"><a href="#cb18-320" aria-hidden="true" tabindex="-1"></a>    curves[degree] <span class="op">=</span> ys</span>
-<span id="cb18-321"><a href="#cb18-321" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb18-322"><a href="#cb18-322" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-323"><a href="#cb18-323" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {<span class="dt">points</span><span class="op">:</span> result<span class="op">.</span><span class="at">points</span><span class="op">,</span> <span class="dt">xRange</span><span class="op">:</span> axisSetup<span class="op">.</span><span class="at">viewXRange</span><span class="op">,</span> <span class="dt">yRange</span><span class="op">:</span> axisSetup<span class="op">.</span><span class="at">yRange</span><span class="op">,</span> <span class="dt">sampleXs</span><span class="op">:</span> axisSetup<span class="op">.</span><span class="at">sampleXs</span><span class="op">,</span> curves}</span>
-<span id="cb18-324"><a href="#cb18-324" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb18" data-startfrom="305" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 304;"><span id="cb18-305"><a href="#cb18-305" aria-hidden="true" tabindex="-1"></a><span class="co">// setup: combines bufferCurves into the curve at the current noiseLevel —</span></span>
+<span id="cb18-306"><a href="#cb18-306" aria-hidden="true" tabindex="-1"></a><span class="co">// plain addition per sample point, no polynomial evaluation or matrix</span></span>
+<span id="cb18-307"><a href="#cb18-307" aria-hidden="true" tabindex="-1"></a><span class="co">// solve, so this stays cheap on every slider tick.</span></span>
+<span id="cb18-308"><a href="#cb18-308" aria-hidden="true" tabindex="-1"></a>setup <span class="op">=</span> {</span>
+<span id="cb18-309"><a href="#cb18-309" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> curves <span class="op">=</span> {}</span>
+<span id="cb18-310"><a href="#cb18-310" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb18-311"><a href="#cb18-311" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> {line<span class="op">,</span> offset} <span class="op">=</span> bufferCurves[degree]</span>
+<span id="cb18-312"><a href="#cb18-312" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ys <span class="op">=</span> []</span>
+<span id="cb18-313"><a href="#cb18-313" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> line<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb18-314"><a href="#cb18-314" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (line[i] <span class="op">===</span> <span class="kw">null</span> <span class="op">||</span> offset[i] <span class="op">===</span> <span class="kw">null</span>) {</span>
+<span id="cb18-315"><a href="#cb18-315" aria-hidden="true" tabindex="-1"></a>        ys<span class="op">.</span><span class="fu">push</span>(<span class="kw">null</span>)</span>
+<span id="cb18-316"><a href="#cb18-316" aria-hidden="true" tabindex="-1"></a>        <span class="cf">continue</span></span>
+<span id="cb18-317"><a href="#cb18-317" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb18-318"><a href="#cb18-318" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> y <span class="op">=</span> line[i] <span class="op">+</span> noiseLevel <span class="op">*</span> offset[i]</span>
+<span id="cb18-319"><a href="#cb18-319" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(y) <span class="op">&amp;&amp;</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(y) <span class="op">&lt;</span> <span class="fl">1e6</span> <span class="op">?</span> y <span class="op">:</span> <span class="kw">null</span>)</span>
+<span id="cb18-320"><a href="#cb18-320" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb18-321"><a href="#cb18-321" aria-hidden="true" tabindex="-1"></a>    curves[degree] <span class="op">=</span> ys</span>
+<span id="cb18-322"><a href="#cb18-322" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb18-323"><a href="#cb18-323" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-324"><a href="#cb18-324" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {<span class="dt">points</span><span class="op">:</span> result<span class="op">.</span><span class="at">points</span><span class="op">,</span> <span class="dt">xRange</span><span class="op">:</span> axisSetup<span class="op">.</span><span class="at">viewXRange</span><span class="op">,</span> <span class="dt">yRange</span><span class="op">:</span> axisSetup<span class="op">.</span><span class="at">yRange</span><span class="op">,</span> <span class="dt">sampleXs</span><span class="op">:</span> axisSetup<span class="op">.</span><span class="at">sampleXs</span><span class="op">,</span> curves}</span>
+<span id="cb18-325"><a href="#cb18-325" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-18" data-nodetype="declaration">
 
@@ -981,64 +981,64 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb19" data-startfrom="329" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 328;"><span id="cb19-329"><a href="#cb19-329" aria-hidden="true" tabindex="-1"></a><span class="co">// mainPlot draws the data points and, depending on the checkboxes, each</span></span>
-<span id="cb19-330"><a href="#cb19-330" aria-hidden="true" tabindex="-1"></a><span class="co">// fitted curve.</span></span>
-<span id="cb19-331"><a href="#cb19-331" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
-<span id="cb19-332"><a href="#cb19-332" aria-hidden="true" tabindex="-1"></a><span class="co">// _plotDiv is kept in a closure so Plotly reuses the same DOM node across</span></span>
-<span id="cb19-333"><a href="#cb19-333" aria-hidden="true" tabindex="-1"></a><span class="co">// reactive updates — this preserves zoom and pan when the slider or</span></span>
-<span id="cb19-334"><a href="#cb19-334" aria-hidden="true" tabindex="-1"></a><span class="co">// checkboxes change.</span></span>
-<span id="cb19-335"><a href="#cb19-335" aria-hidden="true" tabindex="-1"></a>mainPlot <span class="op">=</span> {</span>
-<span id="cb19-336"><a href="#cb19-336" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> Plotly <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">Plotly</span></span>
-<span id="cb19-337"><a href="#cb19-337" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> _plotDiv <span class="op">=</span> <span class="kw">null</span></span>
-<span id="cb19-338"><a href="#cb19-338" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-339"><a href="#cb19-339" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ({points<span class="op">,</span> xRange<span class="op">,</span> yRange<span class="op">,</span> sampleXs<span class="op">,</span> curves}<span class="op">,</span> showDegree1<span class="op">,</span> showDegree2<span class="op">,</span> showDegree3<span class="op">,</span> showDegree4<span class="op">,</span> showDegree5) <span class="kw">=&gt;</span> {</span>
-<span id="cb19-340"><a href="#cb19-340" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pointXs <span class="op">=</span> []<span class="op">,</span> pointYs <span class="op">=</span> []</span>
-<span id="cb19-341"><a href="#cb19-341" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
-<span id="cb19-342"><a href="#cb19-342" aria-hidden="true" tabindex="-1"></a>      pointXs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
-<span id="cb19-343"><a href="#cb19-343" aria-hidden="true" tabindex="-1"></a>      pointYs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
-<span id="cb19-344"><a href="#cb19-344" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb19-345"><a href="#cb19-345" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-346"><a href="#cb19-346" aria-hidden="true" tabindex="-1"></a>    <span class="co">// One entry per degree, in draw order (highest degree first, so the</span></span>
-<span id="cb19-347"><a href="#cb19-347" aria-hidden="true" tabindex="-1"></a>    <span class="co">// more oscillatory curves don't hide behind the flatter ones).</span></span>
-<span id="cb19-348"><a href="#cb19-348" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> curveSpecs <span class="op">=</span> [</span>
-<span id="cb19-349"><a href="#cb19-349" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">5</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree5<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#dc2626"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 5 (overfit)"</span>}<span class="op">,</span></span>
-<span id="cb19-350"><a href="#cb19-350" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree4<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#0891b2"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 4"</span>}<span class="op">,</span></span>
-<span id="cb19-351"><a href="#cb19-351" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">3</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree3<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#9333ea"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 3"</span>}<span class="op">,</span></span>
-<span id="cb19-352"><a href="#cb19-352" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">2</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree2<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#16a34a"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 2"</span>}<span class="op">,</span></span>
-<span id="cb19-353"><a href="#cb19-353" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree1<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#2563eb"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 1 (underfit)"</span>}</span>
-<span id="cb19-354"><a href="#cb19-354" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb19-355"><a href="#cb19-355" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-356"><a href="#cb19-356" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> data <span class="op">=</span> []</span>
-<span id="cb19-357"><a href="#cb19-357" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> spec <span class="kw">of</span> curveSpecs) {</span>
-<span id="cb19-358"><a href="#cb19-358" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="op">!</span>spec<span class="op">.</span><span class="at">show</span>) <span class="cf">continue</span></span>
-<span id="cb19-359"><a href="#cb19-359" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> sampleXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> curves[spec<span class="op">.</span><span class="at">degree</span>]<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> spec<span class="op">.</span><span class="at">label</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> spec<span class="op">.</span><span class="at">color</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
-<span id="cb19-360"><a href="#cb19-360" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb19-361"><a href="#cb19-361" aria-hidden="true" tabindex="-1"></a>    data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> pointXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> pointYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Data points"</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#111827"</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">9</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"white"</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">1</span>}}})</span>
-<span id="cb19-362"><a href="#cb19-362" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-363"><a href="#cb19-363" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> layout <span class="op">=</span> {</span>
-<span id="cb19-364"><a href="#cb19-364" aria-hidden="true" tabindex="-1"></a>      <span class="dt">margin</span><span class="op">:</span> {<span class="dt">l</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">t</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">b</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
-<span id="cb19-365"><a href="#cb19-365" aria-hidden="true" tabindex="-1"></a>      <span class="dt">xaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
-<span id="cb19-366"><a href="#cb19-366" aria-hidden="true" tabindex="-1"></a>      <span class="dt">yaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [yRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> yRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
-<span id="cb19-367"><a href="#cb19-367" aria-hidden="true" tabindex="-1"></a>      <span class="dt">legend</span><span class="op">:</span> {<span class="dt">orientation</span><span class="op">:</span> <span class="st">"h"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="op">-</span><span class="fl">0.08</span>}<span class="op">,</span></span>
-<span id="cb19-368"><a href="#cb19-368" aria-hidden="true" tabindex="-1"></a>      <span class="dt">hovermode</span><span class="op">:</span> <span class="st">"closest"</span><span class="op">,</span></span>
-<span id="cb19-369"><a href="#cb19-369" aria-hidden="true" tabindex="-1"></a>      <span class="dt">uirevision</span><span class="op">:</span> <span class="st">"static"</span><span class="op">,</span></span>
-<span id="cb19-370"><a href="#cb19-370" aria-hidden="true" tabindex="-1"></a>      <span class="dt">autosize</span><span class="op">:</span> <span class="kw">true</span></span>
-<span id="cb19-371"><a href="#cb19-371" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb19-372"><a href="#cb19-372" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> config <span class="op">=</span> {<span class="dt">responsive</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">displaylogo</span><span class="op">:</span> <span class="kw">false</span>}</span>
-<span id="cb19-373"><a href="#cb19-373" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-374"><a href="#cb19-374" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>_plotDiv) {</span>
-<span id="cb19-375"><a href="#cb19-375" aria-hidden="true" tabindex="-1"></a>      _plotDiv <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb19-376"><a href="#cb19-376" aria-hidden="true" tabindex="-1"></a>      _plotDiv<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"plotly-box-large"</span></span>
-<span id="cb19-377"><a href="#cb19-377" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">newPlot</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
-<span id="cb19-378"><a href="#cb19-378" aria-hidden="true" tabindex="-1"></a>      <span class="co">// newPlot fires before the div is in the DOM, so Plotly measures 0 width.</span></span>
-<span id="cb19-379"><a href="#cb19-379" aria-hidden="true" tabindex="-1"></a>      <span class="co">// A ResizeObserver catches the real size once it's inserted and laid out.</span></span>
-<span id="cb19-380"><a href="#cb19-380" aria-hidden="true" tabindex="-1"></a>      <span class="kw">new</span> <span class="fu">ResizeObserver</span>(() <span class="kw">=&gt;</span> Plotly<span class="op">.</span><span class="at">Plots</span><span class="op">.</span><span class="fu">resize</span>(_plotDiv))<span class="op">.</span><span class="fu">observe</span>(_plotDiv)</span>
-<span id="cb19-381"><a href="#cb19-381" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb19-382"><a href="#cb19-382" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">react</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
-<span id="cb19-383"><a href="#cb19-383" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb19-384"><a href="#cb19-384" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _plotDiv</span>
-<span id="cb19-385"><a href="#cb19-385" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb19-386"><a href="#cb19-386" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb19" data-startfrom="330" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 329;"><span id="cb19-330"><a href="#cb19-330" aria-hidden="true" tabindex="-1"></a><span class="co">// mainPlot draws the data points and, depending on the checkboxes, each</span></span>
+<span id="cb19-331"><a href="#cb19-331" aria-hidden="true" tabindex="-1"></a><span class="co">// fitted curve.</span></span>
+<span id="cb19-332"><a href="#cb19-332" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
+<span id="cb19-333"><a href="#cb19-333" aria-hidden="true" tabindex="-1"></a><span class="co">// _plotDiv is kept in a closure so Plotly reuses the same DOM node across</span></span>
+<span id="cb19-334"><a href="#cb19-334" aria-hidden="true" tabindex="-1"></a><span class="co">// reactive updates — this preserves zoom and pan when the slider or</span></span>
+<span id="cb19-335"><a href="#cb19-335" aria-hidden="true" tabindex="-1"></a><span class="co">// checkboxes change.</span></span>
+<span id="cb19-336"><a href="#cb19-336" aria-hidden="true" tabindex="-1"></a>mainPlot <span class="op">=</span> {</span>
+<span id="cb19-337"><a href="#cb19-337" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> Plotly <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">Plotly</span></span>
+<span id="cb19-338"><a href="#cb19-338" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> _plotDiv <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb19-339"><a href="#cb19-339" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-340"><a href="#cb19-340" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ({points<span class="op">,</span> xRange<span class="op">,</span> yRange<span class="op">,</span> sampleXs<span class="op">,</span> curves}<span class="op">,</span> showDegree1<span class="op">,</span> showDegree2<span class="op">,</span> showDegree3<span class="op">,</span> showDegree4<span class="op">,</span> showDegree5) <span class="kw">=&gt;</span> {</span>
+<span id="cb19-341"><a href="#cb19-341" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pointXs <span class="op">=</span> []<span class="op">,</span> pointYs <span class="op">=</span> []</span>
+<span id="cb19-342"><a href="#cb19-342" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
+<span id="cb19-343"><a href="#cb19-343" aria-hidden="true" tabindex="-1"></a>      pointXs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb19-344"><a href="#cb19-344" aria-hidden="true" tabindex="-1"></a>      pointYs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb19-345"><a href="#cb19-345" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-346"><a href="#cb19-346" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-347"><a href="#cb19-347" aria-hidden="true" tabindex="-1"></a>    <span class="co">// One entry per degree, in draw order (highest degree first, so the</span></span>
+<span id="cb19-348"><a href="#cb19-348" aria-hidden="true" tabindex="-1"></a>    <span class="co">// more oscillatory curves don't hide behind the flatter ones).</span></span>
+<span id="cb19-349"><a href="#cb19-349" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> curveSpecs <span class="op">=</span> [</span>
+<span id="cb19-350"><a href="#cb19-350" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">5</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree5<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#dc2626"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 5 (overfit)"</span>}<span class="op">,</span></span>
+<span id="cb19-351"><a href="#cb19-351" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree4<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#0891b2"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 4"</span>}<span class="op">,</span></span>
+<span id="cb19-352"><a href="#cb19-352" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">3</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree3<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#9333ea"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 3"</span>}<span class="op">,</span></span>
+<span id="cb19-353"><a href="#cb19-353" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">2</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree2<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#16a34a"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 2"</span>}<span class="op">,</span></span>
+<span id="cb19-354"><a href="#cb19-354" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">degree</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">show</span><span class="op">:</span> showDegree1<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> <span class="st">"#2563eb"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Degree 1 (underfit)"</span>}</span>
+<span id="cb19-355"><a href="#cb19-355" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb19-356"><a href="#cb19-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-357"><a href="#cb19-357" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> data <span class="op">=</span> []</span>
+<span id="cb19-358"><a href="#cb19-358" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> spec <span class="kw">of</span> curveSpecs) {</span>
+<span id="cb19-359"><a href="#cb19-359" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="op">!</span>spec<span class="op">.</span><span class="at">show</span>) <span class="cf">continue</span></span>
+<span id="cb19-360"><a href="#cb19-360" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> sampleXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> curves[spec<span class="op">.</span><span class="at">degree</span>]<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> spec<span class="op">.</span><span class="at">label</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> spec<span class="op">.</span><span class="at">color</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
+<span id="cb19-361"><a href="#cb19-361" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-362"><a href="#cb19-362" aria-hidden="true" tabindex="-1"></a>    data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> pointXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> pointYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Data points"</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#111827"</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">9</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"white"</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">1</span>}}})</span>
+<span id="cb19-363"><a href="#cb19-363" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-364"><a href="#cb19-364" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> layout <span class="op">=</span> {</span>
+<span id="cb19-365"><a href="#cb19-365" aria-hidden="true" tabindex="-1"></a>      <span class="dt">margin</span><span class="op">:</span> {<span class="dt">l</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">t</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">b</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
+<span id="cb19-366"><a href="#cb19-366" aria-hidden="true" tabindex="-1"></a>      <span class="dt">xaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb19-367"><a href="#cb19-367" aria-hidden="true" tabindex="-1"></a>      <span class="dt">yaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [yRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> yRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb19-368"><a href="#cb19-368" aria-hidden="true" tabindex="-1"></a>      <span class="dt">legend</span><span class="op">:</span> {<span class="dt">orientation</span><span class="op">:</span> <span class="st">"h"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="op">-</span><span class="fl">0.08</span>}<span class="op">,</span></span>
+<span id="cb19-369"><a href="#cb19-369" aria-hidden="true" tabindex="-1"></a>      <span class="dt">hovermode</span><span class="op">:</span> <span class="st">"closest"</span><span class="op">,</span></span>
+<span id="cb19-370"><a href="#cb19-370" aria-hidden="true" tabindex="-1"></a>      <span class="dt">uirevision</span><span class="op">:</span> <span class="st">"static"</span><span class="op">,</span></span>
+<span id="cb19-371"><a href="#cb19-371" aria-hidden="true" tabindex="-1"></a>      <span class="dt">autosize</span><span class="op">:</span> <span class="kw">true</span></span>
+<span id="cb19-372"><a href="#cb19-372" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-373"><a href="#cb19-373" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> config <span class="op">=</span> {<span class="dt">responsive</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">displaylogo</span><span class="op">:</span> <span class="kw">false</span>}</span>
+<span id="cb19-374"><a href="#cb19-374" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-375"><a href="#cb19-375" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>_plotDiv) {</span>
+<span id="cb19-376"><a href="#cb19-376" aria-hidden="true" tabindex="-1"></a>      _plotDiv <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb19-377"><a href="#cb19-377" aria-hidden="true" tabindex="-1"></a>      _plotDiv<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"plotly-box-large"</span></span>
+<span id="cb19-378"><a href="#cb19-378" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">newPlot</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb19-379"><a href="#cb19-379" aria-hidden="true" tabindex="-1"></a>      <span class="co">// newPlot fires before the div is in the DOM, so Plotly measures 0 width.</span></span>
+<span id="cb19-380"><a href="#cb19-380" aria-hidden="true" tabindex="-1"></a>      <span class="co">// A ResizeObserver catches the real size once it's inserted and laid out.</span></span>
+<span id="cb19-381"><a href="#cb19-381" aria-hidden="true" tabindex="-1"></a>      <span class="kw">new</span> <span class="fu">ResizeObserver</span>(() <span class="kw">=&gt;</span> Plotly<span class="op">.</span><span class="at">Plots</span><span class="op">.</span><span class="fu">resize</span>(_plotDiv))<span class="op">.</span><span class="fu">observe</span>(_plotDiv)</span>
+<span id="cb19-382"><a href="#cb19-382" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb19-383"><a href="#cb19-383" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">react</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb19-384"><a href="#cb19-384" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-385"><a href="#cb19-385" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _plotDiv</span>
+<span id="cb19-386"><a href="#cb19-386" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-387"><a href="#cb19-387" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-19" data-nodetype="declaration">
 
@@ -1047,7 +1047,7 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-output-wide">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb20" data-startfrom="392" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 391;"><span id="cb20-392"><a href="#cb20-392" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showDegree1<span class="op">,</span> showDegree2<span class="op">,</span> showDegree3<span class="op">,</span> showDegree4<span class="op">,</span> showDegree5)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb20" data-startfrom="393" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 392;"><span id="cb20-393"><a href="#cb20-393" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showDegree1<span class="op">,</span> showDegree2<span class="op">,</span> showDegree3<span class="op">,</span> showDegree4<span class="op">,</span> showDegree5)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-20" data-nodetype="expression">
 
@@ -1067,38 +1067,38 @@ Authors: Apurva Nakade
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb21" data-startfrom="398" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 397;"><span id="cb21-398"><a href="#cb21-398" aria-hidden="true" tabindex="-1"></a><span class="co">// errorTable reports each model's parameter count and total squared error</span></span>
-<span id="cb21-399"><a href="#cb21-399" aria-hidden="true" tabindex="-1"></a><span class="co">// over the 6 data points, updating live as the slider moves — for all 5</span></span>
-<span id="cb21-400"><a href="#cb21-400" aria-hidden="true" tabindex="-1"></a><span class="co">// degrees, regardless of which curves the checkboxes currently show. The</span></span>
-<span id="cb21-401"><a href="#cb21-401" aria-hidden="true" tabindex="-1"></a><span class="co">// degree-5 row stays near zero regardless of the slider — it has exactly</span></span>
-<span id="cb21-402"><a href="#cb21-402" aria-hidden="true" tabindex="-1"></a><span class="co">// as many parameters as points, so it can always interpolate them exactly.</span></span>
-<span id="cb21-403"><a href="#cb21-403" aria-hidden="true" tabindex="-1"></a>errorTable <span class="op">=</span> {</span>
-<span id="cb21-404"><a href="#cb21-404" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> labels <span class="op">=</span> {</span>
-<span id="cb21-405"><a href="#cb21-405" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span><span class="op">:</span> <span class="st">"Degree 1 (line)"</span><span class="op">,</span></span>
-<span id="cb21-406"><a href="#cb21-406" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span><span class="op">:</span> <span class="st">"Degree 2 (parabola)"</span><span class="op">,</span></span>
-<span id="cb21-407"><a href="#cb21-407" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span><span class="op">:</span> <span class="st">"Degree 3"</span><span class="op">,</span></span>
-<span id="cb21-408"><a href="#cb21-408" aria-hidden="true" tabindex="-1"></a>    <span class="dv">4</span><span class="op">:</span> <span class="st">"Degree 4"</span><span class="op">,</span></span>
-<span id="cb21-409"><a href="#cb21-409" aria-hidden="true" tabindex="-1"></a>    <span class="dv">5</span><span class="op">:</span> <span class="st">"Degree 5 (interpolates all 6 points)"</span></span>
-<span id="cb21-410"><a href="#cb21-410" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb21-411"><a href="#cb21-411" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-412"><a href="#cb21-412" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
-<span id="cb21-413"><a href="#cb21-413" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb21-414"><a href="#cb21-414" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
-<span id="cb21-415"><a href="#cb21-415" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>fit) {</span>
-<span id="cb21-416"><a href="#cb21-416" aria-hidden="true" tabindex="-1"></a>      rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> <span class="st">"—"</span><span class="op">,</span> <span class="st">"—"</span>])</span>
-<span id="cb21-417"><a href="#cb21-417" aria-hidden="true" tabindex="-1"></a>      <span class="cf">continue</span></span>
-<span id="cb21-418"><a href="#cb21-418" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb21-419"><a href="#cb21-419" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> fit<span class="op">.</span><span class="at">coeffs</span><span class="op">.</span><span class="at">length</span><span class="op">,</span> fit<span class="op">.</span><span class="at">totalSquaredError</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)])</span>
-<span id="cb21-420"><a href="#cb21-420" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb21-421"><a href="#cb21-421" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-422"><a href="#cb21-422" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb21-423"><a href="#cb21-423" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb21-424"><a href="#cb21-424" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
-<span id="cb21-425"><a href="#cb21-425" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
-<span id="cb21-426"><a href="#cb21-426" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"polynomial-fit-errors.csv"</span><span class="op">,</span></span>
-<span id="cb21-427"><a href="#cb21-427" aria-hidden="true" tabindex="-1"></a>    rows</span>
-<span id="cb21-428"><a href="#cb21-428" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb21-429"><a href="#cb21-429" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb21" data-startfrom="399" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 398;"><span id="cb21-399"><a href="#cb21-399" aria-hidden="true" tabindex="-1"></a><span class="co">// errorTable reports each model's parameter count and total squared error</span></span>
+<span id="cb21-400"><a href="#cb21-400" aria-hidden="true" tabindex="-1"></a><span class="co">// over the 6 data points, updating live as the slider moves — for all 5</span></span>
+<span id="cb21-401"><a href="#cb21-401" aria-hidden="true" tabindex="-1"></a><span class="co">// degrees, regardless of which curves the checkboxes currently show. The</span></span>
+<span id="cb21-402"><a href="#cb21-402" aria-hidden="true" tabindex="-1"></a><span class="co">// degree-5 row stays near zero regardless of the slider — it has exactly</span></span>
+<span id="cb21-403"><a href="#cb21-403" aria-hidden="true" tabindex="-1"></a><span class="co">// as many parameters as points, so it can always interpolate them exactly.</span></span>
+<span id="cb21-404"><a href="#cb21-404" aria-hidden="true" tabindex="-1"></a>errorTable <span class="op">=</span> {</span>
+<span id="cb21-405"><a href="#cb21-405" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> labels <span class="op">=</span> {</span>
+<span id="cb21-406"><a href="#cb21-406" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span><span class="op">:</span> <span class="st">"Degree 1 (line)"</span><span class="op">,</span></span>
+<span id="cb21-407"><a href="#cb21-407" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span><span class="op">:</span> <span class="st">"Degree 2 (parabola)"</span><span class="op">,</span></span>
+<span id="cb21-408"><a href="#cb21-408" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span><span class="op">:</span> <span class="st">"Degree 3"</span><span class="op">,</span></span>
+<span id="cb21-409"><a href="#cb21-409" aria-hidden="true" tabindex="-1"></a>    <span class="dv">4</span><span class="op">:</span> <span class="st">"Degree 4"</span><span class="op">,</span></span>
+<span id="cb21-410"><a href="#cb21-410" aria-hidden="true" tabindex="-1"></a>    <span class="dv">5</span><span class="op">:</span> <span class="st">"Degree 5 (interpolates all 6 points)"</span></span>
+<span id="cb21-411"><a href="#cb21-411" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-412"><a href="#cb21-412" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-413"><a href="#cb21-413" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
+<span id="cb21-414"><a href="#cb21-414" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb21-415"><a href="#cb21-415" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
+<span id="cb21-416"><a href="#cb21-416" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>fit) {</span>
+<span id="cb21-417"><a href="#cb21-417" aria-hidden="true" tabindex="-1"></a>      rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> <span class="st">"—"</span><span class="op">,</span> <span class="st">"—"</span>])</span>
+<span id="cb21-418"><a href="#cb21-418" aria-hidden="true" tabindex="-1"></a>      <span class="cf">continue</span></span>
+<span id="cb21-419"><a href="#cb21-419" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb21-420"><a href="#cb21-420" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> fit<span class="op">.</span><span class="at">coeffs</span><span class="op">.</span><span class="at">length</span><span class="op">,</span> fit<span class="op">.</span><span class="at">totalSquaredError</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)])</span>
+<span id="cb21-421"><a href="#cb21-421" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb21-422"><a href="#cb21-422" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-423"><a href="#cb21-423" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb21-424"><a href="#cb21-424" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb21-425"><a href="#cb21-425" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
+<span id="cb21-426"><a href="#cb21-426" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
+<span id="cb21-427"><a href="#cb21-427" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"polynomial-fit-errors.csv"</span><span class="op">,</span></span>
+<span id="cb21-428"><a href="#cb21-428" aria-hidden="true" tabindex="-1"></a>    rows</span>
+<span id="cb21-429"><a href="#cb21-429" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb21-430"><a href="#cb21-430" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-21" data-nodetype="declaration">
 
@@ -1121,27 +1121,27 @@ Authors: Apurva Nakade
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb22" data-startfrom="437" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 436;"><span id="cb22-437"><a href="#cb22-437" aria-hidden="true" tabindex="-1"></a><span class="co">// errorPlot: total squared error as a function of degree, for the current</span></span>
-<span id="cb22-438"><a href="#cb22-438" aria-hidden="true" tabindex="-1"></a><span class="co">// points. Training error decreases monotonically with degree — more</span></span>
-<span id="cb22-439"><a href="#cb22-439" aria-hidden="true" tabindex="-1"></a><span class="co">// parameters can only help fit the training data — which is exactly why</span></span>
-<span id="cb22-440"><a href="#cb22-440" aria-hidden="true" tabindex="-1"></a><span class="co">// training error alone can't tell you when a model is overfitting.</span></span>
-<span id="cb22-441"><a href="#cb22-441" aria-hidden="true" tabindex="-1"></a>errorPlot <span class="op">=</span> {</span>
-<span id="cb22-442"><a href="#cb22-442" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
-<span id="cb22-443"><a href="#cb22-443" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb22-444"><a href="#cb22-444" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
-<span id="cb22-445"><a href="#cb22-445" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (fit) rows<span class="op">.</span><span class="fu">push</span>({degree<span class="op">,</span> <span class="dt">error</span><span class="op">:</span> fit<span class="op">.</span><span class="at">totalSquaredError</span>})</span>
-<span id="cb22-446"><a href="#cb22-446" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb22-447"><a href="#cb22-447" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-448"><a href="#cb22-448" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb22-449"><a href="#cb22-449" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">500</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb22-450"><a href="#cb22-450" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Polynomial degree"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">,</span> <span class="dv">5</span>]}<span class="op">,</span></span>
-<span id="cb22-451"><a href="#cb22-451" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Total squared error (training data)"</span>}<span class="op">,</span></span>
-<span id="cb22-452"><a href="#cb22-452" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
-<span id="cb22-453"><a href="#cb22-453" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">line</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#9333ea"</span>})<span class="op">,</span></span>
-<span id="cb22-454"><a href="#cb22-454" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> <span class="st">"#9333ea"</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">5</span>})</span>
-<span id="cb22-455"><a href="#cb22-455" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb22-456"><a href="#cb22-456" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb22-457"><a href="#cb22-457" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb22" data-startfrom="438" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 437;"><span id="cb22-438"><a href="#cb22-438" aria-hidden="true" tabindex="-1"></a><span class="co">// errorPlot: total squared error as a function of degree, for the current</span></span>
+<span id="cb22-439"><a href="#cb22-439" aria-hidden="true" tabindex="-1"></a><span class="co">// points. Training error decreases monotonically with degree — more</span></span>
+<span id="cb22-440"><a href="#cb22-440" aria-hidden="true" tabindex="-1"></a><span class="co">// parameters can only help fit the training data — which is exactly why</span></span>
+<span id="cb22-441"><a href="#cb22-441" aria-hidden="true" tabindex="-1"></a><span class="co">// training error alone can't tell you when a model is overfitting.</span></span>
+<span id="cb22-442"><a href="#cb22-442" aria-hidden="true" tabindex="-1"></a>errorPlot <span class="op">=</span> {</span>
+<span id="cb22-443"><a href="#cb22-443" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
+<span id="cb22-444"><a href="#cb22-444" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb22-445"><a href="#cb22-445" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
+<span id="cb22-446"><a href="#cb22-446" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (fit) rows<span class="op">.</span><span class="fu">push</span>({degree<span class="op">,</span> <span class="dt">error</span><span class="op">:</span> fit<span class="op">.</span><span class="at">totalSquaredError</span>})</span>
+<span id="cb22-447"><a href="#cb22-447" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb22-448"><a href="#cb22-448" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-449"><a href="#cb22-449" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb22-450"><a href="#cb22-450" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">500</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb22-451"><a href="#cb22-451" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Polynomial degree"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">,</span> <span class="dv">5</span>]}<span class="op">,</span></span>
+<span id="cb22-452"><a href="#cb22-452" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Total squared error (training data)"</span>}<span class="op">,</span></span>
+<span id="cb22-453"><a href="#cb22-453" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb22-454"><a href="#cb22-454" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">line</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#9333ea"</span>})<span class="op">,</span></span>
+<span id="cb22-455"><a href="#cb22-455" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> <span class="st">"#9333ea"</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">5</span>})</span>
+<span id="cb22-456"><a href="#cb22-456" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb22-457"><a href="#cb22-457" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb22-458"><a href="#cb22-458" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-22" data-nodetype="declaration">
 

@@ -1,4 +1,4 @@
-# VisualMath
+# Math Apps
 
 ## References
 

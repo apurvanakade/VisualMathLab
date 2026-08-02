@@ -108,11 +108,6 @@
  * row to wrap. */
 .ojs-auto { width: auto !important; flex: none !important; }
 
-/* Short numeric-expression fields (e.g. "Max iterations") use Inputs.text
- * so they accept expressions like "2*10", but should stay as compact as the
- * plain number input they replaced rather than the default 28em text width. */
-.ojs-auto input[type="text"] { width: 6em; }
-
 /* ── Output area ─────────────────────────────────────────────────── */
 
 /* Let layout-ncol cells shrink below the Plotly chart's intrinsic width */
@@ -124,22 +119,6 @@
   width: 100%;
   height: 78vh;
   min-height: 500px;
-}
-
-/* Plotly's own 78vh/100% sizing above would otherwise cap the plot well
- * short of the screen while fullscreen (js/plotly-fullscreen-button.js). */
-.plotly-box-large:fullscreen {
-  width: 100vw;
-  height: 100vh;
-  background: var(--bs-body-bg, #fff);
-}
-
-/* ── Navbar search ───────────────────────────────────────────────── */
-
-/* Quarto's default inline (type: textbox) navbar search is 180px; widen it. */
-#quarto-search.type-textbox .aa-Autocomplete .aa-Form {
-  width: 320px;
-  max-width: 100%;
 }
 
 /* ── Listing cards ───────────────────────────────────────────────── */
@@ -182,4 +161,55 @@
 
 @media (max-width: 480px) {
   .ojs-grid { grid-template-columns: 1fr; }
+}
+
+
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 2rem 0;
+}
+
+.example-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #dbe4ee;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.example-card:hover {
+  transform: translateY(-2px);
+  border-color: #93c5fd;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  color: inherit;
+  text-decoration: none;
+}
+
+.example-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+  margin-bottom: 0.35rem;
+}
+
+.example-card-formula {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-bottom: 0.45rem;
+}
+
+.example-card-text {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #475569;
 }

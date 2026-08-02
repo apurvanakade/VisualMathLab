@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Apurva Nakade">
+<meta name="dcterms.date" content="2026-08-01">
 
-<title>contributing – VisualMath</title>
+<title>Bayes’ Theorem – VisualMath</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -26,65 +28,34 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
-/* CSS for syntax highlighting */
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-  { counter-reset: source-line 0; }
-pre.numberSource code > span
-  { position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-  { content: counter(source-line);
-    position: relative; left: -1em; text-align: right; vertical-align: baseline;
-    border: none; display: inline-block;
-    -webkit-touch-callout: none; -webkit-user-select: none;
-    -khtml-user-select: none; -moz-user-select: none;
-    -ms-user-select: none; user-select: none;
-    padding: 0 4px; width: 4em;
-  }
-pre.numberSource { margin-left: 3em;  padding-left: 4px; }
-div.sourceCode
-  {   }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-767db81d3c4dc1147bf376ccc5229356.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../probability/bayes/ppv/index.html" rel="next">
+<link href="../../model-fitting/l1-vs-l2/index.html" rel="prev">
+<script src="../../site_libs/quarto-listing/list.min.js"></script>
+<script src="../../site_libs/quarto-listing/quarto-listing.js"></script>
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-767db81d3c4dc1147bf376ccc5229356.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -111,6 +82,35 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<script>
+
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    const listingTargetEl = window.document.querySelector('#listing-listing .list');
+    if (!listingTargetEl) {
+      // No listing discovered, do not attach.
+      return; 
+    }
+
+    const options = {
+      valueNames: ['listing-image','listing-title','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
+      
+      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description","listing-categories"],
+    };
+
+    window['quarto-listings'] = window['quarto-listings'] || {};
+    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
+
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  });
+
+  window.addEventListener('hashchange',() => {
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  })
+  </script>
 <!--
 Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -119,34 +119,63 @@ Authors: Apurva Nakade
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="./js/expressions/make-function.js"></script>
-<script src="./js/expressions/make-derivative.js"></script>
-<script src="./js/expressions/make-number.js"></script>
-<script src="./js/expressions/make-rational.js"></script>
-<script src="./js/expressions/make-ode-function.js"></script>
-<script src="./js/plotting/padded-range.js"></script>
-<script src="./js/plotting/plotly-fullscreen-button.js"></script>
-<script src="./js/numerical/linear-regression.js"></script>
-<script src="./js/numerical/l1-regression.js"></script>
-<script src="./js/numerical/polynomial-fit.js"></script>
-<script src="./js/numerical/euler-solve.js"></script>
-<script src="./js/numerical/rk4-solve.js"></script>
-<script src="./js/numerical/simpson-estimate.js"></script>
-<script src="./js/numerical/lagrange-quadratic.js"></script>
-<script src="./js/ui/render-table.js"></script>
-<script src="./js/discrete-math/barycentric-triples.js"></script>
-<script src="./js/discrete-math/sub-triangles.js"></script>
-<script src="./js/discrete-math/triangulation-edges.js"></script>
-<script src="./js/discrete-math/sperner-color.js"></script>
-<script src="./js/discrete-math/random-color.js"></script>
-<script src="./js/discrete-math/mixed-pair-color.js"></script>
-<script src="./js/discrete-math/triangle-fill-color.js"></script>
+<script src="../../js/expressions/make-function.js"></script>
+<script src="../../js/expressions/make-derivative.js"></script>
+<script src="../../js/expressions/make-number.js"></script>
+<script src="../../js/expressions/make-rational.js"></script>
+<script src="../../js/expressions/make-ode-function.js"></script>
+<script src="../../js/plotting/padded-range.js"></script>
+<script src="../../js/plotting/plotly-fullscreen-button.js"></script>
+<script src="../../js/numerical/linear-regression.js"></script>
+<script src="../../js/numerical/l1-regression.js"></script>
+<script src="../../js/numerical/polynomial-fit.js"></script>
+<script src="../../js/numerical/euler-solve.js"></script>
+<script src="../../js/numerical/rk4-solve.js"></script>
+<script src="../../js/numerical/simpson-estimate.js"></script>
+<script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/ui/render-table.js"></script>
+<script src="../../js/discrete-math/barycentric-triples.js"></script>
+<script src="../../js/discrete-math/sub-triangles.js"></script>
+<script src="../../js/discrete-math/triangulation-edges.js"></script>
+<script src="../../js/discrete-math/sperner-color.js"></script>
+<script src="../../js/discrete-math/random-color.js"></script>
+<script src="../../js/discrete-math/mixed-pair-color.js"></script>
+<script src="../../js/discrete-math/triangle-fill-color.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
-<link rel="stylesheet" href="styles.css">
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -315,7 +344,7 @@ Authors: Apurva Nakade
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">VisualMath</span>
     </a>
   </div>
@@ -330,7 +359,7 @@ Authors: Apurva Nakade
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../probability/bayes/index.html">Probability</a></li><li class="breadcrumb-item"><a href="../../probability/bayes/index.html">Bayes’ Theorem</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -353,7 +382,7 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./root-finding/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../root-finding/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Root Finding</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -362,25 +391,25 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./root-finding/bisection-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/bisection-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Bisection Method</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./root-finding/fixed-point/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/fixed-point/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fixed Point Iteration</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./root-finding/newton-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/newton-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Newton’s Method</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./root-finding/secant-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/secant-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Secant Method</span></a>
   </div>
 </li>
@@ -388,7 +417,7 @@ Authors: Apurva Nakade
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Piecewise Interpolation</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -397,19 +426,19 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Polynomial Interpolation</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./piecewise-interpolation/integration/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../piecewise-interpolation/integration/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Numerical Integration</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./piecewise-interpolation/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../piecewise-interpolation/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Adaptive Integration</span></a>
   </div>
 </li>
@@ -417,7 +446,7 @@ Authors: Apurva Nakade
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./differential-equations/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../differential-equations/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Differential Equations</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -426,25 +455,25 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./differential-equations/explicit-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/explicit-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Explicit Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./differential-equations/implicit-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/implicit-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Implicit Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./differential-equations/adaptive-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/adaptive-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Adaptive Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./differential-equations/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Butcher Tableau Explorer</span></a>
   </div>
 </li>
@@ -463,7 +492,7 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./sperners-lemma/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../sperners-lemma/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner's Lemma</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -472,25 +501,25 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./sperners-lemma/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Barycentric Coordinates</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./sperners-lemma/statement/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/statement/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Statement</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./sperners-lemma/combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Combinatorial Proof</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./sperners-lemma/geometric-proof/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/geometric-proof/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Geometric Proof</span></a>
   </div>
 </li>
@@ -509,7 +538,7 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./model-fitting/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../model-fitting/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Model Fitting</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -518,13 +547,13 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./model-fitting/polynomial-fit/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../model-fitting/polynomial-fit/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Polynomial Fits</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">L1 vs.&nbsp;L2 Regression</span></a>
   </div>
 </li>
@@ -543,16 +572,16 @@ Authors: Apurva Nakade
       <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="./probability/bayes/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../probability/bayes/index.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Bayes' Theorem</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="false" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth2 ">  
+      <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth2 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./probability/bayes/ppv/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../probability/bayes/ppv/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Positive Predictive Value</span></a>
   </div>
 </li>
@@ -565,81 +594,83 @@ Authors: Apurva Nakade
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QmF5ZXMlMjB0aGVvcmVt">Bayes theorem <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q29uZGl0aW9uYWwlMjBwcm9iYWJpbGl0eQ==">Conditional probability <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TWVkaWNhbCUyMHRlc3Rpbmc=">Medical testing <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(1)</span></div></div></div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../probability/bayes/index.html">Probability</a></li><li class="breadcrumb-item"><a href="../../probability/bayes/index.html">Bayes’ Theorem</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Bayes’ Theorem</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Apurva Nakade </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">August 1, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+<p>Bayes’ theorem describes how a probability should update in light of new evidence. The apps below apply it to medical testing: how a test’s sensitivity and specificity combine with how common a condition is to determine what a positive result actually means.</p>
 
 
 
 
+<div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
+<div class="list grid quarto-listing-cols-3">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMHRoZW9yZW0lMkNDb25kaXRpb25hbCUyMHByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMHRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1785648697425" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1849">
+<a href="../../probability/bayes/ppv/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<div class="listing-item-img-placeholder card-img-top" style="height: 150px;">&nbsp;</div>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+Positive Predictive Value
+</h5>
+<div class="listing-categories">
 
-<section id="contributing-to-visualmath" class="level1">
-<h1>Contributing to VisualMath</h1>
-<p>Thank you for your interest in contributing to <code>VisualMath</code>! We welcome contributions from everyone, whether you are developing interactive JavaScript visualizations, structuring HTML pages, creating Quarto documents, or writing Python notebooks.</p>
-<section id="licensing-policy" class="level2">
-<h2 class="anchored" data-anchor-id="licensing-policy">Licensing Policy</h2>
-<p>By contributing to this repository, you agree that your contributions will be licensed under the project’s <a href="LICENSE">Apache License 2.0</a>.</p>
-<p>Because copyright in this project is distributed, you retain ownership of your code, but you grant the community a perpetual, royalty-free license to use, modify, and distribute it under the Apache 2.0 terms.</p>
-<hr>
-</section>
-<section id="file-header-templates" class="level2">
-<h2 class="anchored" data-anchor-id="file-header-templates">File Header Templates</h2>
-<p>To maintain consistency and ensure everyone receives proper academic and legal credit, <strong>every new code or content file added to this repository must include a copyright header at the very top.</strong></p>
-<p>Please copy, paste, and update the template matching your file’s language:</p>
-<section id="quarto-documents-.qmd-and-markdown-files-.md" class="level3">
-<h3 class="anchored" data-anchor-id="quarto-documents-.qmd-and-markdown-files-.md">1. Quarto Documents (<code>.qmd</code>) and Markdown Files (<code>.md</code>)</h3>
-<p>For Markdown and Quarto files, wrap the header in standard HTML comment tags at the very beginning of the document:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">Copyright (c) [Year] [Your Name]. All rights reserved.</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co">Released under Apache 2.0 license as described in the file LICENSE.</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co">Authors: [Your Name]</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">--&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="jupyter-notebooks-.ipynb" class="level3">
-<h3 class="anchored" data-anchor-id="jupyter-notebooks-.ipynb">2. Jupyter Notebooks (<code>.ipynb</code>)</h3>
-<p>For Jupyter Notebooks, create a <strong>Markdown cell</strong> at the very top of your notebook and paste the following:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Copyright (c) [Year] [Your Name]. All rights reserved.**</span>  </span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; *Released under Apache 2.0 license as described in the file LICENSE.*</span>  </span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">&gt; **Authors:** </span><span class="co">[</span><span class="ot">Your Name</span><span class="co">]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="javascript-typescript-css-files-.js-.ts-.css" class="level3">
-<h3 class="anchored" data-anchor-id="javascript-typescript-css-files-.js-.ts-.css">3. JavaScript / TypeScript / CSS Files (<code>.js</code>, <code>.ts</code>, <code>.css</code>)</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode javascript code-with-copy"><code class="sourceCode javascript"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">/**</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"> * Copyright (c) [Year] [Your Name]. All rights reserved.</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"> * Released under Apache 2.0 license as described in the file LICENSE.</span></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"> * Authors: [Your Name]</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"> */</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="python-r-configuration-files-.py-.r-.yml" class="level3">
-<h3 class="anchored" data-anchor-id="python-r-configuration-files-.py-.r-.yml">4. Python / R / Configuration Files (<code>.py</code>, <code>.R</code>, <code>.yml</code>)</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Copyright (c) [Year] [Your Name]. All rights reserved.</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Released under Apache 2.0 license as described in the file LICENSE.</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Authors: [Your Name]</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</section>
-<section id="html-files-.html" class="level3">
-<h3 class="anchored" data-anchor-id="html-files-.html">5. HTML Files (<code>.html</code>)</h3>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">Copyright (c) [Year] [Your Name]. All rights reserved.</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">Released under Apache 2.0 license as described in the file LICENSE.</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">Authors: [Your Name]</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">--&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<hr>
-</section>
-</section>
-<section id="managing-headers-on-existing-files" class="level2">
-<h2 class="anchored" data-anchor-id="managing-headers-on-existing-files">Managing Headers on Existing Files</h2>
-<ul>
-<li><strong>Minor edits:</strong> If you are fixing a bug, adjusting layout spacing, or correcting a typo in an existing file, you do not need to alter the header.</li>
-<li><strong>Significant additions:</strong> If you contribute a substantial new feature, script, or section to an existing file, please add your name to the <code>Authors</code> line of that file:</li>
-</ul>
-<pre class="text"><code>Authors: Apurva Nakade, [Your Name]
-</code></pre>
+<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
 
+<div class="listing-category" onclick="window.quartoListingCategory('QmF5ZXMlMjB0aGVvcmVt'); return false;">Bayes theorem</div>
 
-</section>
-</section>
+<div class="listing-category" onclick="window.quartoListingCategory('Q29uZGl0aW9uYWwlMjBwcm9iYWJpbGl0eQ=='); return false;">Conditional probability</div>
 
-</main> <!-- /main -->
+<div class="listing-category" onclick="window.quartoListingCategory('TWVkaWNhbCUyMHRlc3Rpbmc='); return false;">Medical testing</div>
+
+</div>
+<div class="card-text listing-description delink">
+A standard mammogram has 80% sensitivity and 90% specificity: if you have cancer, it comes back positive 80% of the time; if you don’t, it comes back negative 90% of the…
+</div>
+</div>
+</div></a>
+</div>
+</div>
+<div class="listing-no-matching d-none">No matching items</div>
+</div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     // Ensure there is a toggle, if there isn't float one in the top right
@@ -1053,6 +1084,18 @@ Authors: Apurva Nakade
     }
   });
   </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../../model-fitting/l1-vs-l2/index.html" class="pagination-link" aria-label="L1 vs. L2 Regression">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">L1 vs.&nbsp;L2 Regression</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../probability/bayes/ppv/index.html" class="pagination-link" aria-label="Positive Predictive Value">
+        <span class="nav-page-text">Positive Predictive Value</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
 </div> <!-- /content -->
 
 

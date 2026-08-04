@@ -1,12 +1,12 @@
 ---
 name: verify
-description: This skill should be used to verify changes to Math Apps (Quarto site, OJS cells, js/** shared utilities) actually work, before committing. Covers both pure-function regressions and browser-runtime errors that quarto render can't catch.
+description: This skill should be used to verify changes to Visual Math Lab (Quarto site, OJS cells, js/** shared utilities) actually work, before committing. Covers both pure-function regressions and browser-runtime errors that quarto render can't catch.
 version: 0.1.0
 ---
 
-# Verifying Math Apps changes
+# Verifying Visual Math Lab changes
 
-Math Apps is a static Quarto site (no backend, no bundler). `quarto render` only catches Pandoc/parse errors — it does **not** catch OJS runtime errors (a broken `VM.category.fn` call site, a bad cross-file reference, a mis-scoped rename) since those only throw in the browser. Verification here is two-tier: fast pure-function regression tests, then a real browser pass over every rendered page.
+Visual Math Lab is a static Quarto site (no backend, no bundler). `quarto render` only catches Pandoc/parse errors — it does **not** catch OJS runtime errors (a broken `VM.category.fn` call site, a bad cross-file reference, a mis-scoped rename) since those only throw in the browser. Verification here is two-tier: fast pure-function regression tests, then a real browser pass over every rendered page.
 
 ## Setup (once)
 

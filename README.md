@@ -1,4 +1,4 @@
-# Math Apps
+# Visual Math Lab
 
 ## References
 

@@ -24,6 +24,76 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
+```{ojs}
+//| output: false
+// URL preset helpers for examples.
+// Supported query parameters:
+//   f       function text
+//   a       left endpoint
+//   b       right endpoint
+//   n       current number of subintervals
+//   max     maximum n used in convergence plots/table
+//   show    comma-separated methods: left, midpoint, trapezoidal, simpson
+urlParams = new URLSearchParams(window.location.search)
+
+methodOptions = ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]
+
+methodSlugToLabel = new Map([
+  ["left", "Left Riemann sum"],
+  ["left-riemann", "Left Riemann sum"],
+  ["left-riemann-sum", "Left Riemann sum"],
+  ["left_riemann", "Left Riemann sum"],
+  ["left_riemann_sum", "Left Riemann sum"],
+
+  ["midpoint", "Midpoint Riemann sum"],
+  ["mid", "Midpoint Riemann sum"],
+  ["midpoint-riemann", "Midpoint Riemann sum"],
+  ["midpoint-riemann-sum", "Midpoint Riemann sum"],
+  ["midpoint_riemann", "Midpoint Riemann sum"],
+  ["midpoint_riemann_sum", "Midpoint Riemann sum"],
+
+  ["trapezoidal", "Trapezoidal rule"],
+  ["trapezoid", "Trapezoidal rule"],
+  ["trap", "Trapezoidal rule"],
+  ["trapezoidal-rule", "Trapezoidal rule"],
+  ["trapezoidal_rule", "Trapezoidal rule"],
+
+  ["simpson", "Simpson's rule"],
+  ["simpsons", "Simpson's rule"],
+  ["simpson-rule", "Simpson's rule"],
+  ["simpsons-rule", "Simpson's rule"],
+  ["simpson_rule", "Simpson's rule"],
+  ["simpsons_rule", "Simpson's rule"]
+])
+
+methodLabelToSlug = new Map([
+  ["Left Riemann sum", "left"],
+  ["Midpoint Riemann sum", "midpoint"],
+  ["Trapezoidal rule", "trapezoidal"],
+  ["Simpson's rule", "simpson"]
+])
+
+initialMethods = {
+  const raw = urlParams.get("show") ?? urlParams.get("methods")
+  if (raw === null || raw.trim() === "") return methodOptions
+
+  const selected = raw
+    .split(",")
+    .map(s => s.trim().toLowerCase())
+    .map(s => methodSlugToLabel.get(s))
+    .filter(Boolean)
+
+  return selected.length > 0 ? Array.from(new Set(selected)) : methodOptions
+}
+
+initialN = {
+  const raw = Number.parseInt(urlParams.get("n"), 10)
+  return Number.isFinite(raw) ? Math.max(1, raw) : 4
+}
+
+initialMax = urlParams.get("max") ?? "20"
+```
+
 <div class="ojs-panel">
 
 ```{ojs}
@@ -76,7 +146,7 @@ viewof plotTrigger = {
 
 ```{ojs}
 viewof nControl = {
-  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(4, maxN), label: "n (subintervals)"})
+  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
   return nSlider
 }
@@ -84,7 +154,7 @@ viewof nControl = {
 
 ```{ojs}
 viewof maxNInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
+  const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
   return input
 }
@@ -108,8 +178,7 @@ maxN = {
 
 ```{ojs}
 viewof methods = {
-  const options = ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]
-  const checkboxInput = Inputs.checkbox(options, {value: options})
+  const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
   checkboxInput.classList.add("ojs-fill")
   return checkboxInput
 }
@@ -135,6 +204,19 @@ showTrapezoidal = methods.includes("Trapezoidal rule")
 ```{ojs}
 //| output: false
 showSimpson = methods.includes("Simpson's rule")
+```
+
+```{ojs}
+//| output: false
+// Keeps n, max, and method choices shareable as the reactive controls change.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("n", String(nControl))
+  params.set("max", maxNInput)
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
 ```
 
 ```{ojs}
@@ -177,6 +259,9 @@ committed = {
   params.set("f", fVal)
   params.set("a", aText)
   params.set("b", bText)
+  params.set("n", String(nControl))
+  params.set("max", maxNInput)
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
@@ -465,16 +550,37 @@ iteratesPlot = {
   const trueName = "True integral"
 
   const marks = [
-    Plot.ruleY([result.trueIntegral], {stroke: () => trueName, strokeDasharray: "4,3"}),
-    Plot.lineY(result.rows, {x: "n", y: "leftArea", stroke: () => leftName}),
-    Plot.dot(result.rows, {x: "n", y: "leftArea", fill: () => leftName, r: 3}),
-    Plot.lineY(result.rows, {x: "n", y: "midpointArea", stroke: () => midpointName}),
-    Plot.dot(result.rows, {x: "n", y: "midpointArea", fill: () => midpointName, r: 3}),
-    Plot.lineY(result.rows, {x: "n", y: "trapezoidalArea", stroke: () => trapezoidalName}),
-    Plot.dot(result.rows, {x: "n", y: "trapezoidalArea", fill: () => trapezoidalName, r: 3}),
-    Plot.lineY(result.rows, {x: "n", y: "simpsonArea", stroke: () => simpsonName}),
-    Plot.dot(result.rows, {x: "n", y: "simpsonArea", fill: () => simpsonName, r: 3})
+    Plot.ruleY([result.trueIntegral], {stroke: () => trueName, strokeDasharray: "4,3"})
   ]
+
+  if (showLeftRiemann) {
+    marks.push(
+      Plot.lineY(result.rows, {x: "n", y: "leftArea", stroke: () => leftName}),
+      Plot.dot(result.rows, {x: "n", y: "leftArea", fill: () => leftName, r: 3})
+    )
+  }
+
+  if (showMidpoint) {
+    marks.push(
+      Plot.lineY(result.rows, {x: "n", y: "midpointArea", stroke: () => midpointName}),
+      Plot.dot(result.rows, {x: "n", y: "midpointArea", fill: () => midpointName, r: 3})
+    )
+  }
+
+  if (showTrapezoidal) {
+    marks.push(
+      Plot.lineY(result.rows, {x: "n", y: "trapezoidalArea", stroke: () => trapezoidalName}),
+      Plot.dot(result.rows, {x: "n", y: "trapezoidalArea", fill: () => trapezoidalName, r: 3})
+    )
+  }
+
+  if (showSimpson) {
+    marks.push(
+      Plot.lineY(result.rows, {x: "n", y: "simpsonArea", stroke: () => simpsonName}),
+      Plot.dot(result.rows, {x: "n", y: "simpsonArea", fill: () => simpsonName, r: 3})
+    )
+  }
+
   const colorDomain = [leftName, midpointName, trapezoidalName, simpsonName, trueName]
   const colorRange = ["#8b5cf6", "#f59e0b", "#dc2626", "#16a34a", "#111827"]
 
@@ -522,20 +628,40 @@ convergencePlot = {
   const midpointName = "Midpoint error"
   const trapezoidalName = "Trapezoidal error"
   const simpsonName = "Simpson's error"
-  const marks = [
-    Plot.dot(leftPts, {x: "x", y: "y", fill: () => leftName, r: 4}),
-    Plot.dot(midpointPts, {x: "x", y: "y", fill: () => midpointName, r: 4}),
-    Plot.dot(trapezoidalPts, {x: "x", y: "y", fill: () => trapezoidalName, r: 4}),
-    Plot.dot(simpsonPts, {x: "x", y: "y", fill: () => simpsonName, r: 4})
-  ]
-  const colorDomain = [leftName, midpointName, trapezoidalName, simpsonName]
-  const colorRange = ["#8b5cf6", "#f59e0b", "#dc2626", "#16a34a"]
+  const marks = []
+  const colorDomain = []
+  const colorRange = []
+
+  if (showLeftRiemann) {
+    marks.push(Plot.dot(leftPts, {x: "x", y: "y", fill: () => leftName, r: 4}))
+    colorDomain.push(leftName)
+    colorRange.push("#8b5cf6")
+  }
+
+  if (showMidpoint) {
+    marks.push(Plot.dot(midpointPts, {x: "x", y: "y", fill: () => midpointName, r: 4}))
+    colorDomain.push(midpointName)
+    colorRange.push("#f59e0b")
+  }
+
+  if (showTrapezoidal) {
+    marks.push(Plot.dot(trapezoidalPts, {x: "x", y: "y", fill: () => trapezoidalName, r: 4}))
+    colorDomain.push(trapezoidalName)
+    colorRange.push("#dc2626")
+  }
+
+  if (showSimpson) {
+    marks.push(Plot.dot(simpsonPts, {x: "x", y: "y", fill: () => simpsonName, r: 4}))
+    colorDomain.push(simpsonName)
+    colorRange.push("#16a34a")
+  }
+
   // legendDomain/legendRange hold only the regression lines — the legend
   // shown below the chart displays just the fitted orders, not the raw
   // point series, to keep it uncluttered.
   const legendDomain = [], legendRange = []
 
-  const leftFit = VM.numerical.linearRegression(leftPts)
+  const leftFit = showLeftRiemann ? VM.numerical.linearRegression(leftPts) : null
   if (leftFit) {
     const lineName = `left order ≈ ${(-leftFit.slope).toFixed(2)}`
     marks.push(Plot.line(
@@ -548,7 +674,7 @@ convergencePlot = {
     legendRange.push("#a78bfa")
   }
 
-  const midpointFit = VM.numerical.linearRegression(midpointPts)
+  const midpointFit = showMidpoint ? VM.numerical.linearRegression(midpointPts) : null
   if (midpointFit) {
     const lineName = `midpoint order ≈ ${(-midpointFit.slope).toFixed(2)}`
     marks.push(Plot.line(
@@ -561,7 +687,7 @@ convergencePlot = {
     legendRange.push("#fbbf24")
   }
 
-  const trapezoidalFit = VM.numerical.linearRegression(trapezoidalPts)
+  const trapezoidalFit = showTrapezoidal ? VM.numerical.linearRegression(trapezoidalPts) : null
   if (trapezoidalFit) {
     const lineName = `trapezoidal order ≈ ${(-trapezoidalFit.slope).toFixed(2)}`
     marks.push(Plot.line(
@@ -574,7 +700,7 @@ convergencePlot = {
     legendRange.push("#f87171")
   }
 
-  const simpsonFit = VM.numerical.linearRegression(simpsonPts)
+  const simpsonFit = showSimpson ? VM.numerical.linearRegression(simpsonPts) : null
   if (simpsonFit) {
     const lineName = `simpson order ≈ ${(-simpsonFit.slope).toFixed(2)}`
     marks.push(Plot.line(
@@ -655,3 +781,111 @@ areaTable = {
 </div>
 
 Approximates $\int_a^b f(x)\, dx$ by replacing $f$ with a simple piecewise interpolant on $n$ equally spaced subintervals and integrating that interpolant exactly — a left or midpoint rectangle, a trapezoid, or (for Simpson's rule) a quadratic through each pair of subintervals.
+
+## Examples
+
+Numerical integration replaces a complicated area under a curve by areas that
+are easier to compute: rectangles for Riemann sums, trapezoids for the
+trapezoidal rule, and parabolic arcs for Simpson's rule.
+
+The examples below illustrate smooth functions, cancellation from signed area,
+peaked functions, rapid decay, oscillation, and the special even-subinterval
+requirement for Simpson's rule.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?f=sin(x)&a=0&b=pi&n=6&max=40&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Sine area on one half-period</div>
+    <div class="example-card-formula">f(x) = sin(x), &nbsp; [a,b] = [0,π]</div>
+    <div class="example-card-text">
+      A standard positive-area example. The exact integral is 2, and the
+      midpoint, trapezoidal, and Simpson estimates converge quickly as n grows.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=cos(x)&a=-pi%2F2&b=pi%2F2&n=8&max=40&show=midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Symmetric cosine arch</div>
+    <div class="example-card-formula">f(x) = cos(x), &nbsp; [a,b] = [−π/2,π/2]</div>
+    <div class="example-card-text">
+      A smooth symmetric curve with positive area. This is a good comparison
+      of midpoint, trapezoidal, and Simpson's rule without the left rectangles.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%20x&a=-2&b=2&n=6&max=40&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Signed area cancellation</div>
+    <div class="example-card-formula">f(x) = x³ − x, &nbsp; [a,b] = [−2,2]</div>
+    <div class="example-card-text">
+      The function is odd and the interval is symmetric, so positive and
+      negative areas cancel. The true signed integral is 0.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E2&a=0&b=1&n=5&max=30&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Quadratic test case</div>
+    <div class="example-card-formula">f(x) = x², &nbsp; [a,b] = [0,1]</div>
+    <div class="example-card-text">
+      Simpson's rule is exact for quadratics when n is even. Try changing n
+      and compare it with the rectangle and trapezoidal estimates.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%201&a=-1&b=2&n=6&max=40&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Polynomial with changing curvature</div>
+    <div class="example-card-formula">f(x) = x³ − 2x + 1, &nbsp; [a,b] = [−1,2]</div>
+    <div class="example-card-text">
+      A polynomial example where the graph bends in different ways across the
+      interval. Simpson's parabolic pieces often capture this behavior well.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=1%2F(1%20%2B%20x%5E2)&a=-5&b=5&n=10&max=60&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Rational peak</div>
+    <div class="example-card-formula">f(x) = 1/(1+x²), &nbsp; [a,b] = [−5,5]</div>
+    <div class="example-card-text">
+      A bell-shaped rational function with most of its area near the origin.
+      More subintervals are needed to resolve the central peak accurately.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=exp(-x%5E2)&a=-3&b=3&n=10&max=60&show=midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Gaussian bump</div>
+    <div class="example-card-formula">f(x) = exp(−x²), &nbsp; [a,b] = [−3,3]</div>
+    <div class="example-card-text">
+      A smooth rapidly decaying function. Higher-order methods converge very
+      quickly because the curve is smooth across the whole interval.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=abs(x)&a=-2&b=2&n=8&max=50&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Nonsmooth corner</div>
+    <div class="example-card-formula">f(x) = |x|, &nbsp; [a,b] = [−2,2]</div>
+    <div class="example-card-text">
+      The graph has a sharp corner at x = 0. This shows how nonsmoothness can
+      affect the usual convergence behavior.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=sin(5*x)&a=0&b=2*pi&n=12&max=80&show=left,midpoint,trapezoidal,simpson">
+    <div class="example-card-title">Oscillatory integral</div>
+    <div class="example-card-formula">f(x) = sin(5x), &nbsp; [a,b] = [0,2π]</div>
+    <div class="example-card-text">
+      Positive and negative waves cancel over the full interval. Increase n to
+      see how the methods handle rapidly oscillating signed area.
+    </div>
+  </a>
+
+  <a class="example-card" href="?f=sin(x)&a=0&b=pi&n=5&max=35&show=simpson">
+    <div class="example-card-title">Simpson's rule needs even n</div>
+    <div class="example-card-formula">f(x) = sin(x), &nbsp; [a,b] = [0,π], &nbsp; n = 5</div>
+    <div class="example-card-text">
+      Simpson's rule is only defined for an even number of subintervals in this
+      app. With odd n, the table leaves Simpson's estimate as NaN.
+    </div>
+  </a>
+
+</div>
+```

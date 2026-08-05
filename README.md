@@ -1,4 +1,4 @@
-# VisualMath
+# Visual Math Lab
 
 ## References
 

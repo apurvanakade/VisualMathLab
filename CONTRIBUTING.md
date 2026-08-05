@@ -1,6 +1,6 @@
-# Contributing to VisualMath
+# Contributing to Visual Math Lab
 
-Thank you for your interest in contributing to `VisualMath`! We welcome contributions from everyone, whether you are developing interactive JavaScript visualizations, structuring HTML pages, creating Quarto documents, or writing Python notebooks.
+Thank you for your interest in contributing to `Visual Math Lab`! We welcome contributions from everyone, whether you are developing interactive JavaScript visualizations, structuring HTML pages, creating Quarto documents, or writing Python notebooks.
 
 ## Licensing Policy
 

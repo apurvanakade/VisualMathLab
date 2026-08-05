@@ -1,0 +1,342 @@
+---
+title: "Positive Predictive Value"
+author: Apurva Nakade
+date: 2026-08-01
+order: 1
+image: ppv.png
+categories:
+  - Probability
+  - Bayes Theorem
+  - Conditional Probability
+  - Medical Testing
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+A standard mammogram has 80% sensitivity and 90% specificity: if you have cancer, it comes back positive 80% of the time; if you don't, it comes back negative 90% of the time. You test positive. What are the odds you actually have cancer? Drag the sliders below — the dots are a simulated population, red for the fraction with the condition, dark for the fraction without. 
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.ui.renderTable.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+config = ({
+  colors: {
+    infected: "#dc2626",
+    healthy: "#111827",
+    outline: "#111827",
+    background: "rgba(0, 0, 0, 0.45)",
+    // zoomStep1/zoomStep2: mark the "positive test" box in one canvas and
+    // the border of the *next* canvas in the same color, so it's visually
+    // obvious that canvas is exactly that box, zoomed in — canvas 1 boxes
+    // in zoomStep1 (canvas 2's border), canvas 2 boxes in zoomStep2
+    // (canvas 3's border). Reuses this site's existing accent colors
+    // (blue from styles.css, orange from model-fitting/l1-vs-l2) rather
+    // than inventing new ones.
+    zoomStep1: "#2563eb",
+    zoomStep2: "#f97316"
+  },
+  canvas: {
+    width: 720,
+    height: 260,
+    pointRadius: 2.2,
+    pointCount: 6000
+  }
+})
+```
+
+```{ojs}
+//| output: false
+// points: a fixed population, generated once at load. Sliders below only
+// change which of these same points fall in each category and which
+// region is shaded — the point cloud itself never regenerates, so the
+// picture stays visually stable as you drag.
+points = {
+  const pts = []
+  for (let i = 0; i < config.canvas.pointCount; i++) {
+    pts.push({x: Math.random() * config.canvas.width, y: Math.random() * config.canvas.height})
+  }
+  return pts
+}
+```
+
+```{ojs}
+//| output: false
+// calculateTestMetrics: splits points into infected/healthy by the
+// prevalence line, then each of those into true/false positive/negative by
+// the sensitivity/specificity lines, and reports the resulting PPV/NPV.
+function calculateTestMetrics(points, prevalence, sensitivity, specificity, width) {
+  const prevalenceLinePosition = prevalence * width
+  const sensitivityLinePosition = prevalenceLinePosition * (1 - sensitivity)
+  const specificityLinePosition = prevalenceLinePosition + (width - prevalenceLinePosition) * (1 - specificity)
+
+  const infected = []
+  const healthy = []
+  for (const point of points) {
+    if (point.x < prevalenceLinePosition) infected.push(point)
+    else healthy.push(point)
+  }
+
+  const truePositives = []
+  const falseNegatives = []
+  for (const point of infected) {
+    if (point.x >= sensitivityLinePosition) truePositives.push(point)
+    else falseNegatives.push(point)
+  }
+
+  const trueNegatives = []
+  const falsePositives = []
+  for (const point of healthy) {
+    if (point.x >= specificityLinePosition) trueNegatives.push(point)
+    else falsePositives.push(point)
+  }
+
+  return {
+    linePositions: {prevalenceLinePosition, sensitivityLinePosition, specificityLinePosition},
+    classifications: {truePositives, falseNegatives, trueNegatives, falsePositives},
+    ppv: truePositives.length / (truePositives.length + falsePositives.length),
+    npv: trueNegatives.length / (trueNegatives.length + falseNegatives.length)
+  }
+}
+
+// stretchPoints: rescales the current positive-region points back out to
+// the full canvas width, so "zooming in" on a repeat test reuses the same
+// point cloud instead of drawing a fresh one.
+function stretchPoints(points, sourceStart, sourceEnd, targetStart, targetEnd) {
+  const scale = (targetEnd - targetStart) / (sourceEnd - sourceStart)
+  const stretched = []
+  for (const point of points) {
+    stretched.push({x: targetStart + (point.x - sourceStart) * scale, y: point.y})
+  }
+  return stretched
+}
+
+// formatPct: PPV/NPV are 0/0 when a region is empty (e.g. prevalence or
+// sensitivity dragged to an extreme) — guard against rendering "NaN%".
+function formatPct(value) {
+  if (!Number.isFinite(value)) return "—"
+  return (value * 100).toFixed(1) + "%"
+}
+
+// paramNumber: reads a URL query parameter as a number for a slider's
+// initial value, falling back to `fallback` when the parameter is absent
+// or not a valid number (e.g. a hand-edited or stale link).
+function paramNumber(params, key, fallback) {
+  const raw = params.get(key)
+  if (raw === null) return fallback
+  const parsed = Number(raw)
+  if (!Number.isFinite(parsed)) return fallback
+  return parsed
+}
+
+// zoomBorderWidth: a canvas's border, when it represents a previous
+// canvas's highlighted box stretched to fill the whole width, should look
+// like that same box's edge blown up by the same zoom factor — so its
+// thickness scales linearly with `scale` (the same factor stretchPoints
+// uses to stretch the points themselves), not a fixed value. Capped at 10
+// so a large zoom (e.g. a narrow first-round box) doesn't turn into an
+// overwhelming border once fully visible (see the strokeRect inset below).
+function zoomBorderWidth(scale) {
+  return Math.max(4, Math.min(3 * scale, 10))
+}
+```
+
+```{ojs}
+//| output: false
+// drawDiagnosticCanvas: shades the two false-result regions, draws every
+// point colored by its true condition, and marks the sensitivity/
+// specificity lines. Called fresh (new canvas each time) rather than
+// reused/patched, since HTML5 canvas has no equivalent of Plotly's
+// `react`-onto-existing-node update.
+//
+// options.borderColor: colors this canvas's own outer border, so it can be
+// made to match the highlightColor box drawn in the *previous* canvas —
+// that's the visual cue that this whole canvas is that box, zoomed in.
+// options.highlightColor: if given, draws a colored box around this
+// canvas's positive-test region, in the color the *next* canvas's border
+// will use.
+function drawDiagnosticCanvas(points, prevalence, sensitivity, specificity, options = {}) {
+  const width = options.width ?? config.canvas.width
+  const height = options.height ?? config.canvas.height
+  const pointRadius = options.pointRadius ?? config.canvas.pointRadius
+  const borderColor = options.borderColor ?? config.colors.outline
+  const highlightColor = options.highlightColor ?? null
+
+  const canvas = DOM.canvas(width, height)
+  const ctx = canvas.getContext("2d")
+
+  const {linePositions} = calculateTestMetrics(points, prevalence, sensitivity, specificity, width)
+  const {sensitivityLinePosition, specificityLinePosition} = linePositions
+  const prevalenceLinePosition = prevalence * width
+
+  ctx.fillStyle = config.colors.background
+  ctx.fillRect(0, 0, sensitivityLinePosition, height)
+  ctx.fillRect(specificityLinePosition, 0, width - specificityLinePosition, height)
+
+  // Inset by half the line width — strokeRect centers its path on the
+  // rectangle's own edge, so an uninset stroke at (0,0,width,height) gets
+  // half its thickness clipped off-canvas, which mattered little at the
+  // old flat 2-4px but silently halved the visible effect of a scaled-up
+  // borderWidth.
+  const outerBorderWidth = options.borderWidth ?? (borderColor === config.colors.outline ? 2 : 4)
+  ctx.strokeStyle = borderColor
+  ctx.lineWidth = outerBorderWidth
+  ctx.strokeRect(outerBorderWidth / 2, outerBorderWidth / 2, width - outerBorderWidth, height - outerBorderWidth)
+
+  for (const point of points) {
+    ctx.fillStyle = point.x < prevalenceLinePosition ? config.colors.infected : config.colors.healthy
+    ctx.beginPath()
+    ctx.arc(point.x, point.y, pointRadius, 0, 2 * Math.PI)
+    ctx.fill()
+  }
+
+  // The sensitivity/specificity thresholds no longer need their own
+  // neutral marker lines — the shaded background regions already show
+  // them, and the highlightColor box below (when present) traces the
+  // same boundary in color.
+  if (highlightColor) {
+    ctx.strokeStyle = highlightColor
+    ctx.lineWidth = 3
+    ctx.strokeRect(sensitivityLinePosition + 1.5, 1.5, specificityLinePosition - sensitivityLinePosition - 3, height - 3)
+  }
+
+  return canvas
+}
+```
+
+<div class="ojs-panel ojs-grid">
+
+
+```{ojs}
+viewof sensitivity = {
+  const params = new URLSearchParams(window.location.search)
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "sensitivity", 0.8), label: "Sensitivity"})
+}
+```
+
+```{ojs}
+viewof specificity = {
+  const params = new URLSearchParams(window.location.search)
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "specificity", 0.9), label: "Specificity"})
+}
+```
+
+```{ojs}
+viewof prevalence = {
+  const params = new URLSearchParams(window.location.search)
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "prevalence", 0.11), label: "Prevalence"})
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// urlSync: mirrors the current slider values into the URL's query string on
+// every change, so the address bar stays a shareable link. Runs directly
+// off the reactive slider values (no "Plot" commit step, unlike the
+// text-expression fields on other pages) since reclassifying the point
+// cloud is cheap enough to redo on every drag tick.
+urlSync = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("prevalence", String(prevalence))
+  params.set("sensitivity", String(sensitivity))
+  params.set("specificity", String(specificity))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+}
+```
+
+```{ojs}
+//| output: false
+initialResults = calculateTestMetrics(points, prevalence, sensitivity, specificity, config.canvas.width)
+```
+
+```{ojs}
+drawDiagnosticCanvas(points, prevalence, sensitivity, specificity, {highlightColor: config.colors.zoomStep1})
+```
+
+```{ojs}
+html`<div class="ojs-panel"><strong>Original population.</strong> The <strong style="color: ${config.colors.zoomStep1}">blue box</strong> marks everyone who tests positive — that's exactly the population the next canvas (matching blue border) zooms into. Positive predictive value (chance you have the condition, given a positive test): <strong>${formatPct(initialResults.ppv)}</strong>. Negative predictive value: <strong>${formatPct(initialResults.npv)}</strong>.</div>`
+```
+
+```{ojs}
+//| output: false
+// positiveResults1: everyone whose first test was positive (true and false
+// positives together) — this is the population a repeat test is drawn from.
+positiveResults1 = {
+  const combined = []
+  for (const point of initialResults.classifications.truePositives) combined.push(point)
+  for (const point of initialResults.classifications.falsePositives) combined.push(point)
+  return combined
+}
+stretchedPoints1 = stretchPoints(positiveResults1, initialResults.linePositions.sensitivityLinePosition, initialResults.linePositions.specificityLinePosition, 0, config.canvas.width)
+// zoomScale1: how much wider the blue box got when stretched to fill this
+// canvas — drives this canvas's border thickness below.
+zoomScale1 = config.canvas.width / (initialResults.linePositions.specificityLinePosition - initialResults.linePositions.sensitivityLinePosition)
+newPrevalence1 = initialResults.ppv
+results1 = calculateTestMetrics(stretchedPoints1, newPrevalence1, sensitivity, specificity, config.canvas.width)
+```
+
+```{ojs}
+drawDiagnosticCanvas(stretchedPoints1, newPrevalence1, sensitivity, specificity, {pointRadius: 3, borderColor: config.colors.zoomStep1, borderWidth: zoomBorderWidth(zoomScale1), highlightColor: config.colors.zoomStep2})
+```
+
+```{ojs}
+html`<div class="ojs-panel"><strong>After a second positive test</strong> — this is the blue box above, stretched to fill the canvas. The <strong style="color: ${config.colors.zoomStep2}">orange box</strong> is this round's positive-test population, which becomes the next (orange-bordered) canvas. Effective prevalence is now ${formatPct(newPrevalence1)} — PPV jumps to <strong>${formatPct(results1.ppv)}</strong>.</div>`
+```
+
+```{ojs}
+//| output: false
+positiveResults2 = {
+  const combined = []
+  for (const point of results1.classifications.truePositives) combined.push(point)
+  for (const point of results1.classifications.falsePositives) combined.push(point)
+  return combined
+}
+stretchedPoints2 = stretchPoints(positiveResults2, results1.linePositions.sensitivityLinePosition, results1.linePositions.specificityLinePosition, 0, config.canvas.width)
+zoomScale2 = config.canvas.width / (results1.linePositions.specificityLinePosition - results1.linePositions.sensitivityLinePosition)
+newPrevalence2 = results1.ppv
+results2 = calculateTestMetrics(stretchedPoints2, newPrevalence2, sensitivity, specificity, config.canvas.width)
+```
+
+```{ojs}
+drawDiagnosticCanvas(stretchedPoints2, newPrevalence2, sensitivity, specificity, {pointRadius: 4, borderColor: config.colors.zoomStep2, borderWidth: zoomBorderWidth(zoomScale2)})
+```
+
+```{ojs}
+html`<div class="ojs-panel"><strong>After a third positive test</strong> — the orange box above, stretched to fill the canvas. Effective prevalence ${formatPct(newPrevalence2)} — PPV: <strong>${formatPct(results2.ppv)}</strong>.</div>`
+```
+
+::: {.callout-note collapse="true" title="Summary table"}
+
+```{ojs}
+summaryTable = {
+  const row = (step, effectivePrevalence, ppv, npv) => [step, formatPct(effectivePrevalence), formatPct(ppv), formatPct(npv)]
+
+  return VM.ui.renderTable({
+    html,
+    headers: ["Round", "Effective prevalence", "PPV", "NPV"],
+    filename: "bayes-theorem-summary.csv",
+    rows: [
+      row("1 positive test", prevalence, initialResults.ppv, initialResults.npv),
+      row("2 positive tests", newPrevalence1, results1.ppv, results1.npv),
+      row("3 positive tests", newPrevalence2, results2.ppv, results2.npv)
+    ]
+  })
+}
+```
+
+:::
+
+## Why this matters
+
+Even with a highly accurate test, a positive result is far less conclusive than it sounds when the condition is rare: there are so many more healthy people that a small false-positive rate among them can outnumber the true positives among the few who are actually sick. That's what the shaded regions above show — the region between the lines mixes true and false positives, and at low prevalence the false ones dominate.
+
+This is also why retesting works so well. Each repeat test is applied to a population where the *effective* prevalence has already jumped to the previous round's PPV, so the same sensitivity and specificity produce a much sharper result — and the chance of missing the condition across repeated tests (the false-negative rate, compounding each round) shrinks just as fast. These updates are exactly what Bayes' theorem formalizes: $P(\text{condition} \mid \text{positive}) = \dfrac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})}$.

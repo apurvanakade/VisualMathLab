@@ -12,538 +12,592 @@ categories:
   - Initial Value Problems
 ---
 
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
+Explicit methods approximate solutions of initial value problems
+
+\[
+y' = f(t,y), \qquad y(0)=y_0
+\]
+
+by stepping forward from the initial condition. This app compares Euler's method, Improved Euler's method, and the classical fourth-order Runge--Kutta method.
 
 ```{ojs}
-//| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.eulerSolve, VM.numerical.linearRegression, VM.expressions.makeFunction2, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.rk4Solve.
+//| echo: false
 VM = window.VM
 ```
 
-<div class="ojs-panel">
-
 ```{ojs}
-viewof fText = {
-  const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "y - t^2 + 1", placeholder: "Example: y - t^2 + 1, t - y, y * (1 - y)"})
-  fTextInput.classList.add("ojs-fill")
-  return fTextInput
-}
-```
+//| echo: false
+urlParams = new URLSearchParams(window.location.search)
 
-<div class="ojs-grid">
+methodOptions = ["Euler's method", "Improved Euler", "RK4"]
 
-```{ojs}
-viewof y0 = {
-  const params = new URLSearchParams(window.location.search)
-  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "0.5", placeholder: "Example: 0.5, 1/2"})
-  return y0Input
-}
-```
+methodSlugToLabel = new Map([
+  ["euler", "Euler's method"],
+  ["improved", "Improved Euler"],
+  ["rk4", "RK4"]
+])
 
-</div>
+methodLabelToSlug = new Map([
+  ["Euler's method", "euler"],
+  ["Improved Euler", "improved"],
+  ["RK4", "rk4"]
+])
 
-<div class="ojs-row">
+initialNRaw = Number(urlParams.get("n") ?? 4)
+initialN = Number.isFinite(initialNRaw) ? Math.max(1, Math.round(initialNRaw)) : 4
 
-```{ojs}
-viewof bEnd = {
-  const params = new URLSearchParams(window.location.search)
-  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
-  return bEndInput
-}
-```
+initialMax = urlParams.get("max") ?? "20"
 
-```{ojs}
-// Plot commits the current function/initial-condition/endpoint fields —
-// edits above don't take effect until this is clicked, so result/mainPlot
-// don't recompute on every keystroke. The n slider and the method
-// checkboxes below are unaffected and stay reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
-  return plotButton
-}
-```
-
-</div>
-</div>
-
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof nControl = {
-  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(4, maxN), label: "n (subintervals)"})
-  nSlider.classList.add("ojs-fill")
-  return nSlider
+initialMethods = {
+  const raw = urlParams.get("show")
+  if (!raw) return methodOptions
+  const selected = raw
+    .split(",")
+    .map(s => methodSlugToLabel.get(s.trim().toLowerCase()))
+    .filter(Boolean)
+  return selected.length ? selected : methodOptions
 }
 ```
 
 ```{ojs}
-viewof maxNInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  return input
-}
+//| echo: false
+viewof fText = Inputs.text({
+  label: "Differential equation y' = f(t, y)",
+  value: new URLSearchParams(window.location.search).get("f") ?? "y - t^2 + 1",
+  width: "100%"
+})
 ```
 
 ```{ojs}
-//| output: false
-// maxN parses the Max field's expression, falling back to 20 for invalid
-// input so the n slider always gets a usable bound.
+//| echo: false
+viewof y0 = Inputs.text({
+  label: "Initial value y(0)",
+  value: new URLSearchParams(window.location.search).get("y0") ?? "0.5",
+  width: "100%"
+})
+```
+
+```{ojs}
+//| echo: false
+viewof bEnd = Inputs.text({
+  label: "Endpoint b",
+  value: new URLSearchParams(window.location.search).get("b") ?? "2",
+  width: "100%"
+})
+```
+
+```{ojs}
+//| echo: false
+viewof plotTrigger = Inputs.button("Plot solution")
+```
+
+```{ojs}
+//| echo: false
 maxN = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxNInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 20
-  return Math.max(1, Math.round(parsed))
-}
-```
-
-</div>
-
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof methods = {
-  const options = ["Euler's method", "Improved Euler", "RK4"]
-  const checkboxInput = Inputs.checkbox(options, {value: options})
-  checkboxInput.classList.add("ojs-fill")
-  return checkboxInput
-}
-```
-
-</div>
-
-```{ojs}
-//| output: false
-showEuler = methods.includes("Euler's method")
-```
-
-```{ojs}
-//| output: false
-showImprovedEuler = methods.includes("Improved Euler")
-```
-
-```{ojs}
-//| output: false
-showRK4 = methods.includes("RK4")
-```
-
-```{ojs}
-//| output: false
-// Pressing Enter in the function/initial-condition/endpoint fields clicks
-// Plot instead of submitting the field's own (invisible) form. Depends
-// only on the stable views, so this wiring runs once and is never
-// re-attached.
-enterToPlot = {
-  for (const view of [viewof fText, viewof y0, viewof bEnd]) {
-    const input = view.querySelector("input")
-    if (!input) continue
-    input.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return
-      e.preventDefault()
-      viewof plotTrigger.querySelector("button").click()
-    })
+  try {
+    const value = VM.expressions.makeNumber(math, maxNInput)
+    return Number.isFinite(value) && value >= 1 ? Math.max(1, Math.round(value)) : 20
+  } catch (e) {
+    return 20
   }
 }
 ```
 
 ```{ojs}
-//| output: false
-// committed snapshots fText/y0/bEnd only when Plot is clicked, and writes
-// them back into the URL so the address bar stays a shareable link. It
-// reads `viewof fText`/`viewof y0`/`viewof bEnd` (the stable DOM views)
-// rather than `fText`/`y0`/`bEnd` (the reactive values), so it does NOT
-// rerun on every keystroke — only when `plotTrigger` changes. It still
-// runs once on initial page load, so the first render uses the
-// URL-provided (or default) values with no click.
+//| echo: false
+viewof nControl = Inputs.range([1, maxN], {
+  label: "Number of steps n",
+  step: 1,
+  value: Math.min(initialN, maxN)
+})
+```
+
+```{ojs}
+//| echo: false
+viewof maxNInput = Inputs.text({
+  label: "Maximum n for convergence plot",
+  value: initialMax,
+  width: "100%"
+})
+```
+
+```{ojs}
+//| echo: false
+viewof methods = Inputs.checkbox(methodOptions, {
+  label: "Methods to show",
+  value: initialMethods
+})
+```
+
+```{ojs}
+//| echo: false
+showEuler = methods.includes("Euler's method")
+showImprovedEuler = methods.includes("Improved Euler")
+showRK4 = methods.includes("RK4")
+```
+
+```{ojs}
+//| echo: false
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("n", String(nControl))
+  params.set("max", String(maxNInput))
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return null
+}
+```
+
+```{ojs}
+//| echo: false
 committed = {
   plotTrigger
-  const math = window.math
-  const fVal = (viewof fText).value
-  const y0Text = (viewof y0).value
-  const bText = (viewof bEnd).value
-  const y0Val = VM.expressions.makeNumber(math, y0Text)
-  const bVal = VM.expressions.makeNumber(math, bText)
+
+  const fVal = fText
+  const y0Text = y0
+  const bText = bEnd
 
   const params = new URLSearchParams(window.location.search)
   params.set("f", fVal)
   params.set("y0", y0Text)
   params.set("b", bText)
+  params.set("n", String(nControl))
+  params.set("max", String(maxNInput))
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
-  return {fText: fVal, y0: y0Val, bEnd: bVal}
+  return {
+    fText: fVal,
+    y0Text,
+    bText,
+    n: nControl,
+    maxN,
+    methods
+  }
 }
 ```
 
 ```{ojs}
-//| output: false
-// improvedEulerSolve(f, t0, y0, tEnd, n) advances y' = f(t, y), y(t0) = y0
-// with n steps of the improved Euler / explicit trapezoidal method: Euler's
-// method as a predictor, then averages the slope at both endpoints of the
-// step. Returns the full trajectory {ts, ys}.
-improvedEulerSolve = (f, t0, y0, tEnd, n) => {
-  const h = (tEnd - t0) / n
-  const ts = [t0]
-  const ys = [y0]
-  let t = t0, y = y0
+//| echo: false
+improvedEulerSolve = function(f, a, y0, b, n) {
+  const h = (b - a) / n
+  const points = [{ x: a, y: y0 }]
+
+  let t = a
+  let y = y0
+
   for (let i = 0; i < n; i++) {
     const k1 = f(t, y)
-    const predictor = y + h * k1
-    const tNext = t0 + (i + 1) * h
-    const k2 = f(tNext, predictor)
+    const yPredict = y + h * k1
+    const k2 = f(t + h, yPredict)
     y = y + (h / 2) * (k1 + k2)
-    t = tNext
-    ts.push(t)
-    ys.push(y)
+    t = a + (i + 1) * h
+    points.push({ x: t, y })
   }
-  return {ts, ys}
+
+  return points
 }
 ```
 
 ```{ojs}
-//| output: false
-// result: for the current committed function/initial condition/endpoint,
-// builds the endpoint-value history used by the convergence plots and
-// table.
-//   rows — array of { n, eulerValue, improvedEulerValue, rk4Value, trueValue,
-//     eulerError, improvedEulerError, rk4Error }, one entry per subinterval
-//     count n = 1..maxN — the computed y(b) for each method against a
-//     reference value.
-//   f — parsed right-hand side, reused for the trajectories in setup
-//   trueValue — reference y(b), shared by every row
+//| echo: false
 result = {
-  const math = window.math
+  try {
+    const f = VM.expressions.makeFunction2(math, committed.fText)
+    const y0Value = VM.expressions.makeNumber(math, committed.y0Text)
+    const bValue = VM.expressions.makeNumber(math, committed.bText)
 
-  const f = VM.expressions.makeFunction2(math, committed.fText)
-  const fallback = (t, y) => NaN
+    if (!Number.isFinite(y0Value)) {
+      throw new Error("The initial value y0 must be a finite number.")
+    }
 
-  if (!f) return {rows: [], f: fallback, trueValue: NaN}
+    if (!Number.isFinite(bValue)) {
+      throw new Error("The endpoint b must be a finite number.")
+    }
 
-  const t0 = 0
-  const y0 = committed.y0
-  const b = committed.bEnd
-  if (!Number.isFinite(y0) || !Number.isFinite(b) || b === t0) return {rows: [], f, trueValue: NaN}
+    if (bValue <= 0) {
+      throw new Error("The endpoint b must be greater than 0.")
+    }
 
-  // Reference value: RK4 with a very fine step count, far finer than any n
-  // tested below.
-  const refSteps = 2000
-  const trueValue = VM.numerical.rk4Solve(f, t0, y0, b, refSteps).ys[refSteps]
+    const n = Math.max(1, Math.round(committed.n))
+    const maxNValue = Math.max(1, Math.round(committed.maxN))
 
-  const rows = []
-  let n = 1
-  while (n <= maxN) {
-    const eulerValue = VM.numerical.eulerSolve(f, t0, y0, b, n).ys[n]
-    const improvedEulerValue = improvedEulerSolve(f, t0, y0, b, n).ys[n]
-    const rk4Value = VM.numerical.rk4Solve(f, t0, y0, b, n).ys[n]
+    const trueTrajectory = VM.numerical.rk4Solve(f, 0, y0Value, bValue, 2000)
+    const trueValue = trueTrajectory[trueTrajectory.length - 1].y
 
-    const eulerError = Math.abs(eulerValue - trueValue)
-    const improvedEulerError = Math.abs(improvedEulerValue - trueValue)
-    const rk4Error = Math.abs(rk4Value - trueValue)
-
-    rows.push({n, eulerValue, improvedEulerValue, rk4Value, trueValue, eulerError, improvedEulerError, rk4Error})
-    n++
+    return {
+      ok: true,
+      f,
+      y0: y0Value,
+      b: bValue,
+      n,
+      maxN: maxNValue,
+      trueTrajectory,
+      trueValue
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      message: error.message
+    }
   }
-
-  return {rows, f, trueValue}
 }
 ```
 
 ```{ojs}
-//| output: false
-// setup computes the data needed by the main chart at the current n: each
-// method's step-by-step trajectory, and a fine reference trajectory for
-// the smooth "true" solution curve.
+//| echo: false
 setup = {
-  if (result.rows.length === 0) {
-    const empty = {lo: -3, hi: 3}
-    return {n: 0, eulerTs: [], eulerYs: [], improvedEulerTs: [], improvedEulerYs: [], rk4Ts: [], rk4Ys: [], refTs: [], refYs: [], tRange: empty, yRange: {lo: -1, hi: 1}}
-  }
+  if (!result.ok) return null
 
-  const n = Math.min(Math.max(Math.round(Number(nControl)), 1), result.rows.length)
+  const { f, y0, b, n, maxN, trueTrajectory, trueValue } = result
 
-  const t0 = 0
-  const y0 = committed.y0
-  const b = committed.bEnd
+  const eulerTrajectory = VM.numerical.eulerSolve(f, 0, y0, b, n)
+  const improvedTrajectory = improvedEulerSolve(f, 0, y0, b, n)
+  const rk4Trajectory = VM.numerical.rk4Solve(f, 0, y0, b, n)
 
-  const euler = VM.numerical.eulerSolve(result.f, t0, y0, b, n)
-  const improvedEuler = improvedEulerSolve(result.f, t0, y0, b, n)
-  const rk4 = VM.numerical.rk4Solve(result.f, t0, y0, b, n)
+  const eulerValue = eulerTrajectory[eulerTrajectory.length - 1].y
+  const improvedValue = improvedTrajectory[improvedTrajectory.length - 1].y
+  const rk4Value = rk4Trajectory[rk4Trajectory.length - 1].y
 
-  // A fine reference trajectory for the smooth "true" solution curve.
-  const reference = VM.numerical.rk4Solve(result.f, t0, y0, b, 500)
+  const iterates = Array.from({ length: maxN }, (_, i) => {
+    const currentN = i + 1
 
-  const tRange = VM.plotting.paddedRange([t0, b], {emptyRange: [-3, 3], relativePadding: 0.1, minPadding: 0.25})
+    const euler = VM.numerical.eulerSolve(f, 0, y0, b, currentN)
+    const improved = improvedEulerSolve(f, 0, y0, b, currentN)
+    const rk4 = VM.numerical.rk4Solve(f, 0, y0, b, currentN)
 
-  // Cap at 1e8 so a diverging method doesn't blow up the axis range.
-  const yValues = []
-  for (const y of reference.ys) if (Number.isFinite(y) && Math.abs(y) <= 1e8) yValues.push(y)
-  for (const y of euler.ys) if (Number.isFinite(y) && Math.abs(y) <= 1e8) yValues.push(y)
-  for (const y of improvedEuler.ys) if (Number.isFinite(y) && Math.abs(y) <= 1e8) yValues.push(y)
-  for (const y of rk4.ys) if (Number.isFinite(y) && Math.abs(y) <= 1e8) yValues.push(y)
-  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+    const eulerEnd = euler[euler.length - 1].y
+    const improvedEnd = improved[improved.length - 1].y
+    const rk4End = rk4[rk4.length - 1].y
+
+    return {
+      n: currentN,
+      euler: eulerEnd,
+      improved: improvedEnd,
+      rk4: rk4End,
+      eulerError: Math.abs(eulerEnd - trueValue),
+      improvedError: Math.abs(improvedEnd - trueValue),
+      rk4Error: Math.abs(rk4End - trueValue)
+    }
+  })
 
   return {
-    n,
-    eulerTs: euler.ts, eulerYs: euler.ys,
-    improvedEulerTs: improvedEuler.ts, improvedEulerYs: improvedEuler.ys,
-    rk4Ts: rk4.ts, rk4Ys: rk4.ys,
-    refTs: reference.ts, refYs: reference.ys,
-    tRange, yRange
+    eulerTrajectory,
+    improvedTrajectory,
+    rk4Trajectory,
+    trueTrajectory,
+    eulerValue,
+    improvedValue,
+    rk4Value,
+    trueValue,
+    iterates
   }
 }
 ```
 
 ```{ojs}
-//| output: false
-// mainPlot draws the fine reference solution curve and, depending on the
-// checkboxes, the piecewise-linear trajectory computed by each method at
-// the current n.
-//
-// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
-// reactive updates — this preserves zoom and pan when n or the checkboxes
-// change.
+//| echo: false
 mainPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
+  if (!result.ok) return html`<div class="alert alert-danger">${result.message}</div>`
 
-  return (data, showEuler, showImprovedEuler, showRK4) => {
-    const traces = [
-      // The fine reference solution curve
-      {x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
+  const traces = []
 
-    if (showEuler && data.eulerTs.length > 0) {
-      traces.push({
-        x: data.eulerTs, y: data.eulerYs, type: "scatter", mode: "lines+markers", name: "Euler's method", showlegend: true,
-        line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 6}
-      })
-    }
-    if (showImprovedEuler && data.improvedEulerTs.length > 0) {
-      traces.push({
-        x: data.improvedEulerTs, y: data.improvedEulerYs, type: "scatter", mode: "lines+markers", name: "Improved Euler", showlegend: true,
-        line: {color: "#f59e0b", width: 2}, marker: {color: "#f59e0b", size: 6}
-      })
-    }
-    if (showRK4 && data.rk4Ts.length > 0) {
-      traces.push({
-        x: data.rk4Ts, y: data.rk4Ys, type: "scatter", mode: "lines+markers", name: "RK4", showlegend: true,
-        line: {color: "#16a34a", width: 2}, marker: {color: "#16a34a", size: 6}
-      })
-    }
+  traces.push({
+    x: setup.trueTrajectory.map(p => p.x),
+    y: setup.trueTrajectory.map(p => p.y),
+    mode: "lines",
+    name: "Reference solution",
+    line: { color: "black", width: 3 }
+  })
 
-    const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
-      xaxis: {title: "t", range: [data.tRange.lo, data.tRange.hi], zeroline: true},
-      yaxis: {title: "y", range: [data.yRange.lo, data.yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
-      hovermode: "closest",
-      uirevision: "static",  // keeps zoom/pan state across reactive updates
-      autosize: true
-    }
-    const config = {responsive: true, displaylogo: false}
-
-    // First render: create the div. Later renders: update in place (preserves zoom).
-    if (!_plotDiv) {
-      _plotDiv = document.createElement("div")
-      _plotDiv.className = "plotly-box-large"
-      Plotly.newPlot(_plotDiv, traces, layout, config)
-      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
-      // A ResizeObserver catches the real size once it's inserted and laid out,
-      // and keeps correcting it on any later layout/viewport change.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
-    } else {
-      Plotly.react(_plotDiv, traces, layout, config)
-    }
-    return _plotDiv
+  if (showEuler) {
+    traces.push({
+      x: setup.eulerTrajectory.map(p => p.x),
+      y: setup.eulerTrajectory.map(p => p.y),
+      mode: "lines+markers",
+      name: "Euler's method",
+      line: { color: "#d62728", width: 2 }
+    })
   }
+
+  if (showImprovedEuler) {
+    traces.push({
+      x: setup.improvedTrajectory.map(p => p.x),
+      y: setup.improvedTrajectory.map(p => p.y),
+      mode: "lines+markers",
+      name: "Improved Euler",
+      line: { color: "#ff7f0e", width: 2 }
+    })
+  }
+
+  if (showRK4) {
+    traces.push({
+      x: setup.rk4Trajectory.map(p => p.x),
+      y: setup.rk4Trajectory.map(p => p.y),
+      mode: "lines+markers",
+      name: "RK4",
+      line: { color: "#1f77b4", width: 2 }
+    })
+  }
+
+  const allY = traces.flatMap(trace => trace.y).filter(Number.isFinite)
+  const yRange = VM.plotting.paddedRange(allY)
+
+  return Plotly.newPlot(
+    DOM.element("div"),
+    traces,
+    {
+      title: "Approximate solutions",
+      xaxis: { title: "t" },
+      yaxis: { title: "y", range: yRange },
+      margin: { t: 50, r: 20, b: 50, l: 60 },
+      legend: { orientation: "h" }
+    },
+    { responsive: true }
+  )
 }
 ```
 
-<div class="ojs-output-wide">
-
 ```{ojs}
-mainPlot(setup, showEuler, showImprovedEuler, showRK4)
+mainPlot
 ```
 
-:::: {.callout-note collapse="true" title="Convergence plots"}
-
-::: {layout-ncol=2}
-
 ```{ojs}
-// iteratesPlot draws each method's computed y(b) vs n for the entire run,
-// against a reference line at the reference value of y(b) — it doesn't
-// depend on the current step, so it's just plotted once per run.
+//| echo: false
 iteratesPlot = {
-  const eulerName = "Euler's method"
-  const improvedEulerName = "Improved Euler"
-  const rk4Name = "RK4"
-  const trueName = "Reference value"
+  if (!result.ok) return html``
 
-  const marks = [
-    Plot.ruleY([result.trueValue], {stroke: () => trueName, strokeDasharray: "4,3"}),
-    Plot.lineY(result.rows, {x: "n", y: "eulerValue", stroke: () => eulerName}),
-    Plot.dot(result.rows, {x: "n", y: "eulerValue", fill: () => eulerName, r: 3}),
-    Plot.lineY(result.rows, {x: "n", y: "improvedEulerValue", stroke: () => improvedEulerName}),
-    Plot.dot(result.rows, {x: "n", y: "improvedEulerValue", fill: () => improvedEulerName, r: 3}),
-    Plot.lineY(result.rows, {x: "n", y: "rk4Value", stroke: () => rk4Name}),
-    Plot.dot(result.rows, {x: "n", y: "rk4Value", fill: () => rk4Name, r: 3})
-  ]
-  const colorDomain = [eulerName, improvedEulerName, rk4Name, trueName]
-  const colorRange = ["#dc2626", "#f59e0b", "#16a34a", "#111827"]
+  const traces = []
 
-  const chart = Plot.plot({
-    width: 340, height: 300, marginLeft: 46,
-    x: {label: "n"},
-    y: {label: "y(b)"},
-    color: {domain: colorDomain, range: colorRange},
-    marks
+  if (showEuler) {
+    traces.push({
+      x: setup.iterates.map(row => row.n),
+      y: setup.iterates.map(row => row.euler),
+      mode: "lines+markers",
+      name: "Euler's method",
+      line: { color: "#d62728", width: 2 }
+    })
+  }
+
+  if (showImprovedEuler) {
+    traces.push({
+      x: setup.iterates.map(row => row.n),
+      y: setup.iterates.map(row => row.improved),
+      mode: "lines+markers",
+      name: "Improved Euler",
+      line: { color: "#ff7f0e", width: 2 }
+    })
+  }
+
+  if (showRK4) {
+    traces.push({
+      x: setup.iterates.map(row => row.n),
+      y: setup.iterates.map(row => row.rk4),
+      mode: "lines+markers",
+      name: "RK4",
+      line: { color: "#1f77b4", width: 2 }
+    })
+  }
+
+  traces.push({
+    x: setup.iterates.map(row => row.n),
+    y: setup.iterates.map(() => setup.trueValue),
+    mode: "lines",
+    name: "Reference value",
+    line: { color: "black", width: 2, dash: "dash" }
   })
-  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
 
-  const container = document.createElement("div")
-  container.append(chart, legend)
-  return container
+  const allY = traces.flatMap(trace => trace.y).filter(Number.isFinite)
+  const yRange = VM.plotting.paddedRange(allY)
+
+  return Plotly.newPlot(
+    DOM.element("div"),
+    traces,
+    {
+      title: "Endpoint approximation versus n",
+      xaxis: { title: "n", dtick: 1 },
+      yaxis: { title: `Approximation to y(${result.b})`, range: yRange },
+      margin: { t: 50, r: 20, b: 50, l: 60 },
+      legend: { orientation: "h" }
+    },
+    { responsive: true }
+  )
 }
 ```
 
 ```{ojs}
-// convergencePlot draws log₁₀|error| vs log₁₀ n for all three methods, with
-// a linear regression line for each. The slope of each line estimates the
-// order of convergence of that method (negated, since error shrinks as n
-// grows) — for the entire run, so it's just plotted once per run.
+iteratesPlot
+```
+
+```{ojs}
+//| echo: false
 convergencePlot = {
+  if (!result.ok) return html``
 
-  const eulerPts = []
-  const improvedEulerPts = []
-  const rk4Pts = []
-  for (const row of result.rows) {
-    if (Number.isFinite(row.eulerError) && row.eulerError > 0) {
-      eulerPts.push({x: Math.log10(row.n), y: Math.log10(row.eulerError)})
-    }
-    if (Number.isFinite(row.improvedEulerError) && row.improvedEulerError > 0) {
-      improvedEulerPts.push({x: Math.log10(row.n), y: Math.log10(row.improvedEulerError)})
-    }
-    if (Number.isFinite(row.rk4Error) && row.rk4Error > 0) {
-      rk4Pts.push({x: Math.log10(row.n), y: Math.log10(row.rk4Error)})
-    }
+  const traces = []
+
+  if (showEuler) {
+    traces.push({
+      x: setup.iterates.map(row => row.n),
+      y: setup.iterates.map(row => row.eulerError),
+      mode: "lines+markers",
+      name: "Euler's method",
+      line: { color: "#d62728", width: 2 }
+    })
   }
 
-  const eulerName = "Euler error"
-  const improvedEulerName = "Improved Euler error"
-  const rk4Name = "RK4 error"
-  const marks = [
-    Plot.dot(eulerPts, {x: "x", y: "y", fill: () => eulerName, r: 4}),
-    Plot.dot(improvedEulerPts, {x: "x", y: "y", fill: () => improvedEulerName, r: 4}),
-    Plot.dot(rk4Pts, {x: "x", y: "y", fill: () => rk4Name, r: 4})
-  ]
-  const colorDomain = [eulerName, improvedEulerName, rk4Name]
-  const colorRange = ["#dc2626", "#f59e0b", "#16a34a"]
-  // legendDomain/legendRange hold only the regression lines — the legend
-  // shown below the chart displays just the fitted orders, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
-
-  const eulerFit = VM.numerical.linearRegression(eulerPts)
-  if (eulerFit) {
-    const lineName = `Euler order ≈ ${(-eulerFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: eulerFit.xlo, y: eulerFit.slope * eulerFit.xlo + eulerFit.intercept}, {x: eulerFit.xhi, y: eulerFit.slope * eulerFit.xhi + eulerFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#f87171")
-    legendDomain.push(lineName)
-    legendRange.push("#f87171")
+  if (showImprovedEuler) {
+    traces.push({
+      x: setup.iterates.map(row => row.n),
+      y: setup.iterates.map(row => row.improvedError),
+      mode: "lines+markers",
+      name: "Improved Euler",
+      line: { color: "#ff7f0e", width: 2 }
+    })
   }
 
-  const improvedEulerFit = VM.numerical.linearRegression(improvedEulerPts)
-  if (improvedEulerFit) {
-    const lineName = `Improved Euler order ≈ ${(-improvedEulerFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: improvedEulerFit.xlo, y: improvedEulerFit.slope * improvedEulerFit.xlo + improvedEulerFit.intercept}, {x: improvedEulerFit.xhi, y: improvedEulerFit.slope * improvedEulerFit.xhi + improvedEulerFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#fbbf24")
-    legendDomain.push(lineName)
-    legendRange.push("#fbbf24")
+  if (showRK4) {
+    traces.push({
+      x: setup.iterates.map(row => row.n),
+      y: setup.iterates.map(row => row.rk4Error),
+      mode: "lines+markers",
+      name: "RK4",
+      line: { color: "#1f77b4", width: 2 }
+    })
   }
 
-  const rk4Fit = VM.numerical.linearRegression(rk4Pts)
-  if (rk4Fit) {
-    const lineName = `RK4 order ≈ ${(-rk4Fit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: rk4Fit.xlo, y: rk4Fit.slope * rk4Fit.xlo + rk4Fit.intercept}, {x: rk4Fit.xhi, y: rk4Fit.slope * rk4Fit.xhi + rk4Fit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#4ade80")
-    legendDomain.push(lineName)
-    legendRange.push("#4ade80")
-  }
-
-  const chart = Plot.plot({
-    width: 340, height: 300, marginLeft: 46,
-    x: {label: "log₁₀ n"},
-    y: {label: "log₁₀ |error|"},
-    color: {domain: colorDomain, range: colorRange},
-    marks
-  })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
-
-  const container = document.createElement("div")
-  container.append(chart, legend)
-  return container
+  return Plotly.newPlot(
+    DOM.element("div"),
+    traces,
+    {
+      title: "Endpoint error versus n",
+      xaxis: { title: "n", dtick: 1 },
+      yaxis: { title: "Absolute error", type: "log" },
+      margin: { t: 50, r: 20, b: 50, l: 60 },
+      legend: { orientation: "h" }
+    },
+    { responsive: true }
+  )
 }
 ```
-
-:::
-
-::::
-
-:::: {.callout-note collapse="true" title="Value table"}
 
 ```{ojs}
-// Value table — shows the entire run, not just the current n, with all
-// three method estimates of y(b) and their errors against the reference
-// value.
+convergencePlot
+```
+
+```{ojs}
+//| echo: false
 valueTable = {
-  if (result.rows.length === 0) {
-    // Always return a Node so Quarto's OJS runtime never latches this
-    // declaration cell as hidden.
-    return document.createElement("div")
+  if (!result.ok) return html``
+
+  const rows = []
+
+  if (showEuler) {
+    rows.push({
+      Method: "Euler's method",
+      [`Approximation to y(${result.b})`]: setup.eulerValue,
+      "Absolute error": Math.abs(setup.eulerValue - setup.trueValue)
+    })
   }
 
-  const formattedRows = []
-  for (const row of result.rows) {
-    formattedRows.push([
-      row.n,
-      row.eulerValue.toPrecision(10),
-      row.improvedEulerValue.toPrecision(10),
-      row.rk4Value.toPrecision(10),
-      row.trueValue.toPrecision(10),
-      row.eulerError.toExponential(4),
-      row.improvedEulerError.toExponential(4),
-      row.rk4Error.toExponential(4)
-    ])
+  if (showImprovedEuler) {
+    rows.push({
+      Method: "Improved Euler",
+      [`Approximation to y(${result.b})`]: setup.improvedValue,
+      "Absolute error": Math.abs(setup.improvedValue - setup.trueValue)
+    })
   }
 
-  return VM.ui.renderTable({
-    html,
-    headers: ["n", tex`y_{\text{Euler}}(b)`, tex`y_{\text{Imp. Euler}}(b)`, tex`y_{\text{RK4}}(b)`, tex`y_{\text{ref}}(b)`, tex`|y_{\text{Euler}} - y_{\text{ref}}|`, tex`|y_{\text{Imp. Euler}} - y_{\text{ref}}|`, tex`|y_{\text{RK4}} - y_{\text{ref}}|`],
-    csvHeaders: ["n", "y_Euler(b)", "y_ImprovedEuler(b)", "y_RK4(b)", "y_ref(b)", "|y_Euler - y_ref|", "|y_ImprovedEuler - y_ref|", "|y_RK4 - y_ref|"],
-    filename: "explicit-methods-values.csv",
-    rows: formattedRows
+  if (showRK4) {
+    rows.push({
+      Method: "RK4",
+      [`Approximation to y(${result.b})`]: setup.rk4Value,
+      "Absolute error": Math.abs(setup.rk4Value - setup.trueValue)
+    })
+  }
+
+  rows.push({
+    Method: "Reference",
+    [`Approximation to y(${result.b})`]: setup.trueValue,
+    "Absolute error": 0
   })
+
+  return VM.ui.renderTable(rows)
 }
 ```
 
-::::
+```{ojs}
+valueTable
+```
 
+Euler's method uses the slope at the beginning of each step. Improved Euler averages a beginning slope and an estimated ending slope. RK4 combines four slope evaluations per step and is usually much more accurate for the same step size.
+
+## Examples
+
+The examples below show how explicit methods behave on different initial value problems. Euler's method is simple but low-order, Improved Euler is more accurate, and RK4 usually tracks the reference solution closely with far fewer steps.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+  <a class="example-card" href="?f=y%20-%20t%5E2%20%2B%201&y0=0.5&b=2&n=4&max=20&show=euler,improved,rk4">
+    <div class="example-card-title">Textbook nonlinear forcing</div>
+    <div class="example-card-formula">y' = y - t^2 + 1, &nbsp; y(0)=0.5</div>
+    <div class="example-card-text">A standard test problem where the three explicit methods can be compared against a smooth reference solution.</div>
+  </a>
+
+  <a class="example-card" href="?f=t%20-%20y&y0=1&b=5&n=6&max=40&show=euler,improved,rk4">
+    <div class="example-card-title">Relaxation toward a trend</div>
+    <div class="example-card-formula">y' = t - y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">The solution is pulled toward the increasing trend t, showing how step size affects lag and accuracy.</div>
+  </a>
+
+  <a class="example-card" href="?f=y*(1%20-%20y)&y0=0.1&b=8&n=8&max=60&show=euler,improved,rk4">
+    <div class="example-card-title">Logistic growth</div>
+    <div class="example-card-formula">y' = y(1-y), &nbsp; y(0)=0.1</div>
+    <div class="example-card-text">A bounded nonlinear growth model where the solution rises quickly and then levels off near the carrying capacity.</div>
+  </a>
+
+  <a class="example-card" href="?f=-2*y&y0=3&b=4&n=5&max=40&show=euler,improved,rk4">
+    <div class="example-card-title">Exponential decay</div>
+    <div class="example-card-formula">y' = -2y, &nbsp; y(0)=3</div>
+    <div class="example-card-text">A simple decay problem that highlights numerical damping and the effect of using larger time steps.</div>
+  </a>
+
+  <a class="example-card" href="?f=2*y&y0=0.25&b=2&n=4&max=40&show=euler,improved,rk4">
+    <div class="example-card-title">Exponential growth</div>
+    <div class="example-card-formula">y' = 2y, &nbsp; y(0)=0.25</div>
+    <div class="example-card-text">A rapidly increasing solution where low-order errors grow along with the solution.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(t)%20-%200.5*y&y0=0&b=10&n=12&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Damped sinusoidal forcing</div>
+    <div class="example-card-formula">y' = sin(t) - 0.5y, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A forced system with oscillation and damping, useful for seeing how the methods track changing slopes.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%5E2%20-%20t&y0=0&b=2&n=8&max=50&show=euler,improved,rk4">
+    <div class="example-card-title">Nonlinear Riccati-type equation</div>
+    <div class="example-card-formula">y' = y^2 - t, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A nonlinear example where curvature changes over the interval and higher-order methods gain a visible advantage.</div>
+  </a>
+
+  <a class="example-card" href="?f=-10*(y%20-%20cos(t))%20-%20sin(t)&y0=1&b=3&n=6&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Fast attraction to cos(t)</div>
+    <div class="example-card-formula">y' = -10(y - cos(t)) - sin(t), &nbsp; y(0)=1</div>
+    <div class="example-card-text">The exact behavior is attracted quickly to cos(t), making this a good stability and step-size example.</div>
+  </a>
+
+  <a class="example-card" href="?f=-15*y&y0=1&b=1&n=4&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Stiff-looking decay</div>
+    <div class="example-card-formula">y' = -15y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">A fast decay problem where explicit methods can behave poorly unless the step size is sufficiently small.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%20%2B%20sin(5*t)&y0=0&b=3&n=10&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Oscillatory forcing with growth</div>
+    <div class="example-card-formula">y' = y + sin(5t), &nbsp; y(0)=0</div>
+    <div class="example-card-text">An oscillatory forcing term combined with growth, showing how methods handle both waves and amplification.</div>
+  </a>
 </div>
-
-Given $y' = f(t, y)$, $y(0) = y_0$, an **explicit** method computes each $y_{i+1} \approx y(t_{i+1})$ directly from already-known values. Compare **Euler's method** (one slope evaluation per step), **Improved Euler** (averages the slope at both endpoints), and **RK4** (averages four slope estimates) — more evaluations per step buys higher accuracy.
+```

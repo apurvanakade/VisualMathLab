@@ -564,3 +564,73 @@ iterationTable = {
 </div>
 
 **RKF45** (Runge–Kutta–Fehlberg) adapts the step size $h$ at every step, instead of the fixed $h=b/n$ used in [Explicit Methods](../explicit-methods/index.qmd). From six slope evaluations it builds two embedded estimates of $y_{i+1}$ (fourth- and fifth-order); if they disagree by more than a target tolerance $\varepsilon$, the step is rejected and retried with a smaller $h$, otherwise $h$ grows for the next step.
+
+## Examples
+
+The examples below show how adaptive RK45 changes its step size to match the difficulty of the solution. It takes larger steps where the solution is smooth and smaller steps where the solution changes rapidly or oscillates.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+  <a class="example-card" href="?f=y%20-%20t%5E2%20%2B%201&y0=0.5&b=2">
+    <div class="example-card-title">Textbook nonlinear forcing</div>
+    <div class="example-card-formula">y' = y - t^2 + 1, &nbsp; y(0)=0.5</div>
+    <div class="example-card-text">A standard smooth test problem where RK45 can reach high accuracy with relatively few adaptive steps.</div>
+  </a>
+
+  <a class="example-card" href="?f=t%20-%20y&y0=1&b=5">
+    <div class="example-card-title">Relaxation toward a trend</div>
+    <div class="example-card-formula">y' = t - y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">The solution is pulled toward the increasing trend t, with the adaptive solver adjusting as the transient fades.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%20*%20(1%20-%20y)&y0=0.1&b=8">
+    <div class="example-card-title">Logistic growth</div>
+    <div class="example-card-formula">y' = y(1-y), &nbsp; y(0)=0.1</div>
+    <div class="example-card-text">The solver refines through the rapid growth phase and then takes larger steps as the solution levels off.</div>
+  </a>
+
+  <a class="example-card" href="?f=-2%20*%20y&y0=3&b=4">
+    <div class="example-card-title">Exponential decay</div>
+    <div class="example-card-formula">y' = -2y, &nbsp; y(0)=3</div>
+    <div class="example-card-text">A simple decay problem where steps can grow as the solution becomes flatter.</div>
+  </a>
+
+  <a class="example-card" href="?f=2%20*%20y&y0=0.25&b=2">
+    <div class="example-card-title">Exponential growth</div>
+    <div class="example-card-formula">y' = 2y, &nbsp; y(0)=0.25</div>
+    <div class="example-card-text">As the solution grows, RK45 usually shortens steps to keep the local error under control.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(t)%20-%200.5%20*%20y&y0=0&b=10">
+    <div class="example-card-title">Damped sinusoidal forcing</div>
+    <div class="example-card-formula">y' = sin(t) - 0.5y, &nbsp; y(0)=0</div>
+    <div class="example-card-text">An oscillatory forced system where the accepted steps reflect the changing curvature of the solution.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%5E2%20-%20t&y0=0&b=2">
+    <div class="example-card-title">Nonlinear Riccati-type equation</div>
+    <div class="example-card-formula">y' = y^2 - t, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A nonlinear example with changing curvature that encourages the adaptive method to refine unevenly.</div>
+  </a>
+
+  <a class="example-card" href="?f=-10%20*%20(y%20-%20cos(t))%20-%20sin(t)&y0=1&b=3">
+    <div class="example-card-title">Fast attraction to cos(t)</div>
+    <div class="example-card-formula">y' = -10(y - cos(t)) - sin(t), &nbsp; y(0)=1</div>
+    <div class="example-card-text">A fast transient quickly settles onto cos(t), so RK45 concentrates effort near the initial layer.</div>
+  </a>
+
+  <a class="example-card" href="?f=-15%20*%20y&y0=1&b=1">
+    <div class="example-card-title">Stiff-looking decay</div>
+    <div class="example-card-formula">y' = -15y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">A rapid decay problem where the adaptive solver initially shrinks steps to resolve the fast drop.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%20%2B%20sin(5%20*%20t)&y0=0&b=3">
+    <div class="example-card-title">Oscillatory forcing with growth</div>
+    <div class="example-card-formula">y' = y + sin(5t), &nbsp; y(0)=0</div>
+    <div class="example-card-text">Growth combined with oscillatory forcing makes the adaptive step pattern more varied across the interval.</div>
+  </a>
+</div>
+```

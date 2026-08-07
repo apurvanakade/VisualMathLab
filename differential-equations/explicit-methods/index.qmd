@@ -24,6 +24,65 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
+```{ojs}
+//| output: false
+// URL preset helpers for examples.
+// Supported query parameters:
+//   f       right-hand side f(t, y)
+//   y0      initial condition
+//   b       right endpoint
+//   n       current number of subintervals
+//   max     maximum n used in convergence plots/table
+//   show    comma-separated methods: euler, improved, rk4
+urlParams = new URLSearchParams(window.location.search)
+
+methodOptions = ["Euler's method", "Improved Euler", "RK4"]
+
+methodSlugToLabel = new Map([
+  ["euler", "Euler's method"],
+  ["eulers", "Euler's method"],
+  ["euler-method", "Euler's method"],
+  ["eulers-method", "Euler's method"],
+  ["euler_method", "Euler's method"],
+
+  ["improved", "Improved Euler"],
+  ["improved-euler", "Improved Euler"],
+  ["improvedeuler", "Improved Euler"],
+  ["improved_euler", "Improved Euler"],
+
+  ["rk4", "RK4"],
+  ["runge-kutta", "RK4"],
+  ["runge-kutta-4", "RK4"],
+  ["rk-4", "RK4"]
+])
+
+methodLabelToSlug = new Map([
+  ["Euler's method", "euler"],
+  ["Improved Euler", "improved"],
+  ["RK4", "rk4"]
+])
+
+initialMethods = {
+  const raw = urlParams.get("show") ?? urlParams.get("methods")
+  if (raw === null || raw.trim() === "") return methodOptions
+
+  const selected = raw
+    .split(",")
+    .map(s => s.trim().toLowerCase())
+    .map(s => methodSlugToLabel.get(s))
+    .filter(Boolean)
+
+  return selected.length > 0 ? Array.from(new Set(selected)) : methodOptions
+}
+
+initialN = {
+  const raw = Number.parseInt(urlParams.get("n"), 10)
+  return Number.isFinite(raw) ? Math.max(1, raw) : 4
+}
+
+initialMax = urlParams.get("max") ?? "20"
+```
+
 <div class="ojs-panel">
 
 ```{ojs}
@@ -76,7 +135,7 @@ viewof plotTrigger = {
 
 ```{ojs}
 viewof nControl = {
-  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(4, maxN), label: "n (subintervals)"})
+  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
   return nSlider
 }
@@ -84,7 +143,7 @@ viewof nControl = {
 
 ```{ojs}
 viewof maxNInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
+  const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
   return input
 }
@@ -108,8 +167,7 @@ maxN = {
 
 ```{ojs}
 viewof methods = {
-  const options = ["Euler's method", "Improved Euler", "RK4"]
-  const checkboxInput = Inputs.checkbox(options, {value: options})
+  const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
   checkboxInput.classList.add("ojs-fill")
   return checkboxInput
 }
@@ -130,6 +188,19 @@ showImprovedEuler = methods.includes("Improved Euler")
 ```{ojs}
 //| output: false
 showRK4 = methods.includes("RK4")
+```
+
+```{ojs}
+//| output: false
+// Keeps n, max, and method choices shareable as the reactive controls change.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("n", String(nControl))
+  params.set("max", maxNInput)
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
 ```
 
 ```{ojs}
@@ -173,6 +244,9 @@ committed = {
   params.set("f", fVal)
   params.set("y0", y0Text)
   params.set("b", bText)
+  params.set("n", String(nControl))
+  params.set("max", maxNInput)
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, y0: y0Val, bEnd: bVal}

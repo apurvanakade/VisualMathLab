@@ -27,26 +27,71 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// URL presets make the example cards shareable/reproducible.
+//
+// Supported parameters:
+//   noise=0.7
+//   degrees=1,5
+//   seed=303
+urlParams = new URLSearchParams(window.location.search)
+
+maxNoise = 1
+
+initialNoise = {
+  const raw = Number(urlParams.get("noise"))
+  return Number.isFinite(raw) ? Math.max(0, Math.min(maxNoise, raw)) : 0
+}
+
+initialSeed = {
+  const raw = Number(urlParams.get("seed"))
+  return Number.isInteger(raw) && raw >= 0 ? raw : 123
+}
+
+initialShownDegrees = {
+  const raw = urlParams.get("degrees")
+  if (!raw) return ["Degree 5"]
+
+  const labels = []
+  const seen = new Set()
+
+  for (const part of raw.split(",")) {
+    const degree = Number(part.trim())
+    if (Number.isInteger(degree) && degree >= 1 && degree <= 5 && !seen.has(degree)) {
+      labels.push(`Degree ${degree}`)
+      seen.add(degree)
+    }
+  }
+
+  return labels.length ? labels : ["Degree 5"]
+}
+```
+
+```{ojs}
+//| output: false
 // basePoints redraws whenever regenerateTrigger changes (initial load
-// counts as one draw), seeded from the current timestamp so each draw is a
-// fresh, non-repeating line and set of offsets. All noise comes from
-// `offsets`, scaled by the noise slider in `points` below — so the points
-// are exactly colinear at noise level 0, on whatever line this draw picked.
+// counts as one draw). It is deterministic from the current seed plus the
+// regenerate count, so URL example cards always produce the same first draw,
+// while "Regenerate points" still produces a new reproducible draw.
+// All noise comes from `offsets`, scaled by the noise slider in `points`
+// below — so the points are exactly colinear at noise level 0, on whatever
+// line this draw picked.
 // Kept outside the ojs-row div below: an output:false cell still renders
 // an empty .cell div, and if it sat inside the row it would become the
 // row's first child, stealing the `flex: 1 1 200px` fill rule meant for
 // the slider.
 basePoints = {
   regenerateTrigger
-  // Seeded PRNG (mulberry32), seeded from the current time so each
-  // "Regenerate" click produces a different draw.
-  let state = Date.now()
+
+  // Seeded PRNG (mulberry32). This replaces Date.now() so examples are
+  // reproducible from URL parameters.
+  let state = Math.floor(seedValue) + regenerateTrigger * 1000003
   const rand = () => {
     state = (state + 0x6D2B79F5) | 0
     let t = Math.imul(state ^ (state >>> 15), 1 | state)
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
+
   // Box-Muller transform: turns two uniform samples into one standard-normal sample.
   const gaussian = () => {
     const u1 = Math.max(rand(), 1e-12)
@@ -96,11 +141,6 @@ baseFits = {
   }
   return fits
 }
-```
-
-```{ojs}
-//| output: false
-maxNoise = 1
 ```
 
 ```{ojs}
@@ -182,7 +222,7 @@ bufferCurves = {
 
 ```{ojs}
 viewof noiseLevel = {
-  const input = Inputs.range([0, maxNoise], {step: 0.01, value: 0, label: "Noise level"})
+  const input = Inputs.range([0, maxNoise], {step: 0.01, value: initialNoise, label: "Noise level"})
   input.classList.add("ojs-fill")
   return input
 }
@@ -206,13 +246,48 @@ viewof regenerateTrigger = {
 ```{ojs}
 viewof shownDegrees = {
   const options = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5"]
-  const checkboxInput = Inputs.checkbox(options, {value: ["Degree 5"]})
+  const checkboxInput = Inputs.checkbox(options, {value: initialShownDegrees})
   checkboxInput.classList.add("ojs-fill")
   return checkboxInput
 }
 ```
 
+```{ojs}
+viewof seedValue = {
+  const input = Inputs.number({
+    value: initialSeed,
+    min: 0,
+    step: 1,
+    label: "Random seed"
+  })
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
 </div>
+
+```{ojs}
+//| output: false
+// Keep the current settings in the URL so the page is shareable.
+// This updates the URL without reloading the page.
+{
+  const params = new URLSearchParams(window.location.search)
+
+  params.set("noise", String(noiseLevel))
+  params.set(
+    "degrees",
+    shownDegrees
+      .map(label => label.replace("Degree ", ""))
+      .join(",")
+  )
+  params.set("seed", String(seedValue))
+
+  const query = params.toString()
+  const newUrl = `${window.location.pathname}${query ? "?" + query : ""}${window.location.hash}`
+  window.history.replaceState({}, "", newUrl)
+}
+```
 
 ```{ojs}
 //| output: false
@@ -449,7 +524,7 @@ errorPlot = {
 
   return Plot.plot({
     width: 500, height: 300, marginLeft: 46,
-    x: {label: "Polynomial degree", domain: [1, 2, 3, 4, 5]},
+    x: {label: "Polynomial degree", domain: [1, 5], ticks: [1, 2, 3, 4, 5]},
     y: {label: "Total squared error (training data)"},
     marks: [
       Plot.line(rows, {x: "degree", y: "error", stroke: "#9333ea"}),
@@ -470,3 +545,78 @@ A low-degree polynomial (e.g. a line) can't bend to match every point — high *
 A low-degree fit can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree fit can match the training data almost perfectly but swings wildly as the data changes — low bias, high variance, **overfitting**. The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — training error stays near zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degree 1 and 2 barely react to the noise at all, at the cost of never capturing real curvature either.
 
 Training error alone can't reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a **held-out validation or test set** — why train/validation/test splits and cross-validation are standard practice.
+
+## Examples
+
+```{=html}
+<style>
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2rem;
+}
+
+.example-card {
+  display: block;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.example-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-color: #aaa;
+  text-decoration: none;
+}
+
+.example-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.example-card p {
+  margin-bottom: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+</style>
+
+<div class="example-grid">
+  <a class="example-card" href="?noise=0&degrees=1,5&seed=101">
+    <h3>No noise</h3>
+    <p>Compare a line with a degree-5 polynomial when all points are exactly colinear.</p>
+  </a>
+
+  <a class="example-card" href="?noise=0.25&degrees=1,2,5&seed=202">
+    <h3>Small noise</h3>
+    <p>Watch mild noise move the data while degree 5 bends more sharply than lower-degree fits.</p>
+  </a>
+
+  <a class="example-card" href="?noise=0.7&degrees=1,5&seed=303">
+    <h3>Underfitting vs overfitting</h3>
+    <p>Compare the rigid degree-1 fit with the highly flexible degree-5 interpolating fit.</p>
+  </a>
+
+  <a class="example-card" href="?noise=1&degrees=1,2,3,4,5&seed=404">
+    <h3>Training error decreases</h3>
+    <p>Show every degree and use the error plot to see training error fall as complexity rises.</p>
+  </a>
+
+  <a class="example-card" href="?noise=1&degrees=5&seed=505">
+    <h3>Degree 5 interpolation</h3>
+    <p>With six data points, degree 5 has enough parameters to pass almost exactly through all of them.</p>
+  </a>
+
+  <a class="example-card" href="?noise=1&degrees=1&seed=505">
+    <h3>Same data, linear model</h3>
+    <p>Use the same seed as the interpolation example, but fit only a line for direct comparison.</p>
+  </a>
+</div>
+```

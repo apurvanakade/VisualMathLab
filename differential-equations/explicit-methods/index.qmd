@@ -547,3 +547,73 @@ valueTable = {
 </div>
 
 Given $y' = f(t, y)$, $y(0) = y_0$, an **explicit** method computes each $y_{i+1} \approx y(t_{i+1})$ directly from already-known values. Compare **Euler's method** (one slope evaluation per step), **Improved Euler** (averages the slope at both endpoints), and **RK4** (averages four slope estimates) — more evaluations per step buys higher accuracy.
+
+## Examples
+
+The examples below show how explicit methods behave on different initial value problems. Euler's method is simple but low-order, Improved Euler is more accurate, and RK4 usually tracks the reference solution closely with far fewer steps.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+  <a class="example-card" href="?f=y%20-%20t%5E2%20%2B%201&y0=0.5&b=2&n=4&max=20&show=euler,improved,rk4">
+    <div class="example-card-title">Textbook nonlinear forcing</div>
+    <div class="example-card-formula">y' = y - t^2 + 1, &nbsp; y(0)=0.5</div>
+    <div class="example-card-text">A standard test problem where the three explicit methods can be compared against a smooth reference solution.</div>
+  </a>
+
+  <a class="example-card" href="?f=t%20-%20y&y0=1&b=5&n=6&max=40&show=euler,improved,rk4">
+    <div class="example-card-title">Relaxation toward a trend</div>
+    <div class="example-card-formula">y' = t - y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">The solution is pulled toward the increasing trend t, showing how step size affects lag and accuracy.</div>
+  </a>
+
+  <a class="example-card" href="?f=y*(1%20-%20y)&y0=0.1&b=8&n=8&max=60&show=euler,improved,rk4">
+    <div class="example-card-title">Logistic growth</div>
+    <div class="example-card-formula">y' = y(1-y), &nbsp; y(0)=0.1</div>
+    <div class="example-card-text">A bounded nonlinear growth model where the solution rises quickly and then levels off near the carrying capacity.</div>
+  </a>
+
+  <a class="example-card" href="?f=-2*y&y0=3&b=4&n=5&max=40&show=euler,improved,rk4">
+    <div class="example-card-title">Exponential decay</div>
+    <div class="example-card-formula">y' = -2y, &nbsp; y(0)=3</div>
+    <div class="example-card-text">A simple decay problem that highlights numerical damping and the effect of using larger time steps.</div>
+  </a>
+
+  <a class="example-card" href="?f=2*y&y0=0.25&b=2&n=4&max=40&show=euler,improved,rk4">
+    <div class="example-card-title">Exponential growth</div>
+    <div class="example-card-formula">y' = 2y, &nbsp; y(0)=0.25</div>
+    <div class="example-card-text">A rapidly increasing solution where low-order errors grow along with the solution.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(t)%20-%200.5*y&y0=0&b=10&n=12&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Damped sinusoidal forcing</div>
+    <div class="example-card-formula">y' = sin(t) - 0.5y, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A forced system with oscillation and damping, useful for seeing how the methods track changing slopes.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%5E2%20-%20t&y0=0&b=2&n=8&max=50&show=euler,improved,rk4">
+    <div class="example-card-title">Nonlinear Riccati-type equation</div>
+    <div class="example-card-formula">y' = y^2 - t, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A nonlinear example where curvature changes over the interval and higher-order methods gain a visible advantage.</div>
+  </a>
+
+  <a class="example-card" href="?f=-10*(y%20-%20cos(t))%20-%20sin(t)&y0=1&b=3&n=6&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Fast attraction to cos(t)</div>
+    <div class="example-card-formula">y' = -10(y - cos(t)) - sin(t), &nbsp; y(0)=1</div>
+    <div class="example-card-text">The exact behavior is attracted quickly to cos(t), making this a good stability and step-size example.</div>
+  </a>
+
+  <a class="example-card" href="?f=-15*y&y0=1&b=1&n=4&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Stiff-looking decay</div>
+    <div class="example-card-formula">y' = -15y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">A fast decay problem where explicit methods can behave poorly unless the step size is sufficiently small.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%20%2B%20sin(5*t)&y0=0&b=3&n=10&max=80&show=euler,improved,rk4">
+    <div class="example-card-title">Oscillatory forcing with growth</div>
+    <div class="example-card-formula">y' = y + sin(5t), &nbsp; y(0)=0</div>
+    <div class="example-card-text">An oscillatory forcing term combined with growth, showing how methods handle both waves and amplification.</div>
+  </a>
+</div>
+```

@@ -531,3 +531,73 @@ valueTable = {
 </div>
 
 **Implicit Euler** (backward Euler) uses the slope at the *end* of the step, $y_{i+1} = y_i + h\, f(t_{i+1}, y_{i+1})$, which requires solving for $y_{i+1}$ at each step (this page uses a few steps of [Newton's method](../../root-finding/newton-method/index.qmd)) — but buys **stability** that explicit Euler lacks. The default example, $y' = -5y$, is chosen to make this visible: try dragging $n$ down to see explicit Euler destabilize while implicit Euler stays smooth.
+
+## Examples
+
+The examples below show how implicit Euler behaves compared with explicit Euler. Implicit Euler is especially useful on fast-decaying or stiff-looking problems where explicit Euler may become unstable unless the step size is small.
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+  <a class="example-card" href="?f=-5%20*%20y&y0=1&b=2">
+    <div class="example-card-title">Fast exponential decay</div>
+    <div class="example-card-formula">y' = -5y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">The default stability example: explicit Euler can oscillate or destabilize with large steps, while implicit Euler stays controlled.</div>
+  </a>
+
+  <a class="example-card" href="?f=-15%20*%20y&y0=1&b=1">
+    <div class="example-card-title">Stiff-looking decay</div>
+    <div class="example-card-formula">y' = -15y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">A sharper decay problem where the stability advantage of implicit Euler becomes very visible.</div>
+  </a>
+
+  <a class="example-card" href="?f=-30%20*%20(y%20-%20cos(t))%20-%20sin(t)&y0=1&b=2">
+    <div class="example-card-title">Fast attraction to cos(t)</div>
+    <div class="example-card-formula">y' = -30(y - cos(t)) - sin(t), &nbsp; y(0)=1</div>
+    <div class="example-card-text">The solution is rapidly attracted to cos(t), giving a stiff forced problem with a smooth reference behavior.</div>
+  </a>
+
+  <a class="example-card" href="?f=t%20-%20y&y0=1&b=5">
+    <div class="example-card-title">Relaxation toward a trend</div>
+    <div class="example-card-formula">y' = t - y, &nbsp; y(0)=1</div>
+    <div class="example-card-text">A stable linear equation where the solution is pulled toward the increasing trend t.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(t)%20-%202%20*%20y&y0=0&b=8">
+    <div class="example-card-title">Damped sinusoidal forcing</div>
+    <div class="example-card-formula">y' = sin(t) - 2y, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A forced decay problem where damping competes with an oscillatory input.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%20-%20t%5E2%20%2B%201&y0=0.5&b=2">
+    <div class="example-card-title">Textbook nonlinear forcing</div>
+    <div class="example-card-formula">y' = y - t^2 + 1, &nbsp; y(0)=0.5</div>
+    <div class="example-card-text">A standard smooth test problem for comparing endpoint errors and convergence behavior.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%20*%20(1%20-%20y)&y0=0.1&b=8">
+    <div class="example-card-title">Logistic growth</div>
+    <div class="example-card-formula">y' = y(1-y), &nbsp; y(0)=0.1</div>
+    <div class="example-card-text">A bounded nonlinear growth model where the solution rises and then levels off near the carrying capacity.</div>
+  </a>
+
+  <a class="example-card" href="?f=-2%20*%20y%20%2B%20exp(-t)&y0=2&b=4">
+    <div class="example-card-title">Decay with exponential forcing</div>
+    <div class="example-card-formula">y' = -2y + e^{-t}, &nbsp; y(0)=2</div>
+    <div class="example-card-text">A linear nonhomogeneous problem combining natural decay with a decaying external source.</div>
+  </a>
+
+  <a class="example-card" href="?f=-20%20*%20y%20%2B%2020%20*%20sin(t)&y0=0&b=3">
+    <div class="example-card-title">Strong damping with forcing</div>
+    <div class="example-card-formula">y' = -20y + 20sin(t), &nbsp; y(0)=0</div>
+    <div class="example-card-text">A stiff-looking driven equation where implicit Euler can remain stable for much larger steps.</div>
+  </a>
+
+  <a class="example-card" href="?f=y%5E2%20-%20t&y0=0&b=2">
+    <div class="example-card-title">Nonlinear Riccati-type equation</div>
+    <div class="example-card-formula">y' = y^2 - t, &nbsp; y(0)=0</div>
+    <div class="example-card-text">A nonlinear example that exercises the Newton solve used inside each implicit Euler step.</div>
+  </a>
+</div>
+```

@@ -29,12 +29,62 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
+```{ojs}
+//| output: false
+// URL presets make the example cards shareable/reproducible.
+//
+// Supported parameters:
+//   f=sin(x)
+//   a=0
+//   b=2*pi
+//   n=4
+//   max=20
+//   show=original,linear,cubic
+urlParams = new URLSearchParams(window.location.search)
+
+initialFText = urlParams.get("f") ?? "sin(x)"
+initialA0 = urlParams.get("a") ?? "0"
+initialB0 = urlParams.get("b") ?? "2*pi"
+initialMaxNText = urlParams.get("max") ?? "20"
+
+initialN = {
+  const raw = Number(urlParams.get("n"))
+  return Number.isInteger(raw) && raw >= 1 ? raw : 4
+}
+
+initialInterpolants = {
+  const raw = urlParams.get("show")
+  const all = ["Original curve", "Linear interpolant", "Cubic spline interpolant"]
+  if (!raw) return all
+
+  const map = {
+    original: "Original curve",
+    f: "Original curve",
+    linear: "Linear interpolant",
+    cubic: "Cubic spline interpolant",
+    spline: "Cubic spline interpolant"
+  }
+
+  const chosen = []
+  const seen = new Set()
+  for (const part of raw.split(",")) {
+    const key = part.trim().toLowerCase()
+    const label = map[key]
+    if (label && !seen.has(label)) {
+      chosen.push(label)
+      seen.add(label)
+    }
+  }
+
+  return chosen.length ? chosen : all
+}
+```
+
 <div class="ojs-panel">
 
 ```{ojs}
 viewof fText = {
-  const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "sin(x)", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: initialFText, placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
   fTextInput.classList.add("ojs-fill")
   return fTextInput
 }
@@ -44,8 +94,7 @@ viewof fText = {
 
 ```{ojs}
 viewof a0 = {
-  const params = new URLSearchParams(window.location.search)
-  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0", placeholder: "Example: 0, -pi"})
+  const a0Input = Inputs.text({label: "Left endpoint a", value: initialA0, placeholder: "Example: 0, -pi"})
   return a0Input
 }
 ```
@@ -56,8 +105,7 @@ viewof a0 = {
 
 ```{ojs}
 viewof b0 = {
-  const params = new URLSearchParams(window.location.search)
-  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2*pi", placeholder: "Example: 2*pi, 6.28"})
+  const b0Input = Inputs.text({label: "Right endpoint b", value: initialB0, placeholder: "Example: 2*pi, 6.28"})
   return b0Input
 }
 ```
@@ -81,7 +129,7 @@ viewof plotTrigger = {
 
 ```{ojs}
 viewof nControl = {
-  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(4, maxN), label: "n (subintervals)"})
+  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
   return nSlider
 }
@@ -89,7 +137,7 @@ viewof nControl = {
 
 ```{ojs}
 viewof maxNInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
+  const input = Inputs.text({value: initialMaxNText, label: "Max", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
   return input
 }
@@ -114,7 +162,7 @@ maxN = {
 ```{ojs}
 viewof interpolants = {
   const options = ["Original curve", "Linear interpolant", "Cubic spline interpolant"]
-  const checkboxInput = Inputs.checkbox(options, {value: options})
+  const checkboxInput = Inputs.checkbox(options, {value: initialInterpolants})
   checkboxInput.classList.add("ojs-fill")
   return checkboxInput
 }
@@ -177,9 +225,46 @@ committed = {
   params.set("f", fVal)
   params.set("a", aText)
   params.set("b", bText)
+  params.set("n", String(nControl))
+  params.set("max", maxNInput)
+  params.set(
+    "show",
+    interpolants.map(label => {
+      if (label === "Original curve") return "original"
+      if (label === "Linear interpolant") return "linear"
+      if (label === "Cubic spline interpolant") return "cubic"
+      return label
+    }).join(",")
+  )
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+// Keep n/max/interpolant changes in the URL too. Unlike f/a/b, these
+// controls are reactive immediately, so their URL state should update
+// immediately without requiring Plot.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("f", (viewof fText).value)
+  params.set("a", (viewof a0).value)
+  params.set("b", (viewof b0).value)
+  params.set("n", String(nControl))
+  params.set("max", maxNInput)
+  params.set(
+    "show",
+    interpolants.map(label => {
+      if (label === "Original curve") return "original"
+      if (label === "Linear interpolant") return "linear"
+      if (label === "Cubic spline interpolant") return "cubic"
+      return label
+    }).join(",")
+  )
+
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
 }
 ```
 
@@ -593,3 +678,78 @@ arcLengthTable = {
 </div>
 
 Connects $n+1$ samples of $f$ on $[a,b]$ with straight segments (**linear**) or with cubics matching value and first two derivatives at each node (**cubic spline**), then compares how fast each interpolant's arc length converges to $f$'s true arc length as $n$ grows.
+
+## Examples
+
+```{=html}
+<style>
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2rem;
+}
+
+.example-card {
+  display: block;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+  background: #fff;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.example-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-color: #aaa;
+  text-decoration: none;
+}
+
+.example-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
+  font-size: 1.05rem;
+}
+
+.example-card p {
+  margin-bottom: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
+</style>
+
+<div class="example-grid">
+  <a class="example-card" href="?f=sin(x)&a=0&b=2*pi&n=4&max=20&show=original,linear,cubic">
+    <h3>Sine on one full period</h3>
+    <p>Compare linear and cubic spline interpolation for a smooth periodic curve.</p>
+  </a>
+
+  <a class="example-card" href="?f=cos(x)&a=0&b=pi&n=3&max=24&show=original,linear,cubic">
+    <h3>Cosine on half a period</h3>
+    <p>Start with only a few subintervals and watch the arc length estimates converge.</p>
+  </a>
+
+  <a class="example-card" href="?f=x%5E3-x&a=-2&b=2&n=4&max=30&show=original,linear,cubic">
+    <h3>Cubic polynomial</h3>
+    <p>Use a curve with turning behavior to see how splines reduce visible cornering.</p>
+  </a>
+
+  <a class="example-card" href="?f=1%2F(1%2Bx%5E2)&a=-5&b=5&n=6&max=40&show=original,linear,cubic">
+    <h3>Rational peak</h3>
+    <p>Interpolate a peaked function over a wider interval and compare arc length errors.</p>
+  </a>
+
+  <a class="example-card" href="?f=exp(-x%5E2)&a=-3&b=3&n=5&max=35&show=original,linear,cubic">
+    <h3>Gaussian bump</h3>
+    <p>See how the interpolants behave on a smooth curve that flattens near the endpoints.</p>
+  </a>
+
+  <a class="example-card" href="?f=abs(x)&a=-2&b=2&n=4&max=30&show=original,linear,cubic">
+    <h3>Nonsmooth corner</h3>
+    <p>Try a sharp cusp where cubic splines may overshoot near the corner.</p>
+  </a>
+</div>
+```

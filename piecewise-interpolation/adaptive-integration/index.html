@@ -1263,8 +1263,76 @@ Authors: Apurva Nakade
 </div>
 </div>
 <p><strong>Adaptive quadrature</strong> refines the partition of <span class="math inline">\([a,b]\)</span> only where it’s needed, instead of the fixed grid used in <a href="../../piecewise-interpolation/integration/index.html">Numerical Integration</a>: it compares Simpson’s rule on <span class="math inline">\([a,b]\)</span> against Simpson’s rule on each half, and bisects further whenever the two disagree by more than a target tolerance <span class="math inline">\(\varepsilon\)</span>.</p>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<p>The examples below show where adaptive integration is useful: smooth functions need only a few panels, while sharp peaks, endpoint behavior, corners, steep transitions, and oscillations force the method to refine locally.</p>
+<p>Click any example to load it into the app.</p>
+<div class="example-grid">
+
+  <a class="example-card" href="?f=sin(x)&amp;a=0&amp;b=pi">
+    <div class="example-card-title">Smooth sine area</div>
+    <div class="example-card-formula">f(x) = sin(x), [a,b] = [0,π]</div>
+    <div class="example-card-text">A smooth benchmark where adaptive Simpson integration reaches good accuracy with relatively few subintervals.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(1 %2F (x %2B 0.3))&amp;a=0&amp;b=pi">
+    <div class="example-card-title">Oscillation near an endpoint</div>
+    <div class="example-card-formula">f(x) = sin(1/(x+0.3)), [a,b] = [0,π]</div>
+    <div class="example-card-text">The default example. The method refines more near the left endpoint where the function changes more rapidly.</div>
+  </a>
+
+  <a class="example-card" href="?f=1%2F(1 %2B 100*(x - 0.2)^2)&amp;a=-1&amp;b=1">
+    <div class="example-card-title">Rational peak</div>
+    <div class="example-card-formula">f(x) = 1/(1+100(x-0.2)²), [a,b] = [-1,1]</div>
+    <div class="example-card-text">A narrow off-center peak causes the adaptive partition to concentrate small panels near x = 0.2.</div>
+  </a>
+
+  <a class="example-card" href="?f=exp(-25*x^2)&amp;a=-2&amp;b=2">
+    <div class="example-card-title">Gaussian bump</div>
+    <div class="example-card-formula">f(x) = exp(-25x²), [a,b] = [-2,2]</div>
+    <div class="example-card-text">Most of the area is concentrated near zero, so the adaptive panels become much smaller around the bump.</div>
+  </a>
+
+  <a class="example-card" href="?f=abs(x)&amp;a=-2&amp;b=2">
+    <div class="example-card-title">Nonsmooth corner</div>
+    <div class="example-card-formula">f(x) = |x|, [a,b] = [-2,2]</div>
+    <div class="example-card-text">The function is simple but not differentiable at x = 0, which triggers extra refinement near the corner.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(20*x)&amp;a=0&amp;b=2*pi">
+    <div class="example-card-title">Highly oscillatory integral</div>
+    <div class="example-card-formula">f(x) = sin(20x), [a,b] = [0,2π]</div>
+    <div class="example-card-text">Rapid oscillations require many panels to resolve cancellation across the interval.</div>
+  </a>
+
+  <a class="example-card" href="?f=tanh(20*(x - 0.2))&amp;a=-1&amp;b=1">
+    <div class="example-card-title">Steep transition</div>
+    <div class="example-card-formula">f(x) = tanh(20(x-0.2)), [a,b] = [-1,1]</div>
+    <div class="example-card-text">The function is nearly flat except near a sharp transition layer, where the adaptive panels cluster.</div>
+  </a>
+
+  <a class="example-card" href="?f=sqrt(x)&amp;a=0&amp;b=1">
+    <div class="example-card-title">Endpoint behavior</div>
+    <div class="example-card-formula">f(x) = √x, [a,b] = [0,1]</div>
+    <div class="example-card-text">The slope becomes large near x = 0, so the method refines strongly near the endpoint.</div>
+  </a>
+
+  <a class="example-card" href="?f=1%2F(0.01 %2B x^2)&amp;a=-1&amp;b=1">
+    <div class="example-card-title">Narrow spike</div>
+    <div class="example-card-formula">f(x) = 1/(0.01+x²), [a,b] = [-1,1]</div>
+    <div class="example-card-text">A tall spike at the origin creates a dense cluster of subintervals near x = 0.</div>
+  </a>
+
+  <a class="example-card" href="?f=sin(1%2Fx)&amp;a=0.05&amp;b=1">
+    <div class="example-card-title">Challenging oscillations</div>
+    <div class="example-card-formula">f(x) = sin(1/x), [a,b] = [0.05,1]</div>
+    <div class="example-card-text">Oscillations become faster near the left endpoint, showing how recursion depth grows in difficult regions.</div>
+  </a>
+
+</div>
 
 
+</section>
 
 </main> <!-- /main -->
 <script type="ojs-module-contents">

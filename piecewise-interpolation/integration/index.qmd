@@ -34,7 +34,18 @@ VM = window.VM
 //   n       current number of subintervals
 //   max     maximum n used in convergence plots/table
 //   show    comma-separated methods: left, midpoint, trapezoidal, simpson
+//   tab     active tab: inputs, display
 urlParams = new URLSearchParams(window.location.search)
+
+tabSlugToLabel = new Map([
+  ["inputs", "Inputs"],
+  ["display", "Display Options"]
+])
+
+tabLabelToSlug = new Map([
+  ["Inputs", "inputs"],
+  ["Display Options", "display"]
+])
 
 methodOptions = ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]
 
@@ -94,6 +105,10 @@ initialN = {
 initialMax = urlParams.get("max") ?? "20"
 ```
 
+::: {.panel-tabset}
+
+## Inputs
+
 <div class="ojs-panel">
 
 ```{ojs}
@@ -115,10 +130,6 @@ viewof a0 = {
 }
 ```
 
-</div>
-
-<div class="ojs-row">
-
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
@@ -127,6 +138,8 @@ viewof b0 = {
 }
 ```
 
+</div>
+
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
 // take effect until this is clicked, so result/mainPlot don't recompute on
@@ -134,13 +147,14 @@ viewof b0 = {
 // unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
+  plotButton.classList.add("ojs-auto", "ojs-end")
   return plotButton
 }
 ```
 
 </div>
-</div>
+
+## Display Options
 
 <div class="ojs-panel ojs-row">
 
@@ -185,6 +199,8 @@ viewof methods = {
 ```
 
 </div>
+
+:::
 
 ```{ojs}
 //| output: false
@@ -265,6 +281,39 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
 }
 ```
 

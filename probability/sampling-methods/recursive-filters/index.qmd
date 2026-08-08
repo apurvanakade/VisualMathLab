@@ -39,7 +39,18 @@ VM = window.VM
 //   R       Kalman filter's assumed measurement-noise variance
 //   Q       Kalman filter's assumed process-noise variance
 //   show    comma-separated methods: sma, ema, kalman
+//   tab     active tab: signal, filters
 urlParams = new URLSearchParams(window.location.search)
+
+tabSlugToLabel = new Map([
+  ["signal", "Signal & Sampling"],
+  ["filters", "Filter Parameters"]
+])
+
+tabLabelToSlug = new Map([
+  ["Signal & Sampling", "signal"],
+  ["Filter Parameters", "filters"]
+])
 
 methodOptions = ["Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
 
@@ -100,6 +111,10 @@ initialQ = {
 }
 ```
 
+::: {.panel-tabset}
+
+## Signal & Sampling
+
 <div class="ojs-panel">
 
 ```{ojs}
@@ -136,18 +151,15 @@ viewof maxNInput = {
 }
 ```
 
-</div>
-
-<div class="ojs-row">
-
 ```{ojs}
 viewof seedText = {
   const params = new URLSearchParams(window.location.search)
   const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "1", placeholder: "Example: 1, 42"})
-  input.classList.add("ojs-auto")
   return input
 }
 ```
+
+</div>
 
 ```{ojs}
 // Plot commits the current signal/noise/endpoint/seed fields — edits
@@ -157,12 +169,11 @@ viewof seedText = {
 // unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
+  plotButton.classList.add("ojs-auto", "ojs-end")
   return plotButton
 }
 ```
 
-</div>
 </div>
 
 ```{ojs}
@@ -176,6 +187,8 @@ maxN = {
   return Math.max(2, Math.round(parsed))
 }
 ```
+
+## Filter Parameters
 
 <div class="ojs-panel ojs-row">
 
@@ -237,6 +250,8 @@ viewof Q = {
 
 </div>
 
+:::
+
 ```{ojs}
 //| output: false
 // Pressing Enter in the signal/noise/endpoint/seed fields clicks Plot
@@ -269,6 +284,40 @@ urlSyncControls = {
   params.set("Q", String(Q))
   params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param, the same
+// URL-shareable convention as every other control on this page: activates
+// the URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
   return true
 }
 ```
@@ -673,7 +722,7 @@ Click any example to load it into the app.
     <div class="example-card-text">The default comparison: all three filters recover a smooth sine from noisy measurements.</div>
   </a>
 
-  <a class="example-card" href="?f=5&sigma=1&b=20&seed=3&max=60&alpha=0.9&k=8&R=1&Q=0&show=kalman,ema">
+  <a class="example-card" href="?f=5&sigma=1&b=20&seed=3&max=60&alpha=0.9&k=8&R=1&Q=0&show=kalman,ema&tab=filters">
     <div class="example-card-title">Estimating a hidden constant</div>
     <div class="example-card-formula">f(x) = 5, &nbsp; σ = 1</div>
     <div class="example-card-text">The classic Kalman use case: repeated noisy measurements of a fixed unknown value. Open the convergence plots and watch the Kalman gain shrink toward 0 as it grows more confident.</div>
@@ -703,13 +752,13 @@ Click any example to load it into the app.
     <div class="example-card-text">A steadily drifting quantity. Kalman's Q &gt; 0 lets the filter keep tracking the drift instead of falling permanently behind, the way Q = 0 would.</div>
   </a>
 
-  <a class="example-card" href="?f=sin(x)&sigma=0.6&b=20&seed=7&max=60&alpha=0.9&k=5&R=0.01&Q=0.05&show=kalman">
+  <a class="example-card" href="?f=sin(x)&sigma=0.6&b=20&seed=7&max=60&alpha=0.9&k=5&R=0.01&Q=0.05&show=kalman&tab=filters">
     <div class="example-card-title">Overconfident sensor model</div>
     <div class="example-card-formula">f(x) = sin(x), &nbsp; σ = 0.6 but R = 0.01</div>
     <div class="example-card-text">Setting R far below the actual measurement noise makes Kalman overtrust every sample — its estimate ends up almost as jagged as the raw data, showing why R must reflect real sensor noise.</div>
   </a>
 
-  <a class="example-card" href="?f=sin(x)&sigma=0.3&b=20&seed=8&max=60&alpha=0.9&k=5&R=0.09&Q=0&show=kalman,ema">
+  <a class="example-card" href="?f=sin(x)&sigma=0.3&b=20&seed=8&max=60&alpha=0.9&k=5&R=0.09&Q=0&show=kalman,ema&tab=filters">
     <div class="example-card-title">Zero process noise stops tracking</div>
     <div class="example-card-formula">f(x) = sin(x), &nbsp; Q = 0</div>
     <div class="example-card-text">With Q = 0 the filter assumes the true value never changes, so its gain decays toward 0 and it stops following the moving sine — compare with the default example, where Q = 0.05 keeps it responsive.</div>

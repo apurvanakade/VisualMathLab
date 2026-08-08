@@ -24,27 +24,6 @@ Authors: Apurva Nakade
 VM = window.VM
 ```
 
-```{ojs}
-//| output: false
-// tab: which ::: {.panel-tabset} tab is active (inputs, display) -- see
-// the tabSync cell below.
-urlParams = new URLSearchParams(window.location.search)
-
-tabSlugToLabel = new Map([
-  ["inputs", "Inputs"],
-  ["display", "Display Options"]
-])
-
-tabLabelToSlug = new Map([
-  ["Inputs", "inputs"],
-  ["Display Options", "display"]
-])
-```
-
-::: {.panel-tabset}
-
-## Inputs
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -66,10 +45,6 @@ viewof x0 = {
 }
 ```
 
-</div>
-
-<div class="ojs-row">
-
 ```{ojs}
 viewof x1 = {
   const params = new URLSearchParams(window.location.search)
@@ -78,21 +53,20 @@ viewof x1 = {
 }
 ```
 
+</div>
+
 ```{ojs}
 // Plot commits the current function/x₀/x₁ fields — edits above don't take
 // effect until this is clicked, so result/mainPlot don't recompute on
 // every keystroke. The step slider below is unaffected and stays reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
+  plotButton.classList.add("ojs-auto", "ojs-end")
   return plotButton
 }
 ```
 
 </div>
-</div>
-
-## Display Options
 
 <div class="ojs-panel ojs-row">
 
@@ -125,8 +99,6 @@ maxIterations = {
 ```
 
 </div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -171,39 +143,6 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, x0: x0Val, x1: x1Val}
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
-// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
-  return true
 }
 ```
 

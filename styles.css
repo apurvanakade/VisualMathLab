@@ -143,7 +143,19 @@
  * of Observable Inputs' 100%-wide default, which would otherwise force the
  * row to wrap. */
 .ojs-auto { width: auto !important; flex: none !important; }
-.ojs-short input[type="text"] { width: 9em; flex: none !important; }
+
+/* Attach to an Inputs.* wrapper div to push it to the right edge of its
+ * container -- e.g. every page's "Plot" button, so it lands in the same
+ * bottom-right corner everywhere regardless of whether it shares a .ojs-row
+ * with a growing sibling field or sits alone below a .ojs-grid. A plain
+ * block-level div with width:auto (e.g. what .ojs-auto sets) actually
+ * stretches to fill its container in normal block flow -- unlike a flex
+ * item, "auto" here does NOT mean "shrink to content" -- so there's no
+ * free space left for margin-left:auto to consume. Forcing fit-content
+ * first is what makes the auto margin actually push it right, in both
+ * plain-block (a lone button under a .ojs-grid) and flex (a button beside
+ * a growing sibling in a .ojs-row) contexts. */
+.ojs-end { width: fit-content !important; margin-left: auto !important; }
 
 /* ── Output area ─────────────────────────────────────────────────── */
 

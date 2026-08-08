@@ -33,18 +33,7 @@ VM = window.VM
 //   noise=0.7
 //   degrees=1,5
 //   seed=303
-//   tab=data,display
 urlParams = new URLSearchParams(window.location.search)
-
-tabSlugToLabel = new Map([
-  ["data", "Data"],
-  ["display", "Display Options"]
-])
-
-tabLabelToSlug = new Map([
-  ["Data", "data"],
-  ["Display Options", "display"]
-])
 
 maxNoise = 1
 
@@ -229,10 +218,6 @@ bufferCurves = {
 }
 ```
 
-::: {.panel-tabset}
-
-## Data
-
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -255,8 +240,6 @@ viewof regenerateTrigger = {
 ```
 
 </div>
-
-## Display Options
 
 <div class="ojs-panel ojs-row">
 
@@ -284,8 +267,6 @@ viewof seedValue = {
 
 </div>
 
-:::
-
 ```{ojs}
 //| output: false
 // Keep the current settings in the URL so the page is shareable.
@@ -305,39 +286,6 @@ viewof seedValue = {
   const query = params.toString()
   const newUrl = `${window.location.pathname}${query ? "?" + query : ""}${window.location.hash}`
   window.history.replaceState({}, "", newUrl)
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
-// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
-  return true
 }
 ```
 

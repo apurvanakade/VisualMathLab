@@ -52,6 +52,17 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 - `js/numerical/simpson-estimate.js` → `VM.numerical.simpsonEstimate(f, lo, hi, n)` — composite Simpson's rule quadrature (`n` must be even).
 - `js/numerical/lagrange-quadratic.js` → `VM.numerical.lagrangeQuadratic(x0, y0, x1, y1, x2, y2, sampleCount)` — samples the quadratic interpolant through three points, returning `{xs, ys}`.
 
+**`VM.sampling`**
+
+- `js/sampling/seeded-random.js` → `VM.sampling.seededRandom(seed)` — mulberry32 PRNG factory; returns `() => number` in `[0, 1)`. Deterministic (same seed → same sequence), which is what makes a URL-shared seed reproduce the same noisy demo data.
+- `js/sampling/gaussian-random.js` → `VM.sampling.gaussianRandom(rng)` — Box-Muller transform; takes a uniform `() => number` generator (e.g. `seededRandom`'s return value) and returns a standard-normal `() => number` generator.
+
+**`VM.filters`**
+
+- `js/filters/moving-average-filter.js` → `VM.filters.movingAverageFilter(xs, k)` — causal simple moving average over window size `k` (averages fewer than `k` samples at the start of the array, matching how the filter would run online).
+- `js/filters/ema-filter.js` → `VM.filters.emaFilter(xs, alpha)` — exponential moving average / first-order low-pass filter, `s_i = alpha*s_{i-1} + (1-alpha)*x_i`, seeded with `s_0 = x_0`.
+- `js/filters/kalman-1d-filter.js` → `VM.filters.kalman1DFilter(zs, {R, Q, x0?, P0?})` — scalar Kalman filter (`R` = assumed measurement-noise variance, `Q` = assumed process-noise variance); returns `{xs, Ps, Ks}`, the state estimate, error variance, and gain at each step.
+
 **`VM.plotting`**
 
 - `js/plotting/padded-range.js` → `VM.plotting.paddedRange(values, opts)` — returns `{lo, hi}` with configurable padding for axis ranges.

@@ -138,6 +138,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -182,7 +187,7 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -594,6 +599,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -601,7 +623,15 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1247,7 +1277,15 @@ Authors: Dhruv Azad, Apurva Nakade
 </div>
 </div>
 </div>
-<p>The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a,b]\)</span> where <span class="math inline">\(f\)</span> changes sign, keeping whichever half still brackets the root.</p>
+<p>The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a_n,b_n]\)</span> that brackets a sign change of <span class="math inline">\(f\)</span>, keeping whichever half still brackets it:</p>
+<p><span class="math display">\[
+m_n=\frac{a_n+b_n}{2},\qquad
+(a_{n+1},b_{n+1})=
+\begin{cases}
+(a_n,m_n) &amp; f(a_n)f(m_n)&lt;0,\\[2pt]
+(m_n,b_n) &amp; \text{otherwise.}
+\end{cases}
+\]</span></p>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <p>The bisection method is slower than Newton’s method or the secant method, but it has one major advantage: if <span class="math inline">\(f\)</span> is continuous and changes sign on the interval <span class="math inline">\([a,b]\)</span>, then a root is guaranteed to remain inside the bracket.</p>

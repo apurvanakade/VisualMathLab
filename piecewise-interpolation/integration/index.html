@@ -137,6 +137,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -181,7 +186,7 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -593,6 +598,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -600,7 +622,15 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1540,7 +1570,19 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<p>Approximates <span class="math inline">\(\int_a^b f(x)\, dx\)</span> by replacing <span class="math inline">\(f\)</span> with a simple piecewise interpolant on <span class="math inline">\(n\)</span> equally spaced subintervals and integrating that interpolant exactly — a left or midpoint rectangle, a trapezoid, or (for Simpson’s rule) a quadratic through each pair of subintervals.</p>
+<p>Approximates <span class="math inline">\(\int_a^b f(x)\, dx\)</span> by replacing <span class="math inline">\(f\)</span> with a simple piecewise interpolant on <span class="math inline">\(n\)</span> equally spaced subintervals of width <span class="math inline">\(h=(b-a)/n\)</span>, at nodes <span class="math inline">\(x_i=a+ih\)</span>, and integrating that interpolant exactly:</p>
+<p><span class="math display">\[
+L_n = h\sum_{i=0}^{n-1} f(x_i),
+\qquad
+M_n = h\sum_{i=0}^{n-1} f\!\left(x_i+\tfrac{h}{2}\right),
+\]</span></p>
+<p><span class="math display">\[
+T_n = h\left(\tfrac{1}{2}f(x_0)+f(x_1)+\cdots+f(x_{n-1})+\tfrac{1}{2}f(x_n)\right),
+\]</span></p>
+<p><span class="math display">\[
+S_n = \frac{h}{3}\Big(f(x_0)+4f(x_1)+2f(x_2)+4f(x_3)+\cdots+4f(x_{n-1})+f(x_n)\Big)\quad(n\text{ even}),
+\]</span></p>
+<p>a left or midpoint rectangle sum, a trapezoid sum, or (for Simpson’s rule) a quadratic through each pair of subintervals.</p>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <p>Numerical integration replaces a complicated area under a curve by areas that are easier to compute: rectangles for Riemann sums, trapezoids for the trapezoidal rule, and parabolic arcs for Simpson’s rule.</p>

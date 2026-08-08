@@ -137,6 +137,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -181,7 +186,7 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -593,6 +598,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -600,7 +622,15 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1261,7 +1291,16 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<p><strong>RKF45</strong> (Runge–Kutta–Fehlberg) adapts the step size <span class="math inline">\(h\)</span> at every step, instead of the fixed <span class="math inline">\(h=b/n\)</span> used in <a href="../../differential-equations/explicit-methods/index.html">Explicit Methods</a>. From six slope evaluations it builds two embedded estimates of <span class="math inline">\(y_{i+1}\)</span> (fourth- and fifth-order); if they disagree by more than a target tolerance <span class="math inline">\(\varepsilon\)</span>, the step is rejected and retried with a smaller <span class="math inline">\(h\)</span>, otherwise <span class="math inline">\(h\)</span> grows for the next step.</p>
+<p><strong>RKF45</strong> (Runge–Kutta–Fehlberg) adapts the step size <span class="math inline">\(h\)</span> at every step, instead of the fixed <span class="math inline">\(h=b/n\)</span> used in <a href="../../differential-equations/explicit-methods/index.html">Explicit Methods</a>. Six slope evaluations <span class="math inline">\(k_1,\dots,k_6\)</span>, each of the general Runge-Kutta form</p>
+<p><span class="math display">\[
+k_i = f\!\left(t_n + c_i h,\ y_n + h\sum_{j&lt;i} a_{ij}k_j\right),
+\]</span></p>
+<p>combine into two embedded estimates of <span class="math inline">\(y_{n+1}\)</span> of different order, using two different weight sets <span class="math inline">\(b_i\)</span>, <span class="math inline">\(b_i^*\)</span> on the same six <span class="math inline">\(k_i\)</span>:</p>
+<p><span class="math display">\[
+y_{n+1}^{(4)} = y_n + h\sum_{i=1}^{6} b_i k_i \qquad\text{(4th order)}, \qquad
+y_{n+1}^{(5)} = y_n + h\sum_{i=1}^{6} b_i^{*} k_i \qquad\text{(5th order)}.
+\]</span></p>
+<p>If <span class="math inline">\(\left|y_{n+1}^{(5)} - y_{n+1}^{(4)}\right|\)</span> exceeds a target tolerance <span class="math inline">\(\varepsilon\)</span>, the step is rejected and retried with a smaller <span class="math inline">\(h\)</span>; otherwise it’s accepted (using <span class="math inline">\(y_{n+1}^{(5)}\)</span>) and <span class="math inline">\(h\)</span> grows for the next step.</p>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <p>The examples below show how adaptive RK45 changes its step size to match the difficulty of the solution. It takes larger steps where the solution is smooth and smaller steps where the solution changes rapidly or oscillates.</p>

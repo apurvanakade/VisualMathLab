@@ -137,6 +137,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -181,7 +186,7 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -593,6 +598,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -600,7 +622,9 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1439,7 +1463,12 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<p>An <span class="math inline">\(s\)</span>-stage Runge-Kutta method is specified by a <strong>Butcher tableau</strong> of nodes <span class="math inline">\(c_i\)</span>, coefficients <span class="math inline">\(a_{ij}\)</span>, and weights <span class="math inline">\(b_i\)</span>. Enter coefficients as integers, fractions, or decimals — each row’s panel shows the exact <span class="math inline">\(k_i\)</span> (or <span class="math inline">\(y_{i+1}\)</span>) equation your entries construct, and the box above computes the leading term of the local truncation error <span class="math inline">\(y_{i+1} - y(t_i+h)\)</span> as a power series in <span class="math inline">\(h\)</span>, even for implicit tableaus. If that leading term is <span class="math inline">\(O(h^{p+1})\)</span>, the method is <span class="math inline">\(p\)</span>-th order accurate. Try Euler’s method (<span class="math inline">\(s=1\)</span>, <span class="math inline">\(b_1=1\)</span>), Heun’s method (<span class="math inline">\(s=2\)</span>, <span class="math inline">\(a_{21}=1\)</span>, <span class="math inline">\(b_1=b_2=1/2\)</span>), or classical RK4 (<span class="math inline">\(s=4\)</span>, <span class="math inline">\(a_{21}=a_{32}=1/2\)</span>, <span class="math inline">\(a_{43}=1\)</span>, <span class="math inline">\(b_1=b_4=1/6\)</span>, <span class="math inline">\(b_2=b_3=1/3\)</span>).</p>
+<p>An <span class="math inline">\(s\)</span>-stage Runge-Kutta method is specified by a <strong>Butcher tableau</strong> of nodes <span class="math inline">\(c_i\)</span>, coefficients <span class="math inline">\(a_{ij}\)</span>, and weights <span class="math inline">\(b_i\)</span>, defining each step by</p>
+<p><span class="math display">\[
+k_i = f\!\left(y_i + h\sum_{j=1}^{s} a_{ij}k_j\right),\qquad
+y_{i+1} = y_i + h\sum_{i=1}^{s} b_i k_i.
+\]</span></p>
+<p>Enter coefficients as integers, fractions, or decimals — each row’s panel shows the exact <span class="math inline">\(k_i\)</span> (or <span class="math inline">\(y_{i+1}\)</span>) equation your entries construct, and the box above computes the leading term of the local truncation error <span class="math inline">\(y_{i+1} - y(t_i+h)\)</span> as a power series in <span class="math inline">\(h\)</span>, even for implicit tableaus. If that leading term is <span class="math inline">\(O(h^{p+1})\)</span>, the method is <span class="math inline">\(p\)</span>-th order accurate. Try Euler’s method (<span class="math inline">\(s=1\)</span>, <span class="math inline">\(b_1=1\)</span>), Heun’s method (<span class="math inline">\(s=2\)</span>, <span class="math inline">\(a_{21}=1\)</span>, <span class="math inline">\(b_1=b_2=1/2\)</span>), or classical RK4 (<span class="math inline">\(s=4\)</span>, <span class="math inline">\(a_{21}=a_{32}=1/2\)</span>, <span class="math inline">\(a_{43}=1\)</span>, <span class="math inline">\(b_1=b_4=1/6\)</span>, <span class="math inline">\(b_2=b_3=1/3\)</span>).</p>
 
 
 

@@ -132,6 +132,11 @@ Authors: Apurva Nakade
 <script src="../js/numerical/rk4-solve.js"></script>
 <script src="../js/numerical/simpson-estimate.js"></script>
 <script src="../js/numerical/lagrange-quadratic.js"></script>
+<script src="../js/sampling/seeded-random.js"></script>
+<script src="../js/sampling/gaussian-random.js"></script>
+<script src="../js/filters/moving-average-filter.js"></script>
+<script src="../js/filters/ema-filter.js"></script>
+<script src="../js/filters/kalman-1d-filter.js"></script>
 <script src="../js/ui/render-table.js"></script>
 <script src="../js/discrete-math/barycentric-triples.js"></script>
 <script src="../js/discrete-math/sub-triangles.js"></script>
@@ -586,6 +591,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -642,7 +664,7 @@ Authors: Dhruv Azad
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786114903384" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3974">
+<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786157580714" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3980">
 <a href="../root-finding/bisection-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -666,12 +688,12 @@ Bisection Method
 
 </div>
 <div class="card-text listing-description delink">
-The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a,b]\)</span> where <span class="math inline">\(f\)</span> changes sign, keeping whichever half still brackets the root.
+The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a_n,b_n]\)</span> that brackets a sign change of <span class="math inline">\(f\)</span>, keeping whichever half still brackets it:
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786114903385" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2978">
+<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786157580715" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2978">
 <a href="../root-finding/fixed-point/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -700,7 +722,7 @@ Fixed point iteration solves <span class="math inline">\(x=g(x)\)</span> by repe
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786114903385" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3636">
+<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786157580715" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3636">
 <a href="../root-finding/newton-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -729,7 +751,7 @@ Newton’s method finds roots of <span class="math inline">\(f(x)=0\)</span> by 
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786114903385" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4197">
+<div class="g-col-1" data-index="3" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1786157580715" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4197">
 <a href="../root-finding/secant-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">

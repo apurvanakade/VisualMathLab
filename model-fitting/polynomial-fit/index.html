@@ -137,6 +137,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -148,11 +153,40 @@ Authors: Apurva Nakade
 <script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
 <link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -564,6 +598,23 @@ Authors: Apurva Nakade
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -571,7 +622,16 @@ Authors: Apurva Nakade
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#why-this-matters" id="toc-why-this-matters" class="nav-link active" data-scroll-target="#why-this-matters">Why this matters</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1258,6 +1318,10 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+<p>A degree-<span class="math inline">\(d\)</span> least-squares fit chooses coefficients <span class="math inline">\(\beta_0,\dots,\beta_d\)</span> minimizing the sum of squared residuals over the <span class="math inline">\(n\)</span> data points:</p>
+<p><span class="math display">\[
+\hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
+\]</span></p>
 <p>A low-degree polynomial (e.g.&nbsp;a line) can’t bend to match every point — high <strong>bias</strong>, low <strong>variance</strong>, <strong>underfitting</strong>. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, <strong>overfitting</strong>. Drag the noise slider above to push 6 points off a line and compare how degree 1–5 fits respond; click “Regenerate points” for a new line and noise pattern.</p>
 <section id="why-this-matters" class="level2">
 <h2 class="anchored" data-anchor-id="why-this-matters">Why this matters</h2>

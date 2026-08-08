@@ -137,6 +137,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -181,7 +186,7 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -593,6 +598,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -600,7 +622,15 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1380,7 +1410,23 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<p>Given <span class="math inline">\(y' = f(t, y)\)</span>, <span class="math inline">\(y(0) = y_0\)</span>, an <strong>explicit</strong> method computes each <span class="math inline">\(y_{i+1} \approx y(t_{i+1})\)</span> directly from already-known values. Compare <strong>Euler’s method</strong> (one slope evaluation per step), <strong>Improved Euler</strong> (averages the slope at both endpoints), and <strong>RK4</strong> (averages four slope estimates) — more evaluations per step buys higher accuracy.</p>
+<p>Given <span class="math inline">\(y' = f(t, y)\)</span>, <span class="math inline">\(y(0) = y_0\)</span>, an <strong>explicit</strong> method computes each <span class="math inline">\(y_{i+1} \approx y(t_{i+1})\)</span> directly from already-known values, using <span class="math inline">\(h\)</span> for the step size and <span class="math inline">\(t_i = t_0 + ih\)</span>. Compare <strong>Euler’s method</strong> (one slope evaluation per step):</p>
+<p><span class="math display">\[
+y_{i+1} = y_i + h\,f(t_i, y_i),
+\]</span></p>
+<p><strong>Improved Euler</strong> (averages the slope at both endpoints of the step):</p>
+<p><span class="math display">\[
+k_1 = f(t_i, y_i),\qquad k_2 = f(t_{i+1},\, y_i + h k_1),\qquad y_{i+1} = y_i + \frac{h}{2}(k_1 + k_2),
+\]</span></p>
+<p>and <strong>RK4</strong> (averages four slope estimates):</p>
+<p><span class="math display">\[
+\begin{aligned}
+k_1 &amp;= f(t_i, y_i), &amp; k_2 &amp;= f\!\left(t_i + \tfrac{h}{2},\, y_i + \tfrac{h}{2}k_1\right), \\
+k_3 &amp;= f\!\left(t_i + \tfrac{h}{2},\, y_i + \tfrac{h}{2}k_2\right), &amp; k_4 &amp;= f(t_{i+1},\, y_i + h k_3),
+\end{aligned}
+\qquad y_{i+1} = y_i + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4).
+\]</span></p>
+<p>More evaluations per step buys higher accuracy.</p>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <p>The examples below show how explicit methods behave on different initial value problems. Euler’s method is simple but low-order, Improved Euler is more accurate, and RK4 usually tracks the reference solution closely with far fewer steps.</p>

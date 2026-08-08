@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Apurva Nakade">
-<meta name="dcterms.date" content="2026-07-13">
+<meta name="dcterms.date" content="2026-08-07">
 
-<title>Sperner’s Lemma – Visual Math Lab</title>
+<title>Sampling Methods – Visual Math Lab</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -31,31 +31,31 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<link href="../sperners-lemma/barycentric-coordinates/index.html" rel="next">
-<link href="../differential-equations/butcher-tableau/index.html" rel="prev">
-<script src="../site_libs/quarto-listing/list.min.js"></script>
-<script src="../site_libs/quarto-listing/quarto-listing.js"></script>
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-767db81d3c4dc1147bf376ccc5229356.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../probability/sampling-methods/recursive-filters/index.html" rel="next">
+<link href="../../probability/bayes/ppv/index.html" rel="prev">
+<script src="../../site_libs/quarto-listing/list.min.js"></script>
+<script src="../../site_libs/quarto-listing/quarto-listing.js"></script>
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-767db81d3c4dc1147bf376ccc5229356.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-780b1d1b6a046e2bce6561903835f428.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -119,33 +119,33 @@ Authors: Apurva Nakade
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="../js/expressions/make-function.js"></script>
-<script src="../js/expressions/make-derivative.js"></script>
-<script src="../js/expressions/make-number.js"></script>
-<script src="../js/expressions/make-rational.js"></script>
-<script src="../js/expressions/make-ode-function.js"></script>
-<script src="../js/plotting/padded-range.js"></script>
-<script src="../js/plotting/plotly-fullscreen-button.js"></script>
-<script src="../js/numerical/linear-regression.js"></script>
-<script src="../js/numerical/l1-regression.js"></script>
-<script src="../js/numerical/polynomial-fit.js"></script>
-<script src="../js/numerical/euler-solve.js"></script>
-<script src="../js/numerical/rk4-solve.js"></script>
-<script src="../js/numerical/simpson-estimate.js"></script>
-<script src="../js/numerical/lagrange-quadratic.js"></script>
-<script src="../js/sampling/seeded-random.js"></script>
-<script src="../js/sampling/gaussian-random.js"></script>
-<script src="../js/filters/moving-average-filter.js"></script>
-<script src="../js/filters/ema-filter.js"></script>
-<script src="../js/filters/kalman-1d-filter.js"></script>
-<script src="../js/ui/render-table.js"></script>
-<script src="../js/discrete-math/barycentric-triples.js"></script>
-<script src="../js/discrete-math/sub-triangles.js"></script>
-<script src="../js/discrete-math/triangulation-edges.js"></script>
-<script src="../js/discrete-math/sperner-color.js"></script>
-<script src="../js/discrete-math/random-color.js"></script>
-<script src="../js/discrete-math/mixed-pair-color.js"></script>
-<script src="../js/discrete-math/triangle-fill-color.js"></script>
+<script src="../../js/expressions/make-function.js"></script>
+<script src="../../js/expressions/make-derivative.js"></script>
+<script src="../../js/expressions/make-number.js"></script>
+<script src="../../js/expressions/make-rational.js"></script>
+<script src="../../js/expressions/make-ode-function.js"></script>
+<script src="../../js/plotting/padded-range.js"></script>
+<script src="../../js/plotting/plotly-fullscreen-button.js"></script>
+<script src="../../js/numerical/linear-regression.js"></script>
+<script src="../../js/numerical/l1-regression.js"></script>
+<script src="../../js/numerical/polynomial-fit.js"></script>
+<script src="../../js/numerical/euler-solve.js"></script>
+<script src="../../js/numerical/rk4-solve.js"></script>
+<script src="../../js/numerical/simpson-estimate.js"></script>
+<script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
+<script src="../../js/ui/render-table.js"></script>
+<script src="../../js/discrete-math/barycentric-triples.js"></script>
+<script src="../../js/discrete-math/sub-triangles.js"></script>
+<script src="../../js/discrete-math/triangulation-edges.js"></script>
+<script src="../../js/discrete-math/sperner-color.js"></script>
+<script src="../../js/discrete-math/random-color.js"></script>
+<script src="../../js/discrete-math/mixed-pair-color.js"></script>
+<script src="../../js/discrete-math/triangle-fill-color.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
@@ -177,7 +177,7 @@ window.Quarto = {
 };
 </script>
 
-<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="../../styles.css">
 </head>
 
 <body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
@@ -349,7 +349,7 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="../index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">Visual Math Lab</span>
     </a>
   </div>
@@ -364,7 +364,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../sperners-lemma/index.html">Discrete Math</a></li><li class="breadcrumb-item"><a href="../sperners-lemma/index.html">Sperner’s Lemma</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../probability/bayes/index.html">Probability</a></li><li class="breadcrumb-item"><a href="../../probability/sampling-methods/index.html">Sampling Methods</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -387,7 +387,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../root-finding/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../root-finding/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Root Finding</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -396,25 +396,25 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/bisection-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/bisection-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Bisection Method</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/fixed-point/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/fixed-point/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fixed Point Iteration</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/newton-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/newton-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Newton’s Method</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/secant-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../root-finding/secant-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Secant Method</span></a>
   </div>
 </li>
@@ -422,7 +422,7 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Piecewise Interpolation</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -431,19 +431,19 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Polynomial Interpolation</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../piecewise-interpolation/integration/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../piecewise-interpolation/integration/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Numerical Integration</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../piecewise-interpolation/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../piecewise-interpolation/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Adaptive Integration</span></a>
   </div>
 </li>
@@ -451,7 +451,7 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../differential-equations/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../differential-equations/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Differential Equations</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -460,25 +460,25 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/explicit-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/explicit-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Explicit Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/implicit-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/implicit-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Implicit Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/adaptive-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/adaptive-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Adaptive Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../differential-equations/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Butcher Tableau Explorer</span></a>
   </div>
 </li>
@@ -497,34 +497,34 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../sperners-lemma/index.html" class="sidebar-item-text sidebar-link active">
+            <a href="../../sperners-lemma/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner's Lemma</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 show">  
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Barycentric Coordinates</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/statement/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/statement/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Statement</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Combinatorial Proof</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/geometric-proof/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../sperners-lemma/geometric-proof/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Geometric Proof</span></a>
   </div>
 </li>
@@ -543,7 +543,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../model-fitting/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../model-fitting/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Model Fitting</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -552,13 +552,13 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../model-fitting/polynomial-fit/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../model-fitting/polynomial-fit/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Polynomial Fits</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">L1 vs.&nbsp;L2 Regression</span></a>
   </div>
 </li>
@@ -577,7 +577,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../probability/bayes/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../probability/bayes/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Bayes' Theorem</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-10" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -586,7 +586,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../probability/bayes/ppv/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../probability/bayes/ppv/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Positive Predictive Value</span></a>
   </div>
 </li>
@@ -594,16 +594,16 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Sampling Methods</span></a>
-          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="true" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Recursive Filters</span></a>
   </div>
 </li>
@@ -617,14 +617,14 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(4)</span></div><div class="category" data-category="QmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==">Barycentric Coordinates <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q29sb3Jpbmc=">Coloring <span class="quarto-category-count">(3)</span></div><div class="category" data-category="Q29tYmluYXRvcmlhbCUyMFByb29m">Combinatorial Proof <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q29tYmluYXRvcmljcw==">Combinatorics <span class="quarto-category-count">(2)</span></div><div class="category" data-category="RGV0ZXJtaW5hbnQ=">Determinant <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RGlzY3JldGUlMjBNYXRo">Discrete Math <span class="quarto-category-count">(4)</span></div><div class="category" data-category="VHJpYW5nbGVz">Triangles <span class="quarto-category-count">(4)</span></div><div class="category" data-category="Vm9sdW1l">Volume <span class="quarto-category-count">(1)</span></div></div></div>
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl">Exponential Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="S2FsbWFuJTIwRmlsdGVy">Kalman Filter <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW92aW5nJTIwQXZlcmFnZQ==">Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UmVjdXJzaXZlJTIwRmlsdGVycw==">Recursive Filters <span class="quarto-category-count">(1)</span></div><div class="category" data-category="U2FtcGxpbmclMjBNZXRob2Rz">Sampling Methods <span class="quarto-category-count">(1)</span></div></div></div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../sperners-lemma/index.html">Discrete Math</a></li><li class="breadcrumb-item"><a href="../sperners-lemma/index.html">Sperner’s Lemma</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../../probability/bayes/index.html">Probability</a></li><li class="breadcrumb-item"><a href="../../probability/sampling-methods/index.html">Sampling Methods</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Sperner’s Lemma</h1>
+<h1 class="title">Sampling Methods</h1>
 </div>
 
 
@@ -641,7 +641,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">July 13, 2026</p>
+      <p class="date">August 7, 2026</p>
     </div>
   </div>
   
@@ -654,123 +654,44 @@ window.Quarto = {
 
 
 <!--
-Copyright (c) 2025 Apurva Nakade. All rights reserved.
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
-<p>Sperner’s lemma is a combinatorial statement about colorings of triangulated triangles, with two very different classic proofs — one combinatorial, one geometric.</p>
+<p>Recursive filters estimate an underlying signal from a stream of noisy measurements, updating their estimate one sample at a time using only the previous estimate and the newest measurement — never a stored history of the whole stream.</p>
 
 
 
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1786157580717" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2530">
-<a href="../sperners-lemma/geometric-proof/index.html" class="quarto-grid-link">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1786157580714" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3671">
+<a href="../../probability/sampling-methods/recursive-filters/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="../sperners-lemma/geometric-proof/geometric-proof.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="../../probability/sampling-methods/recursive-filters/recursive-filters.png" class="thumbnail-image card-img" style="height: 150px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
-Sperner’s Lemma - Geometric Proof
+Recursive Filters
 </h5>
 <div class="listing-categories">
 
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
+<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
 
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
+<div class="listing-category" onclick="window.quartoListingCategory('U2FtcGxpbmclMjBNZXRob2Rz'); return false;">Sampling Methods</div>
 
-<div class="listing-category" onclick="window.quartoListingCategory('Q29sb3Jpbmc='); return false;">Coloring</div>
+<div class="listing-category" onclick="window.quartoListingCategory('S2FsbWFuJTIwRmlsdGVy'); return false;">Kalman Filter</div>
 
-<div class="listing-category" onclick="window.quartoListingCategory('RGV0ZXJtaW5hbnQ='); return false;">Determinant</div>
+<div class="listing-category" onclick="window.quartoListingCategory('TW92aW5nJTIwQXZlcmFnZQ=='); return false;">Moving Average</div>
 
-<div class="listing-category" onclick="window.quartoListingCategory('Vm9sdW1l'); return false;">Volume</div>
+<div class="listing-category" onclick="window.quartoListingCategory('RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl'); return false;">Exponential Moving Average</div>
 
-</div>
-<div class="card-text listing-description delink">
-This is my new favorite proof of Sperner’s lemma. In the following app the vertices are slowly morphed to the “cardinal” <code>R</code>, <code>G</code>, <code>B</code> vertices with time while preserving the…<code></code><span style="background-color:rgba(75, 0, 130, 0.25)"></span><span style="background-color:rgba(75, 0, 130, 0.6)"></span>
-</div>
-</div>
-</div></a>
-</div>
-<div class="g-col-1" data-index="1" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1786157580717" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3211">
-<a href="../sperners-lemma/combinatorial-proof/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img loading="lazy" src="../sperners-lemma/combinatorial-proof/combinatorial-proof.png" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
-Sperner’s Lemma - Combinatorial Proof
-</h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tYmluYXRvcmljcw=='); return false;">Combinatorics</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29sb3Jpbmc='); return false;">Coloring</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tYmluYXRvcmlhbCUyMFByb29m'); return false;">Combinatorial Proof</div>
+<div class="listing-category" onclick="window.quartoListingCategory('UmVjdXJzaXZlJTIwRmlsdGVycw=='); return false;">Recursive Filters</div>
 
 </div>
 <div class="card-text listing-description delink">
-This picture is a combinatorial proof of Sperner’s Lemma.
-</div>
-</div>
-</div></a>
-</div>
-<div class="g-col-1" data-index="2" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1786157580717" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1138">
-<a href="../sperners-lemma/statement/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img loading="lazy" src="../sperners-lemma/statement/statement.png" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
-Sperner’s Lemma - Statement
-</h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tYmluYXRvcmljcw=='); return false;">Combinatorics</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29sb3Jpbmc='); return false;">Coloring</div>
-
-</div>
-<div class="card-text listing-description delink">
-Consider a triangulation of a triangle. (Below, we show a regular triangulation of an equilateral triangle, but the theorem applies to <em>any</em> triangulation of a triangle.) We…<span style="color:white; background-color:red"></span><span style="color:white; background-color:green"></span><span style="color:white; background-color:blue"></span>
-</div>
-</div>
-</div></a>
-</div>
-<div class="g-col-1" data-index="3" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1786157580716" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2374">
-<a href="../sperners-lemma/barycentric-coordinates/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img loading="lazy" src="../sperners-lemma/barycentric-coordinates/barycentric-coordinates.png" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
-Barycentric Coordinates
-</h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw=='); return false;">Barycentric Coordinates</div>
-
-</div>
-<div class="card-text listing-description delink">
-<strong>Barycentric coordinates</strong> are a coordinate system for describing points inside a triangle.
+Each of these filters updates a running estimate from only the previous estimate and the newest measurement <span class="math inline">\(z_i\)</span> — no stored history of the stream — which is what makes…<strong></strong><strong></strong><strong></strong><span class="math inline"></span><span class="math inline"></span>
 </div>
 </div>
 </div></a>
@@ -1193,13 +1114,13 @@ Barycentric Coordinates
   </script>
 <nav class="page-navigation">
   <div class="nav-page nav-page-previous">
-      <a href="../differential-equations/butcher-tableau/index.html" class="pagination-link" aria-label="Butcher Tableau Explorer">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Butcher Tableau Explorer</span>
+      <a href="../../probability/bayes/ppv/index.html" class="pagination-link" aria-label="Positive Predictive Value">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Positive Predictive Value</span>
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../sperners-lemma/barycentric-coordinates/index.html" class="pagination-link" aria-label="Barycentric Coordinates">
-        <span class="nav-page-text">Barycentric Coordinates</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../probability/sampling-methods/recursive-filters/index.html" class="pagination-link" aria-label="Recursive Filters">
+        <span class="nav-page-text">Recursive Filters</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

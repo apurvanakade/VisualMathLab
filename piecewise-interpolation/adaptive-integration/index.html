@@ -137,6 +137,11 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/rk4-solve.js"></script>
 <script src="../../js/numerical/simpson-estimate.js"></script>
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -181,7 +186,7 @@ window.Quarto = {
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -593,6 +598,23 @@ window.Quarto = {
 </li>
       </ul>
   </li>
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../probability/sampling-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampling Methods</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
       </ul>
   </li>
     </ul>
@@ -600,7 +622,15 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#examples" id="toc-examples" class="nav-link active" data-scroll-target="#examples">Examples</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -1262,7 +1292,11 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<p><strong>Adaptive quadrature</strong> refines the partition of <span class="math inline">\([a,b]\)</span> only where it’s needed, instead of the fixed grid used in <a href="../../piecewise-interpolation/integration/index.html">Numerical Integration</a>: it compares Simpson’s rule on <span class="math inline">\([a,b]\)</span> against Simpson’s rule on each half, and bisects further whenever the two disagree by more than a target tolerance <span class="math inline">\(\varepsilon\)</span>.</p>
+<p><strong>Adaptive quadrature</strong> refines the partition of <span class="math inline">\([a,b]\)</span> only where it’s needed, instead of the fixed grid used in <a href="../../piecewise-interpolation/integration/index.html">Numerical Integration</a>. Simpson’s rule on an interval <span class="math inline">\([p,q]\)</span> with midpoint <span class="math inline">\(m=(p+q)/2\)</span>,</p>
+<p><span class="math display">\[
+S[p,q] = \frac{q-p}{6}\Big(f(p)+4f(m)+f(q)\Big),
+\]</span></p>
+<p>is compared against the sum of Simpson’s rule on each half, <span class="math inline">\(S[a,m]+S[m,b]\)</span>; since Simpson’s error scales like <span class="math inline">\(h^4\)</span>, halving <span class="math inline">\(h\)</span> shrinks it by a factor of 16, giving the Richardson error estimate <span class="math inline">\(\big(S[a,m]+S[m,b]-S[a,b]\big)/15\)</span>. Whenever <span class="math inline">\(\left|S[a,m]+S[m,b]-S[a,b]\right|\)</span> exceeds <span class="math inline">\(15\varepsilon\)</span> for the current tolerance <span class="math inline">\(\varepsilon\)</span>, the interval is bisected and each half is refined recursively (with <span class="math inline">\(\varepsilon\)</span> halved at each level, so the total error stays bounded by the original tolerance).</p>
 <section id="examples" class="level2">
 <h2 class="anchored" data-anchor-id="examples">Examples</h2>
 <p>The examples below show where adaptive integration is useful: smooth functions need only a few panels, while sharp peaks, endpoint behavior, corners, steep transitions, and oscillations force the method to refine locally.</p>

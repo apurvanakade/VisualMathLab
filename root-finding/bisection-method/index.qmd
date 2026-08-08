@@ -544,7 +544,16 @@ iterationTable = {
 
 </div>
 
-The bisection method finds a root of $f(x)=0$ by repeatedly halving an interval $[a,b]$ where $f$ changes sign, keeping whichever half still brackets the root.
+The bisection method finds a root of $f(x)=0$ by repeatedly halving an interval $[a_n,b_n]$ that brackets a sign change of $f$, keeping whichever half still brackets it:
+
+$$
+m_n=\frac{a_n+b_n}{2},\qquad
+(a_{n+1},b_{n+1})=
+\begin{cases}
+(a_n,m_n) & f(a_n)f(m_n)<0,\\[2pt]
+(m_n,b_n) & \text{otherwise.}
+\end{cases}
+$$
 
 ## Examples
 

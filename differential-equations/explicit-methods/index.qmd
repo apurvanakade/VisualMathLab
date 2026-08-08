@@ -620,7 +620,29 @@ valueTable = {
 
 </div>
 
-Given $y' = f(t, y)$, $y(0) = y_0$, an **explicit** method computes each $y_{i+1} \approx y(t_{i+1})$ directly from already-known values. Compare **Euler's method** (one slope evaluation per step), **Improved Euler** (averages the slope at both endpoints), and **RK4** (averages four slope estimates) — more evaluations per step buys higher accuracy.
+Given $y' = f(t, y)$, $y(0) = y_0$, an **explicit** method computes each $y_{i+1} \approx y(t_{i+1})$ directly from already-known values, using $h$ for the step size and $t_i = t_0 + ih$. Compare **Euler's method** (one slope evaluation per step):
+
+$$
+y_{i+1} = y_i + h\,f(t_i, y_i),
+$$
+
+**Improved Euler** (averages the slope at both endpoints of the step):
+
+$$
+k_1 = f(t_i, y_i),\qquad k_2 = f(t_{i+1},\, y_i + h k_1),\qquad y_{i+1} = y_i + \frac{h}{2}(k_1 + k_2),
+$$
+
+and **RK4** (averages four slope estimates):
+
+$$
+\begin{aligned}
+k_1 &= f(t_i, y_i), & k_2 &= f\!\left(t_i + \tfrac{h}{2},\, y_i + \tfrac{h}{2}k_1\right), \\
+k_3 &= f\!\left(t_i + \tfrac{h}{2},\, y_i + \tfrac{h}{2}k_2\right), & k_4 &= f(t_{i+1},\, y_i + h k_3),
+\end{aligned}
+\qquad y_{i+1} = y_i + \frac{h}{6}(k_1 + 2k_2 + 2k_3 + k_4).
+$$
+
+More evaluations per step buys higher accuracy.
 
 ## Examples
 

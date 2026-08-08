@@ -530,7 +530,19 @@ valueTable = {
 
 </div>
 
-**Implicit Euler** (backward Euler) uses the slope at the *end* of the step, $y_{i+1} = y_i + h\, f(t_{i+1}, y_{i+1})$, which requires solving for $y_{i+1}$ at each step (this page uses a few steps of [Newton's method](../../root-finding/newton-method/index.qmd)) — but buys **stability** that explicit Euler lacks. The default example, $y' = -5y$, is chosen to make this visible: try dragging $n$ down to see explicit Euler destabilize while implicit Euler stays smooth.
+Explicit (forward) Euler uses the slope at the *start* of the step:
+
+$$
+y_{i+1} = y_i + h\,f(t_i, y_i).
+$$
+
+**Implicit Euler** (backward Euler) instead uses the slope at the *end* of the step:
+
+$$
+y_{i+1} = y_i + h\,f(t_{i+1}, y_{i+1}),
+$$
+
+which requires solving for $y_{i+1}$ at each step (this page uses a few steps of [Newton's method](../../root-finding/newton-method/index.qmd)) — but buys **stability** that explicit Euler lacks. The default example, $y' = -5y$, is chosen to make this visible: try dragging $n$ down to see explicit Euler destabilize while implicit Euler stays smooth.
 
 ## Examples
 

@@ -677,7 +677,13 @@ arcLengthTable = {
 
 </div>
 
-Connects $n+1$ samples of $f$ on $[a,b]$ with straight segments (**linear**) or with cubics matching value and first two derivatives at each node (**cubic spline**), then compares how fast each interpolant's arc length converges to $f$'s true arc length as $n$ grows.
+Connects $n+1$ samples $(x_k,y_k)$, $y_k=f(x_k)$, of $f$ on $[a,b]$ with straight segments (**linear**),
+
+$$
+L(x) = y_k + \frac{y_{k+1}-y_k}{x_{k+1}-x_k}\,(x-x_k),\qquad x\in[x_k,x_{k+1}],
+$$
+
+or with the **natural cubic spline** $S$: the unique piecewise cubic through every node with $S$, $S'$, and $S''$ continuous at each interior node and $S''(x_0)=S''(x_n)=0$ at the ends. The page then compares how fast each interpolant's arc length converges to $f$'s true arc length as $n$ grows.
 
 ## Examples
 

@@ -43,6 +43,7 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 - `js/expressions/make-number.js` → `VM.expressions.makeNumber(mathjs, expr)` — evaluates a constant expression (e.g. `1 + 2*3 + pi - e`) to a JS number, or `null` if it can't be parsed. Used by all numeric input fields (initial guesses, endpoints, max iterations, ...) so they accept expressions, not just literal numbers.
 - `js/expressions/make-rational.js` → `VM.expressions.makeRational` — rational-number/fraction-reduction helper (e.g. for displaying exact Butcher tableau coefficients).
 - `js/expressions/make-ode-function.js` → `VM.expressions.makeFunction2(mathjs, expr)` — like `makeFunction` but returns `(t, y) => number`, for ODE right-hand sides `y' = f(t, y)`.
+- `js/expressions/make-function-of-t.js` → `VM.expressions.makeFunctionOfT(mathjs, expr)` — like `makeFunction` but binds `t` instead of `x`, for pages where the natural free variable is time (e.g. a parametric curve `x(t)`, `y(t)`) rather than a spatial coordinate.
 
 **`VM.numerical`**
 
@@ -60,7 +61,7 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 **`VM.filters`**
 
 - `js/filters/moving-average-filter.js` → `VM.filters.movingAverageFilter(xs, k)` — causal simple moving average over window size `k` (averages fewer than `k` samples at the start of the array, matching how the filter would run online).
-- `js/filters/ema-filter.js` → `VM.filters.emaFilter(xs, alpha)` — exponential moving average / first-order low-pass filter, `s_i = alpha*s_{i-1} + (1-alpha)*x_i`, seeded with `s_0 = x_0`.
+- `js/filters/ema-filter.js` → `VM.filters.emaFilter(xs, alpha, initial?)` — exponential moving average / first-order low-pass filter, `s_i = alpha*s_{i-1} + (1-alpha)*x_i`. Without `initial`, `s_0 = x_0`; with it, `s_0` blends `initial` as the prior going into the first update (matching `kalman1DFilter`'s `x0`) — e.g. seeding from a known true starting state instead of the first noisy sample.
 - `js/filters/kalman-1d-filter.js` → `VM.filters.kalman1DFilter(zs, {R, Q, x0?, P0?})` — scalar Kalman filter (`R` = assumed measurement-noise variance, `Q` = assumed process-noise variance); returns `{xs, Ps, Ks}`, the state estimate, error variance, and gain at each step.
 
 **`VM.plotting`**

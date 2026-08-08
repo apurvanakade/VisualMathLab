@@ -124,6 +124,17 @@
   gap: 0.15rem;
 }
 
+/* Observable also hardcodes every <label> to a fixed width: 120px;
+ * flex-shrink: 0 — a leftover of the row layout, where capping every
+ * label to the same width keeps inputs beside differently-long labels
+ * starting at the same x-position. In the column layout above there's no
+ * such row to align, so that fixed 120px just forces labels wider than
+ * ~120px (e.g. "Initial condition y(0)") to wrap even when the field has
+ * plenty of room. Let each label size to its own content instead. */
+.ojs-panel form[class^="oi-"] label {
+  width: auto;
+}
+
 /* Attach to an Inputs.* wrapper div to make it fill the row, overriding
  * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
 .ojs-fill { width: 100% !important; max-width: none !important; }

@@ -4,78 +4,92 @@
  * Authors: Apurva Nakade
  */
 
-// Browser-level check for every rendered page: `quarto render` only catches
+// Browser-level check for every page: `quarto render` only catches
 // Pandoc/parse errors, not OJS runtime errors (e.g. a renamed VM.category.fn
 // call site only surfaces as a browser console TypeError). This script
-// serves the already-rendered docs/ directory, visits every page, clicks
-// every button and nudges every range slider (not just the initial render,
-// since many VM.* calls only run inside event handlers), and fails if any
-// page logs a console error, throws, or has a failed network request.
+// spawns `quarto preview` (rather than a blocking `quarto render` followed by
+// a plain static file server) so that on a warm docs/ directory only the
+// files that actually changed since the last run get re-rendered -- `quarto
+// render` unconditionally re-renders the entire site every time, which is
+// wasted work for the common edit-then-verify loop. On a cold/missing docs/
+// it still does a full render up front (quarto needs the whole site's
+// metadata to build navigation/search), so the first run of a session pays
+// the same cost `quarto render` would have.
 //
-// Usage: quarto render && node scripts/verify-pages.mjs
-// (or: npm run verify)
+// The page list itself is discovered from the *source* .qmd files (every
+// `index.qmd` under the project, matching this repo's page-naming
+// convention -- see CLAUDE.md) rather than by walking a pre-existing docs/
+// directory, since with preview there's no guarantee docs/ is populated (or
+// current) before this script starts.
+//
+// Usage: node scripts/verify-pages.mjs (or: npm run verify)
 
 import fs from 'node:fs'
 import path from 'node:path'
-import http from 'node:http'
+import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
-const docsRoot = path.join(repoRoot, 'docs')
 const port = 8934
+const readyTimeoutMs = 60000
 
-const mimeTypes = {
-  '.html': 'text/html',
-  '.js': 'text/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml',
-  '.woff2': 'font/woff2',
-}
+const skipDirs = new Set(['docs', 'node_modules', '.quarto', '.git', '_freeze'])
 
-function findPages(dir, base = '') {
+function findQmdPages(dir, base = '') {
   const pages = []
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.name.startsWith('.')) continue
-    const fullPath = path.join(dir, entry.name)
-    const relPath = base + entry.name
     if (entry.isDirectory()) {
-      pages.push(...findPages(fullPath, relPath + '/'))
-    } else if (entry.name === 'index.html') {
-      pages.push(relPath)
+      if (skipDirs.has(entry.name)) continue
+      pages.push(...findQmdPages(path.join(dir, entry.name), base + entry.name + '/'))
+    } else if (entry.name === 'index.qmd') {
+      pages.push(base + 'index.html')
     }
   }
   return pages
 }
 
-function startServer() {
-  const server = http.createServer((req, res) => {
-    let urlPath = decodeURIComponent(req.url.split('?')[0])
-    if (urlPath.endsWith('/')) urlPath += 'index.html'
-    const filePath = path.join(docsRoot, urlPath)
-    if (!filePath.startsWith(docsRoot)) {
-      res.writeHead(403)
-      res.end()
-      return
-    }
-    fs.readFile(filePath, (err, data) => {
-      if (err) {
-        res.writeHead(404)
-        res.end()
-        return
+// Spawned detached (its own process group) so that on cleanup we can kill
+// quarto's own child processes too, not just the immediate `quarto` process
+// -- the CLI itself forks a renderer/server subprocess.
+function startPreview() {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(
+      'quarto',
+      ['preview', '--port', String(port), '--no-browser', '--timeout', '120'],
+      { cwd: repoRoot, detached: true }
+    )
+
+    let settled = false
+    let output = ''
+    const onOutput = (data) => {
+      output += data.toString()
+      if (!settled && /Listening on/i.test(output)) {
+        settled = true
+        resolve(proc)
       }
-      const ext = path.extname(filePath)
-      res.writeHead(200, { 'Content-Type': mimeTypes[ext] ?? 'application/octet-stream' })
-      res.end(data)
+    }
+    proc.stdout.on('data', onOutput)
+    proc.stderr.on('data', onOutput)
+    proc.on('error', reject)
+    proc.on('exit', (code) => {
+      if (!settled) reject(new Error(`quarto preview exited (code ${code}) before becoming ready:\n${output}`))
     })
+    setTimeout(() => {
+      if (!settled) reject(new Error(`quarto preview did not become ready within ${readyTimeoutMs}ms:\n${output}`))
+    }, readyTimeoutMs)
   })
-  return new Promise(resolve => {
-    server.listen(port, () => resolve(server))
-  })
+}
+
+function stopPreview(proc) {
+  if (!proc || proc.killed || proc.exitCode !== null) return
+  try {
+    process.kill(-proc.pid, 'SIGTERM')
+  } catch {
+    proc.kill('SIGTERM')
+  }
 }
 
 async function checkPage(browser, base, relPath) {
@@ -118,35 +132,38 @@ async function checkPage(browser, base, relPath) {
 }
 
 async function main() {
-  if (!fs.existsSync(docsRoot)) {
-    console.error('docs/ not found -- run `quarto render` first.')
-    process.exit(1)
-  }
+  const pages = findQmdPages(repoRoot).sort()
+  console.log(`Found ${pages.length} pages from source index.qmd files.\n`)
 
-  const pages = findPages(docsRoot).sort()
-  console.log(`Found ${pages.length} rendered pages.\n`)
+  console.log('Starting `quarto preview`...')
+  const previewProc = await startPreview()
+  console.log('Preview server ready.\n')
 
-  const server = await startServer()
   const base = `http://localhost:${port}/`
   const browser = await chromium.launch()
 
   let anyFailure = false
-  for (const relPath of pages) {
-    const errors = await checkPage(browser, base, relPath)
-    if (errors.length) {
-      anyFailure = true
-      console.log(`FAIL  ${relPath}`)
-      for (const e of errors) console.log(`      ${e}`)
-    } else {
-      console.log(`OK    ${relPath}`)
+  try {
+    for (const relPath of pages) {
+      const errors = await checkPage(browser, base, relPath)
+      if (errors.length) {
+        anyFailure = true
+        console.log(`FAIL  ${relPath}`)
+        for (const e of errors) console.log(`      ${e}`)
+      } else {
+        console.log(`OK    ${relPath}`)
+      }
     }
+  } finally {
+    await browser.close()
+    stopPreview(previewProc)
   }
-
-  await browser.close()
-  server.close()
 
   console.log(anyFailure ? '\nSome pages failed.' : '\nAll pages passed.')
   process.exit(anyFailure ? 1 : 0)
 }
 
-main()
+main().catch(err => {
+  console.error(err)
+  process.exit(1)
+})

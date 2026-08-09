@@ -32,7 +32,7 @@ VM = window.VM
 // Supported query parameters:
 //   xt      parametric x(t)
 //   yt      parametric y(t)
-//   sigma   measurement noise, as a fraction of distance from the origin (relative, not absolute; independent on x and y)
+//   sigma   measurement noise, a fixed absolute standard deviation (independent on x and y)
 //   seed    RNG seed for the noisy measurements (reproducible draws)
 //   R       Kalman filter's assumed measurement-noise variance (builds the 2x2 measurement-noise covariance R = diag(R, R)); applied live as soon as the slider moves
 //   Q       Kalman filter's assumed process-noise intensity (builds the 4x4 process-noise covariance via the discrete white-noise-acceleration model); applied live as soon as the slider moves
@@ -93,7 +93,7 @@ viewof ytText = {
 ```{ojs}
 viewof sigmaText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Noise σ (relative)", value: params.get("sigma") ?? "0.01", placeholder: "Example: 0.01, 1/2"})
+  const input = Inputs.text({label: "Noise σ", value: params.get("sigma") ?? "0.1", placeholder: "Example: 0.1, 1/2"})
   return input
 }
 ```
@@ -377,6 +377,15 @@ sim = {
   // Q = 0, unable to react to any motion at all) sees its relative error
   // climb toward 1 as the true position pulls away.
   const RELATIVE_ERROR_LIMIT = 0.85
+  // The filter starts from a zero-velocity, uninformative-prior guess (see
+  // INITIAL_VELOCITY_VARIANCE), so it needs a handful of samples to learn
+  // the true velocity before its estimate settles down -- on a fast
+  // trajectory this startup transient alone can briefly push the relative
+  // error above RELATIVE_ERROR_LIMIT (denominator still near its floor of
+  // 1 this early on) even for a well-tuned filter. The divergence guard is
+  // skipped for the first few samples after each Reset so this normal,
+  // self-correcting startup wobble is never mistaken for real divergence.
+  const STARTUP_GRACE_SAMPLES = 5
   const colors = {trueC: "#2563eb", noisy: "#9ca3af", kalman: "#dc2626"}
   const ERR_PX_PER_SAMPLE = 5  // horizontal pixels per sample in the error chart -- its canvas grows wider as the session goes on, hence the scrollbar
   const ERR_CHART_HEIGHT = 180
@@ -554,8 +563,7 @@ sim = {
     const gaussian = VM.sampling.gaussianRandom(rng)
     const x0 = parsed.valid ? parsed.xFn(0) : 0
     const y0 = parsed.valid ? parsed.yFn(0) : 0
-    const noiseScale0 = committed.sigma * Math.max(1, Math.hypot(x0, y0))
-    const p0 = noiseScale0 > 0 ? noiseScale0 * noiseScale0 : 0.01
+    const p0 = committed.sigma > 0 ? committed.sigma * committed.sigma : 0.01
     const pv = INITIAL_VELOCITY_VARIANCE
 
     overlay.style.display = "none"
@@ -605,16 +613,10 @@ sim = {
     const {committed, parsed, R, Q, rawR, rawQ} = latestParams
     const trueX = parsed.valid ? parsed.xFn(sess.t) : 0
     const trueY = parsed.valid ? parsed.yFn(sess.t) : 0
-    // Noise scales with how far the particle currently is from the origin
-    // (a RELATIVE error, sigma as a fraction of distance) rather than
-    // being a fixed absolute size -- on a curve that grows without bound,
-    // a fixed absolute noise would look chaotic near the origin (where it
-    // dwarfs the true position) and become imperceptibly small once the
-    // particle is far out. The floor of 1 keeps noise from vanishing
-    // entirely right at the start, where the true position itself is 0.
-    const noiseScale = committed.sigma * Math.max(1, Math.hypot(trueX, trueY))
-    const noisyX = trueX + noiseScale * sess.gaussian()
-    const noisyY = trueY + noiseScale * sess.gaussian()
+    // Noise is a fixed absolute size, the same regardless of how far the
+    // particle currently is from the origin.
+    const noisyX = trueX + committed.sigma * sess.gaussian()
+    const noisyY = trueY + committed.sigma * sess.gaussian()
 
     sess.kalman = VM.filters.kalman2DStep(mathjs, sess.kalman, [noisyX, noisyY], {R, Q})
     const kalmanX = sess.kalman.x[0]
@@ -656,7 +658,8 @@ sim = {
     const errKalman = Math.hypot(kalmanX - trueX, kalmanY - trueY)
     const trueMag = Math.hypot(trueX, trueY)
     const relErr = errKalman / Math.max(1, trueMag)
-    sess.diverged = !Number.isFinite(trueX) || !Number.isFinite(trueY) || !Number.isFinite(relErr) || relErr > RELATIVE_ERROR_LIMIT
+    const pastStartup = sampleIndex >= STARTUP_GRACE_SAMPLES
+    sess.diverged = !Number.isFinite(trueX) || !Number.isFinite(trueY) || !Number.isFinite(relErr) || (pastStartup && relErr > RELATIVE_ERROR_LIMIT)
 
     sess.t += T_SPEED * SAMPLE_INTERVAL_MS / 1000
   }
@@ -865,37 +868,37 @@ Same measurements, good vs. bad $R$/$Q$, across three trajectories with differen
 ```{=html}
 <div class="example-grid">
 
-  <a class="example-card" href="?xt=10*t&yt=5*t&sigma=0.1&seed=1&R=0.5&Q=0.02&tab=filters">
+  <a class="example-card" href="?xt=10*t&yt=5*t&sigma=0.4&seed=1&R=0.16&Q=0.02&tab=filters">
     <div class="example-card-title">Straight line -- well-tuned</div>
     <div class="example-card-formula">x(t) = 10t, y(t) = 5t -- zero acceleration</div>
     <div class="example-card-text">Constant velocity matches the filter's own model exactly; R matched to the noise level tracks it tightly, with no acceleration to ever lag behind.</div>
   </a>
 
-  <a class="example-card" href="?xt=10*t&yt=5*t&sigma=0.1&seed=1&R=0.0005&Q=0.02&tab=filters">
+  <a class="example-card" href="?xt=10*t&yt=5*t&sigma=0.4&seed=1&R=0.0005&Q=0.02&tab=filters">
     <div class="example-card-title">Straight line -- R too low</div>
-    <div class="example-card-formula">Same line and noise, R = 0.0005 instead of 0.5</div>
+    <div class="example-card-formula">Same line and noise, R = 0.0005 instead of 0.16</div>
     <div class="example-card-text">Same measurements as the well-tuned line above, but R this small tells the filter to trust each noisy measurement almost exactly -- the estimate spreads across the noise instead of settling onto the line.</div>
   </a>
 
-  <a class="example-card" href="?xt=cos(10*t)&yt=sin(10*t)&sigma=0.05&seed=2&R=0.01&Q=0.05&tab=filters">
+  <a class="example-card" href="?xt=cos(10*t)&yt=sin(10*t)&sigma=0.08&seed=2&R=0.006&Q=0.05&tab=filters">
     <div class="example-card-title">Circular orbit -- well-tuned</div>
     <div class="example-card-formula">x(t) = cos(10t), y(t) = sin(10t) -- constant nonzero acceleration</div>
     <div class="example-card-text">Constant speed but continuously turning; R/Q tuned to the actual noise tracks the circle tightly.</div>
   </a>
 
-  <a class="example-card" href="?xt=cos(10*t)&yt=sin(10*t)&sigma=0.05&seed=2&R=0.01&Q=0.0005&tab=filters">
+  <a class="example-card" href="?xt=cos(10*t)&yt=sin(10*t)&sigma=0.08&seed=2&R=0.006&Q=0.0005&tab=filters">
     <div class="example-card-title">Circular orbit -- Q too low</div>
     <div class="example-card-formula">Same orbit and noise, Q = 0.0005 instead of 0.05</div>
     <div class="example-card-text">Q this small can't keep re-adjusting to the circle's constant turning -- the estimate lags and drifts off the true path.</div>
   </a>
 
-  <a class="example-card" href="?xt=10*t*cos(10*t)&yt=10*t*sin(10*t)&sigma=0.01&seed=3&R=0.001&Q=0.05&tab=filters">
+  <a class="example-card" href="?xt=10*t*cos(10*t)&yt=10*t*sin(10*t)&sigma=0.3&seed=3&R=0.09&Q=0.3&tab=filters">
     <div class="example-card-title">Outward spiral -- well-tuned</div>
     <div class="example-card-formula">x(t) = 10t·cos(10t), y(t) = 10t·sin(10t) -- growing acceleration</div>
     <div class="example-card-text">The spiral's own acceleration keeps growing outward; Q large enough lets the velocity estimate keep pace indefinitely.</div>
   </a>
 
-  <a class="example-card" href="?xt=10*t*cos(10*t)&yt=10*t*sin(10*t)&sigma=0.01&seed=3&R=0.001&Q=0&tab=filters">
+  <a class="example-card" href="?xt=10*t*cos(10*t)&yt=10*t*sin(10*t)&sigma=0.3&seed=3&R=0.09&Q=0&tab=filters">
     <div class="example-card-title">Outward spiral -- Q = 0 diverges</div>
     <div class="example-card-formula">Same spiral and noise, Q = 0</div>
     <div class="example-card-text">The velocity estimate freezes early and can't keep re-accelerating outward -- watch the error chart grow until the automatic stop triggers.</div>

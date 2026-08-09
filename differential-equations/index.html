@@ -124,6 +124,7 @@ Authors: Apurva Nakade
 <script src="../js/expressions/make-number.js"></script>
 <script src="../js/expressions/make-rational.js"></script>
 <script src="../js/expressions/make-ode-function.js"></script>
+<script src="../js/expressions/make-function-of-t.js"></script>
 <script src="../js/plotting/padded-range.js"></script>
 <script src="../js/plotting/plotly-fullscreen-button.js"></script>
 <script src="../js/numerical/linear-regression.js"></script>
@@ -138,6 +139,7 @@ Authors: Apurva Nakade
 <script src="../js/filters/moving-average-filter.js"></script>
 <script src="../js/filters/ema-filter.js"></script>
 <script src="../js/filters/kalman-1d-filter.js"></script>
+<script src="../js/filters/kalman-2d-step.js"></script>
 <script src="../js/ui/render-table.js"></script>
 <script src="../js/discrete-math/barycentric-triples.js"></script>
 <script src="../js/discrete-math/sub-triangles.js"></script>
@@ -603,8 +605,20 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../probability/sampling-methods/1d-recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1D Recursive Filters</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../probability/sampling-methods/2d-kalman-filter/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2D Kalman Filter</span></a>
   </div>
 </li>
       </ul>
@@ -665,7 +679,7 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786196288571" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4080">
+<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786244384863" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4080">
 <a href="../differential-equations/adaptive-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -694,7 +708,7 @@ The chart below shows each accepted step’s increment <span class="math inline"
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786196288572" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4187">
+<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786244384863" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4187">
 <a href="../differential-equations/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -723,7 +737,7 @@ An <span class="math inline">\(s\)</span>-stage Runge-Kutta method is specified 
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786196288572" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3949">
+<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786244384864" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3949">
 <a href="../differential-equations/explicit-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -752,7 +766,7 @@ Given <span class="math inline">\(y' = f(t, y)\)</span>, <span class="math inlin
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786196288573" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3558">
+<div class="g-col-1" data-index="3" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1786244384864" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3558">
 <a href="../differential-equations/implicit-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">

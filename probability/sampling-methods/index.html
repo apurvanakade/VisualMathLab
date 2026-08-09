@@ -38,7 +38,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="../../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../../">
-<link href="../../probability/sampling-methods/recursive-filters/index.html" rel="next">
+<link href="../../probability/sampling-methods/1d-recursive-filters/index.html" rel="next">
 <link href="../../probability/bayes/ppv/index.html" rel="prev">
 <script src="../../site_libs/quarto-listing/list.min.js"></script>
 <script src="../../site_libs/quarto-listing/quarto-listing.js"></script>
@@ -124,6 +124,7 @@ Authors: Apurva Nakade
 <script src="../../js/expressions/make-number.js"></script>
 <script src="../../js/expressions/make-rational.js"></script>
 <script src="../../js/expressions/make-ode-function.js"></script>
+<script src="../../js/expressions/make-function-of-t.js"></script>
 <script src="../../js/plotting/padded-range.js"></script>
 <script src="../../js/plotting/plotly-fullscreen-button.js"></script>
 <script src="../../js/numerical/linear-regression.js"></script>
@@ -138,6 +139,7 @@ Authors: Apurva Nakade
 <script src="../../js/filters/moving-average-filter.js"></script>
 <script src="../../js/filters/ema-filter.js"></script>
 <script src="../../js/filters/kalman-1d-filter.js"></script>
+<script src="../../js/filters/kalman-2d-step.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -603,8 +605,20 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/1d-recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1D Recursive Filters</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="../../probability/sampling-methods/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Recursive Filters</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/2d-kalman-filter/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2D Kalman Filter</span></a>
   </div>
 </li>
       </ul>
@@ -617,7 +631,7 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl">Exponential Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="S2FsbWFuJTIwRmlsdGVy">Kalman Filter <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW92aW5nJTIwQXZlcmFnZQ==">Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UmVjdXJzaXZlJTIwRmlsdGVycw==">Recursive Filters <span class="quarto-category-count">(1)</span></div><div class="category" data-category="U2FtcGxpbmclMjBNZXRob2Rz">Sampling Methods <span class="quarto-category-count">(1)</span></div></div></div>
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(3)</span></div><div class="category" data-category="RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl">Exponential Moving Average <span class="quarto-category-count">(2)</span></div><div class="category" data-category="S2FsbWFuJTIwRmlsdGVy">Kalman Filter <span class="quarto-category-count">(3)</span></div><div class="category" data-category="TW92aW5nJTIwQXZlcmFnZQ==">Moving Average <span class="quarto-category-count">(2)</span></div><div class="category" data-category="UGFyYW1ldHJpYyUyMEN1cnZlcw==">Parametric Curves <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(3)</span></div><div class="category" data-category="UmVjdXJzaXZlJTIwRmlsdGVycw==">Recursive Filters <span class="quarto-category-count">(3)</span></div><div class="category" data-category="U2FtcGxpbmclMjBNZXRob2Rz">Sampling Methods <span class="quarto-category-count">(3)</span></div></div></div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -665,7 +679,67 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1786196288578" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3894">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNSZWN1cnNpdmUlMjBGaWx0ZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcw==" data-listing-date-sort="1786147200000" data-listing-file-modified-sort="1786244384870" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="30" data-listing-word-count-sort="5863">
+<a href="../../probability/sampling-methods/2d-kalman-filter/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="../../probability/sampling-methods/2d-kalman-filter/2d-kalman-filter.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+2D Kalman Filter
+</h5>
+<div class="listing-categories">
+
+<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('U2FtcGxpbmclMjBNZXRob2Rz'); return false;">Sampling Methods</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('S2FsbWFuJTIwRmlsdGVy'); return false;">Kalman Filter</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('UmVjdXJzaXZlJTIwRmlsdGVycw=='); return false;">Recursive Filters</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('UGFyYW1ldHJpYyUyMEN1cnZlcw=='); return false;">Parametric Curves</div>
+
+</div>
+<div class="card-text listing-description delink">
+A particle moves along a parametric curve <span class="math inline">\((x(t), y(t))\)</span>, observed only through noisy measurements. A constant-velocity 2D Kalman filter tracks it live, one sample at a…<span class="math inline"></span><span class="math inline"></span>
+</div>
+</div>
+</div></a>
+</div>
+<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1786244384870" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3929">
+<a href="../../probability/sampling-methods/1d-recursive-filters/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="../../probability/sampling-methods/1d-recursive-filters/1d-recursive-filters.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+1D Recursive Filters
+</h5>
+<div class="listing-categories">
+
+<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('U2FtcGxpbmclMjBNZXRob2Rz'); return false;">Sampling Methods</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('S2FsbWFuJTIwRmlsdGVy'); return false;">Kalman Filter</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('TW92aW5nJTIwQXZlcmFnZQ=='); return false;">Moving Average</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl'); return false;">Exponential Moving Average</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('UmVjdXJzaXZlJTIwRmlsdGVycw=='); return false;">Recursive Filters</div>
+
+</div>
+<div class="card-text listing-description delink">
+Each of these filters updates a running estimate from only the previous estimate and the newest measurement <span class="math inline">\(z_i\)</span> — no stored history of the stream — which is what makes…<strong></strong><strong></strong><strong></strong><span class="math inline"></span><span class="math inline"></span>
+</div>
+</div>
+</div></a>
+</div>
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1786244384870" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3894">
 <a href="../../probability/sampling-methods/recursive-filters/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1119,8 +1193,8 @@ Each of these filters updates a running estimate from only the previous estimate
       </a>          
   </div>
   <div class="nav-page nav-page-next">
-      <a href="../../probability/sampling-methods/recursive-filters/index.html" class="pagination-link" aria-label="Recursive Filters">
-        <span class="nav-page-text">Recursive Filters</span> <i class="bi bi-arrow-right-short"></i>
+      <a href="../../probability/sampling-methods/1d-recursive-filters/index.html" class="pagination-link" aria-label="1D Recursive Filters">
+        <span class="nav-page-text">1D Recursive Filters</span> <i class="bi bi-arrow-right-short"></i>
       </a>
   </div>
 </nav>

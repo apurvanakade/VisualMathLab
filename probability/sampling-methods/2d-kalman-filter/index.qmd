@@ -771,11 +771,21 @@ sim = {
       }
     }
 
+    // Each noisy measurement is an independent draw, not a continuously
+    // moving quantity -- interpolating its on-screen position from the
+    // previous measurement toward the new one (the way true/kalman are
+    // eased below) would falsely suggest the sensor itself glides from one
+    // reading to the next. Real measurements just appear, fully formed, the
+    // instant they're taken, so noisyX/noisyY skip the lerp entirely and
+    // snap straight to the latest sample.
     const frac = Math.min(1, (sess.playingElapsedMs - sess.lastSampleTime) / SAMPLE_INTERVAL_MS)
     const prev = sess.headPrev ?? sess.head
     const curr = sess.head
     const headNow = {}
-    for (const key of Object.keys(curr)) headNow[key] = lerp(prev[key], curr[key], frac)
+    for (const key of Object.keys(curr)) {
+      if (key === "noisyX" || key === "noisyY") headNow[key] = curr[key]
+      else headNow[key] = lerp(prev[key], curr[key], frac)
+    }
 
     const w = canvas.width
     const h = canvas.height
@@ -855,37 +865,37 @@ Same measurements, good vs. bad $R$/$Q$, across three trajectories with differen
 ```{=html}
 <div class="example-grid">
 
-  <a class="example-card" href="?xt=t&yt=0.5*t&sigma=0.1&seed=1&R=0.02&Q=0.02&tab=filters">
+  <a class="example-card" href="?xt=10*t&yt=5*t&sigma=0.1&seed=1&R=0.5&Q=0.02&tab=filters">
     <div class="example-card-title">Straight line -- well-tuned</div>
-    <div class="example-card-formula">x(t) = t, y(t) = 0.5t -- zero acceleration</div>
-    <div class="example-card-text">Constant velocity matches the filter's own model exactly, so a modest R/Q tracks it tightly.</div>
+    <div class="example-card-formula">x(t) = 10t, y(t) = 5t -- zero acceleration</div>
+    <div class="example-card-text">Constant velocity matches the filter's own model exactly; R matched to the noise level tracks it tightly, with no acceleration to ever lag behind.</div>
   </a>
 
-  <a class="example-card" href="?xt=t&yt=0.5*t&sigma=0.1&seed=1&R=2&Q=0.02&tab=filters">
-    <div class="example-card-title">Straight line -- R too high</div>
-    <div class="example-card-formula">Same line and noise, R = 2 instead of 0.02</div>
-    <div class="example-card-text">Same measurements as the well-tuned line above, but R this large makes the filter discount every measurement -- lagging even on the easiest possible trajectory.</div>
+  <a class="example-card" href="?xt=10*t&yt=5*t&sigma=0.1&seed=1&R=0.0005&Q=0.02&tab=filters">
+    <div class="example-card-title">Straight line -- R too low</div>
+    <div class="example-card-formula">Same line and noise, R = 0.0005 instead of 0.5</div>
+    <div class="example-card-text">Same measurements as the well-tuned line above, but R this small tells the filter to trust each noisy measurement almost exactly -- the estimate spreads across the noise instead of settling onto the line.</div>
   </a>
 
-  <a class="example-card" href="?xt=cos(t)&yt=sin(t)&sigma=0.05&seed=2&R=0.01&Q=0.05&tab=filters">
+  <a class="example-card" href="?xt=cos(10*t)&yt=sin(10*t)&sigma=0.05&seed=2&R=0.01&Q=0.05&tab=filters">
     <div class="example-card-title">Circular orbit -- well-tuned</div>
-    <div class="example-card-formula">x(t) = cos(t), y(t) = sin(t) -- constant nonzero acceleration</div>
+    <div class="example-card-formula">x(t) = cos(10t), y(t) = sin(10t) -- constant nonzero acceleration</div>
     <div class="example-card-text">Constant speed but continuously turning; R/Q tuned to the actual noise tracks the circle tightly.</div>
   </a>
 
-  <a class="example-card" href="?xt=cos(t)&yt=sin(t)&sigma=0.05&seed=2&R=0.01&Q=0.0005&tab=filters">
+  <a class="example-card" href="?xt=cos(10*t)&yt=sin(10*t)&sigma=0.05&seed=2&R=0.01&Q=0.0005&tab=filters">
     <div class="example-card-title">Circular orbit -- Q too low</div>
     <div class="example-card-formula">Same orbit and noise, Q = 0.0005 instead of 0.05</div>
-    <div class="example-card-text">Q this small can't keep re-adjusting to the circle's constant turning -- the estimate settles into a steady lag.</div>
+    <div class="example-card-text">Q this small can't keep re-adjusting to the circle's constant turning -- the estimate lags and drifts off the true path.</div>
   </a>
 
-  <a class="example-card" href="?xt=t*cos(t)&yt=t*sin(t)&sigma=0.01&seed=3&R=0.001&Q=0.05&tab=filters">
+  <a class="example-card" href="?xt=10*t*cos(10*t)&yt=10*t*sin(10*t)&sigma=0.01&seed=3&R=0.001&Q=0.05&tab=filters">
     <div class="example-card-title">Outward spiral -- well-tuned</div>
-    <div class="example-card-formula">x(t) = t·cos(t), y(t) = t·sin(t) -- growing acceleration</div>
+    <div class="example-card-formula">x(t) = 10t·cos(10t), y(t) = 10t·sin(10t) -- growing acceleration</div>
     <div class="example-card-text">The spiral's own acceleration keeps growing outward; Q large enough lets the velocity estimate keep pace indefinitely.</div>
   </a>
 
-  <a class="example-card" href="?xt=t*cos(t)&yt=t*sin(t)&sigma=0.01&seed=3&R=0.001&Q=0&tab=filters">
+  <a class="example-card" href="?xt=10*t*cos(10*t)&yt=10*t*sin(10*t)&sigma=0.01&seed=3&R=0.001&Q=0&tab=filters">
     <div class="example-card-title">Outward spiral -- Q = 0 diverges</div>
     <div class="example-card-formula">Same spiral and noise, Q = 0</div>
     <div class="example-card-text">The velocity estimate freezes early and can't keep re-accelerating outward -- watch the error chart grow until the automatic stop triggers.</div>

@@ -1,0 +1,899 @@
+---
+title: "2D Kalman Filter"
+author: Apurva Nakade
+date: 2026-08-08
+order: 2
+image: 2d-kalman-filter.png
+categories:
+  - Probability
+  - Sampling Methods
+  - Kalman Filter
+  - Recursive Filters
+  - Parametric Curves
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+A particle moves along a parametric curve $(x(t), y(t))$, observed only through noisy measurements. A constant-velocity 2D Kalman filter tracks it live, one sample at a time, estimating both position and velocity. Reset (Signal & Sampling tab) restarts the run; $R$/$Q$ (Filter Parameters tab) update the running filter immediately, with no restart.
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.expressions.makeFunctionOfT, VM.expressions.makeNumber, VM.sampling.seededRandom, VM.sampling.gaussianRandom, VM.filters.kalman2DStep, VM.plotting.paddedRange.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL preset helpers for examples.
+// Supported query parameters:
+//   xt      parametric x(t)
+//   yt      parametric y(t)
+//   sigma   measurement noise, as a fraction of distance from the origin (relative, not absolute; independent on x and y)
+//   seed    RNG seed for the noisy measurements (reproducible draws)
+//   R       Kalman filter's assumed measurement-noise variance (builds the 2x2 measurement-noise covariance R = diag(R, R)); applied live as soon as the slider moves
+//   Q       Kalman filter's assumed process-noise intensity (builds the 4x4 process-noise covariance via the discrete white-noise-acceleration model); applied live as soon as the slider moves
+//   tab     active tab: signal, filters
+urlParams = new URLSearchParams(window.location.search)
+
+tabSlugToLabel = new Map([
+  ["signal", "Signal & Sampling"],
+  ["filters", "Filter Parameters"]
+])
+
+tabLabelToSlug = new Map([
+  ["Signal & Sampling", "signal"],
+  ["Filter Parameters", "filters"]
+])
+
+initialR = {
+  const raw = Number.parseFloat(urlParams.get("R"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.001), 5) : 0.001
+}
+
+initialQ = {
+  const raw = Number.parseFloat(urlParams.get("Q"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 2) : 0.05
+}
+```
+
+::: {.panel-tabset}
+
+## Signal & Sampling
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof xtText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "x(t)", value: params.get("xt") ?? "t*cos(t)", placeholder: "Example: t*cos(t), cos(t), sin(2*t)"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
+```{ojs}
+viewof ytText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "y(t)", value: params.get("yt") ?? "t*sin(t)", placeholder: "Example: t*sin(t), sin(t), sin(3*t)"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof sigmaText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Noise σ (relative)", value: params.get("sigma") ?? "0.01", placeholder: "Example: 0.01, 1/2"})
+  return input
+}
+```
+
+```{ojs}
+viewof seedText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "1", placeholder: "Example: 1, 42"})
+  return input
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+// Reset commits the current x(t)/y(t)/noise/seed fields -- edits above
+// don't take effect until this is clicked, so the simulation doesn't
+// recompile the curve or reshuffle its noise on every keystroke -- and
+// restarts the animation from the true starting state, since a changed
+// curve/seed/noise level has no sensible way to continue an in-progress
+// run.
+viewof resetTrigger = {
+  const btn = Inputs.button("Reset", {value: 0, reduce: v => v + 1})
+  btn.classList.add("ojs-auto", "ojs-end")
+  btn.querySelector("button").addEventListener("click", () => {
+    playbackControl.playing = false
+    viewof toggleButton.querySelector("button").textContent = "▶ Play"
+  })
+  return btn
+}
+```
+
+</div>
+</div>
+
+## Filter Parameters
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof R = {
+  const input = Inputs.range([0.001, 5], {step: 0.001, value: initialR, label: "Measurement noise R"})
+  return input
+}
+```
+
+```{ojs}
+viewof Q = {
+  const input = Inputs.range([0, 2], {step: 0.001, value: initialQ, label: "Process noise Q"})
+  return input
+}
+```
+
+</div>
+</div>
+
+:::
+
+```{ojs}
+//| output: false
+// playbackControl is a plain object computed once (it has no reactive
+// inputs of its own, so its cell never re-runs and its reference never
+// changes). The animation loop inside `sim` reads playbackControl.playing
+// fresh on every rendered frame without depending on it as an ordinary
+// reactive value -- which is what lets the Play/Pause button mutate it
+// without restarting (and thereby resetting) the running simulation.
+playbackControl = ({playing: false})
+```
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+// A single toggling button (rather than separate Play/Pause buttons):
+// flips playbackControl.playing and its own label directly, with no need
+// for OJS reactivity to keep the label in sync. Play/Pause lives outside
+// the tabset (unlike Reset and Update) since it isn't tied to either
+// tab's fields specifically.
+viewof toggleButton = {
+  const btn = Inputs.button("▶ Play")
+  btn.classList.add("ojs-auto")
+  const button = btn.querySelector("button")
+  button.addEventListener("click", () => {
+    playbackControl.playing = !playbackControl.playing
+    button.textContent = playbackControl.playing ? "⏸ Pause" : "▶ Play"
+  })
+  return btn
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the x(t)/y(t)/noise/seed fields clicks Reset instead
+// of submitting the field's own (invisible) form. Depends only on the
+// stable views, so this wiring runs once and is never re-attached.
+enterToReset = {
+  for (const view of [viewof xtText, viewof ytText, viewof sigmaText, viewof seedText]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof resetTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots xtText/ytText/sigmaText/seedText only when Reset
+// (the Signal & Sampling tab's button) is clicked, and writes them back
+// into the URL so the address bar stays a shareable link. It reads
+// `viewof xtText`/etc. (the stable DOM views) rather than `xtText`/etc.
+// (the reactive values), so it does NOT rerun on every keystroke -- only
+// when `resetTrigger` changes. It still runs once on initial page load,
+// so the first render uses the URL-provided (or default) values with no
+// click.
+//
+// Deliberately does NOT reference R/Q -- those are read live by
+// `filterMatrices` below instead, precisely so that changing a filter
+// parameter never touches (or reruns) this cell. `sim` below treats any
+// new `committed` object as a brand-new curve and restarts the whole
+// simulation, which is exactly what Reset should do but a filter-slider
+// change should not.
+committed = {
+  resetTrigger
+  const math = window.math
+  const xtVal = (viewof xtText).value
+  const ytVal = (viewof ytText).value
+  const sigmaVal = (viewof sigmaText).value
+  const seedVal = (viewof seedText).value
+
+  const sigmaNum = VM.expressions.makeNumber(math, sigmaVal)
+  const seedNum = VM.expressions.makeNumber(math, seedVal)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("xt", xtVal)
+  params.set("yt", ytVal)
+  params.set("sigma", sigmaVal)
+  params.set("seed", seedVal)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {
+    xtText: xtVal, ytText: ytVal,
+    sigma: Number.isFinite(sigmaNum) && sigmaNum >= 0 ? sigmaNum : 0,
+    seed: Number.isFinite(seedNum) ? seedNum : 1
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// filterMatrices reads the R/Q sliders directly (the reactive values, not
+// stable `viewof` snapshots), so it recomputes -- and writes R/Q back into
+// the URL -- on every slider move, live, with no button in between. `sim`
+// below never treats a new `filterMatrices` object as a reason to restart
+// (only a new `committed` object does that): the running simulation just
+// starts reading the new matrices on its next generated sample,
+// continuing from wherever the particle currently is.
+//
+// The two sliders are scalars, but what gets built here -- and what the
+// filter actually runs on -- are real matrices: R = diag(R, R) (the 2x2
+// measurement-noise covariance) and a 4x4 process-noise covariance Q built
+// from the standard discrete white-noise-acceleration model (which
+// couples each axis's own position/velocity noise, dt = 1 per sample, but
+// keeps x and y independent of each other). See the "Covariance matrices"
+// section below the app for the exact formulas. A single scalar per
+// matrix keeps the controls simple while the filter underneath is a
+// genuine 2D (in fact 4D, since it tracks velocity too) Kalman filter, not
+// two independent scalar ones.
+filterMatrices = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("R", String(R))
+  params.set("Q", String(Q))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  const Rmatrix = [
+    [R, 0],
+    [0, R]
+  ]
+  const Qmatrix = [
+    [Q / 4, 0, Q / 2, 0],
+    [0, Q / 4, 0, Q / 2],
+    [Q / 2, 0, Q, 0],
+    [0, Q / 2, 0, Q]
+  ]
+
+  return {R: Rmatrix, Q: Qmatrix}
+}
+```
+
+```{ojs}
+//| output: false
+// parsed compiles the committed x(t)/y(t) formulas once per Reset, shared
+// by the live simulation below.
+parsed = {
+  const math = window.math
+  const xFn = VM.expressions.makeFunctionOfT(math, committed.xtText)
+  const yFn = VM.expressions.makeFunctionOfT(math, committed.ytText)
+  return {
+    valid: !!(xFn && yFn),
+    xFn: xFn ?? (t => NaN),
+    yFn: yFn ?? (t => NaN)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// sim owns the canvas element and the entire streaming simulation state
+// (rolling per-series buffers, the Kalman filter's own state, the
+// pausable playback clock) in a closure that persists across reactive
+// re-invocations -- the same DOM-node-reuse idiom other pages use for
+// Plotly's _plotDiv, adapted so the actual animation runs on
+// requestAnimationFrame instead of being driven by OJS re-evaluating this
+// cell. That decoupling is what makes the motion smooth: rendering
+// happens on every display refresh, not on however often OJS itself
+// re-runs cells.
+//
+// There is no "how many samples" or "right endpoint" setting anywhere --
+// t simply keeps increasing for as long as the user leaves it playing,
+// and a new noisy measurement (plus one incremental filter update) is
+// generated every SAMPLE_INTERVAL_MS of actual playback time, the way an
+// online/recursive filter really consumes a live stream. Only the last
+// TRAIL_LENGTH samples are kept for the main plot's fading trails, so its
+// view naturally scrolls/zooms to follow the particle forever rather than
+// needing a fixed axis range sized to a finite curve -- but the error
+// chart below it keeps the *entire* session's history (no trimming, no
+// fading), since seeing how tracking error evolves over the whole run is
+// the point of that panel.
+sim = {
+  const mathjs = window.math
+  const SAMPLE_INTERVAL_MS = 400
+  const T_SPEED = 0.05  // curve-time units of t per real second of playback
+  const TRAIL_LENGTH = 60  // keeps the fading trail spanning roughly the same real-world duration (~24s) despite the slower sample rate
+  const INITIAL_VELOCITY_VARIANCE = 10  // uninformative prior: the filter has no idea which way the particle starts moving
+  // Divergence is judged by RELATIVE error (tracking error as a fraction of
+  // the true position's distance from the origin), not an absolute size --
+  // a well-tuned filter's absolute lag naturally grows right along with an
+  // outward spiral's own scale (that's expected, bounded behavior, not a
+  // problem), whereas a filter that has genuinely lost the particle (e.g.
+  // Q = 0, unable to react to any motion at all) sees its relative error
+  // climb toward 1 as the true position pulls away.
+  const RELATIVE_ERROR_LIMIT = 0.85
+  const colors = {trueC: "#2563eb", noisy: "#9ca3af", kalman: "#dc2626"}
+  const ERR_PX_PER_SAMPLE = 5  // horizontal pixels per sample in the error chart -- its canvas grows wider as the session goes on, hence the scrollbar
+  const ERR_CHART_HEIGHT = 180
+  const errColors = {errX: "#f59e0b", errY: "#7c3aed", zero: "#9ca3af", marker: "#9ca3af"}
+
+  const wrapper = document.createElement("div")
+  wrapper.className = "plotly-box-large"
+  wrapper.style.position = "relative"
+  const canvas = document.createElement("canvas")
+  canvas.style.width = "100%"
+  canvas.style.height = "100%"
+  canvas.style.display = "block"
+
+  // Shown over the canvas (not just as a small note below it) when the
+  // divergence guard trips, so stopping reads as a deliberate, explained
+  // pause rather than the app silently freezing/breaking.
+  const overlay = document.createElement("div")
+  overlay.style.cssText = "display:none;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;padding:1.5rem;background:var(--bs-body-bg, #fff);color:#b91c1c;font-size:1.05rem;"
+
+  wrapper.append(canvas, overlay)
+  const ctx = canvas.getContext("2d")
+
+  const resizeCanvas = () => {
+    const rect = wrapper.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = Math.max(1, Math.round(rect.width * dpr))
+    canvas.height = Math.max(1, Math.round(rect.height * dpr))
+  }
+  new ResizeObserver(resizeCanvas).observe(wrapper)
+
+  const legendItems = [
+    {key: "trueC", label: "True position"},
+    {key: "noisy", label: "Noisy measurement"},
+    {key: "kalman", label: "Kalman Filter"}
+  ]
+  const legend = document.createElement("div")
+  legend.style.cssText = "display:flex;flex-wrap:wrap;gap:0.25rem 1rem;justify-content:center;padding:0.5rem 0;font-size:0.85rem;"
+  for (const item of legendItems) {
+    const el = document.createElement("span")
+    el.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;"
+    const dot = document.createElement("span")
+    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${colors[item.key]};display:inline-block;`
+    el.append(dot, document.createTextNode(item.label))
+    legend.append(el)
+  }
+
+  // The error chart: a second, independent canvas below the main
+  // visualization showing the Kalman filter's signed x/y tracking error
+  // (estimate minus truth) over the *entire* session. Unlike the main
+  // plot's fixed-size, panning/zooming view, this canvas's own width grows
+  // with the number of samples collected -- wrapped in a scrollable
+  // container so old history is still reachable by scrolling left, while
+  // new points keep appearing at the right edge as they arrive.
+  const errCaption = document.createElement("div")
+  errCaption.style.cssText = "font-size:0.85rem;color:var(--bs-secondary-color, #6b7280);margin:1rem 0 0.25rem;"
+  errCaption.textContent = "Tracking error over time (full session history -- resets only on Reset; scroll left for earlier history)"
+
+  const errLegendItems = [
+    {key: "errX", label: "x error (Kalman − true)"},
+    {key: "errY", label: "y error (Kalman − true)"}
+  ]
+  const errLegend = document.createElement("div")
+  errLegend.style.cssText = "display:flex;flex-wrap:wrap;gap:0.25rem 1rem;justify-content:center;padding:0.35rem 0;font-size:0.85rem;"
+  for (const item of errLegendItems) {
+    const el = document.createElement("span")
+    el.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;"
+    const dot = document.createElement("span")
+    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${errColors[item.key]};display:inline-block;`
+    el.append(dot, document.createTextNode(item.label))
+    errLegend.append(el)
+  }
+
+  const errWrapper = document.createElement("div")
+  errWrapper.className = "ojs-panel"
+  errWrapper.style.cssText = "overflow-x:auto;overflow-y:hidden;"
+  const errCanvas = document.createElement("canvas")
+  errCanvas.style.display = "block"
+  errWrapper.append(errCanvas)
+  const errCtx = errCanvas.getContext("2d")
+
+  // Redraws the entire error chart from scratch -- called once per new
+  // sample (not once per animation frame, since the data itself only
+  // changes at sample granularity), plus once whenever the container
+  // resizes. Cost grows with the number of samples in the session, which
+  // is fine for a demo run of realistic length but isn't designed for an
+  // unattended multi-hour session.
+  const redrawErrChart = () => {
+    if (!sess) return
+    const buf = sess.errBuf
+    const n = buf.errX.length
+    const dpr = window.devicePixelRatio || 1
+    const minCssWidth = errWrapper.clientWidth || 300
+    const cssWidth = Math.max(minCssWidth, ERR_PX_PER_SAMPLE * Math.max(1, n - 1))
+    const wasPinnedToEnd = errWrapper.scrollLeft + errWrapper.clientWidth >= errWrapper.scrollWidth - 4
+
+    errCanvas.width = Math.max(1, Math.round(cssWidth * dpr))
+    errCanvas.height = Math.max(1, Math.round(ERR_CHART_HEIGHT * dpr))
+    errCanvas.style.width = `${cssWidth}px`
+    errCanvas.style.height = `${ERR_CHART_HEIGHT}px`
+    errCtx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    errCtx.clearRect(0, 0, cssWidth, ERR_CHART_HEIGHT)
+
+    // Symmetric y-range, padded to the largest |error| seen so far.
+    let maxAbs = 0.05
+    for (let i = 0; i < n; i++) {
+      if (Math.abs(buf.errX[i]) > maxAbs) maxAbs = Math.abs(buf.errX[i])
+      if (Math.abs(buf.errY[i]) > maxAbs) maxAbs = Math.abs(buf.errY[i])
+    }
+    maxAbs *= 1.15
+
+    const xAt = (i) => i * ERR_PX_PER_SAMPLE
+    const yAt = (v) => ERR_CHART_HEIGHT / 2 - (v / maxAbs) * (ERR_CHART_HEIGHT / 2 - 8)
+
+    errCtx.strokeStyle = errColors.zero
+    errCtx.setLineDash([4, 4])
+    errCtx.lineWidth = 1
+    errCtx.beginPath()
+    errCtx.moveTo(0, yAt(0))
+    errCtx.lineTo(cssWidth, yAt(0))
+    errCtx.stroke()
+    errCtx.setLineDash([])
+
+    // Vertical markers at every sample where R or Q changed.
+    errCtx.font = "11px sans-serif"
+    for (const marker of buf.markers) {
+      const mx = xAt(marker.index)
+      errCtx.strokeStyle = errColors.marker
+      errCtx.setLineDash([3, 3])
+      errCtx.lineWidth = 1
+      errCtx.beginPath()
+      errCtx.moveTo(mx, 0)
+      errCtx.lineTo(mx, ERR_CHART_HEIGHT)
+      errCtx.stroke()
+      errCtx.setLineDash([])
+      errCtx.fillStyle = errColors.marker
+      errCtx.fillText(marker.label, mx + 3, 11)
+    }
+
+    const drawErrLine = (values, color) => {
+      errCtx.strokeStyle = color
+      errCtx.lineWidth = 1.75
+      errCtx.beginPath()
+      for (let i = 0; i < n; i++) {
+        const px = xAt(i)
+        const py = yAt(values[i])
+        if (i === 0) errCtx.moveTo(px, py)
+        else errCtx.lineTo(px, py)
+      }
+      errCtx.stroke()
+    }
+    drawErrLine(buf.errX, errColors.errX)
+    drawErrLine(buf.errY, errColors.errY)
+
+    if (wasPinnedToEnd) errWrapper.scrollLeft = errWrapper.scrollWidth
+  }
+  new ResizeObserver(redrawErrChart).observe(errWrapper)
+
+  const outer = document.createElement("div")
+  outer.append(wrapper, legend, errCaption, errWrapper, errLegend)
+
+  // latestParams holds whatever the OJS output cell most recently passed
+  // in; the render loop always reads the current value, so a slider
+  // change takes effect on the very next generated sample without
+  // touching (or resetting) the running simulation.
+  let latestParams = null
+
+  // sess is the entire mutable state of one simulation run, replaced
+  // wholesale on reset -- never partially mutated across a reset, so
+  // stale closures can't leak state from a previous curve.
+  let sess = null
+
+  const resetSession = () => {
+    const {committed, parsed} = latestParams
+    const rng = VM.sampling.seededRandom(committed.seed)
+    const gaussian = VM.sampling.gaussianRandom(rng)
+    const x0 = parsed.valid ? parsed.xFn(0) : 0
+    const y0 = parsed.valid ? parsed.yFn(0) : 0
+    const noiseScale0 = committed.sigma * Math.max(1, Math.hypot(x0, y0))
+    const p0 = noiseScale0 > 0 ? noiseScale0 * noiseScale0 : 0.01
+    const pv = INITIAL_VELOCITY_VARIANCE
+
+    overlay.style.display = "none"
+
+    sess = {
+      rng, gaussian,
+      t: 0,
+      playingElapsedMs: 0,
+      lastFrameTime: null,
+      lastSampleTime: 0,
+      diverged: false,
+      kalman: {
+        x: [x0, y0, 0, 0],
+        P: [
+          [p0, 0, 0, 0],
+          [0, p0, 0, 0],
+          [0, 0, pv, 0],
+          [0, 0, 0, pv]
+        ]
+      },
+      buf: {trueX: [x0], trueY: [y0], noisyX: [x0], noisyY: [y0], kalmanX: [x0], kalmanY: [y0]},
+      head: {trueX: x0, trueY: y0, noisyX: x0, noisyY: y0, kalmanX: x0, kalmanY: y0},
+      headPrev: null,
+      camera: null,
+      // The filter is seeded exactly on the true starting position (see
+      // resetSession above), so the error chart starts at a true 0 for
+      // both axes -- an honest baseline, not a placeholder.
+      errBuf: {errX: [0], errY: [0], markers: []},
+      lastRawR: latestParams.rawR,
+      lastRawQ: latestParams.rawQ
+    }
+    // Seed the camera at the freshly-built session's own initial range
+    // (rather than leaving it null) so the very first frame doesn't ease
+    // in from some stale or default view.
+    const target = computeRange()
+    sess.camera = {xlo: target.xRange.lo, xhi: target.xRange.hi, ylo: target.yRange.lo, yhi: target.yRange.hi}
+    errWrapper.scrollLeft = 0
+    redrawErrChart()
+  }
+
+  // Draws one new noisy measurement at the current curve position and
+  // advances the Kalman filter by exactly one predict+update step -- it
+  // never sees more than this single new sample plus its own small
+  // running state (position AND velocity estimate), matching how it
+  // would run on a real live stream.
+  const generateSample = () => {
+    const {committed, parsed, R, Q, rawR, rawQ} = latestParams
+    const trueX = parsed.valid ? parsed.xFn(sess.t) : 0
+    const trueY = parsed.valid ? parsed.yFn(sess.t) : 0
+    // Noise scales with how far the particle currently is from the origin
+    // (a RELATIVE error, sigma as a fraction of distance) rather than
+    // being a fixed absolute size -- on a curve that grows without bound,
+    // a fixed absolute noise would look chaotic near the origin (where it
+    // dwarfs the true position) and become imperceptibly small once the
+    // particle is far out. The floor of 1 keeps noise from vanishing
+    // entirely right at the start, where the true position itself is 0.
+    const noiseScale = committed.sigma * Math.max(1, Math.hypot(trueX, trueY))
+    const noisyX = trueX + noiseScale * sess.gaussian()
+    const noisyY = trueY + noiseScale * sess.gaussian()
+
+    sess.kalman = VM.filters.kalman2DStep(mathjs, sess.kalman, [noisyX, noisyY], {R, Q})
+    const kalmanX = sess.kalman.x[0]
+    const kalmanY = sess.kalman.x[1]
+
+    const buf = sess.buf
+    buf.trueX.push(trueX); buf.trueY.push(trueY)
+    buf.noisyX.push(noisyX); buf.noisyY.push(noisyY)
+    buf.kalmanX.push(kalmanX); buf.kalmanY.push(kalmanY)
+
+    for (const key of Object.keys(buf)) {
+      if (buf[key].length > TRAIL_LENGTH) buf[key].shift()
+    }
+
+    sess.headPrev = sess.head
+    sess.head = {trueX, trueY, noisyX, noisyY, kalmanX, kalmanY}
+
+    // Records a vertical marker on the error chart at the sample where R
+    // and/or Q actually changed value -- rawR/rawQ are the raw slider
+    // scalars (unlike R/Q above, which are freshly-built matrix objects
+    // every time either slider moves, even if only one of the two did).
+    const sampleIndex = sess.errBuf.errX.length
+    if (rawR !== sess.lastRawR || rawQ !== sess.lastRawQ) {
+      let label = ""
+      if (rawR !== sess.lastRawR) label += "R"
+      if (rawQ !== sess.lastRawQ) label += (label ? ",Q" : "Q")
+      sess.errBuf.markers.push({index: sampleIndex, label})
+      sess.lastRawR = rawR
+      sess.lastRawQ = rawQ
+    }
+    sess.errBuf.errX.push(kalmanX - trueX)
+    sess.errBuf.errY.push(kalmanY - trueY)
+    redrawErrChart()
+
+    // Divergence guard: the animation has no fixed endpoint, so a
+    // badly-tuned filter (e.g. Q = 0, which can never adjust its velocity
+    // estimate) needs a way to stop itself instead of running forever
+    // with a meaningless tracking error.
+    const errKalman = Math.hypot(kalmanX - trueX, kalmanY - trueY)
+    const trueMag = Math.hypot(trueX, trueY)
+    const relErr = errKalman / Math.max(1, trueMag)
+    sess.diverged = !Number.isFinite(trueX) || !Number.isFinite(trueY) || !Number.isFinite(relErr) || relErr > RELATIVE_ERROR_LIMIT
+
+    sess.t += T_SPEED * SAMPLE_INTERVAL_MS / 1000
+  }
+
+  const lerp = (a, b, f) => a + (b - a) * f
+
+  // The view has no fixed axis range (there's no finite curve to size it
+  // to) -- instead it's recomputed every frame from whatever's currently
+  // in the trail buffers, so the camera naturally scrolls/zooms to follow
+  // the particle as it moves.
+  const computeRange = () => {
+    const xs = [...sess.buf.trueX, ...sess.buf.noisyX, ...sess.buf.kalmanX]
+    const ys = [...sess.buf.trueY, ...sess.buf.noisyY, ...sess.buf.kalmanY]
+    const pad = 0.5 + 3 * latestParams.committed.sigma
+    const xRange = VM.plotting.paddedRange(xs, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: pad})
+    const yRange = VM.plotting.paddedRange(ys, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: pad})
+    return {xRange, yRange}
+  }
+
+  const toPixelMapper = (xRange, yRange) => {
+    const w = canvas.width
+    const h = canvas.height
+    const xSpan = xRange.hi - xRange.lo || 1
+    const ySpan = yRange.hi - yRange.lo || 1
+    return (x, y) => [
+      (x - xRange.lo) / xSpan * w,
+      h - (y - yRange.lo) / ySpan * h
+    ]
+  }
+
+  // Fading scatter (no connecting lines) for the raw noisy measurements.
+  const drawScatter = (toPx, xsKey, ysKey, color, headX, headY) => {
+    const xs = sess.buf[xsKey]
+    const ys = sess.buf[ysKey]
+    const n = xs.length
+    for (let i = 0; i < n; i++) {
+      ctx.globalAlpha = 0.15 + 0.6 * (i / Math.max(1, n - 1))
+      ctx.fillStyle = color
+      const [px, py] = toPx(xs[i], ys[i])
+      ctx.beginPath()
+      ctx.arc(px, py, 3.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+    ctx.globalAlpha = 1
+    ctx.fillStyle = color
+    const [hx, hy] = toPx(headX, headY)
+    ctx.beginPath()
+    ctx.arc(hx, hy, 4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  // Fading line trail (plus a solid head dot) for a series' estimate.
+  const drawTrail = (toPx, xsKey, ysKey, color, headX, headY) => {
+    const xs = sess.buf[xsKey]
+    const ys = sess.buf[ysKey]
+    const n = xs.length
+
+    for (let i = 1; i < n; i++) {
+      ctx.globalAlpha = 0.08 + 0.5 * (i / n)
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2.5
+      const [x0, y0] = toPx(xs[i - 1], ys[i - 1])
+      const [x1, y1] = toPx(xs[i], ys[i])
+      ctx.beginPath()
+      ctx.moveTo(x0, y0)
+      ctx.lineTo(x1, y1)
+      ctx.stroke()
+    }
+
+    if (n > 0) {
+      const [x0, y0] = toPx(xs[n - 1], ys[n - 1])
+      const [x1, y1] = toPx(headX, headY)
+      ctx.globalAlpha = 0.9
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2.5
+      ctx.beginPath()
+      ctx.moveTo(x0, y0)
+      ctx.lineTo(x1, y1)
+      ctx.stroke()
+    }
+
+    ctx.globalAlpha = 1
+    ctx.fillStyle = color
+    const [hx, hy] = toPx(headX, headY)
+    ctx.beginPath()
+    ctx.arc(hx, hy, 5, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  const draw = (now) => {
+    requestAnimationFrame(draw)
+    if (!sess || !latestParams) return
+
+    if (sess.lastFrameTime === null) sess.lastFrameTime = now
+    const dtMs = Math.min(200, now - sess.lastFrameTime)  // cap so a backgrounded tab can't "catch up" forever
+    sess.lastFrameTime = now
+
+    if (playbackControl.playing) {
+      sess.playingElapsedMs += dtMs
+      let guard = 0
+      while (sess.playingElapsedMs - sess.lastSampleTime >= SAMPLE_INTERVAL_MS && guard < 5) {
+        generateSample()
+        sess.lastSampleTime += SAMPLE_INTERVAL_MS
+        guard++
+        if (sess.diverged) break
+      }
+      if (sess.diverged) {
+        playbackControl.playing = false
+        viewof toggleButton.querySelector("button").textContent = "▶ Play"
+        overlay.textContent = "Error too large -- the filter has lost track of the particle. Press Reset (Signal & Sampling tab) to try again."
+        overlay.style.display = "flex"
+      }
+    }
+
+    const frac = Math.min(1, (sess.playingElapsedMs - sess.lastSampleTime) / SAMPLE_INTERVAL_MS)
+    const prev = sess.headPrev ?? sess.head
+    const curr = sess.head
+    const headNow = {}
+    for (const key of Object.keys(curr)) headNow[key] = lerp(prev[key], curr[key], frac)
+
+    const w = canvas.width
+    const h = canvas.height
+    ctx.clearRect(0, 0, w, h)
+    if (w === 0 || h === 0) return
+
+    // Ease the camera toward the freshly-computed target range instead of
+    // snapping to it every frame -- the target itself jumps around a bit
+    // from frame to frame (a new noisy sample, or an old one dropping out
+    // of the trail buffer, shifts the raw min/max discretely), and panning
+    // straight to each new target is what made the view feel choppy.
+    // CAMERA_SMOOTHING is the fraction of the remaining gap closed each
+    // frame -- small enough to feel like a smooth, continuous glide.
+    const target = computeRange()
+    const CAMERA_SMOOTHING = 0.08
+    sess.camera.xlo = lerp(sess.camera.xlo, target.xRange.lo, CAMERA_SMOOTHING)
+    sess.camera.xhi = lerp(sess.camera.xhi, target.xRange.hi, CAMERA_SMOOTHING)
+    sess.camera.ylo = lerp(sess.camera.ylo, target.yRange.lo, CAMERA_SMOOTHING)
+    sess.camera.yhi = lerp(sess.camera.yhi, target.yRange.hi, CAMERA_SMOOTHING)
+    const xRange = {lo: sess.camera.xlo, hi: sess.camera.xhi}
+    const yRange = {lo: sess.camera.ylo, hi: sess.camera.yhi}
+    const toPx = toPixelMapper(xRange, yRange)
+
+    drawTrail(toPx, "trueX", "trueY", colors.trueC, headNow.trueX, headNow.trueY)
+    drawScatter(toPx, "noisyX", "noisyY", colors.noisy, headNow.noisyX, headNow.noisyY)
+    drawTrail(toPx, "kalmanX", "kalmanY", colors.kalman, headNow.kalmanX, headNow.kalmanY)
+  }
+  requestAnimationFrame(draw)
+
+  return (params) => {
+    const isNewSession = !latestParams || latestParams.committed !== params.committed
+    latestParams = params
+    if (isNewSession) resetSession()
+    return outer
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+sim({committed, parsed, R: filterMatrices.R, Q: filterMatrices.Q, rawR: R, rawQ: Q})
+```
+
+</div>
+
+### Covariance matrices
+
+$$
+F = \begin{pmatrix} 1 & 0 & 1 & 0 \\ 0 & 1 & 0 & 1 \\ 0 & 0 & 1 & 0 \\ 0 & 0 & 0 & 1 \end{pmatrix}, \qquad
+H = \begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \end{pmatrix}
+$$
+
+$$
+\hat{\mathbf x}_k^- = F \hat{\mathbf x}_{k-1}, \qquad P_k^- = F P_{k-1} F^\top + \mathbf{Q}
+$$
+
+$$
+S_k = H P_k^- H^\top + \mathbf{R}, \qquad K_k = P_k^- H^\top S_k^{-1}
+$$
+
+$$
+\hat{\mathbf x}_k = \hat{\mathbf x}_k^- + K_k\left(\mathbf z_k - H \hat{\mathbf x}_k^-\right), \qquad P_k = (I - K_k H)\, P_k^-
+$$
+
+$$
+\mathbf{R} = \begin{pmatrix} R & 0 \\ 0 & R \end{pmatrix}, \qquad
+\mathbf{Q} = Q \begin{pmatrix} 1/4 & 0 & 1/2 & 0 \\ 0 & 1/4 & 0 & 1/2 \\ 1/2 & 0 & 1 & 0 \\ 0 & 1/2 & 0 & 1 \end{pmatrix}
+$$
+
+State order $(x, y, v_x, v_y)$, one time step per sample ($\Delta t = 1$).
+
+## Examples
+
+Same measurements, good vs. bad $R$/$Q$, across three trajectories with different acceleration profiles. Click a card, then press Play.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?xt=t&yt=0.5*t&sigma=0.1&seed=1&R=0.02&Q=0.02&tab=filters">
+    <div class="example-card-title">Straight line -- well-tuned</div>
+    <div class="example-card-formula">x(t) = t, y(t) = 0.5t -- zero acceleration</div>
+    <div class="example-card-text">Constant velocity matches the filter's own model exactly, so a modest R/Q tracks it tightly.</div>
+  </a>
+
+  <a class="example-card" href="?xt=t&yt=0.5*t&sigma=0.1&seed=1&R=2&Q=0.02&tab=filters">
+    <div class="example-card-title">Straight line -- R too high</div>
+    <div class="example-card-formula">Same line and noise, R = 2 instead of 0.02</div>
+    <div class="example-card-text">Same measurements as the well-tuned line above, but R this large makes the filter discount every measurement -- lagging even on the easiest possible trajectory.</div>
+  </a>
+
+  <a class="example-card" href="?xt=cos(t)&yt=sin(t)&sigma=0.05&seed=2&R=0.01&Q=0.05&tab=filters">
+    <div class="example-card-title">Circular orbit -- well-tuned</div>
+    <div class="example-card-formula">x(t) = cos(t), y(t) = sin(t) -- constant nonzero acceleration</div>
+    <div class="example-card-text">Constant speed but continuously turning; R/Q tuned to the actual noise tracks the circle tightly.</div>
+  </a>
+
+  <a class="example-card" href="?xt=cos(t)&yt=sin(t)&sigma=0.05&seed=2&R=0.01&Q=0.0005&tab=filters">
+    <div class="example-card-title">Circular orbit -- Q too low</div>
+    <div class="example-card-formula">Same orbit and noise, Q = 0.0005 instead of 0.05</div>
+    <div class="example-card-text">Q this small can't keep re-adjusting to the circle's constant turning -- the estimate settles into a steady lag.</div>
+  </a>
+
+  <a class="example-card" href="?xt=t*cos(t)&yt=t*sin(t)&sigma=0.01&seed=3&R=0.001&Q=0.05&tab=filters">
+    <div class="example-card-title">Outward spiral -- well-tuned</div>
+    <div class="example-card-formula">x(t) = t·cos(t), y(t) = t·sin(t) -- growing acceleration</div>
+    <div class="example-card-text">The spiral's own acceleration keeps growing outward; Q large enough lets the velocity estimate keep pace indefinitely.</div>
+  </a>
+
+  <a class="example-card" href="?xt=t*cos(t)&yt=t*sin(t)&sigma=0.01&seed=3&R=0.001&Q=0&tab=filters">
+    <div class="example-card-title">Outward spiral -- Q = 0 diverges</div>
+    <div class="example-card-formula">Same spiral and noise, Q = 0</div>
+    <div class="example-card-text">The velocity estimate freezes early and can't keep re-accelerating outward -- watch the error chart grow until the automatic stop triggers.</div>
+  </a>
+
+</div>
+```
+
+## References
+
+Staszewski, Kuba. "Recursive Filters." Blog post. [https://www.staszewski.xyz/blog/recursive-filters/](https://www.staszewski.xyz/blog/recursive-filters/)

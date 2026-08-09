@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
 
 const VM = loadVM()
-const { kalman1DFilter } = VM.filters
+const { kalman1DFilter, kalman1DStep } = VM.filters
 
 test('kalman1DFilter returns xs/Ps/Ks each the same length as the input', () => {
   const {xs, Ps, Ks} = kalman1DFilter([1, 2, 3, 4], {R: 1, Q: 0.1})
@@ -40,4 +40,26 @@ test('kalman1DFilter gain stays in (0, 1]', () => {
 test('kalman1DFilter trusts the measurement almost fully when Q is huge relative to R', () => {
   const {Ks} = kalman1DFilter([1, 2, 3], {R: 0.01, Q: 1000})
   for (const K of Ks) assert.ok(K > 0.99, `expected gain near 1, got ${K}`)
+})
+
+test('kalman1DStep computes one predict+update step by hand', () => {
+  const step = kalman1DStep({xHat: 5, P: 1}, 6, {R: 1, Q: 0.5})
+  // pPred = 1.5, K = 1.5/2.5 = 0.6, xHat = 5 + 0.6*(6-5) = 5.6, P = 0.4*1.5 = 0.6
+  assert.ok(Math.abs(step.xHat - 5.6) < 1e-10, `xHat: ${step.xHat}`)
+  assert.ok(Math.abs(step.P - 0.6) < 1e-10, `P: ${step.P}`)
+  assert.ok(Math.abs(step.K - 0.6) < 1e-10, `K: ${step.K}`)
+})
+
+test('kalman1DStep chained by hand matches kalman1DFilter over the same measurements', () => {
+  const zs = [1, 2, 3, 4, 5]
+  const opts = {R: 1, Q: 0.2, x0: 0, P0: 1}
+  const batch = kalman1DFilter(zs, opts)
+
+  let state = {xHat: opts.x0, P: opts.P0}
+  const xs = []
+  for (const z of zs) {
+    state = kalman1DStep(state, z, opts)
+    xs.push(state.xHat)
+  }
+  assert.deepEqual(xs, batch.xs)
 })

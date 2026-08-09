@@ -43,6 +43,7 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 - `js/expressions/make-number.js` → `VM.expressions.makeNumber(mathjs, expr)` — evaluates a constant expression (e.g. `1 + 2*3 + pi - e`) to a JS number, or `null` if it can't be parsed. Used by all numeric input fields (initial guesses, endpoints, max iterations, ...) so they accept expressions, not just literal numbers.
 - `js/expressions/make-rational.js` → `VM.expressions.makeRational` — rational-number/fraction-reduction helper (e.g. for displaying exact Butcher tableau coefficients).
 - `js/expressions/make-ode-function.js` → `VM.expressions.makeFunction2(mathjs, expr)` — like `makeFunction` but returns `(t, y) => number`, for ODE right-hand sides `y' = f(t, y)`.
+- `js/expressions/make-function-of-t.js` → `VM.expressions.makeFunctionOfT(mathjs, expr)` — like `makeFunction` but binds `t` instead of `x`, for pages where the natural free variable is time (e.g. a parametric curve `x(t)`, `y(t)`) rather than a spatial coordinate.
 
 **`VM.numerical`**
 
@@ -60,8 +61,9 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 **`VM.filters`**
 
 - `js/filters/moving-average-filter.js` → `VM.filters.movingAverageFilter(xs, k)` — causal simple moving average over window size `k` (averages fewer than `k` samples at the start of the array, matching how the filter would run online).
-- `js/filters/ema-filter.js` → `VM.filters.emaFilter(xs, alpha)` — exponential moving average / first-order low-pass filter, `s_i = alpha*s_{i-1} + (1-alpha)*x_i`, seeded with `s_0 = x_0`.
-- `js/filters/kalman-1d-filter.js` → `VM.filters.kalman1DFilter(zs, {R, Q, x0?, P0?})` — scalar Kalman filter (`R` = assumed measurement-noise variance, `Q` = assumed process-noise variance); returns `{xs, Ps, Ks}`, the state estimate, error variance, and gain at each step.
+- `js/filters/ema-filter.js` → `VM.filters.emaFilter(xs, alpha, initial?)` — exponential moving average / first-order low-pass filter, `s_i = alpha*s_{i-1} + (1-alpha)*x_i`. Without `initial`, `s_0 = x_0`; with it, `s_0` blends `initial` as the prior going into the first update (matching `kalman1DFilter`'s `x0`) — e.g. seeding from a known true starting state instead of the first noisy sample.
+- `js/filters/kalman-1d-filter.js` → `VM.filters.kalman1DStep({xHat, P}, z, {R, Q})` — one predict+update step of the scalar Kalman filter (`R` = assumed measurement-noise variance, `Q` = assumed process-noise variance), for pages that consume measurements one at a time as they arrive; returns `{xHat, P, K}`, the new state estimate, error variance, and gain. `VM.filters.kalman1DFilter(zs, {R, Q, x0?, P0?})` — the same filter run over a precomputed array (implemented as a loop over `kalman1DStep`); returns `{xs, Ps, Ks}`, one entry per step.
+- `js/filters/kalman-2d-step.js` → `VM.filters.kalman2DStep(mathjs, {x, P}, z, {R, Q})` — one predict+update step of a constant-velocity 2D Kalman filter: state `x = [x, y, vx, vy]` (a plain 4-element array), `z = [x, y]` the noisy position measurement, `Q` a 4x4 process-noise covariance matrix and `R` a 2x2 measurement-noise covariance matrix (both plain nested arrays). Takes `mathjs` as an explicit parameter (matching `VM.expressions`' convention) since it does its matrix algebra (multiply/add/subtract/transpose/inv) through it; pass plain arrays rather than `mathjs.matrix(...)`/`mathjs.identity(...)` so every intermediate stays a plain array and the returned state can be indexed directly (`x[0]`, `x[1]`, ...). Returns `{x, P, K}`.
 
 **`VM.plotting`**
 

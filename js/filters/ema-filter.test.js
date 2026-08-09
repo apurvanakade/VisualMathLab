@@ -30,3 +30,14 @@ test('emaFilter on a constant stream returns the constant throughout', () => {
   const ys = emaFilter([2, 2, 2, 2], 0.9)
   for (const y of ys) assert.equal(y, 2)
 })
+
+test('emaFilter blends the optional initial prior with the first sample instead of seeding from it directly', () => {
+  const ys = emaFilter([10], 0.5, 0)
+  assert.equal(ys[0], 5)
+})
+
+test('emaFilter without an initial prior matches the pre-existing default (seed from the first sample)', () => {
+  const withInitial = emaFilter([7, 9, 11], 0.5, undefined)
+  const withoutInitial = emaFilter([7, 9, 11], 0.5)
+  assert.deepEqual(withInitial, withoutInitial)
+})

@@ -38,7 +38,7 @@ VM = window.VM
 //   k       SMA window size (number of trailing samples averaged)
 //   R       Kalman filter's assumed measurement-noise variance
 //   Q       Kalman filter's assumed process-noise variance
-//   show    comma-separated methods: sma, ema, kalman
+//   show    comma-separated methods: true, sma, ema, kalman
 //   tab     active tab: signal, filters
 urlParams = new URLSearchParams(window.location.search)
 
@@ -52,9 +52,13 @@ tabLabelToSlug = new Map([
   ["Filter Parameters", "filters"]
 ])
 
-methodOptions = ["Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
+methodOptions = ["True Signal", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
 
 methodSlugToLabel = new Map([
+  ["true", "True Signal"],
+  ["true-signal", "True Signal"],
+  ["true_signal", "True Signal"],
+
   ["sma", "Simple Moving Average"],
   ["moving-average", "Simple Moving Average"],
   ["moving_average", "Simple Moving Average"],
@@ -70,6 +74,7 @@ methodSlugToLabel = new Map([
 ])
 
 methodLabelToSlug = new Map([
+  ["True Signal", "true"],
   ["Simple Moving Average", "sma"],
   ["Exponential Moving Average", "ema"],
   ["Kalman Filter", "kalman"]
@@ -201,6 +206,11 @@ viewof methods = {
 ```
 
 </div>
+
+```{ojs}
+//| output: false
+showTrueSignal = methods.includes("True Signal")
+```
 
 ```{ojs}
 //| output: false
@@ -458,7 +468,8 @@ setup = {
 ```{ojs}
 //| output: false
 // mainPlot draws the true signal (over the full domain, as a fixed
-// reference), every noisy measurement, and each enabled filter's estimate.
+// reference, toggleable via showTrueSignal), every noisy measurement, and
+// each enabled filter's estimate.
 //
 // _plotDiv is kept in a closure so Plotly reuses the same DOM node across
 // reactive updates — this preserves zoom and pan when a parameter or
@@ -467,10 +478,11 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (rows, data, showSMA, showEMA, showKalman) => {
-    const traces = [
-      {x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
+  return (rows, data, showTrueSignal, showSMA, showEMA, showKalman) => {
+    const traces = []
+    if (showTrueSignal) {
+      traces.push({x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: true, line: {color: "#2563eb", width: 3}})
+    }
 
     const xs = []
     const noisyYs = []
@@ -527,7 +539,7 @@ mainPlot = {
 <div class="ojs-output-wide">
 
 ```{ojs}
-mainPlot(result.rows, setup, showSMA, showEMA, showKalman)
+mainPlot(result.rows, setup, showTrueSignal, showSMA, showEMA, showKalman)
 ```
 
 :::: {.callout-note collapse="true" title="Convergence plots"}
@@ -716,49 +728,49 @@ Click any example to load it into the app.
 ```{=html}
 <div class="example-grid">
 
-  <a class="example-card" href="?f=sin(x)&sigma=0.4&b=20&seed=1&max=60&alpha=0.9&k=5&R=0.16&Q=0.05&show=sma,ema,kalman">
+  <a class="example-card" href="?f=sin(x)&sigma=0.4&b=20&seed=1&max=60&alpha=0.9&k=5&R=0.16&Q=0.05&show=true,sma,ema,kalman">
     <div class="example-card-title">Noisy sine wave</div>
     <div class="example-card-formula">f(x) = sin(x), &nbsp; σ = 0.4</div>
     <div class="example-card-text">The default comparison: all three filters recover a smooth sine from noisy measurements.</div>
   </a>
 
-  <a class="example-card" href="?f=5&sigma=1&b=20&seed=3&max=60&alpha=0.9&k=8&R=1&Q=0&show=kalman,ema&tab=filters">
+  <a class="example-card" href="?f=5&sigma=1&b=20&seed=3&max=60&alpha=0.9&k=8&R=1&Q=0&show=true,kalman,ema&tab=filters">
     <div class="example-card-title">Estimating a hidden constant</div>
     <div class="example-card-formula">f(x) = 5, &nbsp; σ = 1</div>
     <div class="example-card-text">The classic Kalman use case: repeated noisy measurements of a fixed unknown value. Open the convergence plots and watch the Kalman gain shrink toward 0 as it grows more confident.</div>
   </a>
 
-  <a class="example-card" href="?f=x%20%3E%2010%20%3F%206%20%3A%200&sigma=0.5&b=20&seed=2&max=80&alpha=0.9&k=8&R=0.25&Q=0.05&show=sma,ema,kalman">
+  <a class="example-card" href="?f=x%20%3E%2010%20%3F%206%20%3A%200&sigma=0.5&b=20&seed=2&max=80&alpha=0.9&k=8&R=0.25&Q=0.05&show=true,sma,ema,kalman">
     <div class="example-card-title">Sudden regime change</div>
     <div class="example-card-formula">f(x) = 6 for x &gt; 10, else 0</div>
     <div class="example-card-text">A sudden jump exposes each filter's lag. Heavier smoothing (larger k or higher α) takes longer to catch up; raising Kalman's Q lets it re-adapt faster after the jump.</div>
   </a>
 
-  <a class="example-card" href="?f=sin(3*x)&sigma=0.3&b=10&seed=4&max=100&alpha=0.9&k=6&R=0.09&Q=0.05&show=sma,ema,kalman">
+  <a class="example-card" href="?f=sin(3*x)&sigma=0.3&b=10&seed=4&max=100&alpha=0.9&k=6&R=0.09&Q=0.05&show=true,sma,ema,kalman">
     <div class="example-card-title">Fast oscillation exposes lag</div>
     <div class="example-card-formula">f(x) = sin(3x), &nbsp; σ = 0.3</div>
     <div class="example-card-text">A quickly changing signal shows heavily smoothed filters trailing noticeably behind the peaks. Try lowering α or k, or raising Kalman's Q, to track it more closely.</div>
   </a>
 
-  <a class="example-card" href="?f=cos(x%2F2)&sigma=0.8&b=25&seed=5&max=80&alpha=0.95&k=12&R=0.64&Q=0.02&show=sma,ema,kalman">
+  <a class="example-card" href="?f=cos(x%2F2)&sigma=0.8&b=25&seed=5&max=80&alpha=0.95&k=12&R=0.64&Q=0.02&show=true,sma,ema,kalman">
     <div class="example-card-title">Heavy noise, gentle signal</div>
     <div class="example-card-formula">f(x) = cos(x/2), &nbsp; σ = 0.8</div>
     <div class="example-card-text">Noise larger than the signal itself needs aggressive smoothing (high α, large k) just to recover a usable trend.</div>
   </a>
 
-  <a class="example-card" href="?f=0.3*x&sigma=1&b=15&seed=6&max=60&alpha=0.85&k=6&R=1&Q=0.1&show=ema,kalman">
+  <a class="example-card" href="?f=0.3*x&sigma=1&b=15&seed=6&max=60&alpha=0.85&k=6&R=1&Q=0.1&show=true,ema,kalman">
     <div class="example-card-title">Tracking a steady drift</div>
     <div class="example-card-formula">f(x) = 0.3x, &nbsp; σ = 1</div>
     <div class="example-card-text">A steadily drifting quantity. Kalman's Q &gt; 0 lets the filter keep tracking the drift instead of falling permanently behind, the way Q = 0 would.</div>
   </a>
 
-  <a class="example-card" href="?f=sin(x)&sigma=0.6&b=20&seed=7&max=60&alpha=0.9&k=5&R=0.01&Q=0.05&show=kalman&tab=filters">
+  <a class="example-card" href="?f=sin(x)&sigma=0.6&b=20&seed=7&max=60&alpha=0.9&k=5&R=0.01&Q=0.05&show=true,kalman&tab=filters">
     <div class="example-card-title">Overconfident sensor model</div>
     <div class="example-card-formula">f(x) = sin(x), &nbsp; σ = 0.6 but R = 0.01</div>
     <div class="example-card-text">Setting R far below the actual measurement noise makes Kalman overtrust every sample — its estimate ends up almost as jagged as the raw data, showing why R must reflect real sensor noise.</div>
   </a>
 
-  <a class="example-card" href="?f=sin(x)&sigma=0.3&b=20&seed=8&max=60&alpha=0.9&k=5&R=0.09&Q=0&show=kalman,ema&tab=filters">
+  <a class="example-card" href="?f=sin(x)&sigma=0.3&b=20&seed=8&max=60&alpha=0.9&k=5&R=0.09&Q=0&show=true,kalman,ema&tab=filters">
     <div class="example-card-title">Zero process noise stops tracking</div>
     <div class="example-card-formula">f(x) = sin(x), &nbsp; Q = 0</div>
     <div class="example-card-text">With Q = 0 the filter assumes the true value never changes, so its gain decays toward 0 and it stops following the moving sine — compare with the default example, where Q = 0.05 keeps it responsive.</div>

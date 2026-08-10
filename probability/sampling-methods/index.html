@@ -140,6 +140,7 @@ Authors: Apurva Nakade
 <script src="../../js/filters/ema-filter.js"></script>
 <script src="../../js/filters/kalman-1d-filter.js"></script>
 <script src="../../js/filters/kalman-2d-step.js"></script>
+<script src="../../js/filters/particle-filter-step.js"></script>
 <script src="../../js/ui/render-table.js"></script>
 <script src="../../js/discrete-math/barycentric-triples.js"></script>
 <script src="../../js/discrete-math/sub-triangles.js"></script>
@@ -615,6 +616,12 @@ window.Quarto = {
  <span class="menu-text">2D Kalman Filter</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../probability/sampling-methods/2d-particle-filter/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">2D Particle Filter</span></a>
+  </div>
+</li>
       </ul>
   </li>
       </ul>
@@ -625,7 +632,7 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(2)</span></div><div class="category" data-category="RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl">Exponential Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="S2FsbWFuJTIwRmlsdGVy">Kalman Filter <span class="quarto-category-count">(2)</span></div><div class="category" data-category="TW91c2UlMjBUcmFja2luZw==">Mouse Tracking <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW92aW5nJTIwQXZlcmFnZQ==">Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(2)</span></div><div class="category" data-category="UmVjdXJzaXZlJTIwRmlsdGVycw==">Recursive Filters <span class="quarto-category-count">(2)</span></div><div class="category" data-category="U2FtcGxpbmclMjBNZXRob2Rz">Sampling Methods <span class="quarto-category-count">(2)</span></div></div></div>
+    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(3)</span></div><div class="category" data-category="RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl">Exponential Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="S2FsbWFuJTIwRmlsdGVy">Kalman Filter <span class="quarto-category-count">(2)</span></div><div class="category" data-category="TW9udGUlMjBDYXJsbw==">Monte Carlo <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW91c2UlMjBUcmFja2luZw==">Mouse Tracking <span class="quarto-category-count">(2)</span></div><div class="category" data-category="TW92aW5nJTIwQXZlcmFnZQ==">Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UGFydGljbGUlMjBGaWx0ZXI=">Particle Filter <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(3)</span></div><div class="category" data-category="UmVjdXJzaXZlJTIwRmlsdGVycw==">Recursive Filters <span class="quarto-category-count">(3)</span></div><div class="category" data-category="U2FtcGxpbmclMjBNZXRob2Rz">Sampling Methods <span class="quarto-category-count">(3)</span></div></div></div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -673,7 +680,7 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNSZWN1cnNpdmUlMjBGaWx0ZXJzJTJDTW91c2UlMjBUcmFja2luZw==" data-listing-date-sort="1786233600000" data-listing-file-modified-sort="1786304845186" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2782">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNSZWN1cnNpdmUlMjBGaWx0ZXJzJTJDTW91c2UlMjBUcmFja2luZw==" data-listing-date-sort="1786233600000" data-listing-file-modified-sort="1786365225000" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2782">
 <a href="../../probability/sampling-methods/2d-kalman-filter/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -702,7 +709,38 @@ Press and drag your mouse to draw on the left canvas. Each point along your stro
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1786304845186" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3929">
+<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNQYXJ0aWNsZSUyMEZpbHRlciUyQ01vbnRlJTIwQ2FybG8lMkNSZWN1cnNpdmUlMjBGaWx0ZXJzJTJDTW91c2UlMjBUcmFja2luZw==" data-listing-date-sort="1786233600000" data-listing-file-modified-sort="1786365225000" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3341">
+<a href="../../probability/sampling-methods/2d-particle-filter/index.html" class="quarto-grid-link">
+<div class="quarto-grid-item card h-100 card-left">
+<p class="card-img-top">
+<img loading="lazy" src="../../probability/sampling-methods/2d-particle-filter/2d-particle-filter.png" class="thumbnail-image card-img" style="height: 150px;">
+</p>
+<div class="card-body post-contents">
+<h5 class="no-anchor card-title listing-title">
+2D Particle Filter
+</h5>
+<div class="listing-categories">
+
+<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('U2FtcGxpbmclMjBNZXRob2Rz'); return false;">Sampling Methods</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('UGFydGljbGUlMjBGaWx0ZXI='); return false;">Particle Filter</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('TW9udGUlMjBDYXJsbw=='); return false;">Monte Carlo</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('UmVjdXJzaXZlJTIwRmlsdGVycw=='); return false;">Recursive Filters</div>
+
+<div class="listing-category" onclick="window.quartoListingCategory('TW91c2UlMjBUcmFja2luZw=='); return false;">Mouse Tracking</div>
+
+</div>
+<div class="card-text listing-description delink">
+Press and drag your mouse to draw on the left canvas. Each point along your stroke is the “true” signal; it’s corrupted with Gaussian noise, and a constant-velocity 2D…
+</div>
+</div>
+</div></a>
+</div>
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNTYW1wbGluZyUyME1ldGhvZHMlMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1786365224999" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3929">
 <a href="../../probability/sampling-methods/1d-recursive-filters/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">

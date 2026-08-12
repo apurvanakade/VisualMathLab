@@ -54,8 +54,14 @@
   flex: none !important;
 }
 
+/* 10em comfortably fits the short values/expressions (0.16, 20*3, pi/4,
+ * -5, ...) that the overwhelming majority of text fields hold. The
+ * minority that genuinely need to hold a long formula (fText, gText, the
+ * y' = f(t, y) field, ...) already opt into .ojs-fill everywhere in this
+ * codebase — none of them rely on this default, so it's safe to keep this
+ * default compact rather than sized for the exceptional case. */
 .ojs-panel input[type="text"] {
-  width: 28em;
+  width: 10em;
   max-width: 100%;
   flex: none !important;
 }
@@ -99,6 +105,36 @@
   box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.35);
 }
 
+/* Observable Inputs lays out every control as <form class="oi-...">
+ * label + input side by side in a flex row (display: flex; align-items:
+ * center; flex-direction: row — verified via computed styles, since this
+ * rule lives in Observable's own injected stylesheet rather than
+ * anything in this repo). When a label's text wraps to more lines than a
+ * neighboring field's label (a narrow .ojs-grid column, a long parameter
+ * name), each field's input ends up vertically centered in its own
+ * differently-tall row, so inputs across a shared .ojs-row/.ojs-grid stop
+ * lining up with each other. Stacking label above control instead removes
+ * the row-height dependency entirely: the control is always the last
+ * (bottom) element of its own field regardless of how many lines the
+ * label took, so .ojs-grid's `align-items: end` then bottom-aligns every
+ * control in a row exactly, no matter how each label wraps. */
+.ojs-panel form[class^="oi-"] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+/* Observable also hardcodes every <label> to a fixed width: 120px;
+ * flex-shrink: 0 — a leftover of the row layout, where capping every
+ * label to the same width keeps inputs beside differently-long labels
+ * starting at the same x-position. In the column layout above there's no
+ * such row to align, so that fixed 120px just forces labels wider than
+ * ~120px (e.g. "Initial condition y(0)") to wrap even when the field has
+ * plenty of room. Let each label size to its own content instead. */
+.ojs-panel form[class^="oi-"] label {
+  width: auto;
+}
+
 /* Attach to an Inputs.* wrapper div to make it fill the row, overriding
  * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
 .ojs-fill { width: 100% !important; max-width: none !important; }
@@ -107,6 +143,19 @@
  * of Observable Inputs' 100%-wide default, which would otherwise force the
  * row to wrap. */
 .ojs-auto { width: auto !important; flex: none !important; }
+
+/* Attach to an Inputs.* wrapper div to push it to the right edge of its
+ * container -- e.g. every page's "Plot" button, so it lands in the same
+ * bottom-right corner everywhere regardless of whether it shares a .ojs-row
+ * with a growing sibling field or sits alone below a .ojs-grid. A plain
+ * block-level div with width:auto (e.g. what .ojs-auto sets) actually
+ * stretches to fill its container in normal block flow -- unlike a flex
+ * item, "auto" here does NOT mean "shrink to content" -- so there's no
+ * free space left for margin-left:auto to consume. Forcing fit-content
+ * first is what makes the auto margin actually push it right, in both
+ * plain-block (a lone button under a .ojs-grid) and flex (a button beside
+ * a growing sibling in a .ojs-row) contexts. */
+.ojs-end { width: fit-content !important; margin-left: auto !important; }
 
 /* ── Output area ─────────────────────────────────────────────────── */
 

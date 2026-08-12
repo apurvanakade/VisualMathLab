@@ -45,10 +45,6 @@ viewof a0 = {
 }
 ```
 
-</div>
-
-<div class="ojs-row">
-
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
@@ -57,6 +53,8 @@ viewof b0 = {
 }
 ```
 
+</div>
+
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
 // take effect until this is clicked, so result/mainPlot don't recompute on
@@ -64,12 +62,11 @@ viewof b0 = {
 // unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
+  plotButton.classList.add("ojs-auto", "ojs-end")
   return plotButton
 }
 ```
 
-</div>
 </div>
 
 <div class="ojs-panel ojs-row">
@@ -567,7 +564,13 @@ iterationTable = {
 
 </div>
 
-**Adaptive quadrature** refines the partition of $[a,b]$ only where it's needed, instead of the fixed grid used in [Numerical Integration](../integration/index.qmd): it compares Simpson's rule on $[a,b]$ against Simpson's rule on each half, and bisects further whenever the two disagree by more than a target tolerance $\varepsilon$.
+**Adaptive quadrature** refines the partition of $[a,b]$ only where it's needed, instead of the fixed grid used in [Numerical Integration](../integration/index.qmd). Simpson's rule on an interval $[p,q]$ with midpoint $m=(p+q)/2$,
+
+$$
+S[p,q] = \frac{q-p}{6}\Big(f(p)+4f(m)+f(q)\Big),
+$$
+
+is compared against the sum of Simpson's rule on each half, $S[a,m]+S[m,b]$; since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of 16, giving the Richardson error estimate $\big(S[a,m]+S[m,b]-S[a,b]\big)/15$. Whenever $\left|S[a,m]+S[m,b]-S[a,b]\right|$ exceeds $15\varepsilon$ for the current tolerance $\varepsilon$, the interval is bisected and each half is refined recursively (with $\varepsilon$ halved at each level, so the total error stays bounded by the original tolerance).
 
 
 ## Examples

@@ -45,10 +45,6 @@ viewof y0 = {
 }
 ```
 
-</div>
-
-<div class="ojs-row">
-
 ```{ojs}
 viewof bEnd = {
   const params = new URLSearchParams(window.location.search)
@@ -57,6 +53,8 @@ viewof bEnd = {
 }
 ```
 
+</div>
+
 ```{ojs}
 // Plot commits the current function/initial-condition/endpoint fields —
 // edits above don't take effect until this is clicked, so result/mainPlot
@@ -64,12 +62,11 @@ viewof bEnd = {
 // field below are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
+  plotButton.classList.add("ojs-auto", "ojs-end")
   return plotButton
 }
 ```
 
-</div>
 </div>
 
 <div class="ojs-panel ojs-row">
@@ -563,7 +560,20 @@ iterationTable = {
 
 </div>
 
-**RKF45** (Runge–Kutta–Fehlberg) adapts the step size $h$ at every step, instead of the fixed $h=b/n$ used in [Explicit Methods](../explicit-methods/index.qmd). From six slope evaluations it builds two embedded estimates of $y_{i+1}$ (fourth- and fifth-order); if they disagree by more than a target tolerance $\varepsilon$, the step is rejected and retried with a smaller $h$, otherwise $h$ grows for the next step.
+**RKF45** (Runge–Kutta–Fehlberg) adapts the step size $h$ at every step, instead of the fixed $h=b/n$ used in [Explicit Methods](../explicit-methods/index.qmd). Six slope evaluations $k_1,\dots,k_6$, each of the general Runge-Kutta form
+
+$$
+k_i = f\!\left(t_n + c_i h,\ y_n + h\sum_{j<i} a_{ij}k_j\right),
+$$
+
+combine into two embedded estimates of $y_{n+1}$ of different order, using two different weight sets $b_i$, $b_i^*$ on the same six $k_i$:
+
+$$
+y_{n+1}^{(4)} = y_n + h\sum_{i=1}^{6} b_i k_i \qquad\text{(4th order)}, \qquad
+y_{n+1}^{(5)} = y_n + h\sum_{i=1}^{6} b_i^{*} k_i \qquad\text{(5th order)}.
+$$
+
+If $\left|y_{n+1}^{(5)} - y_{n+1}^{(4)}\right|$ exceeds a target tolerance $\varepsilon$, the step is rejected and retried with a smaller $h$; otherwise it's accepted (using $y_{n+1}^{(5)}$) and $h$ grows for the next step.
 
 ## Examples
 

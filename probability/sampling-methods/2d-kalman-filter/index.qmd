@@ -1,0 +1,445 @@
+---
+title: "2D Kalman Filter"
+author: Apurva Nakade
+date: 2026-08-09
+order: 2
+image: 2d-kalman-filter.png
+categories:
+  - Probability
+  - Sampling Methods
+  - Kalman Filter
+  - Recursive Filters
+  - Mouse Tracking
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+Press and drag your mouse to draw on the left canvas. Each point along your stroke is the "true" signal; it's corrupted with Gaussian noise, and a constant-velocity 2D Kalman filter reconstructs your drawing live on the right canvas from that noisy stream alone. 
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.sampling.seededRandom, VM.sampling.gaussianRandom, VM.filters.kalman2DStep.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL sync helpers, so the address bar stays a shareable link to the
+// current R/Q/sigma settings.
+// Supported query parameters:
+//   sigma   measurement noise, a fixed absolute standard deviation in canvas pixels (independent on x and y)
+//   R       Kalman filter's assumed measurement-noise variance (builds the 2x2 measurement-noise covariance R = diag(R, R)); applied live as soon as the slider moves
+//   Q       Kalman filter's assumed process-noise intensity (builds the 4x4 process-noise covariance via the discrete white-noise-acceleration model); applied live as soon as the slider moves
+urlParams = new URLSearchParams(window.location.search)
+
+initialSigma = {
+  const raw = Number.parseFloat(urlParams.get("sigma"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 1), 100) : 15
+}
+
+// Defaults to a badly-tuned R (see the "R too low -- jittery" example
+// below) rather than the well-tuned R = 225 -- so a first-time visitor
+// immediately sees the filter doing something wrong, which is a more
+// inviting starting point than a filter that already looks perfect.
+initialR = {
+  const raw = Number.parseFloat(urlParams.get("R"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 1), 3000) : 4
+}
+
+initialQ = {
+  const raw = Number.parseFloat(urlParams.get("Q"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 200) : 15
+}
+```
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof sigma = {
+  const input = Inputs.range([1, 100], {step: 1, value: initialSigma, label: "Noise σ (pixels)"})
+  return input
+}
+```
+
+```{ojs}
+// Reset clears both canvases and ends any in-progress stroke, so the
+// user can start a fresh drawing without reloading the page.
+viewof resetTrigger = {
+  const btn = Inputs.button("Reset", {value: 0, reduce: v => v + 1})
+  btn.classList.add("ojs-auto", "ojs-end")
+  return btn
+}
+```
+
+```{ojs}
+viewof R = {
+  const input = Inputs.range([1, 3000], {step: 1, value: initialR, label: "Measurement noise R"})
+  return input
+}
+```
+
+```{ojs}
+viewof Q = {
+  const input = Inputs.range([0, 200], {step: 0.5, value: initialQ, label: "Process noise Q"})
+  return input
+}
+```
+
+</div>
+</div>
+
+```{ojs}
+//| output: false
+// liveNoise/filterMatrices read the sigma/R/Q controls directly (the
+// reactive values, not stable `viewof` snapshots), so they recompute --
+// and write back into the URL -- on every change, live, with no commit
+// button in between. `sim` below reads these fresh on every generated
+// sample -- sigma only actually takes effect the moment a new stroke's
+// noise generator is created (see `sim`'s `sampleAt`), same as a real
+// sensor whose calibration can't be changed after it's already taken a
+// reading.
+liveNoise = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("sigma", String(sigma))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {sigma}
+}
+```
+
+```{ojs}
+//| output: false
+// Standard discrete white-noise-acceleration model (see the "Covariance
+// matrices" section below) calibrated for pixel-scale noise -- a mouse
+// can reverse direction abruptly mid-stroke, so Q's default and range
+// are set high enough to keep up with that.
+filterMatrices = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("R", String(R))
+  params.set("Q", String(Q))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  const Rmatrix = [
+    [R, 0],
+    [0, R]
+  ]
+  const Qmatrix = [
+    [Q / 4, 0, Q / 2, 0],
+    [0, Q / 4, 0, Q / 2],
+    [Q / 2, 0, Q, 0],
+    [0, Q / 2, 0, Q]
+  ]
+
+  return {R: Rmatrix, Q: Qmatrix}
+}
+```
+
+```{ojs}
+//| output: false
+// sim owns both canvases -- a left one the user draws on directly, and a
+// right one showing what the filter reconstructs from noisy samples of
+// that drawing -- in a closure that persists across reactive
+// re-invocations, the same DOM-node-reuse idiom other pages use for a
+// Plotly div. Unlike the earlier continuous-tracking version of this
+// page, there is no requestAnimationFrame render loop at all: both
+// canvases are plain accumulating ink (like a paint app), drawn
+// incrementally as strokes happen rather than cleared and redrawn from a
+// point-history buffer every frame, so a mousedown/mousemove/mouseup
+// handler is the entire drawing engine.
+//
+// A "stroke" is one mousedown-to-mouseup drag. Lifting the mouse and
+// pressing again starts a brand new stroke: the Kalman filter's state is
+// re-initialized at the new stroke's first point (its velocity estimate
+// from the previous stroke has no bearing on where a freshly-placed pen
+// starts), and the two canvases stop connecting a line across the gap,
+// matching how the left canvas itself visually breaks between strokes.
+// The noise generator, however, is seeded once (from a fixed constant --
+// there's no user-facing seed control) and keeps running across the
+// whole session; only the Kalman filter restarts per stroke. Reset goes
+// further and clears both canvases entirely, also re-seeding the noise
+// generator so a fresh drawing gets a fresh noise sequence.
+//
+// World coordinates == canvas CSS-pixel space: the backing store is
+// scaled to devicePixelRatio for a crisp draw, then every draw call is
+// issued through that same transform, so canvas coordinates line up
+// directly with mouse event offsetX/offsetY with no separate
+// pixel-mapping step. Resizing the window clears both canvases' pixel
+// buffers (a plain HTML canvas always does this on resize) -- acceptable
+// here since this is a prototype and resizing mid-drawing is rare; the
+// alternative would mean keeping a full point-history buffer solely to
+// redraw after a resize.
+sim = {
+  const mathjs = window.math
+  const SAMPLE_INTERVAL_MS = 150
+  const INITIAL_VELOCITY_VARIANCE = 4000  // uninformative prior: the filter has no idea which way a freshly-started stroke will move
+  const SEED = 1  // fixed -- there's no user-facing seed control, so every session/Reset draws noise from the same starting point
+  const colors = {trueC: "#2563eb", noisy: "#9ca3af", kalman: "#dc2626"}
+
+  // Builds one bordered canvas box (used for both the left "draw" canvas
+  // and the right "reconstruction" canvas) with a caption above it and a
+  // centered placeholder message shown until the first stroke begins.
+  const makeCanvasBox = (captionText, placeholderText, cursor) => {
+    const box = document.createElement("div")
+    box.style.cssText = "flex:1 1 320px;min-width:280px;"
+
+    const caption = document.createElement("div")
+    caption.style.cssText = "font-size:0.85rem;color:var(--bs-secondary-color, #6b7280);margin-bottom:0.35rem;"
+    caption.textContent = captionText
+
+    const frame = document.createElement("div")
+    frame.style.cssText = `position:relative;height:55vh;min-height:380px;overflow:hidden;border:1px solid var(--bs-border-color, #dee2e6);border-radius:var(--bs-border-radius, 0.375rem);background:#fff;cursor:${cursor};`
+
+    const canvas = document.createElement("canvas")
+    canvas.style.cssText = "width:100%;height:100%;display:block;"
+
+    const placeholder = document.createElement("div")
+    placeholder.style.cssText = "display:flex;position:absolute;inset:0;align-items:center;justify-content:center;text-align:center;padding:1.5rem;color:var(--bs-secondary-color, #6b7280);font-size:1.05rem;pointer-events:none;"
+    placeholder.textContent = placeholderText
+
+    frame.append(canvas, placeholder)
+    box.append(caption, frame)
+    const ctx = canvas.getContext("2d")
+
+    const resize = () => {
+      const rect = frame.getBoundingClientRect()
+      const dpr = window.devicePixelRatio || 1
+      canvas.width = Math.max(1, Math.round(rect.width * dpr))
+      canvas.height = Math.max(1, Math.round(rect.height * dpr))
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+    new ResizeObserver(resize).observe(frame)
+    resize()
+
+    return {box, canvas, ctx, placeholder}
+  }
+
+  const left = makeCanvasBox("Draw here", "Click and drag to draw.", "crosshair")
+  const right = makeCanvasBox("Kalman reconstruction", "Your reconstructed drawing appears here.", "default")
+
+  const legendItems = [
+    {key: "trueC", label: "Your drawing"},
+    {key: "noisy", label: "Noisy measurement"},
+    {key: "kalman", label: "Kalman Filter"}
+  ]
+  const legend = document.createElement("div")
+  legend.style.cssText = "display:flex;flex-wrap:wrap;gap:0.25rem 1rem;justify-content:center;padding:0.5rem 0;font-size:0.85rem;"
+  for (const item of legendItems) {
+    const el = document.createElement("span")
+    el.style.cssText = "display:inline-flex;align-items:center;gap:0.35rem;"
+    const dot = document.createElement("span")
+    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${colors[item.key]};display:inline-block;`
+    el.append(dot, document.createTextNode(item.label))
+    legend.append(el)
+  }
+
+  const row = document.createElement("div")
+  row.style.cssText = "display:flex;flex-wrap:wrap;gap:1rem;"
+  row.append(left.box, right.box)
+
+  const outer = document.createElement("div")
+  outer.append(row, legend)
+
+  // latestParams holds whatever the OJS output cell most recently passed
+  // in; every draw call reads the current value, so a slider change
+  // takes effect on the very next sample without touching the drawing
+  // already on either canvas.
+  let latestParams = null
+
+  let isDrawing = false
+  let leftLast = null   // last point drawn on the left canvas for this stroke, or null to start a fresh line segment
+  let rightLast = null  // last Kalman estimate drawn on the right canvas for this stroke
+  let lastSampleTime = null
+  let gaussian = null    // seeded once, kept for the whole session (not per stroke)
+  let kalman = null      // re-initialized at the start of every stroke
+
+  const drawDot = (ctx, x, y, r, color) => {
+    ctx.fillStyle = color
+    ctx.beginPath()
+    ctx.arc(x, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  const drawSegment = (ctx, from, to, color) => {
+    ctx.strokeStyle = color
+    ctx.lineWidth = 3
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.beginPath()
+    ctx.moveTo(from.x, from.y)
+    ctx.lineTo(to.x, to.y)
+    ctx.stroke()
+  }
+
+  // Draws the next point of the true stroke on the left canvas, and
+  // returns it -- called on every mousemove while drawing, independent
+  // of the slower measurement-sampling cadence below, so the drawn
+  // stroke itself is exactly as smooth as the browser's own mousemove
+  // events allow.
+  const drawTruePoint = (x, y) => {
+    const point = {x, y}
+    if (leftLast) drawSegment(left.ctx, leftLast, point, colors.trueC)
+    drawDot(left.ctx, x, y, 2, colors.trueC)
+    leftLast = point
+  }
+
+  // Draws one noisy measurement of the current true point, advances the
+  // Kalman filter by exactly one predict+update step, and draws the new
+  // estimate on the right canvas -- gated to roughly SAMPLE_INTERVAL_MS
+  // apart regardless of how often mousemove itself fires, simulating a
+  // sensor slower than the mouse.
+  const sampleAt = (x, y, now) => {
+    const {sigma, R, Q} = latestParams
+    if (!gaussian) {
+      const rng = VM.sampling.seededRandom(SEED)
+      gaussian = VM.sampling.gaussianRandom(rng)
+    }
+
+    const noisyX = x + sigma * gaussian()
+    const noisyY = y + sigma * gaussian()
+
+    if (!kalman) {
+      const p0 = sigma > 0 ? sigma * sigma : 1
+      kalman = {
+        x: [x, y, 0, 0],
+        P: [
+          [p0, 0, 0, 0],
+          [0, p0, 0, 0],
+          [0, 0, INITIAL_VELOCITY_VARIANCE, 0],
+          [0, 0, 0, INITIAL_VELOCITY_VARIANCE]
+        ]
+      }
+    }
+    kalman = VM.filters.kalman2DStep(mathjs, kalman, [noisyX, noisyY], {R, Q})
+    const kalmanPoint = {x: kalman.x[0], y: kalman.x[1]}
+
+    drawDot(right.ctx, noisyX, noisyY, 2.5, colors.noisy)
+    if (rightLast) drawSegment(right.ctx, rightLast, kalmanPoint, colors.kalman)
+    drawDot(right.ctx, kalmanPoint.x, kalmanPoint.y, 2, colors.kalman)
+    rightLast = kalmanPoint
+
+    lastSampleTime = now
+  }
+
+  const startStroke = (x, y) => {
+    isDrawing = true
+    leftLast = null
+    rightLast = null
+    lastSampleTime = null
+    kalman = null
+    left.placeholder.style.display = "none"
+    right.placeholder.style.display = "none"
+    drawTruePoint(x, y)
+    sampleAt(x, y, performance.now())
+  }
+
+  const endStroke = () => {
+    isDrawing = false
+  }
+
+  // Clears both canvases' pixel buffers, ends any in-progress stroke, and
+  // drops the noise generator/Kalman state so the next stroke starts
+  // completely fresh (same as a freshly-loaded page).
+  const resetCanvases = () => {
+    left.ctx.clearRect(0, 0, left.canvas.clientWidth, left.canvas.clientHeight)
+    right.ctx.clearRect(0, 0, right.canvas.clientWidth, right.canvas.clientHeight)
+    left.placeholder.style.display = "flex"
+    right.placeholder.style.display = "flex"
+    isDrawing = false
+    leftLast = null
+    rightLast = null
+    lastSampleTime = null
+    gaussian = null
+    kalman = null
+  }
+
+  left.canvas.addEventListener("mousedown", (e) => startStroke(e.offsetX, e.offsetY))
+  left.canvas.addEventListener("mouseup", endStroke)
+  left.canvas.addEventListener("mouseleave", endStroke)
+  left.canvas.addEventListener("mousemove", (e) => {
+    if (!isDrawing || !latestParams) return
+    const x = e.offsetX
+    const y = e.offsetY
+    drawTruePoint(x, y)
+    const now = performance.now()
+    if (lastSampleTime === null || now - lastSampleTime >= SAMPLE_INTERVAL_MS) {
+      sampleAt(x, y, now)
+    }
+  })
+
+  return (params) => {
+    const shouldReset = latestParams && params.resetTrigger !== latestParams.resetTrigger
+    latestParams = params
+    if (shouldReset) resetCanvases()
+    return outer
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+sim({sigma: liveNoise.sigma, R: filterMatrices.R, Q: filterMatrices.Q, resetTrigger})
+```
+
+</div>
+
+### Covariance matrices
+
+$$
+\mathbf{R} = \begin{pmatrix} R & 0 \\ 0 & R \end{pmatrix}, \qquad
+\mathbf{Q} = Q \begin{pmatrix} 1/4 & 0 & 1/2 & 0 \\ 0 & 1/4 & 0 & 1/2 \\ 1/2 & 0 & 1 & 0 \\ 0 & 1/2 & 0 & 1 \end{pmatrix}
+$$
+
+$\mathbf{R}$ is how much measurement noise the filter *assumes* is in each incoming $(x, y)$ point -- it should match $\sigma^2$, the noise actually being added. $\mathbf{Q}$ is how much the filter lets its own velocity estimate drift between samples (the standard discrete white-noise-acceleration model, coupling each axis's position and velocity uncertainty). Note that $\sigma$ itself never enters the filter directly -- it only controls how noisy the measurements shown on the right canvas are; $R$ and $Q$ are the filter's own beliefs about the world, which you're free to mistune.
+
+## Examples
+
+Click a card, then draw on the left canvas above.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?sigma=15&R=225&Q=15">
+    <div class="example-card-title">Well-tuned</div>
+    <div class="example-card-formula">σ = 15px, R = 225, Q = 15</div>
+    <div class="example-card-text">R matched to σ² and Q large enough to keep up with hand motion -- the reconstruction tracks your drawing tightly with only a slight lag on sharp turns.</div>
+  </a>
+
+  <a class="example-card" href="?sigma=15&R=4&Q=15">
+    <div class="example-card-title">R too low -- jittery</div>
+    <div class="example-card-formula">Same noise, R = 4 instead of 225</div>
+    <div class="example-card-text">R this small tells the filter to trust each noisy measurement almost exactly -- the reconstruction jitters across the noise instead of smoothing it out.</div>
+  </a>
+
+  <a class="example-card" href="?sigma=15&R=3000&Q=15">
+    <div class="example-card-title">R too high -- sluggish</div>
+    <div class="example-card-formula">Same noise, R = 3000 instead of 225</div>
+    <div class="example-card-text">R this large tells the filter to distrust every measurement -- the reconstruction barely moves, lagging far behind wherever you actually draw.</div>
+  </a>
+
+  <a class="example-card" href="?sigma=15&R=225&Q=0.5">
+    <div class="example-card-title">Q too low -- cuts corners</div>
+    <div class="example-card-formula">Same noise, Q = 0.5 instead of 15</div>
+    <div class="example-card-text">Q this small can't keep re-adjusting the velocity estimate on quick direction changes -- try a fast zigzag and watch the reconstruction round it into smooth curves instead.</div>
+  </a>
+
+  <a class="example-card" href="?sigma=15&R=225&Q=200">
+    <div class="example-card-title">Q too high -- no smoothing</div>
+    <div class="example-card-formula">Same noise, Q = 200 instead of 15</div>
+    <div class="example-card-text">Q this large lets the filter's estimate swing with almost every new measurement -- the red reconstruction nearly overlaps the noisy gray dots instead of averaging them out.</div>
+  </a>
+
+  <a class="example-card" href="?sigma=50&R=2500&Q=15">
+    <div class="example-card-title">High noise, well-tuned</div>
+    <div class="example-card-formula">σ = 50px, R = 2500, Q = 15</div>
+    <div class="example-card-text">A much noisier sensor, but R still matched to σ² -- the noisy dots scatter widely, yet the filter still recovers a clean version of whatever you draw.</div>
+  </a>
+
+</div>
+```

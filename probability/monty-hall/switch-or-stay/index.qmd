@@ -26,19 +26,38 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// newGame: deals a fresh round for the given door count — a random car
-// door and the phase reset to "pick". Nothing is opened until the player
-// picks (see openHostDoors), matching how the real game show works:
-// the host only reveals goats after you've committed to an initial choice.
-function newGame(doorCount) {
+// pickCarDoors: chooses carCount distinct doors (out of doorCount) to hide
+// cars behind, uniformly at random.
+function pickCarDoors(doorCount, carCount) {
+  const pool = []
+  for (let i = 0; i < doorCount; i++) pool.push(i)
+  const carDoors = []
+  for (let i = 0; i < carCount; i++) {
+    const idx = Math.floor(Math.random() * pool.length)
+    carDoors.push(pool[idx])
+    pool.splice(idx, 1)
+  }
+  return carDoors
+}
+```
+
+```{ojs}
+//| output: false
+// newGame: deals a fresh round for the given door/car counts — random car
+// doors and the phase reset to "pick". Nothing is opened until the player
+// picks (see openHostDoors), matching how the real game show works: the
+// host only reveals goats after you've committed to an initial choice.
+function newGame(doorCount, carCount) {
   return {
     doorCount,
-    carDoor: Math.floor(Math.random() * doorCount),
+    carCount,
+    carDoors: pickCarDoors(doorCount, carCount),
     phase: "pick",
     pickedDoor: null,
     openedDoors: [],
-    remainingDoor: null,
+    remainingDoors: [],
     decision: null,
+    finalDoor: null,
     won: null
   }
 }
@@ -46,33 +65,40 @@ function newGame(doorCount) {
 
 ```{ojs}
 //| output: false
-// openHostDoors: the host opens every goat door except the picked door and
-// one other, leaving exactly two doors closed no matter how many doors the
-// game started with — the pick, and this "remaining" door. If the pick
-// itself is the car, the host has doorCount - 1 goats to choose from and
-// picks which one stays closed uniformly at random; if the pick is a goat,
-// the car is the only door the host can't open, so it's forced to be the
-// remaining door. This is the standard generalization of the classic
-// 3-door problem to N doors.
-function openHostDoors(doorCount, carDoor, pickedDoor) {
-  const otherGoats = []
-  for (let i = 0; i < doorCount; i++) {
-    if (i !== pickedDoor && i !== carDoor) otherGoats.push(i)
-  }
+// openHostDoors: the host always leaves exactly carCount doors closed
+// besides the pick, and opens every other non-picked door — always a
+// goat, never a car. Which doors end up "remaining" (closed but not
+// picked) depends on whether the pick itself is a car:
+//   - pick is a car: the other (carCount - 1) cars must stay closed (the
+//     host can never open a car), plus the host leaves one more goat
+//     closed, chosen at random, to keep the remaining-door count the same
+//     either way.
+//   - pick is a goat: every car is elsewhere and none of them can be
+//     opened, so all carCount cars are exactly the remaining doors — the
+//     host has no choice at all here, same as the classic 3-door version.
+// This reduces to the classic single-car openHostDoors when carCount is 1.
+function openHostDoors(doorCount, carCount, carDoors, pickedDoor) {
+  const pickedIsCar = carDoors.includes(pickedDoor)
 
-  let remainingDoor
-  if (pickedDoor === carDoor) {
-    remainingDoor = otherGoats[Math.floor(Math.random() * otherGoats.length)]
+  let remainingDoors
+  if (pickedIsCar) {
+    const otherCars = carDoors.filter((d) => d !== pickedDoor)
+    const goatsElsewhere = []
+    for (let i = 0; i < doorCount; i++) {
+      if (i !== pickedDoor && !carDoors.includes(i)) goatsElsewhere.push(i)
+    }
+    const extraGoat = goatsElsewhere[Math.floor(Math.random() * goatsElsewhere.length)]
+    remainingDoors = [...otherCars, extraGoat]
   } else {
-    remainingDoor = carDoor
+    remainingDoors = [...carDoors]
   }
 
   const openedDoors = []
   for (let i = 0; i < doorCount; i++) {
-    if (i !== pickedDoor && i !== remainingDoor) openedDoors.push(i)
+    if (i !== pickedDoor && !remainingDoors.includes(i)) openedDoors.push(i)
   }
 
-  return {openedDoors, remainingDoor}
+  return {openedDoors, remainingDoors}
 }
 ```
 
@@ -80,13 +106,17 @@ function openHostDoors(doorCount, carDoor, pickedDoor) {
 //| output: false
 // simulateRound: plays one full round with a fixed strategy end to end, no
 // UI involved — used by the "simulate more rounds" buttons to generate
-// many instant trials for the law-of-large-numbers convergence plot.
-function simulateRound(doorCount, strategy) {
-  const carDoor = Math.floor(Math.random() * doorCount)
+// many instant trials for the law-of-large-numbers convergence plot. When
+// switching with more than one remaining door, the simulated player picks
+// among them uniformly at random — by symmetry every remaining door has
+// the same win probability, so this is representative of "switch" as a
+// strategy rather than any one specific door choice.
+function simulateRound(doorCount, carCount, strategy) {
+  const carDoors = pickCarDoors(doorCount, carCount)
   const pickedDoor = Math.floor(Math.random() * doorCount)
-  const {remainingDoor} = openHostDoors(doorCount, carDoor, pickedDoor)
-  const finalDoor = strategy === "switch" ? remainingDoor : pickedDoor
-  return {doorCount, pickedDoor, carDoor, decision: strategy, won: finalDoor === carDoor, source: "simulated"}
+  const {remainingDoors} = openHostDoors(doorCount, carCount, carDoors, pickedDoor)
+  const finalDoor = strategy === "switch" ? remainingDoors[Math.floor(Math.random() * remainingDoors.length)] : pickedDoor
+  return {doorCount, carCount, pickedDoor, carDoors, decision: strategy, finalDoor, won: carDoors.includes(finalDoor), source: "simulated"}
 }
 ```
 
@@ -110,6 +140,20 @@ initialDoorCount = {
 }
 ```
 
+```{ojs}
+//| output: false
+// initialCarCount: clamped against initialDoorCount so a stale ?cars= from
+// a link made at a different door count can't leave too few goats to
+// reveal (need at least one door left for the host to open).
+initialCarCount = {
+  const params = new URLSearchParams(window.location.search)
+  const parsed = Number(params.get("cars"))
+  const maxCars = initialDoorCount - 2
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > maxCars) return 1
+  return Math.round(parsed)
+}
+```
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -120,22 +164,34 @@ viewof doorCount = {
 }
 ```
 
+```{ojs}
+// viewof carCount: the host always needs at least one goat door to open,
+// so the number of cars can never exceed doorCount - 2 (leaving room for
+// the pick and one goat reveal, same lower bound used elsewhere here).
+viewof carCount = {
+  const input = Inputs.range([1, Math.max(1, doorCount - 2)], {step: 1, value: Math.min(initialCarCount, Math.max(1, doorCount - 2)), label: "Number of cars"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
 </div>
 
 ```{ojs}
 //| output: false
-// urlSync: mirrors the current door count into the URL's query string on
-// every change, so the address bar stays a shareable link.
+// urlSync: mirrors the current door/car counts into the URL's query
+// string on every change, so the address bar stays a shareable link.
 urlSync = {
   const params = new URLSearchParams(window.location.search)
   params.set("doors", String(doorCount))
+  params.set("cars", String(carCount))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 }
 ```
 
 ```{ojs}
 //| output: false
-mutable gameState = newGame(initialDoorCount)
+mutable gameState = newGame(initialDoorCount, initialCarCount)
 ```
 
 ```{ojs}
@@ -145,11 +201,13 @@ mutable rounds = []
 
 ```{ojs}
 //| output: false
-// Resets to a fresh round whenever the door-count slider moves, since the
-// previous game's door indices wouldn't make sense at a different count.
+// Resets to a fresh round whenever the door-count or car-count slider
+// moves, since the previous game's door indices wouldn't make sense at
+// different counts.
 {
   doorCount
-  mutable gameState = newGame(doorCount)
+  carCount
+  mutable gameState = newGame(doorCount, carCount)
 }
 ```
 
@@ -176,7 +234,7 @@ doorRow = {
 
     const isOpened = state.openedDoors.includes(i)
     const isPicked = state.pickedDoor === i
-    const isRemaining = state.remainingDoor === i
+    const isRemaining = state.remainingDoors.includes(i)
     const showResult = state.phase === "result"
 
     let icon = "🚪"
@@ -184,8 +242,8 @@ doorRow = {
       icon = "🐐"
       doorEl.classList.add("monty-hall-door-goat")
     } else if (showResult) {
-      icon = i === state.carDoor ? "🚗" : "🐐"
-      doorEl.classList.add(i === state.carDoor ? "monty-hall-door-car" : "monty-hall-door-goat")
+      icon = state.carDoors.includes(i) ? "🚗" : "🐐"
+      doorEl.classList.add(state.carDoors.includes(i) ? "monty-hall-door-car" : "monty-hall-door-goat")
     }
 
     if (isPicked) doorEl.classList.add("monty-hall-door-picked")
@@ -197,8 +255,8 @@ doorRow = {
     doorEl.onclick = () => {
       const current = mutable gameState
       if (current.phase !== "pick") return
-      const {openedDoors, remainingDoor} = openHostDoors(current.doorCount, current.carDoor, i)
-      mutable gameState = {...current, phase: "decide", pickedDoor: i, openedDoors, remainingDoor}
+      const {openedDoors, remainingDoors} = openHostDoors(current.doorCount, current.carCount, current.carDoors, i)
+      mutable gameState = {...current, phase: "decide", pickedDoor: i, openedDoors, remainingDoors}
     }
 
     container.appendChild(doorEl)
@@ -217,13 +275,15 @@ controlsPanel = {
   const container = document.createElement("div")
   container.className = "ojs-panel"
 
-  const decide = (choice) => {
+  // decide: choice is "stay" or "switch"; finalDoor is the picked door for
+  // "stay", or whichever remaining door the player clicked for "switch"
+  // (there can be several once carCount > 1).
+  const decide = (choice, finalDoor) => {
     const current = mutable gameState
-    const finalDoor = choice === "switch" ? current.remainingDoor : current.pickedDoor
-    const won = finalDoor === current.carDoor
-    const round = {doorCount: current.doorCount, pickedDoor: current.pickedDoor, carDoor: current.carDoor, decision: choice, won, source: "played"}
+    const won = current.carDoors.includes(finalDoor)
+    const round = {doorCount: current.doorCount, carCount: current.carCount, pickedDoor: current.pickedDoor, carDoors: current.carDoors, decision: choice, finalDoor, won, source: "played"}
     mutable rounds = [...mutable rounds, round]
-    mutable gameState = {...current, phase: "result", decision: choice, won}
+    mutable gameState = {...current, phase: "result", decision: choice, finalDoor, won}
   }
 
   if (state.phase === "pick") {
@@ -231,7 +291,8 @@ controlsPanel = {
   } else if (state.phase === "decide") {
     const msg = document.createElement("p")
     const openedCount = state.openedDoors.length
-    msg.innerHTML = `You picked <strong>Door ${state.pickedDoor + 1}</strong>. The host opened ${openedCount} goat door${openedCount === 1 ? "" : "s"}, leaving <strong>Door ${state.remainingDoor + 1}</strong> closed besides yours.`
+    const remainingLabel = state.remainingDoors.map((d) => `Door ${d + 1}`).join(", ")
+    msg.innerHTML = `You picked <strong>Door ${state.pickedDoor + 1}</strong>. The host opened ${openedCount} goat door${openedCount === 1 ? "" : "s"}, leaving <strong>${remainingLabel}</strong> closed besides yours.`
     container.appendChild(msg)
 
     const buttonRow = document.createElement("div")
@@ -240,25 +301,28 @@ controlsPanel = {
     const stayBtn = document.createElement("button")
     stayBtn.className = "btn btn-outline-primary"
     stayBtn.textContent = `Stay with Door ${state.pickedDoor + 1}`
-    stayBtn.onclick = () => decide("stay")
+    stayBtn.onclick = () => decide("stay", state.pickedDoor)
+    buttonRow.append(stayBtn)
 
-    const switchBtn = document.createElement("button")
-    switchBtn.className = "btn btn-primary"
-    switchBtn.textContent = `Switch to Door ${state.remainingDoor + 1}`
-    switchBtn.onclick = () => decide("switch")
+    for (const d of state.remainingDoors) {
+      const switchBtn = document.createElement("button")
+      switchBtn.className = "btn btn-primary"
+      switchBtn.textContent = `Switch to Door ${d + 1}`
+      switchBtn.onclick = () => decide("switch", d)
+      buttonRow.append(switchBtn)
+    }
 
-    buttonRow.append(stayBtn, switchBtn)
     container.appendChild(buttonRow)
   } else if (state.phase === "result") {
     const msg = document.createElement("p")
     const outcome = state.won ? "🎉 You won the car!" : "🐐 That was a goat."
-    msg.innerHTML = `<strong>${outcome}</strong> You chose to <strong>${state.decision}</strong>.`
+    msg.innerHTML = `<strong>${outcome}</strong> You chose to <strong>${state.decision}</strong> (Door ${state.finalDoor + 1}).`
     container.appendChild(msg)
 
     const againBtn = document.createElement("button")
     againBtn.className = "btn btn-primary"
     againBtn.textContent = "Play again"
-    againBtn.onclick = () => { mutable gameState = newGame(state.doorCount) }
+    againBtn.onclick = () => { mutable gameState = newGame(state.doorCount, state.carCount) }
     container.appendChild(againBtn)
   }
 
@@ -291,7 +355,7 @@ stats = {
 html`<div class="ojs-panel">
   <strong>Your play:</strong> stayed ${stats.played.stayTotal} time${stats.played.stayTotal === 1 ? "" : "s"} (won ${formatPct(stats.played.stayWins, stats.played.stayTotal)}), switched ${stats.played.switchTotal} time${stats.played.switchTotal === 1 ? "" : "s"} (won ${formatPct(stats.played.switchWins, stats.played.switchTotal)}).<br>
   <strong>Including simulated rounds:</strong> stay win rate ${formatPct(stats.all.stayWins, stats.all.stayTotal)} over ${stats.all.stayTotal} rounds, switch win rate ${formatPct(stats.all.switchWins, stats.all.switchTotal)} over ${stats.all.switchTotal} rounds.<br>
-  <strong>Theoretical, at ${doorCount} doors:</strong> stay ${formatPct(1, doorCount)}, switch ${formatPct(doorCount - 1, doorCount)}.
+  <strong>Theoretical, at ${doorCount} doors and ${carCount} car${carCount === 1 ? "" : "s"}:</strong> stay ${formatPct(carCount, doorCount)}, switch ${formatPct(doorCount - carCount, doorCount * carCount)}.
 </div>`
 ```
 
@@ -316,7 +380,7 @@ statsControls = {
   const simulate = (n) => {
     const batch = []
     for (let i = 0; i < n; i++) {
-      batch.push(simulateRound(doorCount, i % 2 === 0 ? "stay" : "switch"))
+      batch.push(simulateRound(doorCount, carCount, i % 2 === 0 ? "stay" : "switch"))
     }
     mutable rounds = [...mutable rounds, ...batch]
   }
@@ -358,14 +422,14 @@ convergencePlot = {
 
   const stayName = "Stay"
   const switchName = "Switch"
-  const stayTheoryName = `Theoretical stay (1/${doorCount})`
-  const switchTheoryName = `Theoretical switch (${doorCount - 1}/${doorCount})`
+  const stayTheoryName = `Theoretical stay (${carCount}/${doorCount})`
+  const switchTheoryName = `Theoretical switch (${doorCount - carCount}/${doorCount * carCount})`
   const colorDomain = [stayName, switchName, stayTheoryName, switchTheoryName]
   const colorRange = ["#dc2626", "#16a34a", "#fca5a5", "#86efac"]
 
   const marks = [
-    Plot.ruleY([1 / doorCount], {stroke: () => stayTheoryName, strokeDasharray: "4,3"}),
-    Plot.ruleY([(doorCount - 1) / doorCount], {stroke: () => switchTheoryName, strokeDasharray: "4,3"}),
+    Plot.ruleY([carCount / doorCount], {stroke: () => stayTheoryName, strokeDasharray: "4,3"}),
+    Plot.ruleY([(doorCount - carCount) / (doorCount * carCount)], {stroke: () => switchTheoryName, strokeDasharray: "4,3"}),
     Plot.lineY(stayRows, {x: "x", y: "y", stroke: () => stayName}),
     Plot.lineY(switchRows, {x: "x", y: "y", stroke: () => switchName})
   ]
@@ -400,12 +464,13 @@ roundHistoryTable = {
   const rows = []
   for (let i = 0; i < rounds.length; i++) {
     const r = rounds[i]
-    rows.push([i + 1, r.doorCount, r.pickedDoor + 1, r.carDoor + 1, r.decision, r.won ? "Won" : "Lost", r.source])
+    const carDoorsLabel = r.carDoors.map((d) => d + 1).join(", ")
+    rows.push([i + 1, r.doorCount, r.carCount, r.pickedDoor + 1, carDoorsLabel, r.decision, r.finalDoor + 1, r.won ? "Won" : "Lost", r.source])
   }
 
   return VM.ui.renderTable({
     html,
-    headers: ["#", "Doors", "Picked", "Car door", "Decision", "Result", "Source"],
+    headers: ["#", "Doors", "Cars", "Picked", "Car doors", "Decision", "Final door", "Result", "Source"],
     filename: "monty-hall-rounds.csv",
     rows
   })
@@ -419,3 +484,22 @@ roundHistoryTable = {
 Your first pick has a $1/N$ chance of hiding the car, for $N$ doors — that never changes, no matter what the host does afterward. What changes is the *other* doors: together they started out holding the remaining $(N-1)/N$ probability, and the host's reveals don't spread that probability back out evenly — they collapse all of it onto the single door left closed, because the host's choice is never random. The host always knows where the car is, and always opens goats. Switching lets you trade your original $1/N$ chance for that door's $(N-1)/N$ chance.
 
 This is why the effect gets more dramatic as $N$ grows: at 3 doors, switching wins $2/3$ of the time versus $1/3$ for staying — a noticeable but not overwhelming edge. Push the slider up to 10 doors and switching wins $9/10$ of the time while staying wins just $1/10$ — the host revealing 8 goats one by one is a lot of information, and all of it piles onto that one remaining door. Run a few thousand simulated rounds at each end of the slider and watch the convergence plot's two lines settle almost immediately onto their theoretical values, while your own manual plays (fewer, so noisier) drift around the same lines.
+
+The "Number of cars" slider generalizes the puzzle further: with $C$ cars among $N$ doors, the host still only ever opens goat doors, and always leaves exactly $C$ doors closed besides your pick — your own pick, plus every other closed door, are the two groups probability is split between. Switching now means choosing among several genuinely distinct remaining doors instead of just one.
+
+## Deriving it with Bayes' rule
+
+Let $W$ be the event "the car is behind the door you originally picked," and let $H$ be the event "the host opens exactly the doors it opened." Bayes' rule relates the two:
+
+$$
+P(W \mid H) \;=\; \frac{P(H \mid W)\,P(W)}{P(H \mid W)\,P(W) \;+\; P(H \mid W^c)\,P(W^c)}
+$$
+
+Each piece has a concrete meaning in this game:
+
+- $P(W)$ — your prior odds of having picked a car door, before any doors open. This only depends on how many of the $N$ doors hide the $C$ cars.
+- $P(W^c) = 1 - P(W)$ — the odds your pick is a goat.
+- $P(H \mid W)$ — given your pick *is* a car, the chance the host reveals this particular set of goat doors. Here the host has some freedom in which doors to leave closed among the goats.
+- $P(H \mid W^c)$ — given your pick is a *goat*, the chance the host reveals this same set. Here the host has less freedom, since every car must stay behind a closed door.
+
+Work out these four quantities for whatever $N$ and $C$ you've set on the sliders above, substitute them into the formula, and compare $P(W \mid H)$ — your win probability if you stay — to the running win rates in the stats panel and convergence plot. That comparison is Bayes' rule producing the exact number the simulation converges to.

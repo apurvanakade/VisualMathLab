@@ -9,6 +9,7 @@ categories:
   - Unsupervised Learning
   - K-Means
   - Lloyd's Algorithm
+  - MacQueen's Algorithm
 ---
 
 <!--
@@ -27,16 +28,24 @@ VM = window.VM
 //| output: false
 // URL preset helpers for examples.
 // Supported query parameters:
+//   mode    "batch" (Lloyd's algorithm) or "online" (sequential/MacQueen)
 //   k       number of clusters k-means looks for
 //   groups  true number of Gaussian blobs the data was generated from
 //   spread  standard deviation of each blob
-//   seed    random seed for the data draw and centroid initialization
-//   max     maximum iterations
+//   seed    random seed for the data draw, point arrival order, and centroid initialization
+//   max     maximum iterations (batch mode only)
 urlParams = new URLSearchParams(window.location.search)
 
 maxK = 8
 maxTrueGroups = 8
 pointsPerGroup = 20
+
+modeOptions = ["Batch (Lloyd's)", "Online (sequential)"]
+
+initialMode = {
+  const raw = (urlParams.get("mode") ?? "").toLowerCase()
+  return raw === "online" ? "Online (sequential)" : "Batch (Lloyd's)"
+}
 
 initialK = {
   const raw = Number(urlParams.get("k"))
@@ -60,6 +69,24 @@ initialSeed = {
 
 initialMax = urlParams.get("max") ?? "20"
 ```
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+// viewof mode: Batch (Lloyd's algorithm — the version implemented earlier)
+// alternates a full assignment pass and a full centroid-update pass over
+// every point, repeated to convergence. Online (sequential/MacQueen's
+// algorithm, the version the name "k-means" originally comes from) instead
+// feeds points in one at a time, updating one centroid's running mean
+// immediately after each point arrives — see the formula section below.
+viewof mode = {
+  const input = Inputs.radio(modeOptions, {value: initialMode, label: "Algorithm"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
+</div>
 
 <div class="ojs-panel ojs-row">
 
@@ -124,8 +151,12 @@ viewof stepControl = {
 ```
 
 ```{ojs}
+// maxIterationsInput only bounds Batch mode's assign/update loop — Online
+// mode runs exactly once through every point, so this field is ignored
+// there (but left visible/URL-synced so switching back to Batch keeps
+// whatever value was set).
 viewof maxIterationsInput = {
-  const input = Inputs.text({value: initialMax, label: "Max iterations", placeholder: "Example: 20, 5*4"})
+  const input = Inputs.text({value: initialMax, label: "Max iterations (batch)", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
   return input
 }
@@ -147,10 +178,11 @@ maxIterations = {
 
 ```{ojs}
 //| output: false
-// Keeps k, true groups, spread, seed, and max iterations shareable as the
-// reactive controls change.
+// Keeps mode, k, true groups, spread, seed, and max iterations shareable
+// as the reactive controls change.
 urlSyncControls = {
   const params = new URLSearchParams(window.location.search)
+  params.set("mode", mode === "Online (sequential)" ? "online" : "batch")
   params.set("k", String(k))
   params.set("groups", String(trueGroups))
   params.set("spread", String(spread))
@@ -205,7 +237,35 @@ points = {
 
 ```{ojs}
 //| output: false
-// result: runs Lloyd's algorithm (k-means) on the current points.
+// pointOrder: a fixed random arrival order for Online mode, reshuffled
+// whenever the seed changes or new points are drawn — but NOT when k
+// changes, since which point arrives when shouldn't depend on how many
+// clusters you're asking for.
+pointOrder = {
+  const rand = VM.sampling.seededRandom((Math.floor(seedValue) + regenerateTrigger * 1000003 + 424243) >>> 0)
+  const order = []
+  for (let i = 0; i < points.length; i++) order.push(i)
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    const tmp = order[i]
+    order[i] = order[j]
+    order[j] = tmp
+  }
+  return order
+}
+```
+
+```{ojs}
+//| output: false
+distSq = (a, b) => {
+  const dx = a.x - b.x, dy = a.y - b.y
+  return dx * dx + dy * dy
+}
+```
+
+```{ojs}
+//| output: false
+// runBatchKMeans: Lloyd's algorithm.
 //   rows — array of { iter, centroids, assignments, inertia, reassigned },
 //   one entry per iteration. `centroids`/`assignments` are the state used
 //   to produce that row (i.e. the centroids the assignment step read from),
@@ -213,14 +273,7 @@ points = {
 //   x_{n+1} — so the step slider shows "here's what iteration n saw."
 //   Stops early once no point's assignment changes from the previous
 //   iteration (converged), or at maxIterations.
-result = {
-  if (points.length === 0 || k < 1) return {rows: []}
-
-  const distSq = (a, b) => {
-    const dx = a.x - b.x, dy = a.y - b.y
-    return dx * dx + dy * dy
-  }
-
+function runBatchKMeans(points, k, maxIterations, seedValue, regenerateTrigger) {
   // Initial centroids: k distinct data points, chosen with a seeded RNG of
   // its own (not a continuation of basePoints' RNG) so changing k always
   // starts from a reproducible draw rather than just extending whatever
@@ -303,6 +356,93 @@ result = {
 
 ```{ojs}
 //| output: false
+// runOnlineKMeans: sequential/online k-means (MacQueen's original 1967
+// algorithm — the one the name "k-means" comes from). The first k points
+// to arrive (in `order`) become their own singleton centroids directly;
+// every later point is assigned to its nearest *current* centroid and
+// immediately folded into that centroid's running mean via the
+// incremental-average update μ ← μ + (x − μ)/n. Unlike Lloyd's algorithm,
+// a point's assignment is never revisited once made — this single pass is
+// the whole algorithm, and it's why the result depends on arrival order.
+//   rows — array of { iter, pointIndex, centroids, assignments, inertia,
+//   displacement }. Row 0 is the initialization state (only the first k
+//   points assigned, everything else unseen — assignments hold -1 for
+//   points not yet seen); each later row is the state right after one more
+//   point arrived and joined a cluster.
+function runOnlineKMeans(points, k, order) {
+  const n = points.length
+  if (n < k) return {rows: []}
+
+  const centroids = []
+  const counts = []
+  const assignments = new Array(n).fill(-1)
+
+  for (let c = 0; c < k; c++) {
+    const idx = order[c]
+    centroids.push({x: points[idx].x, y: points[idx].y})
+    counts.push(1)
+    assignments[idx] = c
+  }
+
+  const rows = [{
+    iter: 0,
+    pointIndex: order[k - 1],
+    centroids: centroids.map(c => ({x: c.x, y: c.y})),
+    assignments: assignments.slice(),
+    inertia: 0,
+    displacement: 0
+  }]
+
+  let cumulativeInertia = 0
+  for (let step = k; step < n; step++) {
+    const idx = order[step]
+    const p = points[idx]
+
+    let best = 0, bestDist = Infinity
+    for (let c = 0; c < k; c++) {
+      const d = distSq(p, centroids[c])
+      if (d < bestDist) {
+        bestDist = d
+        best = c
+      }
+    }
+
+    const before = {x: centroids[best].x, y: centroids[best].y}
+    counts[best]++
+    centroids[best] = {
+      x: before.x + (p.x - before.x) / counts[best],
+      y: before.y + (p.y - before.y) / counts[best]
+    }
+    const displacement = Math.sqrt(distSq(before, centroids[best]))
+
+    assignments[idx] = best
+    cumulativeInertia += bestDist
+
+    rows.push({
+      iter: rows.length,
+      pointIndex: idx,
+      centroids: centroids.map(c => ({x: c.x, y: c.y})),
+      assignments: assignments.slice(),
+      inertia: cumulativeInertia,
+      displacement
+    })
+  }
+
+  return {rows}
+}
+```
+
+```{ojs}
+//| output: false
+result = {
+  if (points.length === 0 || k < 1) return {rows: []}
+  if (mode === "Online (sequential)") return runOnlineKMeans(points, k, pointOrder)
+  return runBatchKMeans(points, k, maxIterations, seedValue, regenerateTrigger)
+}
+```
+
+```{ojs}
+//| output: false
 // setup: which row is visible at the current step, and fixed axis ranges
 // computed from all points so the axes don't rescale as the step changes.
 setup = {
@@ -342,13 +482,26 @@ stepStatus = {
   if (!setup.row) return html`<div class="ojs-panel">No points to cluster — try regenerating.</div>`
 
   const row = setup.row
+  const totalSteps = result.rows.length - 1
+
+  if (mode === "Online (sequential)") {
+    let text
+    if (row.iter === 0) {
+      const unseen = points.length - k
+      text = `Initialized ${k} centroid${k === 1 ? "" : "s"} from the first ${k} point${k === 1 ? "" : "s"} to arrive. ${unseen} point${unseen === 1 ? "" : "s"} still unseen (shown in gray).`
+    } else {
+      text = `Point ${row.iter} of ${totalSteps} arrived and joined <strong>Cluster ${row.assignments[row.pointIndex] + 1}</strong>, moving that centroid by ${row.displacement.toFixed(3)}.`
+    }
+    return html`<div class="ojs-panel"><strong>Step ${row.iter}</strong> of ${totalSteps} — cumulative inertia over points seen so far: ${row.inertia.toFixed(2)}. ${text}</div>`
+  }
+
   const isLastRow = setup.row === result.rows[result.rows.length - 1]
   const converged = isLastRow && row.reassigned === 0 && result.rows.length > 1
 
   let moveText = `${row.reassigned} point${row.reassigned === 1 ? "" : "s"} changed cluster this step.`
   if (converged) moveText = "Converged — no points changed cluster this step."
 
-  return html`<div class="ojs-panel"><strong>Iteration ${row.iter}</strong> of ${result.rows.length - 1} — inertia (sum of squared distances to assigned centroid): ${row.inertia.toFixed(2)}. ${moveText}</div>`
+  return html`<div class="ojs-panel"><strong>Iteration ${row.iter}</strong> of ${totalSteps} — inertia (sum of squared distances to assigned centroid): ${row.inertia.toFixed(2)}. ${moveText}</div>`
 }
 ```
 
@@ -369,10 +522,23 @@ mainPlot = {
     if (row) {
       const byCluster = []
       for (let c = 0; c < row.centroids.length; c++) byCluster.push({xs: [], ys: []})
+      const unseenXs = [], unseenYs = []
       for (let i = 0; i < points.length; i++) {
         const c = row.assignments[i]
-        byCluster[c].xs.push(points[i].x)
-        byCluster[c].ys.push(points[i].y)
+        if (c === -1) {
+          unseenXs.push(points[i].x)
+          unseenYs.push(points[i].y)
+        } else {
+          byCluster[c].xs.push(points[i].x)
+          byCluster[c].ys.push(points[i].y)
+        }
+      }
+      if (unseenXs.length > 0) {
+        data.push({
+          x: unseenXs, y: unseenYs, type: "scatter", mode: "markers",
+          name: "Not yet seen", showlegend: true,
+          marker: {color: "#cbd5e1", size: 7, line: {color: "white", width: 0.5}}
+        })
       }
       for (let c = 0; c < byCluster.length; c++) {
         data.push({
@@ -439,15 +605,20 @@ mainPlot(setup)
 ::: {layout-ncol=2}
 
 ```{ojs}
-// iteratesPlot draws inertia (the k-means cost function) vs iteration for
-// the entire run — it doesn't depend on the current step, so it's just
-// plotted once per run. Lloyd's algorithm never increases inertia from one
-// iteration to the next.
+// iteratesPlot draws inertia (the k-means cost function) vs step for the
+// entire run — it doesn't depend on the current step, so it's just plotted
+// once per run. In Batch mode this is inertia over ALL points at each
+// iteration, and Lloyd's algorithm never increases it from one iteration
+// to the next. In Online mode this is CUMULATIVE inertia over just the
+// points seen so far, which generally rises as more points arrive — it's
+// not the same quantity, just the same name, so the axis label spells out
+// which one is showing.
 iteratesPlot = {
+  const isOnline = mode === "Online (sequential)"
   return Plot.plot({
     width: 340, height: 300, marginLeft: 46,
-    x: {label: "iteration"},
-    y: {label: "inertia (sum of squared distances)"},
+    x: {label: isOnline ? "points seen" : "iteration"},
+    y: {label: isOnline ? "cumulative inertia (points seen so far)" : "inertia (sum of squared distances)"},
     marks: [
       Plot.lineY(result.rows, {x: "iter", y: "inertia", stroke: "#2563eb"}),
       Plot.dot(result.rows, {x: "iter", y: "inertia", fill: "#2563eb", r: 4})
@@ -457,17 +628,22 @@ iteratesPlot = {
 ```
 
 ```{ojs}
-// convergencePlot draws how many points changed cluster at each iteration —
-// the natural stopping-criterion diagnostic for k-means, since the
-// algorithm has converged exactly when this hits zero.
+// convergencePlot: in Batch mode, how many points changed cluster at each
+// iteration — the natural stopping-criterion diagnostic, since the
+// algorithm has converged exactly when this hits zero. In Online mode
+// there's no "reassigned" count (a point's cluster is never revisited), so
+// this instead shows how far the just-updated centroid moved at each
+// step — trending toward zero as each centroid's running mean stabilizes.
 convergencePlot = {
+  const isOnline = mode === "Online (sequential)"
+  const yField = isOnline ? "displacement" : "reassigned"
   return Plot.plot({
     width: 340, height: 300, marginLeft: 46,
-    x: {label: "iteration"},
-    y: {label: "points reassigned"},
+    x: {label: isOnline ? "points seen" : "iteration"},
+    y: {label: isOnline ? "centroid displacement (this step)" : "points reassigned"},
     marks: [
-      Plot.lineY(result.rows, {x: "iter", y: "reassigned", stroke: "#dc2626"}),
-      Plot.dot(result.rows, {x: "iter", y: "reassigned", fill: "#dc2626", r: 4})
+      Plot.lineY(result.rows, {x: "iter", y: yField, stroke: "#dc2626"}),
+      Plot.dot(result.rows, {x: "iter", y: yField, fill: "#dc2626", r: 4})
     ]
   })
 }
@@ -488,16 +664,22 @@ iterationTable = {
     return document.createElement("div")
   }
 
+  const isOnline = mode === "Online (sequential)"
+  const headers = isOnline
+    ? ["Step", "Cumulative inertia (SSE)", "Centroid displacement"]
+    : ["Iteration", "Inertia (SSE)", "Points reassigned"]
+
   const rows = []
   for (const row of result.rows) {
-    rows.push([row.iter, row.inertia.toFixed(2), row.reassigned])
+    if (isOnline) rows.push([row.iter, row.inertia.toFixed(2), row.displacement.toFixed(4)])
+    else rows.push([row.iter, row.inertia.toFixed(2), row.reassigned])
   }
 
   return VM.ui.renderTable({
     html,
-    headers: ["Iteration", "Inertia (SSE)", "Points reassigned"],
-    csvHeaders: ["Iteration", "Inertia (SSE)", "Points reassigned"],
-    filename: "k-means-iterations.csv",
+    headers,
+    csvHeaders: headers,
+    filename: isOnline ? "k-means-online-steps.csv" : "k-means-iterations.csv",
     rows
   })
 }
@@ -520,11 +702,21 @@ where $z_i \in \{1, \dots, k\}$ is the cluster point $x_i$ is assigned to and $\
 
 Neither step can ever increase $J$, so the algorithm always converges — but only to a local minimum, and which one depends on where the centroids started.
 
+**Online (sequential) k-means** — MacQueen's original 1967 algorithm, the one the name "k-means" actually comes from — never makes a full pass over all the data at once. The first $k$ points to arrive become the initial centroids directly; every point after that is assigned to its nearest *current* centroid and immediately folded into that one centroid's running mean, with $n_c$ the number of points assigned to cluster $c$ so far (including this one):
+
+$$
+\mu_c \leftarrow \mu_c + \frac{1}{n_c}\big(x - \mu_c\big).
+$$
+
+A point's assignment, once made, is never revisited — there is no separate assignment/update pass, just one point at a time, once each. That's what makes the result depend on the order points arrive in, unlike Lloyd's algorithm.
+
 ## Why this matters
 
 The "Number of clusters (k)" slider is what k-means is told to look for; the "True number of groups" slider is what actually generated the data — they don't have to match. Set them equal with a small spread and k-means finds the obvious grouping almost immediately. Set k below the true number of groups and it's forced to merge two real groups into one; set it above and a real group gets split in two — both happen smoothly and confidently, with no warning from the algorithm itself that it picked the "wrong" number. Push the spread slider up until the blobs overlap and watch how a handful of points near the boundary flip back and forth between clusters over the first few iterations before settling down.
 
 K-means also has no memory of where it started: it always converges, but which local minimum it lands in depends on the initial centroids (here, k random data points). Click "Regenerate points" a few times at the same settings to see the same data occasionally cluster differently, purely from a different random start.
+
+Switch the "Algorithm" control to Online to watch the same data build up one point at a time instead: every point starts out gray ("not yet seen"), and each step colors in exactly one more point while its centroid takes one incremental step toward it. Because assignments are never revisited, points that happen to arrive early — before their centroid has seen enough of the real group to land in a sensible spot — can get stuck in the wrong cluster for good. Regenerating points changes both the data and the arrival order together (Online mode doesn't currently isolate one from the other), but running it a few times at the same settings still makes the order-dependence visible: the same true groups, clustered slightly differently each time.
 
 ## Examples
 
@@ -578,6 +770,22 @@ Click any example to load it into the app.
     <div class="example-card-formula">k = 6, true groups = 6, spread = 0.5</div>
     <div class="example-card-text">
       More clusters means more centroids competing for nearby points — watch the boundaries between neighboring clusters take a few extra iterations to settle.
+    </div>
+  </a>
+
+  <a class="example-card" href="?mode=online&k=3&groups=3&spread=0.6&seed=1">
+    <div class="example-card-title">Online: watch it build point by point</div>
+    <div class="example-card-formula">Online mode, k = 3, true groups = 3, spread = 0.6</div>
+    <div class="example-card-text">
+      Same well-separated data as the first example, but step through it one arriving point at a time and watch each centroid crawl toward its true center.
+    </div>
+  </a>
+
+  <a class="example-card" href="?mode=online&k=3&groups=3&spread=1.6&seed=9">
+    <div class="example-card-title">Online: an early point gets stuck</div>
+    <div class="example-card-formula">Online mode, k = 3, true groups = 3, spread = 1.6</div>
+    <div class="example-card-text">
+      With some overlap between groups, an early arrival can pull a centroid somewhere a little off — and since online k-means never revisits a past assignment, watch for a point that ends up in a cluster that doesn't look like the best fit in hindsight.
     </div>
   </a>
 

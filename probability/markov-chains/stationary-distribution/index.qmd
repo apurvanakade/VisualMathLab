@@ -1,0 +1,562 @@
+---
+title: "Converging to a Stationary Distribution"
+author: Dhruv Azad
+date: 2026-08-12
+order: 1
+categories:
+  - Probability
+  - Markov Chains
+  - Stochastic Processes
+  - Stationary Distribution
+  - Linear Algebra
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.sampling.seededRandom, VM.expressions.makeNumber, VM.ui.renderTable.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL preset helpers for examples.
+// Supported query parameters:
+//   n       number of states
+//   seed    random seed for the transition matrix draw
+//   start   starting state (1-indexed)
+//   max     maximum steps
+urlParams = new URLSearchParams(window.location.search)
+
+maxN = 6
+
+initialN = {
+  const raw = Number(urlParams.get("n"))
+  return Number.isInteger(raw) && raw >= 2 && raw <= maxN ? raw : 4
+}
+
+initialSeed = {
+  const raw = Number(urlParams.get("seed"))
+  return Number.isInteger(raw) && raw >= 0 ? raw : 11
+}
+
+initialStart = {
+  const raw = Number(urlParams.get("start"))
+  return Number.isInteger(raw) && raw >= 1 ? raw : 1
+}
+
+initialMax = urlParams.get("max") ?? "30"
+```
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof n = {
+  const input = Inputs.range([2, maxN], {step: 1, value: initialN, label: "Number of states"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
+```{ojs}
+viewof startStateNumber = {
+  const input = Inputs.range([1, n], {step: 1, value: Math.min(initialStart, n), label: "Starting state"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
+</div>
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof seedValue = {
+  const input = Inputs.number({value: initialSeed, min: 0, step: 1, label: "Random seed"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+```{ojs}
+// regenerateTrigger: clicking "Regenerate transition matrix" bumps this,
+// the only thing transitionMatrix depends on below — that's what makes a
+// fresh draw happen on click instead of only once at page load.
+viewof regenerateTrigger = {
+  const button = Inputs.button("Regenerate transition matrix", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof stepControl = {
+  const maxStep = Math.max(0, result.rows.length - 1)
+  const stepSlider = Inputs.range([0, maxStep], {step: 1, value: 0, label: "Step"})
+  stepSlider.classList.add("ojs-fill")
+  return stepSlider
+}
+```
+
+```{ojs}
+viewof maxStepsInput = {
+  const input = Inputs.text({value: initialMax, label: "Max steps", placeholder: "Example: 30, 5*6"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// maxSteps parses the Max field's expression, falling back to 30 for
+// invalid input so the step slider and result loop always get a usable bound.
+maxSteps = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxStepsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 30
+  return Math.max(1, Math.round(parsed))
+}
+```
+
+```{ojs}
+//| output: false
+startState = startStateNumber - 1
+```
+
+```{ojs}
+//| output: false
+// Keeps n, seed, starting state, and max steps shareable as the reactive
+// controls change.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("n", String(n))
+  params.set("seed", String(seedValue))
+  params.set("start", String(startStateNumber))
+  params.set("max", maxStepsInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// transitionMatrix: an n×n row-stochastic matrix (each row sums to 1),
+// drawn fresh whenever the seed, regenerate count, or n changes. Every
+// entry gets a +0.05 floor before normalizing so no transition probability
+// is ever exactly (or nearly) zero — this keeps the chain irreducible and
+// aperiodic (every state reachable from every other, no forced cycles),
+// which is exactly what guarantees a unique stationary distribution exists
+// and every starting state converges to it.
+transitionMatrix = {
+  regenerateTrigger
+  const rand = VM.sampling.seededRandom((Math.floor(seedValue) + regenerateTrigger * 1000003 + n * 131) >>> 0)
+  const rows = []
+  for (let i = 0; i < n; i++) {
+    const raw = []
+    let sum = 0
+    for (let j = 0; j < n; j++) {
+      const v = rand() + 0.05
+      raw.push(v)
+      sum += v
+    }
+    const row = []
+    for (let j = 0; j < n; j++) row.push(raw[j] / sum)
+    rows.push(row)
+  }
+  return rows
+}
+```
+
+```{ojs}
+//| output: false
+// statePositions: states placed evenly around a fixed circle — no
+// force-directed layout needed for a handful of nodes, just simple
+// trigonometry. Position i is at angle -90° + i * 360°/n, so state 1
+// starts at the top and the rest go clockwise.
+statePositions = {
+  const radius = 5
+  const positions = []
+  for (let i = 0; i < n; i++) {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / n
+    positions.push({x: radius * Math.cos(angle), y: radius * Math.sin(angle)})
+  }
+  return positions
+}
+```
+
+```{ojs}
+//| output: false
+// stepDistribution: one step of π ↦ πP — a row-vector/matrix product.
+function stepDistribution(dist, matrix) {
+  const size = matrix.length
+  const next = new Array(size).fill(0)
+  for (let i = 0; i < size; i++) {
+    const pi = dist[i]
+    if (pi === 0) continue
+    for (let j = 0; j < size; j++) next[j] += pi * matrix[i][j]
+  }
+  return next
+}
+```
+
+```{ojs}
+//| output: false
+// stationaryDistribution: the reference π* that result's rows are measured
+// against, found by power iteration — repeatedly applying π ↦ πP from a
+// neutral (uniform) start until it settles. This is the same power-
+// iteration idea used to find a dominant eigenvector elsewhere; here it's
+// converging to the left eigenvector of the transition matrix for
+// eigenvalue 1. Computed once per transitionMatrix, independent of
+// whatever starting state/step the controls above are set to.
+stationaryDistribution = {
+  let dist = new Array(n).fill(1 / n)
+  for (let t = 0; t < 500; t++) dist = stepDistribution(dist, transitionMatrix)
+  return dist
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs the chain from a one-hot distribution at the starting
+// state. rows[t].dist is the distribution AT step t (before the step-t→t+1
+// update is applied) — same "row records the state a step saw" convention
+// as Newton's method's x_n. rows[t].distance is the total variation
+// distance ‖dist − stationaryDistribution‖₁ at that step, used by the
+// convergence plot below.
+result = {
+  if (n < 1) return {rows: []}
+  const start = Math.min(Math.max(startState, 0), n - 1)
+  let dist = new Array(n).fill(0)
+  dist[start] = 1
+
+  const rows = []
+  for (let t = 0; t <= maxSteps; t++) {
+    let distance = 0
+    for (let i = 0; i < n; i++) distance += Math.abs(dist[i] - stationaryDistribution[i])
+    rows.push({t, dist: dist.slice(), distance})
+    dist = stepDistribution(dist, transitionMatrix)
+  }
+  return {rows}
+}
+```
+
+```{ojs}
+//| output: false
+setup = {
+  if (result.rows.length === 0) return {row: null}
+  const step = Math.min(Math.max(Math.round(Number(stepControl)), 0), result.rows.length - 1)
+  return {row: result.rows[step]}
+}
+```
+
+```{ojs}
+// stepStatus: a short line above the plot reporting the current step's
+// distance from the stationary distribution.
+stepStatus = {
+  if (!setup.row) return html`<div class="ojs-panel">No chain to show.</div>`
+  const row = setup.row
+  return html`<div class="ojs-panel"><strong>Step ${row.t}</strong> of ${result.rows.length - 1} — total variation distance to the stationary distribution: ${row.distance.toFixed(4)}.</div>`
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws the state graph: nodes placed on a fixed circle, sized
+// and colored by how much probability mass is currently there, with
+// directed edges (arrows) for every transition probability above a small
+// visibility threshold — width and opacity both scale with the
+// probability, so a dense, high-traffic edge reads as bold and a rare one
+// fades into the background instead of disappearing outright.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the step changes.
+// Note this factory closure only reads `Plotly`/`_plotDiv` — `row`,
+// `matrix`, and `positions` all arrive as call-time parameters instead of
+// being referenced directly from outer reactive cells, which is what lets
+// Plotly.react (not a fresh div) handle every update.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+  const edgeThreshold = 0.03
+
+  return ({row, matrix, positions}) => {
+    const data = []
+    const annotations = []
+
+    if (row) {
+      const size = positions.length
+
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          if (i === j) continue
+          const p = matrix[i][j]
+          if (p < edgeThreshold) continue
+          annotations.push({
+            x: positions[j].x, y: positions[j].y,
+            ax: positions[i].x, ay: positions[i].y,
+            xref: "x", yref: "y", axref: "x", ayref: "y",
+            showarrow: true, arrowhead: 2, arrowsize: 1,
+            arrowwidth: Math.max(1, p * 5),
+            opacity: Math.min(1, 0.25 + p * 0.75),
+            arrowcolor: "#64748b",
+            standoff: 16, startstandoff: 16
+          })
+        }
+      }
+
+      const xs = [], ys = [], sizes = [], colors = [], hoverTexts = [], labels = []
+      for (let i = 0; i < size; i++) {
+        xs.push(positions[i].x)
+        ys.push(positions[i].y)
+        const mass = row.dist[i]
+        sizes.push(24 + mass * 60)
+        colors.push(mass)
+        labels.push(String(i + 1))
+        hoverTexts.push(`State ${i + 1}<br>P(here) = ${mass.toFixed(3)}<br>P(stay) = ${matrix[i][i].toFixed(3)}`)
+      }
+
+      data.push({
+        x: xs, y: ys, type: "scatter", mode: "markers+text",
+        text: labels, textposition: "middle center", textfont: {color: "#111827", size: 13},
+        hovertext: hoverTexts, hoverinfo: "text",
+        marker: {
+          size: sizes, color: colors, colorscale: [[0, "#dbeafe"], [1, "#1d4ed8"]],
+          cmin: 0, cmax: 1, line: {color: "#111827", width: 1.5}
+        },
+        showlegend: false
+      })
+    }
+
+    const layout = {
+      margin: {l: 10, r: 10, t: 10, b: 10},
+      xaxis: {visible: false, range: [-7, 7]},
+      // scaleanchor/scaleratio lock the y-axis to the same scale as x, so
+      // the circular layout renders as an actual circle.
+      yaxis: {visible: false, range: [-7, 7], scaleanchor: "x", scaleratio: 1},
+      annotations,
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+stepStatus
+```
+
+```{ojs}
+mainPlot({row: setup.row, matrix: transitionMatrix, positions: statePositions})
+```
+
+:::: {.callout-note collapse="true" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot draws every state's probability vs step for the entire
+// run — it doesn't depend on the current step, so it's just plotted once
+// per run. Regardless of which state the chain started in, every line
+// should approach the same long-run value: the stationary distribution.
+iteratesPlot = {
+  const rows = []
+  for (const row of result.rows) {
+    for (let i = 0; i < row.dist.length; i++) {
+      rows.push({t: row.t, state: `State ${i + 1}`, p: row.dist[i]})
+    }
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "step"},
+    y: {label: "P(state) at step t", domain: [0, 1]},
+    color: {legend: true},
+    marks: [
+      Plot.lineY(rows, {x: "t", y: "p", stroke: "state"})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot draws log₁₀ of the total variation distance to the
+// stationary distribution vs step — the standard "how far from done" plot
+// (same idea as Newton's/bisection's log-error convergence plots).
+// Markov chain convergence is geometric, so this is roughly a straight
+// line once the chain settles into its dominant convergence rate.
+convergencePlot = {
+  const rows = []
+  for (const row of result.rows) {
+    if (row.distance > 0) rows.push({t: row.t, y: Math.log10(row.distance)})
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "step"},
+    y: {label: "log₁₀ (distance to stationary)"},
+    marks: [
+      Plot.lineY(rows, {x: "t", y: "y", stroke: "#dc2626"}),
+      Plot.dot(rows, {x: "t", y: "y", fill: "#dc2626", r: 3})
+    ]
+  })
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Transition matrix"}
+
+```{ojs}
+// transitionMatrixTable shows the raw numbers behind the graph above —
+// row i, column j is P(state i → state j).
+transitionMatrixTable = {
+  const headers = ["From \\ To"]
+  for (let j = 0; j < n; j++) headers.push(`State ${j + 1}`)
+
+  const rows = []
+  for (let i = 0; i < n; i++) {
+    const row = [`State ${i + 1}`]
+    for (let j = 0; j < n; j++) row.push(transitionMatrix[i][j].toFixed(3))
+    rows.push(row)
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers,
+    csvHeaders: headers,
+    filename: "markov-chain-transition-matrix.csv",
+    rows
+  })
+}
+```
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Iteration table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const headers = ["Step"]
+  for (let i = 0; i < n; i++) headers.push(`P(State ${i + 1})`)
+  headers.push("Distance to stationary")
+
+  const rows = []
+  for (const row of result.rows) {
+    const r = [row.t]
+    for (let i = 0; i < row.dist.length; i++) r.push(row.dist[i].toFixed(4))
+    r.push(row.distance.toExponential(3))
+    rows.push(r)
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers,
+    csvHeaders: headers,
+    filename: "markov-chain-steps.csv",
+    rows
+  })
+}
+```
+
+::::
+
+</div>
+
+A Markov chain moves between $n$ states; the probability of moving from state $i$ to state $j$ is a fixed number $P_{ij}$, independent of how the chain got to $i$. Writing the current distribution over states as a row vector $\pi_t$, one step forward is a vector-matrix product:
+
+$$
+\pi_{t+1} = \pi_t P.
+$$
+
+A **stationary distribution** $\pi^*$ is a fixed point of this update: $\pi^* = \pi^* P$, with $\sum_i \pi^*_i = 1$. As long as every state can reach every other state and the chain isn't forced into a rigid cycle (true here, since every transition probability is generated strictly positive), $\pi^*$ is unique — and $\pi_t \to \pi^*$ as $t \to \infty$, **no matter which state the chain started in**.
+
+## Why this matters
+
+Try different starting states at the same seed: every one of them settles into the exact same distribution shown by the node colors, even though they start from completely different (one-hot) distributions. That's the content of the convergence theorem above — the chain "forgets" where it started. The rate it forgets at is visible in the convergence plot: a steeper downward line means the chain mixes faster (reaches its long-run behavior sooner), a shallower one means it mixes slowly, lingering near its starting state for longer before letting go.
+
+The node sizes and colors are just $\pi_t$ redrawn as a picture: a state that's easy to reach (heavy inbound arrows) and hard to leave (a high self-loop probability, shown in its hover text) ends up with more long-run probability mass than one that's a temporary waypoint on the way somewhere else. With more states and a denser graph, watch how probability spends longer sloshing around before settling — that's the same mixing-time idea, just harder to eyeball directly from the graph alone, which is exactly why the convergence plot exists.
+
+## Examples
+
+Click any example to load it into the app.
+
+```{=html}
+<div class="example-grid">
+
+  <a class="example-card" href="?n=2&seed=1&start=1&max=15">
+    <div class="example-card-title">Simplest case: two states</div>
+    <div class="example-card-formula">n = 2, start = State 1</div>
+    <div class="example-card-text">
+      With only two states, the whole transition matrix is just two numbers (the probability of leaving each state) — a good place to check the stationary-distribution formula by hand.
+    </div>
+  </a>
+
+  <a class="example-card" href="?n=4&seed=2&start=1&max=20">
+    <div class="example-card-title">Four states, starting in a corner</div>
+    <div class="example-card-formula">n = 4, start = State 1</div>
+    <div class="example-card-text">
+      Watch probability mass drain out of the starting state and redistribute across the graph over the first several steps.
+    </div>
+  </a>
+
+  <a class="example-card" href="?n=4&seed=2&start=3&max=20">
+    <div class="example-card-title">Same chain, different start</div>
+    <div class="example-card-formula">n = 4, start = State 3</div>
+    <div class="example-card-text">
+      Same seed and transition matrix as the previous example, just a different starting state — compare where each one ends up.
+    </div>
+  </a>
+
+  <a class="example-card" href="?n=6&seed=3&start=1&max=40">
+    <div class="example-card-title">A larger, denser chain</div>
+    <div class="example-card-formula">n = 6, start = State 1</div>
+    <div class="example-card-text">
+      More states means more arrows on screen and generally a longer trip to equilibrium — use the convergence plot to see when it actually settles down.
+    </div>
+  </a>
+
+  <a class="example-card" href="?n=6&seed=3&start=1&max=6">
+    <div class="example-card-title">The first few steps only</div>
+    <div class="example-card-formula">n = 6, start = State 1, max steps = 6</div>
+    <div class="example-card-text">
+      The same chain as above, but capped early — a close look at how quickly (or slowly) mass starts spreading out from a single starting state.
+    </div>
+  </a>
+
+</div>
+```

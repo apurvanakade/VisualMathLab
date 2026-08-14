@@ -36,7 +36,20 @@ VM = window.VM
 //   R       particle filter's assumed measurement-noise variance (how sharply particle weights fall off with distance from a measurement); applied live as soon as the slider moves
 //   Q       particle filter's assumed process-noise intensity (variance of the random acceleration each particle's velocity is nudged by every step); applied live as soon as the slider moves
 //   N       number of particles in the filter's belief; applied at the start of the next stroke (a stroke's particle count is fixed once drawing begins)
+//   tab     active tab: signal, filter
 urlParams = new URLSearchParams(window.location.search)
+
+// Labels for the ::: {.panel-tabset} below, kept in sync with the `tab`
+// URL param by the tabSync cell further down.
+tabSlugToLabel = new Map([
+  ["signal", "Signal"],
+  ["filter", "Filter"]
+])
+
+tabLabelToSlug = new Map([
+  ["Signal", "signal"],
+  ["Filter", "filter"]
+])
 
 initialSigma = {
   const raw = Number.parseFloat(urlParams.get("sigma"))
@@ -103,6 +116,10 @@ examples = [
 ]
 ```
 
+::: {.panel-tabset}
+
+## Signal
+
 <div class="ojs-panel">
 
 <div class="ojs-grid">
@@ -126,30 +143,6 @@ viewof resetTrigger = {
   const btn = Inputs.button("Reset", {value: 0, reduce: v => v + 1})
   btn.classList.add("ojs-auto", "ojs-end")
   return btn
-}
-```
-
-```{ojs}
-viewof R = {
-  const input = Inputs.range([1, 3000], {step: 1, value: initialR, label: "Measurement noise R"})
-  input.dataset.exampleField = "R"
-  return input
-}
-```
-
-```{ojs}
-viewof Q = {
-  const input = Inputs.range([0, 400], {step: 0.5, value: initialQ, label: "Process noise Q"})
-  input.dataset.exampleField = "Q"
-  return input
-}
-```
-
-```{ojs}
-viewof N = {
-  const input = Inputs.range([10, 1000], {step: 10, value: initialN, label: "Particle count N"})
-  input.dataset.exampleField = "N"
-  return input
 }
 ```
 
@@ -197,6 +190,41 @@ applyExampleFromSelect = {
 
 </div>
 
+## Filter
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof R = {
+  const input = Inputs.range([1, 3000], {step: 1, value: initialR, label: "Measurement noise R"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "R"
+  return input
+}
+```
+
+```{ojs}
+viewof Q = {
+  const input = Inputs.range([0, 400], {step: 0.5, value: initialQ, label: "Process noise Q"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "Q"
+  return input
+}
+```
+
+```{ojs}
+viewof N = {
+  const input = Inputs.range([10, 1000], {step: 10, value: initialN, label: "Particle count N"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "N"
+  return input
+}
+```
+
+</div>
+
+:::
+
 ```{ojs}
 //| output: false
 // liveNoise/filterParams read the sigma/R/Q/N controls directly (the
@@ -226,6 +254,39 @@ filterParams = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {R, Q, N}
+}
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
 }
 ```
 

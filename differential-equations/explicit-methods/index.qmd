@@ -20,7 +20,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.eulerSolve, VM.numerical.linearRegression, VM.expressions.makeFunction2, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.rk4Solve.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.eulerSolve, VM.numerical.linearRegression, VM.expressions.makeFunction2, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.rk4Solve, VM.ui.applyExampleParams.
 VM = window.VM
 ```
 
@@ -94,6 +94,59 @@ initialN = {
 initialMax = urlParams.get("max") ?? "20"
 ```
 
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+//
+// Each params object lists "max" before "n" — nControl's range depends
+// reactively on maxN, so its view gets recreated when max changes;
+// VM.ui.applyExampleParams applies params in this order with a yield
+// between each, so the freshly-recreated slider is what "n" ends up
+// applied to.
+examples = [
+  {
+    title: "Textbook nonlinear forcing",
+    params: {f: "y - t^2 + 1", y0: "0.5", b: "2", max: "20", n: "4", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Relaxation toward a trend",
+    params: {f: "t - y", y0: "1", b: "5", max: "40", n: "6", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Logistic growth",
+    params: {f: "y*(1 - y)", y0: "0.1", b: "8", max: "60", n: "8", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Exponential decay",
+    params: {f: "-2*y", y0: "3", b: "4", max: "40", n: "5", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Exponential growth",
+    params: {f: "2*y", y0: "0.25", b: "2", max: "40", n: "4", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Damped sinusoidal forcing",
+    params: {f: "sin(t) - 0.5*y", y0: "0", b: "10", max: "80", n: "12", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Nonlinear Riccati-type equation",
+    params: {f: "y^2 - t", y0: "0", b: "2", max: "50", n: "8", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Fast attraction to cos(t)",
+    params: {f: "-10*(y - cos(t)) - sin(t)", y0: "1", b: "3", max: "80", n: "6", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Stiff-looking decay",
+    params: {f: "-15*y", y0: "1", b: "1", max: "80", n: "4", show: ["Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Oscillatory forcing with growth",
+    params: {f: "y + sin(5*t)", y0: "0", b: "3", max: "80", n: "10", show: ["Euler's method", "Improved Euler", "RK4"]}
+  }
+]
+```
+
 ::: {.panel-tabset}
 
 ## Inputs
@@ -105,6 +158,7 @@ viewof fText = {
   const params = new URLSearchParams(window.location.search)
   const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "y - t^2 + 1", placeholder: "Example: y - t^2 + 1, t - y, y * (1 - y)"})
   fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
   return fTextInput
 }
 ```
@@ -115,6 +169,7 @@ viewof fText = {
 viewof y0 = {
   const params = new URLSearchParams(window.location.search)
   const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "0.5", placeholder: "Example: 0.5, 1/2"})
+  y0Input.dataset.exampleField = "y0"
   return y0Input
 }
 ```
@@ -123,11 +178,59 @@ viewof y0 = {
 viewof bEnd = {
   const params = new URLSearchParams(window.location.search)
   const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
+  bEndInput.dataset.exampleField = "b"
   return bEndInput
 }
 ```
 
 </div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why (nControl's view is reactively
+// recreated whenever maxN changes, so referencing it by name here would
+// make this cell -- and therefore applyExampleFromSelect -- reactive on
+// it, forming a feedback loop with the fact that applying an example is
+// what changes maxN in the first place).
+exampleFieldSelectors = ({
+  f: '[data-example-field="f"]',
+  y0: '[data-example-field="y0"]',
+  b: '[data-example-field="b"]',
+  max: '[data-example-field="max"]',
+  n: '[data-example-field="n"]',
+  show: '[data-example-field="show"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above (both the
+// Inputs and Display Options tabs) and clicks Plot, in place — no page
+// reload, so no scroll jump either. A plain "change" listener attached
+// once to the stable native <select> (rather than an OJS cell reactive on
+// exampleSelect's value) — a <select> fires both "input" and "change" per
+// selection, and a reactive cell would run once per event, with two
+// overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
 
 ```{ojs}
 // Plot commits the current function/initial-condition/endpoint fields —
@@ -151,6 +254,7 @@ viewof plotTrigger = {
 viewof nControl = {
   const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
+  nSlider.dataset.exampleField = "n"
   return nSlider
 }
 ```
@@ -159,6 +263,7 @@ viewof nControl = {
 viewof maxNInput = {
   const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
+  input.dataset.exampleField = "max"
   return input
 }
 ```
@@ -183,6 +288,7 @@ maxN = {
 viewof methods = {
   const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
   checkboxInput.classList.add("ojs-fill")
+  checkboxInput.dataset.exampleField = "show"
   return checkboxInput
 }
 ```
@@ -492,7 +598,7 @@ mainPlot = {
 mainPlot(setup, showEuler, showImprovedEuler, showRK4)
 ```
 
-:::: {.callout-note collapse="true" title="Convergence plots"}
+:::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
 
@@ -616,10 +722,16 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
 
   const container = document.createElement("div")
-  container.append(chart, legend)
+  container.append(chart)
+  // Plot.legend throws on an empty domain/range — there's no legend to
+  // show when none of the methods produced a regression line (e.g. too
+  // few finite error points to fit).
+  if (legendDomain.length > 0) {
+    const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+    container.append(legend)
+  }
   return container
 }
 ```
@@ -692,73 +804,3 @@ k_3 &= f\!\left(t_i + \tfrac{h}{2},\, y_i + \tfrac{h}{2}k_2\right), & k_4 &= f(t
 $$
 
 More evaluations per step buys higher accuracy.
-
-## Examples
-
-The examples below show how explicit methods behave on different initial value problems. Euler's method is simple but low-order, Improved Euler is more accurate, and RK4 usually tracks the reference solution closely with far fewer steps.
-
-Click any example to load it into the app.
-
-```{=html}
-<div class="example-grid">
-  <a class="example-card" href="?f=y%20-%20t%5E2%20%2B%201&y0=0.5&b=2&n=4&max=20&show=euler,improved,rk4">
-    <div class="example-card-title">Textbook nonlinear forcing</div>
-    <div class="example-card-formula">y' = y - t^2 + 1, &nbsp; y(0)=0.5</div>
-    <div class="example-card-text">A standard test problem where the three explicit methods can be compared against a smooth reference solution.</div>
-  </a>
-
-  <a class="example-card" href="?f=t%20-%20y&y0=1&b=5&n=6&max=40&show=euler,improved,rk4">
-    <div class="example-card-title">Relaxation toward a trend</div>
-    <div class="example-card-formula">y' = t - y, &nbsp; y(0)=1</div>
-    <div class="example-card-text">The solution is pulled toward the increasing trend t, showing how step size affects lag and accuracy.</div>
-  </a>
-
-  <a class="example-card" href="?f=y*(1%20-%20y)&y0=0.1&b=8&n=8&max=60&show=euler,improved,rk4">
-    <div class="example-card-title">Logistic growth</div>
-    <div class="example-card-formula">y' = y(1-y), &nbsp; y(0)=0.1</div>
-    <div class="example-card-text">A bounded nonlinear growth model where the solution rises quickly and then levels off near the carrying capacity.</div>
-  </a>
-
-  <a class="example-card" href="?f=-2*y&y0=3&b=4&n=5&max=40&show=euler,improved,rk4">
-    <div class="example-card-title">Exponential decay</div>
-    <div class="example-card-formula">y' = -2y, &nbsp; y(0)=3</div>
-    <div class="example-card-text">A simple decay problem that highlights numerical damping and the effect of using larger time steps.</div>
-  </a>
-
-  <a class="example-card" href="?f=2*y&y0=0.25&b=2&n=4&max=40&show=euler,improved,rk4">
-    <div class="example-card-title">Exponential growth</div>
-    <div class="example-card-formula">y' = 2y, &nbsp; y(0)=0.25</div>
-    <div class="example-card-text">A rapidly increasing solution where low-order errors grow along with the solution.</div>
-  </a>
-
-  <a class="example-card" href="?f=sin(t)%20-%200.5*y&y0=0&b=10&n=12&max=80&show=euler,improved,rk4">
-    <div class="example-card-title">Damped sinusoidal forcing</div>
-    <div class="example-card-formula">y' = sin(t) - 0.5y, &nbsp; y(0)=0</div>
-    <div class="example-card-text">A forced system with oscillation and damping, useful for seeing how the methods track changing slopes.</div>
-  </a>
-
-  <a class="example-card" href="?f=y%5E2%20-%20t&y0=0&b=2&n=8&max=50&show=euler,improved,rk4">
-    <div class="example-card-title">Nonlinear Riccati-type equation</div>
-    <div class="example-card-formula">y' = y^2 - t, &nbsp; y(0)=0</div>
-    <div class="example-card-text">A nonlinear example where curvature changes over the interval and higher-order methods gain a visible advantage.</div>
-  </a>
-
-  <a class="example-card" href="?f=-10*(y%20-%20cos(t))%20-%20sin(t)&y0=1&b=3&n=6&max=80&show=euler,improved,rk4">
-    <div class="example-card-title">Fast attraction to cos(t)</div>
-    <div class="example-card-formula">y' = -10(y - cos(t)) - sin(t), &nbsp; y(0)=1</div>
-    <div class="example-card-text">The exact behavior is attracted quickly to cos(t), making this a good stability and step-size example.</div>
-  </a>
-
-  <a class="example-card" href="?f=-15*y&y0=1&b=1&n=4&max=80&show=euler,improved,rk4">
-    <div class="example-card-title">Stiff-looking decay</div>
-    <div class="example-card-formula">y' = -15y, &nbsp; y(0)=1</div>
-    <div class="example-card-text">A fast decay problem where explicit methods can behave poorly unless the step size is sufficiently small.</div>
-  </a>
-
-  <a class="example-card" href="?f=y%20%2B%20sin(5*t)&y0=0&b=3&n=10&max=80&show=euler,improved,rk4">
-    <div class="example-card-title">Oscillatory forcing with growth</div>
-    <div class="example-card-formula">y' = y + sin(5t), &nbsp; y(0)=0</div>
-    <div class="example-card-text">An oscillatory forcing term combined with growth, showing how methods handle both waves and amplification.</div>
-  </a>
-</div>
-```

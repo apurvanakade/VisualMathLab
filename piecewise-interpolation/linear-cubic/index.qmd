@@ -25,7 +25,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**), plus this page's own cubic-spline.js (loaded via the include-in-header above). This page uses VM.cubicSpline, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**), plus this page's own cubic-spline.js (loaded via the include-in-header above). This page uses VM.cubicSpline, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
 VM = window.VM
 ```
 
@@ -91,6 +91,43 @@ initialInterpolants = {
 }
 ```
 
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+//
+// Each params object lists "max" before "n" — nControl's range depends
+// reactively on maxN, so its view gets recreated when max changes;
+// VM.ui.applyExampleParams applies params in this order with a yield
+// between each, so the freshly-recreated slider is what "n" ends up
+// applied to.
+examples = [
+  {
+    title: "Sine on one full period",
+    params: {f: "sin(x)", a: "0", b: "2*pi", max: "20", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+  },
+  {
+    title: "Cosine on half a period",
+    params: {f: "cos(x)", a: "0", b: "pi", max: "24", n: "3", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+  },
+  {
+    title: "Cubic polynomial",
+    params: {f: "x^3-x", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+  },
+  {
+    title: "Rational peak",
+    params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "6", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+  },
+  {
+    title: "Gaussian bump",
+    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "35", n: "5", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+  },
+  {
+    title: "Nonsmooth corner",
+    params: {f: "abs(x)", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+  }
+]
+```
+
 ::: {.panel-tabset}
 
 ## Inputs
@@ -101,6 +138,7 @@ initialInterpolants = {
 viewof fText = {
   const fTextInput = Inputs.text({label: "Function f(x)", value: initialFText, placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
   fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
   return fTextInput
 }
 ```
@@ -110,6 +148,7 @@ viewof fText = {
 ```{ojs}
 viewof a0 = {
   const a0Input = Inputs.text({label: "Left endpoint a", value: initialA0, placeholder: "Example: 0, -pi"})
+  a0Input.dataset.exampleField = "a"
   return a0Input
 }
 ```
@@ -117,11 +156,59 @@ viewof a0 = {
 ```{ojs}
 viewof b0 = {
   const b0Input = Inputs.text({label: "Right endpoint b", value: initialB0, placeholder: "Example: 2*pi, 6.28"})
+  b0Input.dataset.exampleField = "b"
   return b0Input
 }
 ```
 
 </div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why (nControl's view is reactively
+// recreated whenever maxN changes, so referencing it by name here would
+// make this cell -- and therefore applyExampleFromSelect -- reactive on
+// it, forming a feedback loop with the fact that applying an example is
+// what changes maxN in the first place).
+exampleFieldSelectors = ({
+  f: '[data-example-field="f"]',
+  a: '[data-example-field="a"]',
+  b: '[data-example-field="b"]',
+  max: '[data-example-field="max"]',
+  n: '[data-example-field="n"]',
+  show: '[data-example-field="show"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above (both the
+// Inputs and Display Options tabs) and clicks Plot, in place — no page
+// reload, so no scroll jump either. A plain "change" listener attached
+// once to the stable native <select> (rather than an OJS cell reactive on
+// exampleSelect's value) — a <select> fires both "input" and "change" per
+// selection, and a reactive cell would run once per event, with two
+// overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
 
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
@@ -145,6 +232,7 @@ viewof plotTrigger = {
 viewof nControl = {
   const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
+  nSlider.dataset.exampleField = "n"
   return nSlider
 }
 ```
@@ -153,6 +241,7 @@ viewof nControl = {
 viewof maxNInput = {
   const input = Inputs.text({value: initialMaxNText, label: "Max", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
+  input.dataset.exampleField = "max"
   return input
 }
 ```
@@ -178,6 +267,7 @@ viewof interpolants = {
   const options = ["Original curve", "Linear interpolant", "Cubic spline interpolant"]
   const checkboxInput = Inputs.checkbox(options, {value: initialInterpolants})
   checkboxInput.classList.add("ojs-fill")
+  checkboxInput.dataset.exampleField = "show"
   return checkboxInput
 }
 ```
@@ -551,7 +641,7 @@ mainPlot = {
 mainPlot(setup, showOriginal, showLinear, showCubic)
 ```
 
-:::: {.callout-note collapse="true" title="Convergence plots"}
+:::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
 
@@ -670,10 +760,12 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
-
   const container = document.createElement("div")
-  container.append(chart, legend)
+  container.append(chart)
+  if (legendDomain.length > 0) {
+    const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+    container.append(legend)
+  }
   return container
 }
 ```
@@ -733,78 +825,3 @@ L(x) = y_k + \frac{y_{k+1}-y_k}{x_{k+1}-x_k}\,(x-x_k),\qquad x\in[x_k,x_{k+1}],
 $$
 
 or with the **natural cubic spline** $S$: the unique piecewise cubic through every node with $S$, $S'$, and $S''$ continuous at each interior node and $S''(x_0)=S''(x_n)=0$ at the ends. The page then compares how fast each interpolant's arc length converges to $f$'s true arc length as $n$ grows.
-
-## Examples
-
-```{=html}
-<style>
-.example-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 1rem;
-  margin: 1rem 0 2rem;
-}
-
-.example-card {
-  display: block;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 0.75rem;
-  text-decoration: none;
-  color: inherit;
-  background: #fff;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
-}
-
-.example-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  border-color: #aaa;
-  text-decoration: none;
-}
-
-.example-card h3 {
-  margin-top: 0;
-  margin-bottom: 0.4rem;
-  font-size: 1.05rem;
-}
-
-.example-card p {
-  margin-bottom: 0;
-  color: #555;
-  font-size: 0.95rem;
-}
-</style>
-
-<div class="example-grid">
-  <a class="example-card" href="?f=sin(x)&a=0&b=2*pi&n=4&max=20&show=original,linear,cubic">
-    <h3>Sine on one full period</h3>
-    <p>Compare linear and cubic spline interpolation for a smooth periodic curve.</p>
-  </a>
-
-  <a class="example-card" href="?f=cos(x)&a=0&b=pi&n=3&max=24&show=original,linear,cubic">
-    <h3>Cosine on half a period</h3>
-    <p>Start with only a few subintervals and watch the arc length estimates converge.</p>
-  </a>
-
-  <a class="example-card" href="?f=x%5E3-x&a=-2&b=2&n=4&max=30&show=original,linear,cubic">
-    <h3>Cubic polynomial</h3>
-    <p>Use a curve with turning behavior to see how splines reduce visible cornering.</p>
-  </a>
-
-  <a class="example-card" href="?f=1%2F(1%2Bx%5E2)&a=-5&b=5&n=6&max=40&show=original,linear,cubic">
-    <h3>Rational peak</h3>
-    <p>Interpolate a peaked function over a wider interval and compare arc length errors.</p>
-  </a>
-
-  <a class="example-card" href="?f=exp(-x%5E2)&a=-3&b=3&n=5&max=35&show=original,linear,cubic">
-    <h3>Gaussian bump</h3>
-    <p>See how the interpolants behave on a smooth curve that flattens near the endpoints.</p>
-  </a>
-
-  <a class="example-card" href="?f=abs(x)&a=-2&b=2&n=4&max=30&show=original,linear,cubic">
-    <h3>Nonsmooth corner</h3>
-    <p>Try a sharp cusp where cubic splines may overshoot near the corner.</p>
-  </a>
-</div>
-```

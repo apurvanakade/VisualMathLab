@@ -23,8 +23,55 @@ Authors: Dhruv Azad, Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
 VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+examples = [
+  {
+    title: "Standard guaranteed convergence",
+    params: {f: "x^3 - x - 2", a: "1", b: "2"}
+  },
+  {
+    title: "Square root of 2",
+    params: {f: "x^2 - 2", a: "1", b: "2"}
+  },
+  {
+    title: "Transcendental equation",
+    params: {f: "cos(x) - x", a: "0", b: "1"}
+  },
+  {
+    title: "Bracket around a negative root",
+    params: {f: "x^3 - 2*x + 2", a: "-2", b: "-1"}
+  },
+  {
+    title: "Choosing one root among many",
+    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "0.5", b: "1.5"}
+  },
+  {
+    title: "Same function, different bracket",
+    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "2.5", b: "3.5"}
+  },
+  {
+    title: "Endpoint is already a root",
+    params: {f: "x - 1", a: "1", b: "3"}
+  },
+  {
+    title: "Invalid bracket: no real root",
+    params: {f: "x^2 + 1", a: "-1", b: "1"}
+  },
+  {
+    title: "Even-multiplicity root is missed",
+    params: {f: "x^2", a: "-1", b: "1"}
+  },
+  {
+    title: "Sign change without a valid root",
+    params: {f: "1/x", a: "-1", b: "1"}
+  }
+]
 ```
 
 <div class="ojs-panel">
@@ -34,6 +81,7 @@ viewof fText = {
   const params = new URLSearchParams(window.location.search)
   const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
   fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
   return fTextInput
 }
 ```
@@ -44,6 +92,7 @@ viewof fText = {
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
   const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "1", placeholder: "Example: 1, -pi/2"})
+  a0Input.dataset.exampleField = "a"
   return a0Input
 }
 ```
@@ -52,11 +101,47 @@ viewof a0 = {
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
   const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
+  b0Input.dataset.exampleField = "b"
   return b0Input
 }
 ```
 
 </div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({f: '[data-example-field="f"]', a: '[data-example-field="a"]', b: '[data-example-field="b"]'})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place — no page reload, so no scroll jump either. A plain
+// "change" listener attached once to the stable native <select> (rather
+// than an OJS cell reactive on exampleSelect's value) — a <select> fires
+// both "input" and "change" per selection, and a reactive cell would run
+// once per event, with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
 
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
@@ -376,7 +461,7 @@ mainPlot = {
 mainPlot(setup)
 ```
 
-:::: {.callout-note collapse="true" title="Convergence plots"}
+:::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
 
@@ -478,10 +563,16 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
 
   const container = document.createElement("div")
-  container.append(chart, legend)
+  container.append(chart)
+  // Plot.legend throws on an empty domain/range — there's no legend to
+  // show when the run didn't produce a regression line (e.g. a
+  // non-converging example).
+  if (legendDomain.length > 0) {
+    const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+    container.append(legend)
+  }
   return container
 }
 ```
@@ -551,110 +642,3 @@ m_n=\frac{a_n+b_n}{2},\qquad
 (m_n,b_n) & \text{otherwise.}
 \end{cases}
 $$
-
-## Examples
-
-The bisection method is slower than Newton's method or the secant method, but
-it has one major advantage: if $f$ is continuous and changes sign on the
-interval $[a,b]$, then a root is guaranteed to remain inside the bracket.
-
-The examples below illustrate ordinary convergence, multiple possible roots,
-endpoint roots, invalid brackets, and roots near singular-looking behavior.
-
-Click any example to load it into the app.
-
-```{=html}
-<div class="example-grid">
-
-  <a class="example-card" href="?f=x%5E3%20-%20x%20-%202&a=1&b=2">
-    <div class="example-card-title">Standard guaranteed convergence</div>
-    <div class="example-card-formula">f(x) = x³ − x − 2, &nbsp; [a,b] = [1,2]</div>
-    <div class="example-card-text">
-      A classic example with a sign change across the interval. Bisection
-      steadily shrinks the bracket around the real root near 1.521.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E2%20-%202&a=1&b=2">
-    <div class="example-card-title">Square root of 2</div>
-    <div class="example-card-formula">f(x) = x² − 2, &nbsp; [a,b] = [1,2]</div>
-    <div class="example-card-text">
-      The method converges to √2. This is a simple example where the interval
-      width halves at every step.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=cos(x)%20-%20x&a=0&b=1">
-    <div class="example-card-title">Transcendental equation</div>
-    <div class="example-card-formula">f(x) = cos(x) − x, &nbsp; [a,b] = [0,1]</div>
-    <div class="example-card-text">
-      Finds the root of cos(x) = x. This is the same solution that appears in
-      fixed point iteration, but here the bracket gives a guarantee.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%202&a=-2&b=-1">
-    <div class="example-card-title">Bracket around a negative root</div>
-    <div class="example-card-formula">f(x) = x³ − 2x + 2, &nbsp; [a,b] = [−2,−1]</div>
-    <div class="example-card-text">
-      This function can cause surprising behavior for Newton's method, but
-      bisection behaves predictably once a sign-changing bracket is provided.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=(x%20-%201)*(x%20-%202)*(x%20-%203)&a=0.5&b=1.5">
-    <div class="example-card-title">Choosing one root among many</div>
-    <div class="example-card-formula">f(x) = (x−1)(x−2)(x−3), &nbsp; [a,b] = [0.5,1.5]</div>
-    <div class="example-card-text">
-      The polynomial has three roots, but this bracket isolates the one near
-      x = 1.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=(x%20-%201)*(x%20-%202)*(x%20-%203)&a=2.5&b=3.5">
-    <div class="example-card-title">Same function, different bracket</div>
-    <div class="example-card-formula">f(x) = (x−1)(x−2)(x−3), &nbsp; [a,b] = [2.5,3.5]</div>
-    <div class="example-card-text">
-      Changing only the bracket sends the method toward a different root of the
-      same function, this time near x = 3.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%20-%201&a=1&b=3">
-    <div class="example-card-title">Endpoint is already a root</div>
-    <div class="example-card-formula">f(x) = x − 1, &nbsp; [a,b] = [1,3]</div>
-    <div class="example-card-text">
-      The left endpoint satisfies f(a) = 0, so the method has already found a
-      root before any interval halving is needed.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E2%20%2B%201&a=-1&b=1">
-    <div class="example-card-title">Invalid bracket: no real root</div>
-    <div class="example-card-formula">f(x) = x² + 1, &nbsp; [a,b] = [−1,1]</div>
-    <div class="example-card-text">
-      There is no sign change and no real root. Bisection correctly refuses to
-      proceed because the guarantee does not apply.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E2&a=-1&b=1">
-    <div class="example-card-title">Even-multiplicity root is missed</div>
-    <div class="example-card-formula">f(x) = x², &nbsp; [a,b] = [−1,1]</div>
-    <div class="example-card-text">
-      Although x = 0 is a root, f does not change sign across the interval.
-      This shows a limitation of sign-change bracketing.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=1%2Fx&a=-1&b=1">
-    <div class="example-card-title">Sign change without a valid root</div>
-    <div class="example-card-formula">f(x) = 1/x, &nbsp; [a,b] = [−1,1]</div>
-    <div class="example-card-text">
-      The function changes sign but is not continuous on the interval. The
-      bisection theorem requires continuity, so the usual guarantee fails.
-    </div>
-  </a>
-
-</div>
-```

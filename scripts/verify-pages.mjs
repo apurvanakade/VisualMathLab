@@ -22,7 +22,13 @@
 // directory, since with preview there's no guarantee docs/ is populated (or
 // current) before this script starts.
 //
+// Pass one or more .qmd paths as CLI args to check only those pages instead
+// of the whole site -- much faster while iterating on a specific page,
+// since `quarto preview`'s own startup/render is paid once regardless, but
+// only the requested pages get a browser pass.
+//
 // Usage: node scripts/verify-pages.mjs (or: npm run verify)
+//        node scripts/verify-pages.mjs root-finding/newton-method/index.qmd [...]
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -131,9 +137,20 @@ async function checkPage(browser, base, relPath) {
   return errors
 }
 
+function qmdArgToRelPath(arg) {
+  const normalized = arg.replace(/^\.\//, '').replace(/\\/g, '/')
+  if (!normalized.endsWith('index.qmd')) {
+    throw new Error(`Expected a path ending in index.qmd, got: ${arg}`)
+  }
+  return normalized.slice(0, -'index.qmd'.length) + 'index.html'
+}
+
 async function main() {
-  const pages = findQmdPages(repoRoot).sort()
-  console.log(`Found ${pages.length} pages from source index.qmd files.\n`)
+  const args = process.argv.slice(2)
+  const pages = args.length > 0
+    ? args.map(qmdArgToRelPath).sort()
+    : findQmdPages(repoRoot).sort()
+  console.log(`Checking ${pages.length} page(s)${args.length > 0 ? '' : ' (full site, from source index.qmd files)'}.\n`)
 
   console.log('Starting `quarto preview`...')
   const previewProc = await startPreview()

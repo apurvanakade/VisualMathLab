@@ -21,7 +21,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
 VM = window.VM
 ```
 
@@ -64,6 +64,39 @@ initialShownDegrees = {
 
   return labels.length ? labels : ["Degree 5"]
 }
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+// "degrees" holds the actual checkbox option labels (matching what
+// Inputs.checkbox's view expects), not the URL's comma-separated numbers.
+examples = [
+  {
+    title: "No noise",
+    params: {noise: 0, degrees: ["Degree 1", "Degree 5"], seed: 101}
+  },
+  {
+    title: "Small noise",
+    params: {noise: 0.25, degrees: ["Degree 1", "Degree 2", "Degree 5"], seed: 202}
+  },
+  {
+    title: "Underfitting vs overfitting",
+    params: {noise: 0.7, degrees: ["Degree 1", "Degree 5"], seed: 303}
+  },
+  {
+    title: "Training error decreases",
+    params: {noise: 1, degrees: ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5"], seed: 404}
+  },
+  {
+    title: "Degree 5 interpolation",
+    params: {noise: 1, degrees: ["Degree 5"], seed: 505}
+  },
+  {
+    title: "Same data, linear model",
+    params: {noise: 1, degrees: ["Degree 1"], seed: 505}
+  }
+]
 ```
 
 ```{ojs}
@@ -218,12 +251,15 @@ bufferCurves = {
 }
 ```
 
-<div class="ojs-panel ojs-row">
+<div class="ojs-panel">
+
+<div class="ojs-row">
 
 ```{ojs}
 viewof noiseLevel = {
   const input = Inputs.range([0, maxNoise], {step: 0.01, value: initialNoise, label: "Noise level"})
   input.classList.add("ojs-fill")
+  input.dataset.exampleField = "noise"
   return input
 }
 ```
@@ -241,6 +277,55 @@ viewof regenerateTrigger = {
 
 </div>
 
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({
+  noise: '[data-example-field="noise"]',
+  degrees: '[data-example-field="degrees"]',
+  seed: '[data-example-field="seed"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above, in place —
+// no page reload, so no scroll jump either. noiseLevel/shownDegrees/
+// seedValue are all fully live/reactive (no commit-button gate), so no
+// trigger click is actually needed for the values to take effect; a
+// harmless no-op element (with no <button> child) is passed as the
+// required triggerEl argument instead of "Regenerate points" — clicking
+// Regenerate would bump regenerateTrigger, which basePoints also mixes
+// into its seed, producing a different point draw than the one the
+// example's seed was chosen to reproduce. A plain "change" listener
+// attached once to the stable native <select> (rather than an OJS cell
+// reactive on exampleSelect's value) — a <select> fires both "input" and
+// "change" per selection, and a reactive cell would run once per event,
+// with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  const noopTrigger = document.createElement("div")
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, noopTrigger)
+  })
+}
+```
+
+</div>
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -248,6 +333,7 @@ viewof shownDegrees = {
   const options = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5"]
   const checkboxInput = Inputs.checkbox(options, {value: initialShownDegrees})
   checkboxInput.classList.add("ojs-fill")
+  checkboxInput.dataset.exampleField = "degrees"
   return checkboxInput
 }
 ```
@@ -261,6 +347,7 @@ viewof seedValue = {
     label: "Random seed"
   })
   input.classList.add("ojs-auto")
+  input.dataset.exampleField = "seed"
   return input
 }
 ```
@@ -551,78 +638,3 @@ A low-degree polynomial (e.g. a line) can't bend to match every point — high *
 A low-degree fit can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree fit can match the training data almost perfectly but swings wildly as the data changes — low bias, high variance, **overfitting**. The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — training error stays near zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degree 1 and 2 barely react to the noise at all, at the cost of never capturing real curvature either.
 
 Training error alone can't reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a **held-out validation or test set** — why train/validation/test splits and cross-validation are standard practice.
-
-## Examples
-
-```{=html}
-<style>
-.example-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-  gap: 1rem;
-  margin: 1rem 0 2rem;
-}
-
-.example-card {
-  display: block;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 0.75rem;
-  text-decoration: none;
-  color: inherit;
-  background: #fff;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
-}
-
-.example-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  border-color: #aaa;
-  text-decoration: none;
-}
-
-.example-card h3 {
-  margin-top: 0;
-  margin-bottom: 0.4rem;
-  font-size: 1.05rem;
-}
-
-.example-card p {
-  margin-bottom: 0;
-  color: #555;
-  font-size: 0.95rem;
-}
-</style>
-
-<div class="example-grid">
-  <a class="example-card" href="?noise=0&degrees=1,5&seed=101">
-    <h3>No noise</h3>
-    <p>Compare a line with a degree-5 polynomial when all points are exactly colinear.</p>
-  </a>
-
-  <a class="example-card" href="?noise=0.25&degrees=1,2,5&seed=202">
-    <h3>Small noise</h3>
-    <p>Watch mild noise move the data while degree 5 bends more sharply than lower-degree fits.</p>
-  </a>
-
-  <a class="example-card" href="?noise=0.7&degrees=1,5&seed=303">
-    <h3>Underfitting vs overfitting</h3>
-    <p>Compare the rigid degree-1 fit with the highly flexible degree-5 interpolating fit.</p>
-  </a>
-
-  <a class="example-card" href="?noise=1&degrees=1,2,3,4,5&seed=404">
-    <h3>Training error decreases</h3>
-    <p>Show every degree and use the error plot to see training error fall as complexity rises.</p>
-  </a>
-
-  <a class="example-card" href="?noise=1&degrees=5&seed=505">
-    <h3>Degree 5 interpolation</h3>
-    <p>With six data points, degree 5 has enough parameters to pass almost exactly through all of them.</p>
-  </a>
-
-  <a class="example-card" href="?noise=1&degrees=1&seed=505">
-    <h3>Same data, linear model</h3>
-    <p>Use the same seed as the interpolation example, but fit only a line for direct comparison.</p>
-  </a>
-</div>
-```

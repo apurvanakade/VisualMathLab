@@ -20,7 +20,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.lagrangeQuadratic, VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.simpsonEstimate.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.lagrangeQuadratic, VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.simpsonEstimate, VM.ui.applyExampleParams.
 VM = window.VM
 ```
 
@@ -105,6 +105,59 @@ initialN = {
 initialMax = urlParams.get("max") ?? "20"
 ```
 
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+//
+// Each params object lists "max" before "n" — nControl's range depends
+// reactively on maxN, so its view gets recreated when max changes;
+// VM.ui.applyExampleParams applies params in this order with a yield
+// between each, so the freshly-recreated slider is what "n" ends up
+// applied to.
+examples = [
+  {
+    title: "Sine area on one half-period",
+    params: {f: "sin(x)", a: "0", b: "pi", max: "40", n: "6", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Symmetric cosine arch",
+    params: {f: "cos(x)", a: "-pi/2", b: "pi/2", max: "40", n: "8", show: ["Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Signed area cancellation",
+    params: {f: "x^3 - x", a: "-2", b: "2", max: "40", n: "6", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Quadratic test case",
+    params: {f: "x^2", a: "0", b: "1", max: "30", n: "5", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Polynomial with changing curvature",
+    params: {f: "x^3 - 2*x + 1", a: "-1", b: "2", max: "40", n: "6", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Rational peak",
+    params: {f: "1/(1 + x^2)", a: "-5", b: "5", max: "60", n: "10", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Gaussian bump",
+    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "60", n: "10", show: ["Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Nonsmooth corner",
+    params: {f: "abs(x)", a: "-2", b: "2", max: "50", n: "8", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Oscillatory integral",
+    params: {f: "sin(5*x)", a: "0", b: "2*pi", max: "80", n: "12", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+  },
+  {
+    title: "Simpson's rule needs even n",
+    params: {f: "sin(x)", a: "0", b: "pi", max: "35", n: "5", show: ["Simpson's rule"]}
+  }
+]
+```
+
 ::: {.panel-tabset}
 
 ## Inputs
@@ -116,6 +169,7 @@ viewof fText = {
   const params = new URLSearchParams(window.location.search)
   const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "sin(x)", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
   fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
   return fTextInput
 }
 ```
@@ -126,6 +180,7 @@ viewof fText = {
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
   const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0", placeholder: "Example: 0, -pi"})
+  a0Input.dataset.exampleField = "a"
   return a0Input
 }
 ```
@@ -134,11 +189,59 @@ viewof a0 = {
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
   const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "pi", placeholder: "Example: pi, 3.14"})
+  b0Input.dataset.exampleField = "b"
   return b0Input
 }
 ```
 
 </div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why (nControl's view is reactively
+// recreated whenever maxN changes, so referencing it by name here would
+// make this cell -- and therefore applyExampleFromSelect -- reactive on
+// it, forming a feedback loop with the fact that applying an example is
+// what changes maxN in the first place).
+exampleFieldSelectors = ({
+  f: '[data-example-field="f"]',
+  a: '[data-example-field="a"]',
+  b: '[data-example-field="b"]',
+  max: '[data-example-field="max"]',
+  n: '[data-example-field="n"]',
+  show: '[data-example-field="show"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above (both the
+// Inputs and Display Options tabs) and clicks Plot, in place — no page
+// reload, so no scroll jump either. A plain "change" listener attached
+// once to the stable native <select> (rather than an OJS cell reactive on
+// exampleSelect's value) — a <select> fires both "input" and "change" per
+// selection, and a reactive cell would run once per event, with two
+// overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
 
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
@@ -162,6 +265,7 @@ viewof plotTrigger = {
 viewof nControl = {
   const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
+  nSlider.dataset.exampleField = "n"
   return nSlider
 }
 ```
@@ -170,6 +274,7 @@ viewof nControl = {
 viewof maxNInput = {
   const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
   input.classList.add("ojs-auto")
+  input.dataset.exampleField = "max"
   return input
 }
 ```
@@ -194,6 +299,7 @@ maxN = {
 viewof methods = {
   const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
   checkboxInput.classList.add("ojs-fill")
+  checkboxInput.dataset.exampleField = "show"
   return checkboxInput
 }
 ```
@@ -582,7 +688,7 @@ mainPlot = {
 mainPlot(setup, showLeftRiemann, showMidpoint, showTrapezoidal, showSimpson)
 ```
 
-:::: {.callout-note collapse="true" title="Convergence plots"}
+:::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
 
@@ -769,10 +875,16 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
 
   const container = document.createElement("div")
-  container.append(chart, legend)
+  container.append(chart)
+  // Plot.legend throws on an empty domain/range — there's no legend to
+  // show when none of the checked methods produced a regression line
+  // (e.g. too few finite error points to fit).
+  if (legendDomain.length > 0) {
+    const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+    container.append(legend)
+  }
   return container
 }
 ```
@@ -846,111 +958,3 @@ S_n = \frac{h}{3}\Big(f(x_0)+4f(x_1)+2f(x_2)+4f(x_3)+\cdots+4f(x_{n-1})+f(x_n)\B
 $$
 
 a left or midpoint rectangle sum, a trapezoid sum, or (for Simpson's rule) a quadratic through each pair of subintervals.
-
-## Examples
-
-Numerical integration replaces a complicated area under a curve by areas that
-are easier to compute: rectangles for Riemann sums, trapezoids for the
-trapezoidal rule, and parabolic arcs for Simpson's rule.
-
-The examples below illustrate smooth functions, cancellation from signed area,
-peaked functions, rapid decay, oscillation, and the special even-subinterval
-requirement for Simpson's rule.
-
-Click any example to load it into the app.
-
-```{=html}
-<div class="example-grid">
-
-  <a class="example-card" href="?f=sin(x)&a=0&b=pi&n=6&max=40&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Sine area on one half-period</div>
-    <div class="example-card-formula">f(x) = sin(x), &nbsp; [a,b] = [0,π]</div>
-    <div class="example-card-text">
-      A standard positive-area example. The exact integral is 2, and the
-      midpoint, trapezoidal, and Simpson estimates converge quickly as n grows.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=cos(x)&a=-pi%2F2&b=pi%2F2&n=8&max=40&show=midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Symmetric cosine arch</div>
-    <div class="example-card-formula">f(x) = cos(x), &nbsp; [a,b] = [−π/2,π/2]</div>
-    <div class="example-card-text">
-      A smooth symmetric curve with positive area. This is a good comparison
-      of midpoint, trapezoidal, and Simpson's rule without the left rectangles.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E3%20-%20x&a=-2&b=2&n=6&max=40&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Signed area cancellation</div>
-    <div class="example-card-formula">f(x) = x³ − x, &nbsp; [a,b] = [−2,2]</div>
-    <div class="example-card-text">
-      The function is odd and the interval is symmetric, so positive and
-      negative areas cancel. The true signed integral is 0.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E2&a=0&b=1&n=5&max=30&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Quadratic test case</div>
-    <div class="example-card-formula">f(x) = x², &nbsp; [a,b] = [0,1]</div>
-    <div class="example-card-text">
-      Simpson's rule is exact for quadratics when n is even. Try changing n
-      and compare it with the rectangle and trapezoidal estimates.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=x%5E3%20-%202*x%20%2B%201&a=-1&b=2&n=6&max=40&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Polynomial with changing curvature</div>
-    <div class="example-card-formula">f(x) = x³ − 2x + 1, &nbsp; [a,b] = [−1,2]</div>
-    <div class="example-card-text">
-      A polynomial example where the graph bends in different ways across the
-      interval. Simpson's parabolic pieces often capture this behavior well.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=1%2F(1%20%2B%20x%5E2)&a=-5&b=5&n=10&max=60&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Rational peak</div>
-    <div class="example-card-formula">f(x) = 1/(1+x²), &nbsp; [a,b] = [−5,5]</div>
-    <div class="example-card-text">
-      A bell-shaped rational function with most of its area near the origin.
-      More subintervals are needed to resolve the central peak accurately.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=exp(-x%5E2)&a=-3&b=3&n=10&max=60&show=midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Gaussian bump</div>
-    <div class="example-card-formula">f(x) = exp(−x²), &nbsp; [a,b] = [−3,3]</div>
-    <div class="example-card-text">
-      A smooth rapidly decaying function. Higher-order methods converge very
-      quickly because the curve is smooth across the whole interval.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=abs(x)&a=-2&b=2&n=8&max=50&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Nonsmooth corner</div>
-    <div class="example-card-formula">f(x) = |x|, &nbsp; [a,b] = [−2,2]</div>
-    <div class="example-card-text">
-      The graph has a sharp corner at x = 0. This shows how nonsmoothness can
-      affect the usual convergence behavior.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=sin(5*x)&a=0&b=2*pi&n=12&max=80&show=left,midpoint,trapezoidal,simpson">
-    <div class="example-card-title">Oscillatory integral</div>
-    <div class="example-card-formula">f(x) = sin(5x), &nbsp; [a,b] = [0,2π]</div>
-    <div class="example-card-text">
-      Positive and negative waves cancel over the full interval. Increase n to
-      see how the methods handle rapidly oscillating signed area.
-    </div>
-  </a>
-
-  <a class="example-card" href="?f=sin(x)&a=0&b=pi&n=5&max=35&show=simpson">
-    <div class="example-card-title">Simpson's rule needs even n</div>
-    <div class="example-card-formula">f(x) = sin(x), &nbsp; [a,b] = [0,π], &nbsp; n = 5</div>
-    <div class="example-card-text">
-      Simpson's rule is only defined for an even number of subintervals in this
-      app. With odd n, the table leaves Simpson's estimate as NaN.
-    </div>
-  </a>
-
-</div>
-```

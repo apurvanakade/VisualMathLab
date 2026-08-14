@@ -23,8 +23,55 @@ Authors: Dhruv Azad, Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
 VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+examples = [
+  {
+    title: "Classic convergent iteration",
+    params: {g: "cos(x)", x0: "1"}
+  },
+  {
+    title: "Converges to the positive fixed point",
+    params: {g: "sqrt(x + 2)", x0: "1"}
+  },
+  {
+    title: "Babylonian iteration for √2",
+    params: {g: "(x + 2/x)/2", x0: "1"}
+  },
+  {
+    title: "Gentle attraction",
+    params: {g: "1 + 0.5*sin(x)", x0: "0"}
+  },
+  {
+    title: "Oscillatory convergence",
+    params: {g: "2*cos(x)", x0: "1"}
+  },
+  {
+    title: "Slow attraction",
+    params: {g: "1.2*x - 0.2*x^2", x0: "0.2"}
+  },
+  {
+    title: "Repelling fixed point",
+    params: {g: "2*x", x0: "0.1"}
+  },
+  {
+    title: "Divergent oscillation",
+    params: {g: "1 - 2*x", x0: "0.2"}
+  },
+  {
+    title: "Neutral two-cycle",
+    params: {g: "1 - x", x0: "0.2"}
+  },
+  {
+    title: "Very slow convergence",
+    params: {g: "x - x^3", x0: "0.2"}
+  }
+]
 ```
 
 <div class="ojs-panel">
@@ -34,6 +81,7 @@ viewof gText = {
   const params = new URLSearchParams(window.location.search)
   const gTextInput = Inputs.text({label: "Function g(x)", value: params.get("g") ?? "cos(x)", placeholder: "Example: cos(x), sqrt(x + 2), exp(-x)"})
   gTextInput.classList.add("ojs-fill")
+  gTextInput.dataset.exampleField = "g"
   return gTextInput
 }
 ```
@@ -44,11 +92,47 @@ viewof gText = {
 viewof x0 = {
   const params = new URLSearchParams(window.location.search)
   const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1", placeholder: "Example: 1, pi/4"})
+  x0Input.dataset.exampleField = "x0"
   return x0Input
 }
 ```
 
 </div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({g: '[data-example-field="g"]', x0: '[data-example-field="x0"]'})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place — no page reload, so no scroll jump either. A plain
+// "change" listener attached once to the stable native <select> (rather
+// than an OJS cell reactive on exampleSelect's value) — a <select> fires
+// both "input" and "change" per selection, and a reactive cell would run
+// once per event, with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
 
 ```{ojs}
 // Plot commits the current function/x₀ fields — edits above don't take
@@ -302,7 +386,7 @@ mainPlot = {
 mainPlot(setup)
 ```
 
-:::: {.callout-note collapse="true" title="Convergence plots"}
+:::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
 
@@ -368,10 +452,16 @@ convergencePlot = {
     color: {domain: colorDomain, range: colorRange},
     marks
   })
-  const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
 
   const container = document.createElement("div")
-  container.append(chart, legend)
+  container.append(chart)
+  // Plot.legend throws on an empty domain/range — there's no legend to
+  // show when the run didn't produce a regression line (e.g. a
+  // non-converging example).
+  if (legendDomain.length > 0) {
+    const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
+    container.append(legend)
+  }
   return container
 }
 ```
@@ -420,107 +510,3 @@ iterationTable = {
 </div>
 
 Fixed point iteration solves $x=g(x)$ by repeatedly applying $g$: $x_{n+1}=g(x_n)$. If the sequence converges to a value $\alpha$, then $\alpha=g(\alpha)$ — a fixed point of $g$.
-
-## Examples
-
-Fixed point iteration can behave very differently depending on the function
-$g$ and the starting point $x_0$. The examples below illustrate attraction,
-repulsion, oscillation, slow convergence, and divergence.
-
-Click any example to load it into the app.
-
-```{=html}
-<div class="example-grid">
-
-  <a class="example-card" href="?g=cos(x)&x0=1">
-    <div class="example-card-title">Classic convergent iteration</div>
-    <div class="example-card-formula">g(x) = cos(x), &nbsp; x₀ = 1</div>
-    <div class="example-card-text">
-      The iteration xₙ₊₁ = cos(xₙ) converges to the Dottie number, the fixed
-      point of cosine.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=sqrt(x%20%2B%202)&x0=1">
-    <div class="example-card-title">Converges to the positive fixed point</div>
-    <div class="example-card-formula">g(x) = √(x + 2), &nbsp; x₀ = 1</div>
-    <div class="example-card-text">
-      This converges to x = 2, solving x = √(x + 2). The cobweb path moves
-      steadily toward the intersection with y = x.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=(x%20%2B%202%2Fx)%2F2&x0=1">
-    <div class="example-card-title">Babylonian iteration for √2</div>
-    <div class="example-card-formula">g(x) = (x + 2/x)/2, &nbsp; x₀ = 1</div>
-    <div class="example-card-text">
-      A very effective fixed point iteration for computing √2. It converges
-      much faster than many ordinary fixed point schemes.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=1%20%2B%200.5*sin(x)&x0=0">
-    <div class="example-card-title">Gentle attraction</div>
-    <div class="example-card-formula">g(x) = 1 + 0.5 sin(x), &nbsp; x₀ = 0</div>
-    <div class="example-card-text">
-      The slope near the fixed point has magnitude less than 1, so the fixed
-      point is attractive and the iteration settles down.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=2*cos(x)&x0=1">
-    <div class="example-card-title">Oscillatory convergence</div>
-    <div class="example-card-formula">g(x) = 2 cos(x), &nbsp; x₀ = 1</div>
-    <div class="example-card-text">
-      The iterates approach the fixed point while bouncing from one side to the
-      other. The cobweb diagram shows a visible zig-zag pattern.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=1.2*x%20-%200.2*x%5E2&x0=0.2">
-    <div class="example-card-title">Slow attraction</div>
-    <div class="example-card-formula">g(x) = 1.2x − 0.2x², &nbsp; x₀ = 0.2</div>
-    <div class="example-card-text">
-      The fixed point at x = 1 is attractive, but convergence can be slow when
-      the slope is close to 1 in magnitude.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=2*x&x0=0.1">
-    <div class="example-card-title">Repelling fixed point</div>
-    <div class="example-card-formula">g(x) = 2x, &nbsp; x₀ = 0.1</div>
-    <div class="example-card-text">
-      Although x = 0 is a fixed point, the slope has magnitude greater than 1,
-      so nearby iterates are pushed away.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=1%20-%202*x&x0=0.2">
-    <div class="example-card-title">Divergent oscillation</div>
-    <div class="example-card-formula">g(x) = 1 − 2x, &nbsp; x₀ = 0.2</div>
-    <div class="example-card-text">
-      The iteration alternates across the fixed point with growing amplitude
-      because the slope has magnitude greater than 1.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=1%20-%20x&x0=0.2">
-    <div class="example-card-title">Neutral two-cycle</div>
-    <div class="example-card-formula">g(x) = 1 − x, &nbsp; x₀ = 0.2</div>
-    <div class="example-card-text">
-      The sequence jumps back and forth between two values. The fixed point
-      exists at x = 0.5, but the iteration does not approach it.
-    </div>
-  </a>
-
-  <a class="example-card" href="?g=x%20-%20x%5E3&x0=0.2">
-    <div class="example-card-title">Very slow convergence</div>
-    <div class="example-card-formula">g(x) = x − x³, &nbsp; x₀ = 0.2</div>
-    <div class="example-card-text">
-      The fixed point x = 0 is attracting, but g′(0) = 1, so convergence is
-      much slower than linear.
-    </div>
-  </a>
-
-</div>
-```

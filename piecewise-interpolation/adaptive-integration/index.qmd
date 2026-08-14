@@ -20,8 +20,55 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.lagrangeQuadratic, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.simpsonEstimate.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.lagrangeQuadratic, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.simpsonEstimate, VM.ui.applyExampleParams.
 VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+examples = [
+  {
+    title: "Smooth sine area",
+    params: {f: "sin(x)", a: "0", b: "pi"}
+  },
+  {
+    title: "Oscillation near an endpoint",
+    params: {f: "sin(1 / (x + 0.3))", a: "0", b: "pi"}
+  },
+  {
+    title: "Rational peak",
+    params: {f: "1/(1 + 100*(x - 0.2)^2)", a: "-1", b: "1"}
+  },
+  {
+    title: "Gaussian bump",
+    params: {f: "exp(-25*x^2)", a: "-2", b: "2"}
+  },
+  {
+    title: "Nonsmooth corner",
+    params: {f: "abs(x)", a: "-2", b: "2"}
+  },
+  {
+    title: "Highly oscillatory integral",
+    params: {f: "sin(20*x)", a: "0", b: "2*pi"}
+  },
+  {
+    title: "Steep transition",
+    params: {f: "tanh(20*(x - 0.2))", a: "-1", b: "1"}
+  },
+  {
+    title: "Endpoint behavior",
+    params: {f: "sqrt(x)", a: "0", b: "1"}
+  },
+  {
+    title: "Narrow spike",
+    params: {f: "1/(0.01 + x^2)", a: "-1", b: "1"}
+  },
+  {
+    title: "Challenging oscillations",
+    params: {f: "sin(1/x)", a: "0.05", b: "1"}
+  }
+]
 ```
 
 <div class="ojs-panel">
@@ -31,6 +78,7 @@ viewof fText = {
   const params = new URLSearchParams(window.location.search)
   const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "sin(1 / (x + 0.3))", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
   fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
   return fTextInput
 }
 ```
@@ -41,6 +89,7 @@ viewof fText = {
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
   const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0", placeholder: "Example: 0, -pi"})
+  a0Input.dataset.exampleField = "a"
   return a0Input
 }
 ```
@@ -49,11 +98,51 @@ viewof a0 = {
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
   const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "pi", placeholder: "Example: pi, 3.14"})
+  b0Input.dataset.exampleField = "b"
   return b0Input
 }
 ```
 
 </div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({
+  f: '[data-example-field="f"]',
+  a: '[data-example-field="a"]',
+  b: '[data-example-field="b"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place — no page reload, so no scroll jump either. A plain
+// "change" listener attached once to the stable native <select> (rather
+// than an OJS cell reactive on exampleSelect's value) — a <select> fires
+// both "input" and "change" per selection, and a reactive cell would run
+// once per event, with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
 
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
@@ -571,76 +660,3 @@ S[p,q] = \frac{q-p}{6}\Big(f(p)+4f(m)+f(q)\Big),
 $$
 
 is compared against the sum of Simpson's rule on each half, $S[a,m]+S[m,b]$; since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of 16, giving the Richardson error estimate $\big(S[a,m]+S[m,b]-S[a,b]\big)/15$. Whenever $\left|S[a,m]+S[m,b]-S[a,b]\right|$ exceeds $15\varepsilon$ for the current tolerance $\varepsilon$, the interval is bisected and each half is refined recursively (with $\varepsilon$ halved at each level, so the total error stays bounded by the original tolerance).
-
-
-## Examples
-
-The examples below show where adaptive integration is useful: smooth functions need only a few panels, while sharp peaks, endpoint behavior, corners, steep transitions, and oscillations force the method to refine locally.
-
-Click any example to load it into the app.
-
-```{=html}
-<div class="example-grid">
-
-  <a class="example-card" href="?f=sin(x)&a=0&b=pi">
-    <div class="example-card-title">Smooth sine area</div>
-    <div class="example-card-formula">f(x) = sin(x), [a,b] = [0,π]</div>
-    <div class="example-card-text">A smooth benchmark where adaptive Simpson integration reaches good accuracy with relatively few subintervals.</div>
-  </a>
-
-  <a class="example-card" href="?f=sin(1%20%2F%20(x%20%2B%200.3))&a=0&b=pi">
-    <div class="example-card-title">Oscillation near an endpoint</div>
-    <div class="example-card-formula">f(x) = sin(1/(x+0.3)), [a,b] = [0,π]</div>
-    <div class="example-card-text">The default example. The method refines more near the left endpoint where the function changes more rapidly.</div>
-  </a>
-
-  <a class="example-card" href="?f=1%2F(1%20%2B%20100*(x%20-%200.2)%5E2)&a=-1&b=1">
-    <div class="example-card-title">Rational peak</div>
-    <div class="example-card-formula">f(x) = 1/(1+100(x-0.2)²), [a,b] = [-1,1]</div>
-    <div class="example-card-text">A narrow off-center peak causes the adaptive partition to concentrate small panels near x = 0.2.</div>
-  </a>
-
-  <a class="example-card" href="?f=exp(-25*x%5E2)&a=-2&b=2">
-    <div class="example-card-title">Gaussian bump</div>
-    <div class="example-card-formula">f(x) = exp(-25x²), [a,b] = [-2,2]</div>
-    <div class="example-card-text">Most of the area is concentrated near zero, so the adaptive panels become much smaller around the bump.</div>
-  </a>
-
-  <a class="example-card" href="?f=abs(x)&a=-2&b=2">
-    <div class="example-card-title">Nonsmooth corner</div>
-    <div class="example-card-formula">f(x) = |x|, [a,b] = [-2,2]</div>
-    <div class="example-card-text">The function is simple but not differentiable at x = 0, which triggers extra refinement near the corner.</div>
-  </a>
-
-  <a class="example-card" href="?f=sin(20*x)&a=0&b=2*pi">
-    <div class="example-card-title">Highly oscillatory integral</div>
-    <div class="example-card-formula">f(x) = sin(20x), [a,b] = [0,2π]</div>
-    <div class="example-card-text">Rapid oscillations require many panels to resolve cancellation across the interval.</div>
-  </a>
-
-  <a class="example-card" href="?f=tanh(20*(x%20-%200.2))&a=-1&b=1">
-    <div class="example-card-title">Steep transition</div>
-    <div class="example-card-formula">f(x) = tanh(20(x-0.2)), [a,b] = [-1,1]</div>
-    <div class="example-card-text">The function is nearly flat except near a sharp transition layer, where the adaptive panels cluster.</div>
-  </a>
-
-  <a class="example-card" href="?f=sqrt(x)&a=0&b=1">
-    <div class="example-card-title">Endpoint behavior</div>
-    <div class="example-card-formula">f(x) = √x, [a,b] = [0,1]</div>
-    <div class="example-card-text">The slope becomes large near x = 0, so the method refines strongly near the endpoint.</div>
-  </a>
-
-  <a class="example-card" href="?f=1%2F(0.01%20%2B%20x%5E2)&a=-1&b=1">
-    <div class="example-card-title">Narrow spike</div>
-    <div class="example-card-formula">f(x) = 1/(0.01+x²), [a,b] = [-1,1]</div>
-    <div class="example-card-text">A tall spike at the origin creates a dense cluster of subintervals near x = 0.</div>
-  </a>
-
-  <a class="example-card" href="?f=sin(1%2Fx)&a=0.05&b=1">
-    <div class="example-card-title">Challenging oscillations</div>
-    <div class="example-card-formula">f(x) = sin(1/x), [a,b] = [0.05,1]</div>
-    <div class="example-card-text">Oscillations become faster near the left endpoint, showing how recursion depth grows in difficult regions.</div>
-  </a>
-
-</div>
-```

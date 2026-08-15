@@ -29,13 +29,12 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-traceOptions = ["f(x)", "y = 0", "Previous midpoints", "Endpoints", "Midpoint", "Exact root found"]
+traceOptions = ["f(x)", "Previous midpoints", "Endpoints", "Midpoint", "Exact root found"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
 traceColors = new Map([
   ["f(x)", "#2563eb"],
-  ["y = 0", "#111827"],
   ["Previous midpoints", "#f97316"],
   ["Endpoints", "#2563eb"],
   ["Midpoint", "#dc2626"],
@@ -225,11 +224,6 @@ showFCurve = traces.includes("f(x)")
 
 ```{ojs}
 //| output: false
-showZeroLine = traces.includes("y = 0")
-```
-
-```{ojs}
-//| output: false
 showPrevMidpoints = traces.includes("Previous midpoints")
 ```
 
@@ -367,17 +361,12 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, currentRow, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showZeroLine, showPrevMidpoints, showEndpoints, showMidpoint, showExactRoot) => {
+  return ({visibleRows, currentRow, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showPrevMidpoints, showEndpoints, showMidpoint, showExactRoot) => {
     const data = []
 
     if (showFCurve) {
       // The function curve
       data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
-    }
-    if (showZeroLine) {
-      // The x-axis reference line, spanning the buffer so it's still visible
-      // when the user pans/zooms out
-      data.push({x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: false, line: {color: "#111827", width: 2}})
     }
 
     // Previous midpoints — all steps before the current one
@@ -497,7 +486,7 @@ maxIterations = {
 <div class="ojs-plot-overlay">
 
 ```{ojs}
-mainPlot(setup, showFCurve, showZeroLine, showPrevMidpoints, showEndpoints, showMidpoint, showExactRoot)
+mainPlot(setup, showFCurve, showPrevMidpoints, showEndpoints, showMidpoint, showExactRoot)
 ```
 
 ```{ojs}

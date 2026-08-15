@@ -29,13 +29,12 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-traceOptions = ["f(x)", "y = 0", "Tangent line", "Newton points", "Tangent x-intercepts"]
+traceOptions = ["f(x)", "Tangent line", "Newton points", "Tangent x-intercepts"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
 traceColors = new Map([
   ["f(x)", "#2563eb"],
-  ["y = 0", "#111827"],
   ["Tangent line", "#dc2626"],
   ["Newton points", "#dc2626"],
   ["Tangent x-intercepts", "#16a34a"]
@@ -203,11 +202,6 @@ showFCurve = traces.includes("f(x)")
 
 ```{ojs}
 //| output: false
-showZeroLine = traces.includes("y = 0")
-```
-
-```{ojs}
-//| output: false
 showTangent = traces.includes("Tangent line")
 ```
 
@@ -339,16 +333,11 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showZeroLine, showTangent, showNewtonPoints, showIntercepts) => {
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showTangent, showNewtonPoints, showIntercepts) => {
     const data = []
 
     if (showFCurve) {
       data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
-    }
-    if (showZeroLine) {
-      // The x-axis (y = 0 reference line), spanning the buffer so it's still
-      // visible when the user pans/zooms out
-      data.push({x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: false, line: {color: "#111827", width: 2}})
     }
 
     // Dotted vertical lines from the x-axis up to each Newton point
@@ -477,7 +466,7 @@ maxIterations = {
 <div class="ojs-plot-overlay">
 
 ```{ojs}
-mainPlot(setup, showFCurve, showZeroLine, showTangent, showNewtonPoints, showIntercepts)
+mainPlot(setup, showFCurve, showTangent, showNewtonPoints, showIntercepts)
 ```
 
 ```{ojs}

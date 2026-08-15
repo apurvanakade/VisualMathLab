@@ -26,13 +26,12 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-traceOptions = ["f(x)", "y = 0", "Secant line", "Secant points", "Secant x-intercepts"]
+traceOptions = ["f(x)", "Secant line", "Secant points", "Secant x-intercepts"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
 traceColors = new Map([
   ["f(x)", "#2563eb"],
-  ["y = 0", "#111827"],
   ["Secant line", "#dc2626"],
   ["Secant points", "#dc2626"],
   ["Secant x-intercepts", "#16a34a"]
@@ -221,11 +220,6 @@ showFCurve = traces.includes("f(x)")
 
 ```{ojs}
 //| output: false
-showZeroLine = traces.includes("y = 0")
-```
-
-```{ojs}
-//| output: false
 showSecant = traces.includes("Secant line")
 ```
 
@@ -374,17 +368,12 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showZeroLine, showSecant, showSecantPoints, showIntercepts) => {
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showSecant, showSecantPoints, showIntercepts) => {
     const data = []
 
     if (showFCurve) {
       // The function curve
       data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
-    }
-    if (showZeroLine) {
-      // The x-axis (y = 0 reference line), spanning the buffer so it's still
-      // visible when the user pans/zooms out
-      data.push({x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: false, line: {color: "#111827", width: 2}})
     }
 
     // Every point used so far: x_0 (from the first visible row's xPrev)
@@ -523,7 +512,7 @@ maxIterations = {
 <div class="ojs-plot-overlay">
 
 ```{ojs}
-mainPlot(setup, showFCurve, showZeroLine, showSecant, showSecantPoints, showIntercepts)
+mainPlot(setup, showFCurve, showSecant, showSecantPoints, showIntercepts)
 ```
 
 ```{ojs}

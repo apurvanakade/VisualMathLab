@@ -6,10 +6,14 @@
 
 (function attachVM(globalThis) {
   // Resize the plot once the browser finishes entering/leaving fullscreen —
-  // Plotly doesn't know the div's size changed on its own.
+  // Plotly doesn't know the div's size changed on its own. When the
+  // fullscreened element is a .ojs-plot-overlay wrapper (see below) rather
+  // than the Plotly graph div itself, Plotly.Plots.resize needs the actual
+  // graph div (Plotly tags it "js-plotly-plot"), not the wrapper.
   document.addEventListener("fullscreenchange", () => {
     if (document.fullscreenElement && globalThis.Plotly) {
-      globalThis.Plotly.Plots.resize(document.fullscreenElement)
+      const gd = document.fullscreenElement.querySelector(".js-plotly-plot") || document.fullscreenElement
+      globalThis.Plotly.Plots.resize(gd)
     }
   })
 
@@ -26,10 +30,18 @@
       path: "M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"
     },
     click: (gd) => {
-      if (document.fullscreenElement === gd) {
+      // Fullscreen the .ojs-plot-overlay wrapper when present, not just the
+      // graph div gd itself -- pages with a VM.ui.legendOverlay checkbox
+      // legend (js/ui/legend-overlay.js) position it as a sibling of gd
+      // inside that wrapper, and the Fullscreen API only keeps descendants
+      // of the fullscreened element visible, so fullscreening gd alone
+      // would hide the legend. Pages without that wrapper fall back to
+      // fullscreening gd, same as before.
+      const target = gd.closest(".ojs-plot-overlay") || gd
+      if (document.fullscreenElement === target) {
         document.exitFullscreen()
       } else {
-        gd.requestFullscreen()
+        target.requestFullscreen()
       }
     }
   }

@@ -179,9 +179,47 @@
 
 /* The Fullscreen API paints a black backdrop behind the fullscreened
  * element; without an explicit background, that shows through anywhere the
- * Plotly chart itself doesn't paint (e.g. around a narrower aspect ratio). */
+ * Plotly chart itself doesn't paint (e.g. around a narrower aspect ratio).
+ * plotly-fullscreen-button.js records the chart's on-page width/height
+ * ratio into --vm-plot-aspect-ratio right before requesting fullscreen,
+ * since the div's normal sizing (width: 100%; height: 78vh) is relative to
+ * the *fullscreen* viewport once entered, not its original box, and would
+ * otherwise stretch the plot to a different ratio than on the page. The
+ * existing per-page ResizeObserver on the graph div (see e.g.
+ * root-finding/newton-method/index.qmd's mainPlot cell) already calls
+ * Plotly.Plots.resize whenever this box resizes, so Plotly's own redraw
+ * picks up the letterboxed size with no extra JS here. */
 .ojs-plot-overlay:fullscreen {
   background: var(--bs-body-bg, #fff);
+}
+
+/* Quarto/Observable sits several plain wrapper divs between .ojs-plot-overlay
+ * and the actual .js-plotly-plot graph div (.cell > .cell-output-display >
+ * #ojs-cell-N > div.observablehq > .js-plotly-plot) -- each one shrinks to
+ * the chart's on-page size by default, which would otherwise cap the
+ * percentages below at the old (pre-fullscreen) box instead of the
+ * fullscreen viewport. `:has()` targets every one of them regardless of
+ * how many levels deep or what Quarto/Observable happens to name them,
+ * making each fill and center its child in turn -- the chain bottoms out
+ * at .js-plotly-plot itself, which doesn't contain a nested
+ * .js-plotly-plot so this rule doesn't match it. The legend/step overlays
+ * are unaffected since they're siblings of this chain, not ancestors of
+ * the graph div. */
+.ojs-plot-overlay:fullscreen div:has(.js-plotly-plot) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.ojs-plot-overlay:fullscreen .js-plotly-plot {
+  /* Each candidate is "fit to the full height" vs. "fit to the full width"
+   * at the recorded ratio; min() picks whichever one doesn't overflow the
+   * other axis, which is exactly contain-style letterboxing. */
+  width: min(100%, calc(100vh * var(--vm-plot-aspect-ratio, 1.6)));
+  height: min(100%, calc(100vw / var(--vm-plot-aspect-ratio, 1.6)));
+  min-height: 0;
 }
 
 /* Floating legend/checkbox hybrid, positioned atop a Plotly chart by

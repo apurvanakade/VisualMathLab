@@ -26,18 +26,6 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
-// param by the tabSync cell further down.
-tabSlugToLabel = new Map([
-  ["inputs", "Inputs"],
-  ["display", "Display Options"]
-])
-
-tabLabelToSlug = new Map([
-  ["Inputs", "inputs"],
-  ["Display Options", "display"]
-])
-
 traceOptions = ["f(x)", "Adaptive Simpson panels", "Partition points"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
@@ -95,10 +83,6 @@ examples = [
   }
 ]
 ```
-
-::: {.panel-tabset}
-
-## Inputs
 
 <div class="ojs-panel">
 
@@ -176,8 +160,8 @@ applyExampleFromSelect = {
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
 // take effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The tolerance slider and max depth field below are
-// unaffected and stay reactive.
+// every keystroke. The tolerance slider and max depth field overlaid on the
+// chart are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -186,42 +170,6 @@ viewof plotTrigger = {
 ```
 
 </div>
-
-## Display Options
-
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof tolExponent = {
-  const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
-  tolSlider.classList.add("ojs-fill")
-  return tolSlider
-}
-```
-
-```{ojs}
-viewof maxDepthInput = {
-  const input = Inputs.text({value: "15", label: "Max depth", placeholder: "Example: 15, 5*3"})
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxDepth parses the Max depth field's expression, falling back to 15 for
-// invalid input so the recursion always gets a usable depth limit.
-maxDepth = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxDepthInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 15
-  return Math.max(1, Math.round(parsed))
-}
-```
-
-</div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -271,40 +219,6 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
-// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialParams = new URLSearchParams(window.location.search)
-  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
-  return true
 }
 ```
 
@@ -617,6 +531,18 @@ summary = {
 }
 ```
 
+```{ojs}
+//| output: false
+// maxDepth parses the Max depth field's expression, falling back to 15 for
+// invalid input so the recursion always gets a usable depth limit.
+maxDepth = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxDepthInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 15
+  return Math.max(1, Math.round(parsed))
+}
+```
+
 <div class="ojs-plot-overlay">
 
 ```{ojs}
@@ -630,6 +556,26 @@ viewof traces = {
   return VM.ui.legendOverlay(items, {value: traceOptions})
 }
 ```
+
+<div class="ojs-step-overlay ojs-row">
+
+```{ojs}
+viewof tolExponent = {
+  const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
+  tolSlider.classList.add("ojs-fill")
+  return tolSlider
+}
+```
+
+```{ojs}
+viewof maxDepthInput = {
+  const input = Inputs.text({value: "15", label: "Max depth", placeholder: "Example: 15, 5*3"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+</div>
 
 </div>
 

@@ -47,9 +47,25 @@ tabLabelToSlug = new Map([
   ["Display Options", "display"]
 ])
 
-methodOptions = ["Euler's method", "Improved Euler", "RK4"]
+methodOptions = ["Reference solution", "Euler's method", "Improved Euler", "RK4"]
+
+// Matches the line/marker colors mainPlot uses for each method's trace, so
+// the overlay legend's swatches double as a color key.
+methodColors = new Map([
+  ["Reference solution", "#2563eb"],
+  ["Euler's method", "#dc2626"],
+  ["Improved Euler", "#f59e0b"],
+  ["RK4", "#16a34a"]
+])
 
 methodSlugToLabel = new Map([
+  ["reference", "Reference solution"],
+  ["reference-solution", "Reference solution"],
+  ["ref", "Reference solution"],
+  ["true", "Reference solution"],
+  ["true-solution", "Reference solution"],
+  ["exact", "Reference solution"],
+
   ["euler", "Euler's method"],
   ["eulers", "Euler's method"],
   ["euler-method", "Euler's method"],
@@ -68,6 +84,7 @@ methodSlugToLabel = new Map([
 ])
 
 methodLabelToSlug = new Map([
+  ["Reference solution", "reference"],
   ["Euler's method", "euler"],
   ["Improved Euler", "improved"],
   ["RK4", "rk4"]
@@ -106,43 +123,43 @@ initialMax = urlParams.get("max") ?? "20"
 examples = [
   {
     title: "Textbook nonlinear forcing",
-    params: {f: "y - t^2 + 1", y0: "0.5", b: "2", max: "20", n: "4", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "y - t^2 + 1", y0: "0.5", b: "2", max: "20", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Relaxation toward a trend",
-    params: {f: "t - y", y0: "1", b: "5", max: "40", n: "6", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "t - y", y0: "1", b: "5", max: "40", n: "6", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Logistic growth",
-    params: {f: "y*(1 - y)", y0: "0.1", b: "8", max: "60", n: "8", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "y*(1 - y)", y0: "0.1", b: "8", max: "60", n: "8", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Exponential decay",
-    params: {f: "-2*y", y0: "3", b: "4", max: "40", n: "5", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "-2*y", y0: "3", b: "4", max: "40", n: "5", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Exponential growth",
-    params: {f: "2*y", y0: "0.25", b: "2", max: "40", n: "4", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "2*y", y0: "0.25", b: "2", max: "40", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Damped sinusoidal forcing",
-    params: {f: "sin(t) - 0.5*y", y0: "0", b: "10", max: "80", n: "12", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "sin(t) - 0.5*y", y0: "0", b: "10", max: "80", n: "12", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Nonlinear Riccati-type equation",
-    params: {f: "y^2 - t", y0: "0", b: "2", max: "50", n: "8", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "y^2 - t", y0: "0", b: "2", max: "50", n: "8", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Fast attraction to cos(t)",
-    params: {f: "-10*(y - cos(t)) - sin(t)", y0: "1", b: "3", max: "80", n: "6", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "-10*(y - cos(t)) - sin(t)", y0: "1", b: "3", max: "80", n: "6", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Stiff-looking decay",
-    params: {f: "-15*y", y0: "1", b: "1", max: "80", n: "4", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "-15*y", y0: "1", b: "1", max: "80", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Oscillatory forcing with growth",
-    params: {f: "y + sin(5*t)", y0: "0", b: "3", max: "80", n: "10", show: ["Euler's method", "Improved Euler", "RK4"]}
+    params: {f: "y + sin(5*t)", y0: "0", b: "3", max: "80", n: "10", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   }
 ]
 ```
@@ -235,8 +252,8 @@ applyExampleFromSelect = {
 ```{ojs}
 // Plot commits the current function/initial-condition/endpoint fields —
 // edits above don't take effect until this is clicked, so result/mainPlot
-// don't recompute on every keystroke. The n slider and the method
-// checkboxes below are unaffected and stay reactive.
+// don't recompute on every keystroke. The n slider and the method legend
+// overlaying the chart are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -282,20 +299,12 @@ maxN = {
 
 </div>
 
-<div class="ojs-panel ojs-row">
+:::
 
 ```{ojs}
-viewof methods = {
-  const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
-  checkboxInput.classList.add("ojs-fill")
-  checkboxInput.dataset.exampleField = "show"
-  return checkboxInput
-}
+//| output: false
+showRefSolution = methods.includes("Reference solution")
 ```
-
-</div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -539,27 +548,28 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data, showEuler, showImprovedEuler, showRK4) => {
-    const traces = [
-      // The fine reference solution curve
-      {x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
+  return (data, showRefSolution, showEuler, showImprovedEuler, showRK4) => {
+    const traces = []
+
+    if (showRefSolution) {
+      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: "#2563eb", width: 3}})
+    }
 
     if (showEuler && data.eulerTs.length > 0) {
       traces.push({
-        x: data.eulerTs, y: data.eulerYs, type: "scatter", mode: "lines+markers", name: "Euler's method", showlegend: true,
+        x: data.eulerTs, y: data.eulerYs, type: "scatter", mode: "lines+markers", name: "Euler's method", showlegend: false,
         line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 6}
       })
     }
     if (showImprovedEuler && data.improvedEulerTs.length > 0) {
       traces.push({
-        x: data.improvedEulerTs, y: data.improvedEulerYs, type: "scatter", mode: "lines+markers", name: "Improved Euler", showlegend: true,
+        x: data.improvedEulerTs, y: data.improvedEulerYs, type: "scatter", mode: "lines+markers", name: "Improved Euler", showlegend: false,
         line: {color: "#f59e0b", width: 2}, marker: {color: "#f59e0b", size: 6}
       })
     }
     if (showRK4 && data.rk4Ts.length > 0) {
       traces.push({
-        x: data.rk4Ts, y: data.rk4Ys, type: "scatter", mode: "lines+markers", name: "RK4", showlegend: true,
+        x: data.rk4Ts, y: data.rk4Ys, type: "scatter", mode: "lines+markers", name: "RK4", showlegend: false,
         line: {color: "#16a34a", width: 2}, marker: {color: "#16a34a", size: 6}
       })
     }
@@ -594,9 +604,23 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup, showEuler, showImprovedEuler, showRK4)
+mainPlot(setup, showRefSolution, showEuler, showImprovedEuler, showRK4)
 ```
+
+```{ojs}
+viewof methods = {
+  const items = []
+  for (const label of methodOptions) items.push({label, color: methodColors.get(label)})
+  const legend = VM.ui.legendOverlay(items, {value: initialMethods})
+  legend.dataset.exampleField = "show"
+  return legend
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="false" title="Convergence plots"}
 

@@ -63,9 +63,20 @@ initialN = {
   return Number.isInteger(raw) && raw >= 1 ? raw : 4
 }
 
+interpolantOptions = ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]
+
+// Matches the line colors mainPlot uses for each trace, so the overlay
+// legend's swatches double as a color key.
+interpolantColors = new Map([
+  ["Original curve", "#2563eb"],
+  ["Linear interpolant", "#dc2626"],
+  ["Cubic spline interpolant", "#16a34a"],
+  ["Interpolation nodes", "#111827"]
+])
+
 initialInterpolants = {
   const raw = urlParams.get("show")
-  const all = ["Original curve", "Linear interpolant", "Cubic spline interpolant"]
+  const all = interpolantOptions
   if (!raw) return all
 
   const map = {
@@ -73,7 +84,8 @@ initialInterpolants = {
     f: "Original curve",
     linear: "Linear interpolant",
     cubic: "Cubic spline interpolant",
-    spline: "Cubic spline interpolant"
+    spline: "Cubic spline interpolant",
+    nodes: "Interpolation nodes"
   }
 
   const chosen = []
@@ -103,27 +115,27 @@ initialInterpolants = {
 examples = [
   {
     title: "Sine on one full period",
-    params: {f: "sin(x)", a: "0", b: "2*pi", max: "20", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+    params: {f: "sin(x)", a: "0", b: "2*pi", max: "20", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   },
   {
     title: "Cosine on half a period",
-    params: {f: "cos(x)", a: "0", b: "pi", max: "24", n: "3", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+    params: {f: "cos(x)", a: "0", b: "pi", max: "24", n: "3", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   },
   {
     title: "Cubic polynomial",
-    params: {f: "x^3-x", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+    params: {f: "x^3-x", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   },
   {
     title: "Rational peak",
-    params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "6", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+    params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "6", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   },
   {
     title: "Gaussian bump",
-    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "35", n: "5", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "35", n: "5", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   },
   {
     title: "Nonsmooth corner",
-    params: {f: "abs(x)", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant"]}
+    params: {f: "abs(x)", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   }
 ]
 ```
@@ -213,8 +225,8 @@ applyExampleFromSelect = {
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
 // take effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The n slider and the interpolant checkboxes below are
-// unaffected and stay reactive.
+// every keystroke. The n slider and the interpolant legend overlaying the
+// chart are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -260,20 +272,6 @@ maxN = {
 
 </div>
 
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof interpolants = {
-  const options = ["Original curve", "Linear interpolant", "Cubic spline interpolant"]
-  const checkboxInput = Inputs.checkbox(options, {value: initialInterpolants})
-  checkboxInput.classList.add("ojs-fill")
-  checkboxInput.dataset.exampleField = "show"
-  return checkboxInput
-}
-```
-
-</div>
-
 :::
 
 ```{ojs}
@@ -289,6 +287,11 @@ showLinear = interpolants.includes("Linear interpolant")
 ```{ojs}
 //| output: false
 showCubic = interpolants.includes("Cubic spline interpolant")
+```
+
+```{ojs}
+//| output: false
+showNodes = interpolants.includes("Interpolation nodes")
 ```
 
 ```{ojs}
@@ -339,6 +342,7 @@ committed = {
       if (label === "Original curve") return "original"
       if (label === "Linear interpolant") return "linear"
       if (label === "Cubic spline interpolant") return "cubic"
+      if (label === "Interpolation nodes") return "nodes"
       return label
     }).join(",")
   )
@@ -399,6 +403,7 @@ urlSyncControls = {
       if (label === "Original curve") return "original"
       if (label === "Linear interpolant") return "linear"
       if (label === "Cubic spline interpolant") return "cubic"
+      if (label === "Interpolation nodes") return "nodes"
       return label
     }).join(",")
   )
@@ -591,20 +596,20 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data, showOriginal, showLinear, showCubic) => {
+  return (data, showOriginal, showLinear, showCubic, showNodes) => {
     const traces = []
 
     if (showOriginal) {
-      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
     }
     if (showLinear && data.linearX.length > 0) {
-      traces.push({x: data.linearX, y: data.linearY, type: "scatter", mode: "lines", name: "Linear interpolant", showlegend: true, line: {color: "#dc2626", width: 2.5}})
+      traces.push({x: data.linearX, y: data.linearY, type: "scatter", mode: "lines", name: "Linear interpolant", showlegend: false, line: {color: "#dc2626", width: 2.5}})
     }
     if (showCubic && data.cubicX.length > 0) {
-      traces.push({x: data.cubicX, y: data.cubicY, type: "scatter", mode: "lines", name: "Cubic spline interpolant", showlegend: true, line: {color: "#16a34a", width: 2.5}})
+      traces.push({x: data.cubicX, y: data.cubicY, type: "scatter", mode: "lines", name: "Cubic spline interpolant", showlegend: false, line: {color: "#16a34a", width: 2.5}})
     }
-    if (data.nodesX.length > 0 && (showLinear || showCubic)) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: true, marker: {color: "#111827", size: 8, symbol: "circle", line: {color: "white", width: 1}}})
+    if (showNodes && data.nodesX.length > 0) {
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: "#111827", size: 8, symbol: "circle", line: {color: "white", width: 1}}})
     }
 
     const layout = {
@@ -637,9 +642,23 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup, showOriginal, showLinear, showCubic)
+mainPlot(setup, showOriginal, showLinear, showCubic, showNodes)
 ```
+
+```{ojs}
+viewof interpolants = {
+  const items = []
+  for (const label of interpolantOptions) items.push({label, color: interpolantColors.get(label)})
+  const legend = VM.ui.legendOverlay(items, {value: initialInterpolants})
+  legend.dataset.exampleField = "show"
+  return legend
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="false" title="Convergence plots"}
 

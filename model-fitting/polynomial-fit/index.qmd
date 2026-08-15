@@ -32,7 +32,6 @@ VM = window.VM
 // Supported parameters:
 //   noise=0.7
 //   degrees=1,5
-//   seed=303
 urlParams = new URLSearchParams(window.location.search)
 
 maxNoise = 1
@@ -42,14 +41,25 @@ initialNoise = {
   return Number.isFinite(raw) ? Math.max(0, Math.min(maxNoise, raw)) : 0
 }
 
-initialSeed = {
-  const raw = Number(urlParams.get("seed"))
-  return Number.isInteger(raw) && raw >= 0 ? raw : 123
-}
+degreeOptions = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5", "Data points"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+degreeColors = new Map([
+  ["Degree 1", "#2563eb"],
+  ["Degree 2", "#16a34a"],
+  ["Degree 3", "#9333ea"],
+  ["Degree 4", "#0891b2"],
+  ["Degree 5", "#dc2626"],
+  ["Data points", "#111827"]
+])
 
 initialShownDegrees = {
   const raw = urlParams.get("degrees")
-  if (!raw) return ["Degree 5"]
+  // "Data points" was always shown unconditionally before this checkbox
+  // existed, and has no URL param of its own -- always include it here so
+  // that behavior is unchanged regardless of what "degrees" says.
+  if (!raw) return ["Degree 5", "Data points"]
 
   const labels = []
   const seen = new Set()
@@ -62,19 +72,18 @@ initialShownDegrees = {
     }
   }
 
-  return labels.length ? labels : ["Degree 5"]
+  if (labels.length === 0) return ["Degree 5", "Data points"]
+  labels.push("Data points")
+  return labels
 }
 ```
 
 ```{ojs}
 //| output: false
 // basePoints redraws whenever regenerateTrigger changes (initial load
-// counts as one draw). It is deterministic from the current seed plus the
-// regenerate count, so URL example cards always produce the same first draw,
-// while "Regenerate points" still produces a new reproducible draw.
-// All noise comes from `offsets`, scaled by the noise slider in `points`
-// below — so the points are exactly colinear at noise level 0, on whatever
-// line this draw picked.
+// counts as one draw). All noise comes from `offsets`, scaled by the noise
+// slider in `points` below — so the points are exactly colinear at noise
+// level 0, on whatever line this draw picked.
 // Kept outside the ojs-row div below: an output:false cell still renders
 // an empty .cell div, and if it sat inside the row it would become the
 // row's first child, stealing the `flex: 1 1 200px` fill rule meant for
@@ -82,9 +91,9 @@ initialShownDegrees = {
 basePoints = {
   regenerateTrigger
 
-  // Seeded PRNG (mulberry32). This replaces Date.now() so examples are
-  // reproducible from URL parameters.
-  let state = Math.floor(seedValue) + regenerateTrigger * 1000003
+  // Seeded PRNG (mulberry32), seeded from the actual clock so each draw is
+  // unpredictable but still cheap and dependency-free.
+  let state = (Date.now() ^ (regenerateTrigger * 1000003)) | 0
   const rand = () => {
     state = (state + 0x6D2B79F5) | 0
     let t = Math.imul(state ^ (state >>> 15), 1 | state)
@@ -245,32 +254,6 @@ viewof regenerateTrigger = {
 
 </div>
 
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof shownDegrees = {
-  const options = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5"]
-  const checkboxInput = Inputs.checkbox(options, {value: initialShownDegrees})
-  checkboxInput.classList.add("ojs-fill")
-  return checkboxInput
-}
-```
-
-```{ojs}
-viewof seedValue = {
-  const input = Inputs.number({
-    value: initialSeed,
-    min: 0,
-    step: 1,
-    label: "Random seed"
-  })
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-</div>
-
 ```{ojs}
 //| output: false
 // Keep the current settings in the URL so the page is shareable.
@@ -282,10 +265,10 @@ viewof seedValue = {
   params.set(
     "degrees",
     shownDegrees
+      .filter(label => label !== "Data points")
       .map(label => label.replace("Degree ", ""))
       .join(",")
   )
-  params.set("seed", String(seedValue))
 
   const query = params.toString()
   const newUrl = `${window.location.pathname}${query ? "?" + query : ""}${window.location.hash}`
@@ -316,6 +299,11 @@ showDegree4 = shownDegrees.includes("Degree 4")
 ```{ojs}
 //| output: false
 showDegree5 = shownDegrees.includes("Degree 5")
+```
+
+```{ojs}
+//| output: false
+showDataPoints = shownDegrees.includes("Data points")
 ```
 
 ```{ojs}
@@ -417,7 +405,7 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({points, xRange, yRange, sampleXs, curves}, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5) => {
+  return ({points, xRange, yRange, sampleXs, curves}, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints) => {
     const pointXs = [], pointYs = []
     for (const p of points) {
       pointXs.push(p.x)
@@ -437,9 +425,11 @@ mainPlot = {
     const data = []
     for (const spec of curveSpecs) {
       if (!spec.show) continue
-      data.push({x: sampleXs, y: curves[spec.degree], type: "scatter", mode: "lines", name: spec.label, line: {color: spec.color, width: 2.5}})
+      data.push({x: sampleXs, y: curves[spec.degree], type: "scatter", mode: "lines", name: spec.label, showlegend: false, line: {color: spec.color, width: 2.5}})
     }
-    data.push({x: pointXs, y: pointYs, type: "scatter", mode: "markers", name: "Data points", marker: {color: "#111827", size: 9, line: {color: "white", width: 1}}})
+    if (showDataPoints) {
+      data.push({x: pointXs, y: pointYs, type: "scatter", mode: "markers", name: "Data points", showlegend: false, marker: {color: "#111827", size: 9, line: {color: "white", width: 1}}})
+    }
 
     const layout = {
       margin: {l: 0, r: 0, t: 0, b: 0},
@@ -469,9 +459,21 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5)
+mainPlot(setup, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints)
 ```
+
+```{ojs}
+viewof shownDegrees = {
+  const items = []
+  for (const label of degreeOptions) items.push({label, color: degreeColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: initialShownDegrees})
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="true" title="Model comparison"}
 
@@ -550,7 +552,7 @@ $$
 
 A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider above to push 6 points off a line and compare how degree 1–5 fits respond; click "Regenerate points" for a new line and noise pattern.
 
-## Why this matters
+
 
 A low-degree fit can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree fit can match the training data almost perfectly but swings wildly as the data changes — low bias, high variance, **overfitting**. The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — training error stays near zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degree 1 and 2 barely react to the noise at all, at the cost of never capturing real curvature either.
 

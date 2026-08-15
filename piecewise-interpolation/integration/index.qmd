@@ -47,9 +47,14 @@ tabLabelToSlug = new Map([
   ["Display Options", "display"]
 ])
 
-methodOptions = ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]
+methodOptions = ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]
 
 methodSlugToLabel = new Map([
+  ["f", "f(x)"],
+  ["fx", "f(x)"],
+  ["curve", "f(x)"],
+  ["function", "f(x)"],
+
   ["left", "Left Riemann sum"],
   ["left-riemann", "Left Riemann sum"],
   ["left-riemann-sum", "Left Riemann sum"],
@@ -74,14 +79,31 @@ methodSlugToLabel = new Map([
   ["simpson-rule", "Simpson's rule"],
   ["simpsons-rule", "Simpson's rule"],
   ["simpson_rule", "Simpson's rule"],
-  ["simpsons_rule", "Simpson's rule"]
+  ["simpsons_rule", "Simpson's rule"],
+
+  ["nodes", "Interpolation nodes"],
+  ["interpolation-nodes", "Interpolation nodes"],
+  ["interpolation_nodes", "Interpolation nodes"]
 ])
 
 methodLabelToSlug = new Map([
+  ["f(x)", "f"],
   ["Left Riemann sum", "left"],
   ["Midpoint Riemann sum", "midpoint"],
   ["Trapezoidal rule", "trapezoidal"],
-  ["Simpson's rule", "simpson"]
+  ["Simpson's rule", "simpson"],
+  ["Interpolation nodes", "nodes"]
+])
+
+// Matches the fill/line colors mainPlot uses for each method's trace, so
+// the overlay legend's swatches double as a color key.
+methodColors = new Map([
+  ["f(x)", "#2563eb"],
+  ["Left Riemann sum", "#8b5cf6"],
+  ["Midpoint Riemann sum", "#f59e0b"],
+  ["Trapezoidal rule", "#dc2626"],
+  ["Simpson's rule", "#16a34a"],
+  ["Interpolation nodes", "#111827"]
 ])
 
 initialMethods = {
@@ -117,43 +139,43 @@ initialMax = urlParams.get("max") ?? "20"
 examples = [
   {
     title: "Sine area on one half-period",
-    params: {f: "sin(x)", a: "0", b: "pi", max: "40", n: "6", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "sin(x)", a: "0", b: "pi", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Symmetric cosine arch",
-    params: {f: "cos(x)", a: "-pi/2", b: "pi/2", max: "40", n: "8", show: ["Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "cos(x)", a: "-pi/2", b: "pi/2", max: "40", n: "8", show: ["f(x)", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Signed area cancellation",
-    params: {f: "x^3 - x", a: "-2", b: "2", max: "40", n: "6", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "x^3 - x", a: "-2", b: "2", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Quadratic test case",
-    params: {f: "x^2", a: "0", b: "1", max: "30", n: "5", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "x^2", a: "0", b: "1", max: "30", n: "5", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Polynomial with changing curvature",
-    params: {f: "x^3 - 2*x + 1", a: "-1", b: "2", max: "40", n: "6", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "x^3 - 2*x + 1", a: "-1", b: "2", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Rational peak",
-    params: {f: "1/(1 + x^2)", a: "-5", b: "5", max: "60", n: "10", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "1/(1 + x^2)", a: "-5", b: "5", max: "60", n: "10", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Gaussian bump",
-    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "60", n: "10", show: ["Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "60", n: "10", show: ["f(x)", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Nonsmooth corner",
-    params: {f: "abs(x)", a: "-2", b: "2", max: "50", n: "8", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "abs(x)", a: "-2", b: "2", max: "50", n: "8", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Oscillatory integral",
-    params: {f: "sin(5*x)", a: "0", b: "2*pi", max: "80", n: "12", show: ["Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule"]}
+    params: {f: "sin(5*x)", a: "0", b: "2*pi", max: "80", n: "12", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Simpson's rule needs even n",
-    params: {f: "sin(x)", a: "0", b: "pi", max: "35", n: "5", show: ["Simpson's rule"]}
+    params: {f: "sin(x)", a: "0", b: "pi", max: "35", n: "5", show: ["f(x)", "Simpson's rule", "Interpolation nodes"]}
   }
 ]
 ```
@@ -246,8 +268,8 @@ applyExampleFromSelect = {
 ```{ojs}
 // Plot commits the current function/endpoint fields — edits above don't
 // take effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The n slider and the method checkboxes below are
-// unaffected and stay reactive.
+// every keystroke. The n slider and the method legend overlaying the chart
+// are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -293,20 +315,17 @@ maxN = {
 
 </div>
 
-<div class="ojs-panel ojs-row">
+:::
 
 ```{ojs}
-viewof methods = {
-  const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
-  checkboxInput.classList.add("ojs-fill")
-  checkboxInput.dataset.exampleField = "show"
-  return checkboxInput
-}
+//| output: false
+showFCurve = methods.includes("f(x)")
 ```
 
-</div>
-
-:::
+```{ojs}
+//| output: false
+showNodes = methods.includes("Interpolation nodes")
+```
 
 ```{ojs}
 //| output: false
@@ -615,42 +634,43 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data, showLeftRiemann, showMidpoint, showTrapezoidal, showSimpson) => {
-    const traces = [
-      // The function curve
-      {x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
+  return (data, showFCurve, showLeftRiemann, showMidpoint, showTrapezoidal, showSimpson, showNodes) => {
+    const traces = []
+
+    if (showFCurve) {
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+    }
 
     if (showLeftRiemann && data.midX.length > 0) {
       traces.push({
-        x: data.midX, y: data.leftY, width: data.widths, type: "bar", name: "Left Riemann sum", showlegend: true,
+        x: data.midX, y: data.leftY, width: data.widths, type: "bar", name: "Left Riemann sum", showlegend: false,
         marker: {color: "rgba(139, 92, 246, 0.25)", line: {color: "#8b5cf6", width: 1.5}}
       })
     }
 
     if (showMidpoint && data.midX.length > 0) {
       traces.push({
-        x: data.midX, y: data.midY, width: data.widths, type: "bar", name: "Midpoint Riemann sum", showlegend: true,
+        x: data.midX, y: data.midY, width: data.widths, type: "bar", name: "Midpoint Riemann sum", showlegend: false,
         marker: {color: "rgba(245, 158, 11, 0.25)", line: {color: "#f59e0b", width: 1.5}}
       })
     }
 
     if (showTrapezoidal && data.nodesX.length > 0) {
       traces.push({
-        x: data.nodesX, y: data.nodesY, type: "scatter", mode: "lines", name: "Trapezoidal rule", showlegend: true,
+        x: data.nodesX, y: data.nodesY, type: "scatter", mode: "lines", name: "Trapezoidal rule", showlegend: false,
         fill: "tozeroy", fillcolor: "rgba(220, 38, 38, 0.2)", line: {color: "#dc2626", width: 2.5}
       })
     }
 
     if (showSimpson && data.simpsonX.length > 0) {
       traces.push({
-        x: data.simpsonX, y: data.simpsonY, type: "scatter", mode: "lines", name: "Simpson's rule", showlegend: true,
+        x: data.simpsonX, y: data.simpsonY, type: "scatter", mode: "lines", name: "Simpson's rule", showlegend: false,
         fill: "tozeroy", fillcolor: "rgba(22, 163, 74, 0.2)", line: {color: "#16a34a", width: 2.5}
       })
     }
 
-    if (data.nodesX.length > 0 && (showTrapezoidal || showSimpson)) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: true, marker: {color: "#111827", size: 7, symbol: "circle", line: {color: "white", width: 1}}})
+    if (showNodes && data.nodesX.length > 0) {
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: "#111827", size: 7, symbol: "circle", line: {color: "white", width: 1}}})
     }
 
     const layout = {
@@ -684,9 +704,23 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup, showLeftRiemann, showMidpoint, showTrapezoidal, showSimpson)
+mainPlot(setup, showFCurve, showLeftRiemann, showMidpoint, showTrapezoidal, showSimpson, showNodes)
 ```
+
+```{ojs}
+viewof methods = {
+  const items = []
+  for (const label of methodOptions) items.push({label, color: methodColors.get(label)})
+  const legend = VM.ui.legendOverlay(items, {value: initialMethods})
+  legend.dataset.exampleField = "show"
+  return legend
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="false" title="Convergence plots"}
 

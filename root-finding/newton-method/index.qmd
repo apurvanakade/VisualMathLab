@@ -29,6 +29,33 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
+// param by the tabSync cell further down.
+tabSlugToLabel = new Map([
+  ["inputs", "Inputs"],
+  ["display", "Display Options"]
+])
+
+tabLabelToSlug = new Map([
+  ["Inputs", "inputs"],
+  ["Display Options", "display"]
+])
+
+traceOptions = ["f(x)", "y = 0", "Tangent line", "Newton points", "Tangent x-intercepts"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+traceColors = new Map([
+  ["f(x)", "#2563eb"],
+  ["y = 0", "#111827"],
+  ["Tangent line", "#dc2626"],
+  ["Newton points", "#dc2626"],
+  ["Tangent x-intercepts", "#16a34a"]
+])
+```
+
+```{ojs}
+//| output: false
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
@@ -41,7 +68,7 @@ examples = [
   },
   {
     title: "Looks unstable, then converges",
-    params: {f: "x^3 - 2*x + 2", x0: "-0.1"}
+    params: {f: "x^3 - 2*x + 2", x0: "0.95"}
   },
   {
     title: "Good starting point for the same function",
@@ -65,6 +92,10 @@ examples = [
   }
 ]
 ```
+
+::: {.panel-tabset}
+
+## Inputs
 
 <div class="ojs-panel">
 
@@ -139,6 +170,8 @@ viewof plotTrigger = {
 
 </div>
 
+## Display Options
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -170,6 +203,8 @@ maxIterations = {
 ```
 
 </div>
+
+:::
 
 ```{ojs}
 //| output: false
@@ -211,6 +246,65 @@ committed = {
 
   return {fText: fVal, x0: x0Val}
 }
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialParams = new URLSearchParams(window.location.search)
+  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+showFCurve = traces.includes("f(x)")
+```
+
+```{ojs}
+//| output: false
+showZeroLine = traces.includes("y = 0")
+```
+
+```{ojs}
+//| output: false
+showTangent = traces.includes("Tangent line")
+```
+
+```{ojs}
+//| output: false
+showNewtonPoints = traces.includes("Newton points")
+```
+
+```{ojs}
+//| output: false
+showIntercepts = traces.includes("Tangent x-intercepts")
 ```
 
 ```{ojs}
@@ -331,22 +425,27 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}) => {
-    const data = [
-      // The function curve
-      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showZeroLine, showTangent, showNewtonPoints, showIntercepts) => {
+    const data = []
+
+    if (showFCurve) {
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+    }
+    if (showZeroLine) {
       // The x-axis (y = 0 reference line), spanning the buffer so it's still
       // visible when the user pans/zooms out
-      {x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: true, line: {color: "#111827", width: 2}}
-    ]
+      data.push({x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: false, line: {color: "#111827", width: 2}})
+    }
 
     // Dotted vertical lines from the x-axis up to each Newton point
     const newtonPoints = []
     for (const r of visibleRows) {
       if (Number.isFinite(r.x) && Number.isFinite(r.fx)) newtonPoints.push(r)
     }
-    for (const r of newtonPoints) {
-      data.push({x: [r.x, r.x], y: [0, r.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+    if (showNewtonPoints) {
+      for (const r of newtonPoints) {
+        data.push({x: [r.x, r.x], y: [0, r.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+      }
     }
 
     // Tangent lines: previous ones faded, current one solid
@@ -360,28 +459,30 @@ mainPlot = {
     let currentTangent = null
     if (validTangentRows.length > 0) currentTangent = validTangentRows[validTangentRows.length - 1]
 
-    for (const row of prevTangents) {
-      const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
-      const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
-      data.push({
-        x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
-        type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
-        line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
-      })
-    }
-    if (currentTangent) {
-      const row = currentTangent
-      const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
-      const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
-      data.push({
-        x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
-        type: "scatter", mode: "lines", name: "Tangent line", showlegend: true,
-        line: {color: "#dc2626", width: 2.5}
-      })
+    if (showTangent) {
+      for (const row of prevTangents) {
+        const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
+        const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
+        data.push({
+          x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
+          type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
+          line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
+        })
+      }
+      if (currentTangent) {
+        const row = currentTangent
+        const tlo = Math.max(xRange.lo, Math.min(row.x, row.xNext) - 0.75)
+        const thi = Math.min(xRange.hi, Math.max(row.x, row.xNext) + 0.75)
+        data.push({
+          x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
+          type: "scatter", mode: "lines", name: "Tangent line", showlegend: false,
+          line: {color: "#dc2626", width: 2.5}
+        })
+      }
     }
 
     // Red markers at each (x_i, f(x_i)) Newton point
-    if (newtonPoints.length > 0) {
+    if (showNewtonPoints && newtonPoints.length > 0) {
       const xs = [], ys = [], labels = []
       for (const r of newtonPoints) {
         xs.push(r.x)
@@ -391,7 +492,7 @@ mainPlot = {
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Newton points",
-        text: labels, textposition: "top center", showlegend: true,
+        text: labels, textposition: "top center", showlegend: false,
         marker: {color: "#dc2626", size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
@@ -401,7 +502,7 @@ mainPlot = {
     for (const r of visibleRows) {
       if (Number.isFinite(r.xNext)) intercepts.push({i: r.i + 1, x: r.xNext})
     }
-    if (intercepts.length > 0) {
+    if (showIntercepts && intercepts.length > 0) {
       const xs = [], ys = [], labels = []
       for (const r of intercepts) {
         xs.push(r.x)
@@ -411,7 +512,7 @@ mainPlot = {
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Tangent x-intercepts",
-        text: labels, textposition: "bottom center", showlegend: true,
+        text: labels, textposition: "bottom center", showlegend: false,
         marker: {color: "#16a34a", size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
@@ -447,9 +548,21 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup)
+mainPlot(setup, showFCurve, showZeroLine, showTangent, showNewtonPoints, showIntercepts)
 ```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="false" title="Convergence plots"}
 

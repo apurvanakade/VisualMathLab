@@ -35,6 +35,17 @@ VM = window.VM
 // drift back down to looking small at every step, which defeats the
 // point of the demo.
 severityMax = 15
+
+fitOptions = ["L2 fit (least squares)", "L1 fit (least absolute deviations)", "Points", "Outliers"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+fitColors = new Map([
+  ["L2 fit (least squares)", "#dc2626"],
+  ["L1 fit (least absolute deviations)", "#2563eb"],
+  ["Points", "#111827"],
+  ["Outliers", "#f97316"]
+])
 ```
 
 ```{ojs}
@@ -187,6 +198,26 @@ result = {
 
 ```{ojs}
 //| output: false
+showL2 = shownFits.includes("L2 fit (least squares)")
+```
+
+```{ojs}
+//| output: false
+showL1 = shownFits.includes("L1 fit (least absolute deviations)")
+```
+
+```{ojs}
+//| output: false
+showPoints = shownFits.includes("Points")
+```
+
+```{ojs}
+//| output: false
+showOutliers = shownFits.includes("Outliers")
+```
+
+```{ojs}
+//| output: false
 // setup: axis ranges and line endpoints shared by mainPlot.
 setup = {
   const xs = []
@@ -232,7 +263,7 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({points, outlierIndices, xRange, yRange, lineXs, l2LineYs, l1LineYs}) => {
+  return ({points, outlierIndices, xRange, yRange, lineXs, l2LineYs, l1LineYs}, showL2, showL1, showPoints, showOutliers) => {
     const inlierXs = [], inlierYs = [], outlierXs = [], outlierYs = []
     for (let i = 0; i < points.length; i++) {
       if (outlierIndices.includes(i)) {
@@ -244,12 +275,19 @@ mainPlot = {
       }
     }
 
-    const data = [
-      {x: lineXs, y: l2LineYs, type: "scatter", mode: "lines", name: "L2 fit (least squares)", line: {color: "#dc2626", width: 2.5}},
-      {x: lineXs, y: l1LineYs, type: "scatter", mode: "lines", name: "L1 fit (least absolute deviations)", line: {color: "#2563eb", width: 2.5}},
-      {x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", marker: {color: "#111827", size: 8, line: {color: "white", width: 1}}},
-      {x: outlierXs, y: outlierYs, type: "scatter", mode: "markers", name: "Outliers", marker: {color: "#f97316", size: 13, symbol: "diamond", line: {color: "white", width: 1.5}}}
-    ]
+    const data = []
+    if (showL2) {
+      data.push({x: lineXs, y: l2LineYs, type: "scatter", mode: "lines", name: "L2 fit (least squares)", showlegend: false, line: {color: "#dc2626", width: 2.5}})
+    }
+    if (showL1) {
+      data.push({x: lineXs, y: l1LineYs, type: "scatter", mode: "lines", name: "L1 fit (least absolute deviations)", showlegend: false, line: {color: "#2563eb", width: 2.5}})
+    }
+    if (showPoints) {
+      data.push({x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", showlegend: false, marker: {color: "#111827", size: 8, line: {color: "white", width: 1}}})
+    }
+    if (showOutliers) {
+      data.push({x: outlierXs, y: outlierYs, type: "scatter", mode: "markers", name: "Outliers", showlegend: false, marker: {color: "#f97316", size: 13, symbol: "diamond", line: {color: "white", width: 1.5}}})
+    }
 
     const layout = {
       margin: {l: 0, r: 0, t: 0, b: 0},
@@ -279,9 +317,21 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup)
+mainPlot(setup, showL2, showL1, showPoints, showOutliers)
 ```
+
+```{ojs}
+viewof shownFits = {
+  const items = []
+  for (const label of fitOptions) items.push({label, color: fitColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: fitOptions})
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="true" title="Fit comparison"}
 
@@ -324,6 +374,6 @@ L1's fit took **${result.l1.iterations}** reweighting iterations to converge at 
 
 </div>
 
-## Why this matters
+
 
 Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes $\sum_i (y_i - \hat y_i)^2$; L1 minimizes $\sum_i |y_i - \hat y_i|$. Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier's residual — that's why it chases outliers. L1's penalty grows only linearly with distance, so an outlier costs the fit proportionally and never dominates the way it does for L2, which is why L1 is called a **robust** estimator. The tradeoff is computational: L2 has a closed-form solution, while L1 has none and must be solved iteratively — this page uses **iteratively reweighted least squares (IRLS)**, which is why L1's fit takes more iterations and more time than L2's, as shown in the table above.

@@ -29,6 +29,32 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
+// param by the tabSync cell further down.
+tabSlugToLabel = new Map([
+  ["inputs", "Inputs"],
+  ["display", "Display Options"]
+])
+
+tabLabelToSlug = new Map([
+  ["Inputs", "inputs"],
+  ["Display Options", "display"]
+])
+
+traceOptions = ["g(x)", "y = x", "Cobweb path", "Iterates"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+traceColors = new Map([
+  ["g(x)", "#2563eb"],
+  ["y = x", "#111827"],
+  ["Cobweb path", "#dc2626"],
+  ["Iterates", "#16a34a"]
+])
+```
+
+```{ojs}
+//| output: false
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
@@ -73,6 +99,10 @@ examples = [
   }
 ]
 ```
+
+::: {.panel-tabset}
+
+## Inputs
 
 <div class="ojs-panel">
 
@@ -147,6 +177,8 @@ viewof plotTrigger = {
 
 </div>
 
+## Display Options
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -178,6 +210,8 @@ maxIterations = {
 ```
 
 </div>
+
+:::
 
 ```{ojs}
 //| output: false
@@ -219,6 +253,60 @@ committed = {
 
   return {gText: gVal, x0: x0Val}
 }
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialParams = new URLSearchParams(window.location.search)
+  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+showGCurve = traces.includes("g(x)")
+```
+
+```{ojs}
+//| output: false
+showDiagonal = traces.includes("y = x")
+```
+
+```{ojs}
+//| output: false
+showCobweb = traces.includes("Cobweb path")
+```
+
+```{ojs}
+//| output: false
+showIterates = traces.includes("Iterates")
 ```
 
 ```{ojs}
@@ -307,16 +395,20 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, range, bufferRange, sampleXs, sampleYs, x0}) => {
-    const data = [
+  return ({visibleRows, range, bufferRange, sampleXs, sampleYs, x0}, showGCurve, showDiagonal, showCobweb, showIterates) => {
+    const data = []
+
+    if (showGCurve) {
       // The iteration function g(x)
-      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "g(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "g(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+    }
+    if (showDiagonal) {
       // The diagonal y = x — fixed points lie where g(x) crosses this line.
       // Spans the buffer so it's still visible when the user pans/zooms out.
-      {x: [bufferRange.lo, bufferRange.hi], y: [bufferRange.lo, bufferRange.hi], type: "scatter", mode: "lines", name: "y = x", showlegend: true, line: {color: "#111827", width: 2, dash: "dash"}},
-      // The x-axis reference
-      {x: [bufferRange.lo, bufferRange.hi], y: [0, 0], type: "scatter", mode: "lines", showlegend: false, line: {color: "#94a3b8", width: 1}}
-    ]
+      data.push({x: [bufferRange.lo, bufferRange.hi], y: [bufferRange.lo, bufferRange.hi], type: "scatter", mode: "lines", name: "y = x", showlegend: false, line: {color: "#111827", width: 2, dash: "dash"}})
+    }
+    // The x-axis reference
+    data.push({x: [bufferRange.lo, bufferRange.hi], y: [0, 0], type: "scatter", mode: "lines", showlegend: false, line: {color: "#94a3b8", width: 1}})
 
     if (visibleRows.length > 0) {
       // Build the cobweb staircase path.
@@ -340,19 +432,21 @@ mainPlot = {
         }
       }
 
-      data.push(
+      if (showCobweb) {
         // The staircase path
-        {x: cobwebX, y: cobwebY, type: "scatter", mode: "lines+markers", name: "Cobweb path", showlegend: true,
-          line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 7}},
-        {
+        data.push({x: cobwebX, y: cobwebY, type: "scatter", mode: "lines+markers", name: "Cobweb path", showlegend: false,
+          line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 7}})
+      }
+      if (showIterates) {
+        data.push({
           x: iterateXs,
           y: iterateXs,
-          type: "scatter", mode: "markers+text", name: "Iterates", showlegend: true,
+          type: "scatter", mode: "markers+text", name: "Iterates", showlegend: false,
           text: iterateLabels,
           textposition: "top center",
           marker: {color: "#16a34a", size: 9, symbol: "circle", line: {color: "white", width: 1}}
-        }
-      )
+        })
+      }
     }
 
     const layout = {
@@ -382,9 +476,21 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup)
+mainPlot(setup, showGCurve, showDiagonal, showCobweb, showIterates)
 ```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="false" title="Convergence plots"}
 

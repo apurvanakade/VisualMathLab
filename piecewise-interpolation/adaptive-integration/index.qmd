@@ -26,6 +26,31 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
+// param by the tabSync cell further down.
+tabSlugToLabel = new Map([
+  ["inputs", "Inputs"],
+  ["display", "Display Options"]
+])
+
+tabLabelToSlug = new Map([
+  ["Inputs", "inputs"],
+  ["Display Options", "display"]
+])
+
+traceOptions = ["f(x)", "Adaptive Simpson panels", "Partition points"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+traceColors = new Map([
+  ["f(x)", "#2563eb"],
+  ["Adaptive Simpson panels", "#16a34a"],
+  ["Partition points", "#111827"]
+])
+```
+
+```{ojs}
+//| output: false
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
@@ -70,6 +95,10 @@ examples = [
   }
 ]
 ```
+
+::: {.panel-tabset}
+
+## Inputs
 
 <div class="ojs-panel">
 
@@ -158,6 +187,8 @@ viewof plotTrigger = {
 
 </div>
 
+## Display Options
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -189,6 +220,8 @@ maxDepth = {
 ```
 
 </div>
+
+:::
 
 ```{ojs}
 //| output: false
@@ -239,6 +272,55 @@ committed = {
 
   return {fText: fVal, a0: aVal, b0: bVal}
 }
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialParams = new URLSearchParams(window.location.search)
+  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+showFCurve = traces.includes("f(x)")
+```
+
+```{ojs}
+//| output: false
+showPanels = traces.includes("Adaptive Simpson panels")
+```
+
+```{ojs}
+//| output: false
+showPartitionPoints = traces.includes("Partition points")
 ```
 
 ```{ojs}
@@ -427,33 +509,41 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data) => {
-    const traces = [
+  return (data, showFCurve, showPanels, showPartitionPoints) => {
+    const traces = []
+
+    if (showFCurve) {
       // The function curve
-      {x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
-
-    for (let i = 0; i < data.panels.length; i++) {
-      const panel = data.panels[i]
-      let depthRatio = 0
-      if (data.maxDepthUsed > 0) depthRatio = panel.depth / data.maxDepthUsed
-      const fillAlpha = 0.10 + 0.45 * depthRatio
-
-      traces.push({
-        x: panel.xs, y: panel.ys, type: "scatter", mode: "lines", name: "Adaptive Simpson panels", showlegend: i === 0,
-        fill: "tozeroy", fillcolor: `rgba(22, 163, 74, ${fillAlpha})`, line: {color: "#16a34a", width: 1}
-      })
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
     }
 
-    if (data.nodesX.length > 0) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Partition points", showlegend: true, marker: {color: "#111827", size: 6, symbol: "circle", line: {color: "white", width: 1}}})
+    if (showPanels) {
+      for (let i = 0; i < data.panels.length; i++) {
+        const panel = data.panels[i]
+        let depthRatio = 0
+        if (data.maxDepthUsed > 0) depthRatio = panel.depth / data.maxDepthUsed
+        const fillAlpha = 0.10 + 0.45 * depthRatio
+
+        traces.push({
+          x: panel.xs, y: panel.ys, type: "scatter", mode: "lines", name: "Adaptive Simpson panels", showlegend: false,
+          fill: "tozeroy", fillcolor: `rgba(22, 163, 74, ${fillAlpha})`, line: {color: "#16a34a", width: 1}
+        })
+      }
+    }
+
+    if (showPartitionPoints && data.nodesX.length > 0) {
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Partition points", showlegend: false, marker: {color: "#111827", size: 6, symbol: "circle", line: {color: "white", width: 1}}})
     }
 
     // Vertical dividers at interior partition points, spanning the full
-    // plot height, so unevenly sized panels are easy to see.
+    // plot height, so unevenly sized panels are easy to see. Tied to the
+    // Partition points toggle, matching how newton-method tied its dotted
+    // guide lines to showNewtonPoints.
     const shapes = []
-    for (const x of data.boundaries) {
-      shapes.push({type: "line", xref: "x", yref: "paper", x0: x, x1: x, y0: 0, y1: 1, line: {color: "rgba(17, 24, 39, 0.25)", width: 1, dash: "dot"}})
+    if (showPartitionPoints) {
+      for (const x of data.boundaries) {
+        shapes.push({type: "line", xref: "x", yref: "paper", x0: x, x1: x, y0: 0, y1: 1, line: {color: "rgba(17, 24, 39, 0.25)", width: 1, dash: "dot"}})
+      }
     }
 
     const layout = {
@@ -527,9 +617,21 @@ summary = {
 }
 ```
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup)
+mainPlot(setup, showFCurve, showPanels, showPartitionPoints)
 ```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+</div>
 
 <!-- The recursion tree below traces every interval the algorithm considered while building the partition above — gray segments were split further, green segments were accepted as a leaf. It shares the same x-axis as the main chart, so you can line up a cluster of low, refined segments with the region of $f$ that caused it. -->
 

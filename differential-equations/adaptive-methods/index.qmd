@@ -26,6 +26,30 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
+// param by the tabSync cell further down.
+tabSlugToLabel = new Map([
+  ["inputs", "Inputs"],
+  ["display", "Display Options"]
+])
+
+tabLabelToSlug = new Map([
+  ["Inputs", "inputs"],
+  ["Display Options", "display"]
+])
+
+methodOptions = ["Reference solution", "Adaptive RK45"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+methodColors = new Map([
+  ["Reference solution", "#2563eb"],
+  ["Adaptive RK45", "#dc2626"]
+])
+```
+
+```{ojs}
+//| output: false
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
@@ -70,6 +94,10 @@ examples = [
   }
 ]
 ```
+
+::: {.panel-tabset}
+
+## Inputs
 
 <div class="ojs-panel">
 
@@ -158,6 +186,8 @@ viewof plotTrigger = {
 
 </div>
 
+## Display Options
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -190,9 +220,21 @@ maxSteps = {
 
 </div>
 
+:::
+
 ```{ojs}
 //| output: false
 tolerance = Math.pow(10, -tolExponent)
+```
+
+```{ojs}
+//| output: false
+showRefSolution = methods.includes("Reference solution")
+```
+
+```{ojs}
+//| output: false
+showAdaptive = methods.includes("Adaptive RK45")
 ```
 
 ```{ojs}
@@ -239,6 +281,40 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, y0: y0Val, bEnd: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialParams = new URLSearchParams(window.location.search)
+  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
 }
 ```
 
@@ -436,15 +512,16 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data) => {
-    const traces = [
-      // The fine reference solution curve
-      {x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: true, line: {color: "#2563eb", width: 3}}
-    ]
+  return (data, showRefSolution, showAdaptive) => {
+    const traces = []
 
-    if (data.ts.length > 0) {
+    if (showRefSolution) {
+      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: "#2563eb", width: 3}})
+    }
+
+    if (showAdaptive && data.ts.length > 0) {
       traces.push({
-        x: data.ts, y: data.ys, type: "scatter", mode: "lines+markers", name: "Adaptive RK45", showlegend: true,
+        x: data.ts, y: data.ys, type: "scatter", mode: "lines+markers", name: "Adaptive RK45", showlegend: false,
         line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: data.pointSizes, line: {color: "white", width: 1}}
       })
     }
@@ -518,9 +595,21 @@ summary = {
 }
 ```
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup)
+mainPlot(setup, showRefSolution, showAdaptive)
 ```
+
+```{ojs}
+viewof methods = {
+  const items = []
+  for (const label of methodOptions) items.push({label, color: methodColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: methodOptions})
+}
+```
+
+</div>
 
 The chart below shows each accepted step's increment $\Delta y_i = y_{i+1}^{(5)} - y_i$ across its time interval $[t_i, t_{i+1}]$, with a semi-transparent overlay of the derivative $y'(t) = f(t, y(t))$ evaluated along the solution. The two live on different scales — $\Delta y_i \approx h_i\, y'(t_i)$, and $h_i$ is usually well below 1 — so the derivative curve is rescaled to the increments' own amplitude before overlaying; only its *shape*, not its absolute value, should be compared against $\Delta y_i$ (hover it for the true value).
 

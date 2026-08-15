@@ -26,6 +26,33 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
+// param by the tabSync cell further down.
+tabSlugToLabel = new Map([
+  ["inputs", "Inputs"],
+  ["display", "Display Options"]
+])
+
+tabLabelToSlug = new Map([
+  ["Inputs", "inputs"],
+  ["Display Options", "display"]
+])
+
+traceOptions = ["f(x)", "y = 0", "Secant line", "Secant points", "Secant x-intercepts"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+traceColors = new Map([
+  ["f(x)", "#2563eb"],
+  ["y = 0", "#111827"],
+  ["Secant line", "#dc2626"],
+  ["Secant points", "#dc2626"],
+  ["Secant x-intercepts", "#16a34a"]
+])
+```
+
+```{ojs}
+//| output: false
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
@@ -70,6 +97,10 @@ examples = [
   }
 ]
 ```
+
+::: {.panel-tabset}
+
+## Inputs
 
 <div class="ojs-panel">
 
@@ -153,6 +184,8 @@ viewof plotTrigger = {
 
 </div>
 
+## Display Options
+
 <div class="ojs-panel ojs-row">
 
 ```{ojs}
@@ -184,6 +217,8 @@ maxIterations = {
 ```
 
 </div>
+
+:::
 
 ```{ojs}
 //| output: false
@@ -229,6 +264,65 @@ committed = {
 
   return {fText: fVal, x0: x0Val, x1: x1Val}
 }
+```
+
+```{ojs}
+//| output: false
+// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
+// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
+// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
+// updated whenever the user switches tabs by hand. Matches tabs by their
+// visible label text rather than Quarto's auto-generated element IDs
+// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
+// contract on.
+tabSync = {
+  const bootstrap = window.bootstrap
+  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
+
+  const initialParams = new URLSearchParams(window.location.search)
+  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
+  if (initialLabel) {
+    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
+    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
+  }
+
+  for (const link of links) {
+    link.addEventListener("shown.bs.tab", () => {
+      const slug = tabLabelToSlug.get(link.textContent.trim())
+      if (!slug) return
+      const params = new URLSearchParams(window.location.search)
+      params.set("tab", slug)
+      history.replaceState(null, "", `${window.location.pathname}?${params}`)
+    })
+  }
+
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+showFCurve = traces.includes("f(x)")
+```
+
+```{ojs}
+//| output: false
+showZeroLine = traces.includes("y = 0")
+```
+
+```{ojs}
+//| output: false
+showSecant = traces.includes("Secant line")
+```
+
+```{ojs}
+//| output: false
+showSecantPoints = traces.includes("Secant points")
+```
+
+```{ojs}
+//| output: false
+showIntercepts = traces.includes("Secant x-intercepts")
 ```
 
 ```{ojs}
@@ -366,14 +460,18 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}) => {
-    const data = [
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showZeroLine, showSecant, showSecantPoints, showIntercepts) => {
+    const data = []
+
+    if (showFCurve) {
       // The function curve
-      {x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: true, line: {color: "#2563eb", width: 3}},
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+    }
+    if (showZeroLine) {
       // The x-axis (y = 0 reference line), spanning the buffer so it's still
       // visible when the user pans/zooms out
-      {x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: true, line: {color: "#111827", width: 2}}
-    ]
+      data.push({x: [xBuffer.lo, xBuffer.hi], y: [0, 0], type: "scatter", mode: "lines", name: "y = 0", showlegend: false, line: {color: "#111827", width: 2}})
+    }
 
     // Every point used so far: x_0 (from the first visible row's xPrev)
     // followed by x_i for each visible row.
@@ -389,8 +487,10 @@ mainPlot = {
     }
 
     // Dotted vertical lines from the x-axis up to each secant point
-    for (const p of secantPoints) {
-      data.push({x: [p.x, p.x], y: [0, p.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+    if (showSecantPoints) {
+      for (const p of secantPoints) {
+        data.push({x: [p.x, p.x], y: [0, p.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+      }
     }
 
     // Secant lines: previous ones faded, current one solid
@@ -404,30 +504,32 @@ mainPlot = {
     let currentSecant = null
     if (validSecantRows.length > 0) currentSecant = validSecantRows[validSecantRows.length - 1]
 
-    for (const row of prevSecants) {
-      const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
-      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
-      data.push({
-        x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
-        type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
-        line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
-      })
-    }
-    if (currentSecant) {
-      const row = currentSecant
-      const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
-      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
-      data.push({
-        x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
-        type: "scatter", mode: "lines", name: "Secant line", showlegend: true,
-        line: {color: "#dc2626", width: 2.5}
-      })
+    if (showSecant) {
+      for (const row of prevSecants) {
+        const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
+        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
+        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+        data.push({
+          x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
+          type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
+          line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
+        })
+      }
+      if (currentSecant) {
+        const row = currentSecant
+        const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
+        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
+        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+        data.push({
+          x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
+          type: "scatter", mode: "lines", name: "Secant line", showlegend: false,
+          line: {color: "#dc2626", width: 2.5}
+        })
+      }
     }
 
     // Red markers at each (x_i, f(x_i)) secant point
-    if (secantPoints.length > 0) {
+    if (showSecantPoints && secantPoints.length > 0) {
       const xs = [], ys = [], labels = []
       for (const p of secantPoints) {
         xs.push(p.x)
@@ -437,7 +539,7 @@ mainPlot = {
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Secant points",
-        text: labels, textposition: "top center", showlegend: true,
+        text: labels, textposition: "top center", showlegend: false,
         marker: {color: "#dc2626", size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
@@ -447,7 +549,7 @@ mainPlot = {
     for (const r of visibleRows) {
       if (Number.isFinite(r.xNext)) intercepts.push({i: r.i + 1, x: r.xNext})
     }
-    if (intercepts.length > 0) {
+    if (showIntercepts && intercepts.length > 0) {
       const xs = [], ys = [], labels = []
       for (const r of intercepts) {
         xs.push(r.x)
@@ -457,7 +559,7 @@ mainPlot = {
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Secant x-intercepts",
-        text: labels, textposition: "bottom center", showlegend: true,
+        text: labels, textposition: "bottom center", showlegend: false,
         marker: {color: "#16a34a", size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
@@ -492,9 +594,21 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(setup)
+mainPlot(setup, showFCurve, showZeroLine, showSecant, showSecantPoints, showIntercepts)
 ```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="false" title="Convergence plots"}
 

@@ -6,7 +6,6 @@ order: 1
 image: 1d-recursive-filters.png
 categories:
   - Probability
-  - Sampling Methods
   - Kalman Filter
   - Moving Average
   - Exponential Moving Average
@@ -52,12 +51,17 @@ tabLabelToSlug = new Map([
   ["Filter Parameters", "filters"]
 ])
 
-methodOptions = ["True Signal", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
+methodOptions = ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
 
 methodSlugToLabel = new Map([
   ["true", "True Signal"],
   ["true-signal", "True Signal"],
   ["true_signal", "True Signal"],
+
+  ["noisy", "Noisy measurements"],
+  ["noisy-measurements", "Noisy measurements"],
+  ["noisy_measurements", "Noisy measurements"],
+  ["measurements", "Noisy measurements"],
 
   ["sma", "Simple Moving Average"],
   ["moving-average", "Simple Moving Average"],
@@ -75,9 +79,20 @@ methodSlugToLabel = new Map([
 
 methodLabelToSlug = new Map([
   ["True Signal", "true"],
+  ["Noisy measurements", "noisy"],
   ["Simple Moving Average", "sma"],
   ["Exponential Moving Average", "ema"],
   ["Kalman Filter", "kalman"]
+])
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+methodColors = new Map([
+  ["True Signal", "#2563eb"],
+  ["Noisy measurements", "#9ca3af"],
+  ["Simple Moving Average", "#f59e0b"],
+  ["Exponential Moving Average", "#16a34a"],
+  ["Kalman Filter", "#dc2626"]
 ])
 
 initialMethods = {
@@ -130,35 +145,35 @@ initialQ = {
 examples = [
   {
     title: "Noisy sine wave",
-    params: {f: "sin(x)", sigma: "0.4", b: "20", seed: "1", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "sin(x)", sigma: "0.4", b: "20", seed: "1", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Estimating a hidden constant",
-    params: {f: "5", sigma: "1", b: "20", seed: "3", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Kalman Filter", "Exponential Moving Average"]}
+    params: {f: "5", sigma: "1", b: "20", seed: "3", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
   },
   {
     title: "Sudden regime change",
-    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", seed: "2", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", seed: "2", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Fast oscillation exposes lag",
-    params: {f: "sin(3*x)", sigma: "0.3", b: "10", seed: "4", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "sin(3*x)", sigma: "0.3", b: "10", seed: "4", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Heavy noise, gentle signal",
-    params: {f: "cos(x/2)", sigma: "0.8", b: "25", seed: "5", max: "80", alpha: 0.95, k: 12, R: 0.64, Q: 0.02, show: ["True Signal", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "cos(x/2)", sigma: "0.8", b: "25", seed: "5", max: "80", alpha: 0.95, k: 12, R: 0.64, Q: 0.02, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Tracking a steady drift",
-    params: {f: "0.3*x", sigma: "1", b: "15", seed: "6", max: "60", alpha: 0.85, k: 6, R: 1, Q: 0.1, show: ["True Signal", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "0.3*x", sigma: "1", b: "15", seed: "6", max: "60", alpha: 0.85, k: 6, R: 1, Q: 0.1, show: ["True Signal", "Noisy measurements", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Overconfident sensor model",
-    params: {f: "sin(x)", sigma: "0.6", b: "20", seed: "7", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Kalman Filter"]}
+    params: {f: "sin(x)", sigma: "0.6", b: "20", seed: "7", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Noisy measurements", "Kalman Filter"]}
   },
   {
     title: "Zero process noise stops tracking",
-    params: {f: "sin(x)", sigma: "0.3", b: "20", seed: "8", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Kalman Filter", "Exponential Moving Average"]}
+    params: {f: "sin(x)", sigma: "0.3", b: "20", seed: "8", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
   }
 ]
 ```
@@ -184,7 +199,7 @@ viewof fText = {
 ```{ojs}
 viewof sigmaText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Noise σ", value: params.get("sigma") ?? "0.4", placeholder: "Example: 0.4, 1/2"})
+  const input = Inputs.text({label: "Gaussian Noise σ", value: params.get("sigma") ?? "0.4", placeholder: "Example: 0.4, 1/2"})
   input.dataset.exampleField = "sigma"
   return input
 }
@@ -273,8 +288,8 @@ applyExampleFromSelect = {
 // Plot commits the current signal/noise/endpoint/seed fields — edits
 // above don't take effect until this is clicked, so result/mainPlot don't
 // recompute (and the noisy draw doesn't reshuffle) on every keystroke. The
-// total-samples field, method checkboxes, and filter parameters below are
-// unaffected and stay reactive.
+// total-samples field, the method legend overlaying the chart, and filter
+// parameters below are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -298,22 +313,14 @@ maxN = {
 
 ## Filter Parameters
 
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof methods = {
-  const checkboxInput = Inputs.checkbox(methodOptions, {value: initialMethods})
-  checkboxInput.classList.add("ojs-fill")
-  checkboxInput.dataset.exampleField = "show"
-  return checkboxInput
-}
-```
-
-</div>
-
 ```{ojs}
 //| output: false
 showTrueSignal = methods.includes("True Signal")
+```
+
+```{ojs}
+//| output: false
+showNoisy = methods.includes("Noisy measurements")
 ```
 
 ```{ojs}
@@ -586,10 +593,10 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (rows, data, showTrueSignal, showSMA, showEMA, showKalman) => {
+  return (rows, data, showTrueSignal, showNoisy, showSMA, showEMA, showKalman) => {
     const traces = []
     if (showTrueSignal) {
-      traces.push({x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: true, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: false, line: {color: "#2563eb", width: 3}})
     }
 
     const xs = []
@@ -598,22 +605,24 @@ mainPlot = {
       xs.push(row.x)
       noisyYs.push(row.noisyVal)
     }
-    traces.push({x: xs, y: noisyYs, type: "scatter", mode: "markers", name: "Noisy measurements", showlegend: true, marker: {color: "#9ca3af", size: 6, line: {color: "white", width: 0.5}}})
+    if (showNoisy) {
+      traces.push({x: xs, y: noisyYs, type: "scatter", mode: "markers", name: "Noisy measurements", showlegend: false, marker: {color: "#9ca3af", size: 6, line: {color: "white", width: 0.5}}})
+    }
 
     if (showSMA && rows.length > 0) {
       const ys = []
       for (const row of rows) ys.push(row.smaVal)
-      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Simple Moving Average", showlegend: true, line: {color: "#f59e0b", width: 2.5}})
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Simple Moving Average", showlegend: false, line: {color: "#f59e0b", width: 2.5}})
     }
     if (showEMA && rows.length > 0) {
       const ys = []
       for (const row of rows) ys.push(row.emaVal)
-      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Exponential Moving Average", showlegend: true, line: {color: "#16a34a", width: 2.5}})
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Exponential Moving Average", showlegend: false, line: {color: "#16a34a", width: 2.5}})
     }
     if (showKalman && rows.length > 0) {
       const ys = []
       for (const row of rows) ys.push(row.kalmanVal)
-      traces.push({x: xs, y: ys, type: "scatter", mode: "lines+markers", name: "Kalman Filter", showlegend: true, line: {color: "#dc2626", width: 2.5}, marker: {color: "#dc2626", size: 5}})
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines+markers", name: "Kalman Filter", showlegend: false, line: {color: "#dc2626", width: 2.5}, marker: {color: "#dc2626", size: 5}})
     }
 
     const layout = {
@@ -646,9 +655,23 @@ mainPlot = {
 
 <div class="ojs-output-wide">
 
+<div class="ojs-plot-overlay">
+
 ```{ojs}
-mainPlot(result.rows, setup, showTrueSignal, showSMA, showEMA, showKalman)
+mainPlot(result.rows, setup, showTrueSignal, showNoisy, showSMA, showEMA, showKalman)
 ```
+
+```{ojs}
+viewof methods = {
+  const items = []
+  for (const label of methodOptions) items.push({label, color: methodColors.get(label)})
+  const legend = VM.ui.legendOverlay(items, {value: initialMethods})
+  legend.dataset.exampleField = "show"
+  return legend
+}
+```
+
+</div>
 
 :::: {.callout-note collapse="true" title="Convergence plots"}
 

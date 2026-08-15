@@ -21,13 +21,13 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable.
 VM = window.VM
 ```
 
 ```{ojs}
 //| output: false
-// URL presets make the example cards shareable/reproducible.
+// URL params make the current settings shareable/reproducible.
 //
 // Supported parameters:
 //   noise=0.7
@@ -64,39 +64,6 @@ initialShownDegrees = {
 
   return labels.length ? labels : ["Degree 5"]
 }
-```
-
-```{ojs}
-//| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-// "degrees" holds the actual checkbox option labels (matching what
-// Inputs.checkbox's view expects), not the URL's comma-separated numbers.
-examples = [
-  {
-    title: "No noise",
-    params: {noise: 0, degrees: ["Degree 1", "Degree 5"], seed: 101}
-  },
-  {
-    title: "Small noise",
-    params: {noise: 0.25, degrees: ["Degree 1", "Degree 2", "Degree 5"], seed: 202}
-  },
-  {
-    title: "Underfitting vs overfitting",
-    params: {noise: 0.7, degrees: ["Degree 1", "Degree 5"], seed: 303}
-  },
-  {
-    title: "Training error decreases",
-    params: {noise: 1, degrees: ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5"], seed: 404}
-  },
-  {
-    title: "Degree 5 interpolation",
-    params: {noise: 1, degrees: ["Degree 5"], seed: 505}
-  },
-  {
-    title: "Same data, linear model",
-    params: {noise: 1, degrees: ["Degree 1"], seed: 505}
-  }
-]
 ```
 
 ```{ojs}
@@ -259,7 +226,6 @@ bufferCurves = {
 viewof noiseLevel = {
   const input = Inputs.range([0, maxNoise], {step: 0.01, value: initialNoise, label: "Noise level"})
   input.classList.add("ojs-fill")
-  input.dataset.exampleField = "noise"
   return input
 }
 ```
@@ -277,53 +243,6 @@ viewof regenerateTrigger = {
 
 </div>
 
-```{ojs}
-viewof exampleSelect = {
-  const options = [null, ...examples]
-  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
-  select.classList.add("ojs-fill")
-  return select
-}
-```
-
-```{ojs}
-//| output: false
-// Plain CSS selectors, not direct viewof references -- see
-// js/ui/apply-example.js's comment for why.
-exampleFieldSelectors = ({
-  noise: '[data-example-field="noise"]',
-  degrees: '[data-example-field="degrees"]',
-  seed: '[data-example-field="seed"]'
-})
-```
-
-```{ojs}
-//| output: false
-// Applies the selected example's params to the fields above, in place —
-// no page reload, so no scroll jump either. noiseLevel/shownDegrees/
-// seedValue are all fully live/reactive (no commit-button gate), so no
-// trigger click is actually needed for the values to take effect; a
-// harmless no-op element (with no <button> child) is passed as the
-// required triggerEl argument instead of "Regenerate points" — clicking
-// Regenerate would bump regenerateTrigger, which basePoints also mixes
-// into its seed, producing a different point draw than the one the
-// example's seed was chosen to reproduce. A plain "change" listener
-// attached once to the stable native <select> (rather than an OJS cell
-// reactive on exampleSelect's value) — a <select> fires both "input" and
-// "change" per selection, and a reactive cell would run once per event,
-// with two overlapping calls racing each other.
-applyExampleFromSelect = {
-  const nativeSelect = (viewof exampleSelect).querySelector("select")
-  if (!nativeSelect) return
-  const noopTrigger = document.createElement("div")
-  nativeSelect.addEventListener("change", () => {
-    const example = (viewof exampleSelect).value
-    if (!example) return
-    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, noopTrigger)
-  })
-}
-```
-
 </div>
 
 <div class="ojs-panel ojs-row">
@@ -333,7 +252,6 @@ viewof shownDegrees = {
   const options = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5"]
   const checkboxInput = Inputs.checkbox(options, {value: initialShownDegrees})
   checkboxInput.classList.add("ojs-fill")
-  checkboxInput.dataset.exampleField = "degrees"
   return checkboxInput
 }
 ```
@@ -347,7 +265,6 @@ viewof seedValue = {
     label: "Random seed"
   })
   input.classList.add("ojs-auto")
-  input.dataset.exampleField = "seed"
   return input
 }
 ```

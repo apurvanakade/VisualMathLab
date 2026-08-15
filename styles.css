@@ -342,3 +342,60 @@
 @media (max-width: 480px) {
   .ojs-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Example preset cards ─────────────────────────────────────────── */
+/* Colors reuse the same --bs-* tokens as the panel chrome above (light
+ * theme: cosmo, dark theme: cyborg) so the cards stay legible in both;
+ * #2563eb is the site's fixed accent blue, same as the panel's button/
+ * focus color and Plotly's reference-line color, and doesn't flip with
+ * the theme. */
+
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 2rem 0;
+}
+
+.example-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: var(--bs-light, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.example-card:hover,
+.example-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: #2563eb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+}
+
+.example-card:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.example-card-title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.example-card-formula {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #2563eb;
+  margin-bottom: 0.45rem;
+}
+
+.example-card-text {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--bs-secondary-color, #475569);
+}

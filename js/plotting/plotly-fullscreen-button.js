@@ -41,6 +41,13 @@
       if (document.fullscreenElement === target) {
         document.exitFullscreen()
       } else {
+        // Record the chart's on-page aspect ratio before entering fullscreen
+        // so styles.css (`:fullscreen .js-plotly-plot`) can letterbox the
+        // chart at that ratio instead of stretching it to fill the screen.
+        const rect = gd.getBoundingClientRect()
+        if (rect.height > 0) {
+          gd.style.setProperty("--vm-plot-aspect-ratio", String(rect.width / rect.height))
+        }
         target.requestFullscreen()
       }
     }

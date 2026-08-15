@@ -26,18 +26,6 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
-// param by the tabSync cell further down.
-tabSlugToLabel = new Map([
-  ["inputs", "Inputs"],
-  ["display", "Display Options"]
-])
-
-tabLabelToSlug = new Map([
-  ["Inputs", "inputs"],
-  ["Display Options", "display"]
-])
-
 methodOptions = ["Reference solution", "Adaptive RK45"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
@@ -94,10 +82,6 @@ examples = [
   }
 ]
 ```
-
-::: {.panel-tabset}
-
-## Inputs
 
 <div class="ojs-panel">
 
@@ -176,7 +160,7 @@ applyExampleFromSelect = {
 // Plot commits the current function/initial-condition/endpoint fields —
 // edits above don't take effect until this is clicked, so result/mainPlot
 // don't recompute on every keystroke. The tolerance slider and max steps
-// field below are unaffected and stay reactive.
+// field overlaid on the chart are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -185,42 +169,6 @@ viewof plotTrigger = {
 ```
 
 </div>
-
-## Display Options
-
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof tolExponent = {
-  const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
-  tolSlider.classList.add("ojs-fill")
-  return tolSlider
-}
-```
-
-```{ojs}
-viewof maxStepsInput = {
-  const input = Inputs.text({value: "2000", label: "Max steps", placeholder: "Example: 2000, 1000*2"})
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxSteps parses the Max steps field's expression, falling back to 2000
-// for invalid input so the solver always gets a usable step limit.
-maxSteps = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxStepsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 2000
-  return Math.max(1, Math.round(parsed))
-}
-```
-
-</div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -281,40 +229,6 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, y0: y0Val, bEnd: bVal}
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
-// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialParams = new URLSearchParams(window.location.search)
-  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
-  return true
 }
 ```
 
@@ -595,6 +509,18 @@ summary = {
 }
 ```
 
+```{ojs}
+//| output: false
+// maxSteps parses the Max steps field's expression, falling back to 2000
+// for invalid input so the solver always gets a usable step limit.
+maxSteps = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxStepsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 2000
+  return Math.max(1, Math.round(parsed))
+}
+```
+
 <div class="ojs-plot-overlay">
 
 ```{ojs}
@@ -608,6 +534,26 @@ viewof methods = {
   return VM.ui.legendOverlay(items, {value: methodOptions})
 }
 ```
+
+<div class="ojs-step-overlay ojs-row">
+
+```{ojs}
+viewof tolExponent = {
+  const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
+  tolSlider.classList.add("ojs-fill")
+  return tolSlider
+}
+```
+
+```{ojs}
+viewof maxStepsInput = {
+  const input = Inputs.text({value: "2000", label: "Max steps", placeholder: "Example: 2000, 1000*2"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+</div>
 
 </div>
 

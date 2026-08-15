@@ -29,18 +29,6 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// Labels for the ::: {.panel-tabset} below, kept in sync with a `tab` URL
-// param by the tabSync cell further down.
-tabSlugToLabel = new Map([
-  ["inputs", "Inputs"],
-  ["display", "Display Options"]
-])
-
-tabLabelToSlug = new Map([
-  ["Inputs", "inputs"],
-  ["Display Options", "display"]
-])
-
 traceOptions = ["g(x)", "y = x", "Cobweb path", "Iterates"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
@@ -99,10 +87,6 @@ examples = [
   }
 ]
 ```
-
-::: {.panel-tabset}
-
-## Inputs
 
 <div class="ojs-panel">
 
@@ -167,7 +151,7 @@ applyExampleFromSelect = {
 ```{ojs}
 // Plot commits the current function/x₀ fields — edits above don't take
 // effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The step slider below is unaffected and stays reactive.
+// every keystroke. The step slider overlaid on the plot is unaffected and stays reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -176,42 +160,6 @@ viewof plotTrigger = {
 ```
 
 </div>
-
-## Display Options
-
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof stepControl = {
-  const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "Step"})
-  stepSlider.classList.add("ojs-fill")
-  return stepSlider
-}
-```
-
-```{ojs}
-viewof maxIterationsInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxIterations parses the Max field's expression, falling back to 20 for
-// invalid input so the step slider and result loop always get a usable bound.
-maxIterations = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 20
-  return Math.max(1, Math.round(parsed))
-}
-```
-
-</div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -252,40 +200,6 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {gText: gVal, x0: x0Val}
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
-// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialParams = new URLSearchParams(window.location.search)
-  const initialLabel = tabSlugToLabel.get(initialParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
-  return true
 }
 ```
 
@@ -474,6 +388,18 @@ mainPlot = {
 }
 ```
 
+```{ojs}
+//| output: false
+// maxIterations parses the Max field's expression, falling back to 20 for
+// invalid input so the step slider and result loop always get a usable bound.
+maxIterations = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 20
+  return Math.max(1, Math.round(parsed))
+}
+```
+
 <div class="ojs-output-wide">
 
 <div class="ojs-plot-overlay">
@@ -489,6 +415,26 @@ viewof traces = {
   return VM.ui.legendOverlay(items, {value: traceOptions})
 }
 ```
+
+<div class="ojs-step-overlay ojs-row">
+
+```{ojs}
+viewof stepControl = {
+  const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "Step"})
+  stepSlider.classList.add("ojs-fill")
+  return stepSlider
+}
+```
+
+```{ojs}
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
+  input.classList.add("ojs-auto")
+  return input
+}
+```
+
+</div>
 
 </div>
 

@@ -34,18 +34,7 @@ VM = window.VM
 //   n       current number of subintervals
 //   max     maximum n used in convergence plots/table
 //   show    comma-separated methods: euler, improved, rk4
-//   tab     active tab: inputs, display
 urlParams = new URLSearchParams(window.location.search)
-
-tabSlugToLabel = new Map([
-  ["inputs", "Inputs"],
-  ["display", "Display Options"]
-])
-
-tabLabelToSlug = new Map([
-  ["Inputs", "inputs"],
-  ["Display Options", "display"]
-])
 
 methodOptions = ["Reference solution", "Euler's method", "Improved Euler", "RK4"]
 
@@ -164,10 +153,6 @@ examples = [
 ]
 ```
 
-::: {.panel-tabset}
-
-## Inputs
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -231,9 +216,9 @@ exampleFieldSelectors = ({
 
 ```{ojs}
 //| output: false
-// Applies the selected example's params to the fields above (both the
-// Inputs and Display Options tabs) and clicks Plot, in place — no page
-// reload, so no scroll jump either. A plain "change" listener attached
+// Applies the selected example's params to the fields above (including the
+// n/max fields overlaid on the chart below) and clicks Plot, in place — no
+// page reload, so no scroll jump either. A plain "change" listener attached
 // once to the stable native <select> (rather than an OJS cell reactive on
 // exampleSelect's value) — a <select> fires both "input" and "change" per
 // selection, and a reactive cell would run once per event, with two
@@ -262,44 +247,6 @@ viewof plotTrigger = {
 ```
 
 </div>
-
-## Display Options
-
-<div class="ojs-panel ojs-row">
-
-```{ojs}
-viewof nControl = {
-  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
-  nSlider.classList.add("ojs-fill")
-  nSlider.dataset.exampleField = "n"
-  return nSlider
-}
-```
-
-```{ojs}
-viewof maxNInput = {
-  const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  input.dataset.exampleField = "max"
-  return input
-}
-```
-
-```{ojs}
-//| output: false
-// maxN parses the Max field's expression, falling back to 20 for invalid
-// input so the n slider always gets a usable bound.
-maxN = {
-  const math = window.math
-  const parsed = VM.expressions.makeNumber(math, maxNInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 20
-  return Math.max(1, Math.round(parsed))
-}
-```
-
-</div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -381,39 +328,6 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, y0: y0Val, bEnd: bVal}
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param: activates the
-// URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
-  return true
 }
 ```
 
@@ -602,6 +516,18 @@ mainPlot = {
 }
 ```
 
+```{ojs}
+//| output: false
+// maxN parses the Max field's expression, falling back to 20 for invalid
+// input so the n slider always gets a usable bound.
+maxN = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxNInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 20
+  return Math.max(1, Math.round(parsed))
+}
+```
+
 <div class="ojs-output-wide">
 
 <div class="ojs-plot-overlay">
@@ -619,6 +545,28 @@ viewof methods = {
   return legend
 }
 ```
+
+<div class="ojs-step-overlay ojs-row">
+
+```{ojs}
+viewof nControl = {
+  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
+  nSlider.classList.add("ojs-fill")
+  nSlider.dataset.exampleField = "n"
+  return nSlider
+}
+```
+
+```{ojs}
+viewof maxNInput = {
+  const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
+  input.classList.add("ojs-auto")
+  input.dataset.exampleField = "max"
+  return input
+}
+```
+
+</div>
 
 </div>
 

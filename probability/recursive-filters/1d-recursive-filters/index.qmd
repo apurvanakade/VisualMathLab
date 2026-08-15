@@ -38,18 +38,7 @@ VM = window.VM
 //   R       Kalman filter's assumed measurement-noise variance
 //   Q       Kalman filter's assumed process-noise variance
 //   show    comma-separated methods: true, sma, ema, kalman
-//   tab     active tab: signal, filters
 urlParams = new URLSearchParams(window.location.search)
-
-tabSlugToLabel = new Map([
-  ["signal", "Signal & Sampling"],
-  ["filters", "Filter Parameters"]
-])
-
-tabLabelToSlug = new Map([
-  ["Signal & Sampling", "signal"],
-  ["Filter Parameters", "filters"]
-])
 
 methodOptions = ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
 
@@ -178,10 +167,6 @@ examples = [
 ]
 ```
 
-::: {.panel-tabset}
-
-## Signal & Sampling
-
 <div class="ojs-panel">
 
 ```{ojs}
@@ -266,12 +251,12 @@ exampleFieldSelectors = ({
 
 ```{ojs}
 //| output: false
-// Applies the selected example's params to the fields above (both the
-// Signal & Sampling and Filter Parameters tabs) and clicks Plot, in place
-// -- no page reload, so no scroll jump either. A plain "change" listener
-// attached once to the stable native <select> (rather than an OJS cell
-// reactive on exampleSelect's value) -- a <select> fires both "input" and
-// "change" per selection, and a reactive cell would run once per event,
+// Applies the selected example's params to the fields above (including the
+// filter parameter sliders overlaid on the chart below) and clicks Plot, in
+// place -- no page reload, so no scroll jump either. A plain "change"
+// listener attached once to the stable native <select> (rather than an OJS
+// cell reactive on exampleSelect's value) -- a <select> fires both "input"
+// and "change" per selection, and a reactive cell would run once per event,
 // with two overlapping calls racing each other.
 applyExampleFromSelect = {
   const nativeSelect = (viewof exampleSelect).querySelector("select")
@@ -288,8 +273,8 @@ applyExampleFromSelect = {
 // Plot commits the current signal/noise/endpoint/seed fields — edits
 // above don't take effect until this is clicked, so result/mainPlot don't
 // recompute (and the noisy draw doesn't reshuffle) on every keystroke. The
-// total-samples field, the method legend overlaying the chart, and filter
-// parameters below are unaffected and stay reactive.
+// total-samples field, and the method legend and filter parameters
+// overlaid on the chart, are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -310,8 +295,6 @@ maxN = {
   return Math.max(2, Math.round(parsed))
 }
 ```
-
-## Filter Parameters
 
 ```{ojs}
 //| output: false
@@ -337,45 +320,6 @@ showEMA = methods.includes("Exponential Moving Average")
 //| output: false
 showKalman = methods.includes("Kalman Filter")
 ```
-
-<div class="ojs-panel ojs-grid">
-
-```{ojs}
-viewof alpha = {
-  const input = Inputs.range([0, 0.99], {step: 0.01, value: initialAlpha, label: "EMA smoothing α"})
-  input.dataset.exampleField = "alpha"
-  return input
-}
-```
-
-```{ojs}
-viewof windowK = {
-  const upper = Math.max(1, Math.min(50, maxN))
-  const input = Inputs.range([1, upper], {step: 1, value: Math.min(initialK, upper), label: "SMA window k"})
-  input.dataset.exampleField = "k"
-  return input
-}
-```
-
-```{ojs}
-viewof R = {
-  const input = Inputs.range([0.001, 2], {step: 0.001, value: initialR, label: "Kalman R"})
-  input.dataset.exampleField = "R"
-  return input
-}
-```
-
-```{ojs}
-viewof Q = {
-  const input = Inputs.range([0, 1], {step: 0.001, value: initialQ, label: "Kalman Q"})
-  input.dataset.exampleField = "Q"
-  return input
-}
-```
-
-</div>
-
-:::
 
 ```{ojs}
 //| output: false
@@ -409,40 +353,6 @@ urlSyncControls = {
   params.set("Q", String(Q))
   params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
-  return true
-}
-```
-
-```{ojs}
-//| output: false
-// Wires the ::: {.panel-tabset} above to a `tab` URL param, the same
-// URL-shareable convention as every other control on this page: activates
-// the URL-requested tab on load (via Bootstrap's Tab API, since Quarto's
-// tabset is plain Bootstrap nav-tabs under the hood), and keeps the URL
-// updated whenever the user switches tabs by hand. Matches tabs by their
-// visible label text rather than Quarto's auto-generated element IDs
-// (e.g. "tabset-1-1"), which aren't stable identifiers to build a URL
-// contract on.
-tabSync = {
-  const bootstrap = window.bootstrap
-  const links = Array.from(document.querySelectorAll(".panel-tabset .nav-link"))
-
-  const initialLabel = tabSlugToLabel.get(urlParams.get("tab"))
-  if (initialLabel) {
-    const initialLink = links.find(link => link.textContent.trim() === initialLabel)
-    if (initialLink) bootstrap.Tab.getOrCreateInstance(initialLink).show()
-  }
-
-  for (const link of links) {
-    link.addEventListener("shown.bs.tab", () => {
-      const slug = tabLabelToSlug.get(link.textContent.trim())
-      if (!slug) return
-      const params = new URLSearchParams(window.location.search)
-      params.set("tab", slug)
-      history.replaceState(null, "", `${window.location.pathname}?${params}`)
-    })
-  }
-
   return true
 }
 ```
@@ -670,6 +580,43 @@ viewof methods = {
   return legend
 }
 ```
+
+<div class="ojs-step-overlay ojs-grid">
+
+```{ojs}
+viewof alpha = {
+  const input = Inputs.range([0, 0.99], {step: 0.01, value: initialAlpha, label: "EMA smoothing α"})
+  input.dataset.exampleField = "alpha"
+  return input
+}
+```
+
+```{ojs}
+viewof windowK = {
+  const upper = Math.max(1, Math.min(50, maxN))
+  const input = Inputs.range([1, upper], {step: 1, value: Math.min(initialK, upper), label: "SMA window k"})
+  input.dataset.exampleField = "k"
+  return input
+}
+```
+
+```{ojs}
+viewof R = {
+  const input = Inputs.range([0.001, 2], {step: 0.001, value: initialR, label: "Kalman R"})
+  input.dataset.exampleField = "R"
+  return input
+}
+```
+
+```{ojs}
+viewof Q = {
+  const input = Inputs.range([0, 1], {step: 0.001, value: initialQ, label: "Kalman Q"})
+  input.dataset.exampleField = "Q"
+  return input
+}
+```
+
+</div>
 
 </div>
 

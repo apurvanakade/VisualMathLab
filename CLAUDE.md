@@ -7,10 +7,12 @@ Visual Math Lab is a Quarto website of interactive, browser-based visualizations
 ## Commands
 
 - `quarto render` — render the whole site into `docs/` (`_quarto.yml` sets `project.output-dir: docs`).
-- `quarto render root-finding/newton-method/index.qmd` — render a single page while iterating.
-- `quarto preview` — local live-reload preview server.
+- `quarto render root-finding/newton-method/index.qmd` — re-renders that page plus any listing/index pages that glob-discover it (its topic index, the homepage) — lighter than a full-site render, but **not** a true single-page render (it's still a multi-file batch job, not something you can point a browser at). For actually isolating one page, use `quarto preview` instead.
+- `quarto preview` — local live-reload preview server, and the right tool for rendering/iterating on just one page: it renders (and re-renders on save, via its own mtime-based file watcher) only the page you actually navigate to, not the whole site or its listing pages.
 - `npm test` — runs `js/**/*.test.js` (Node's built-in test runner) against pure-logic `VM.*` functions. Requires `npm install` once first.
-- `npm run verify` — `quarto render` then a headless-browser pass over every rendered page (clicks every button, nudges every slider, asserts zero console/page errors). This is what actually catches a broken `VM.category.fn` call site — `quarto render` alone only catches Pandoc/parse errors, not OJS runtime errors. See `.claude/skills/verify/SKILL.md` for the full two-tier verification approach and why it's structured this way.
+- `npm run verify` — `quarto render` then a headless-browser pass over **every** rendered page on the site (clicks every button, nudges every slider, asserts zero console/page errors). This is what actually catches a broken `VM.category.fn` call site — `quarto render` alone only catches Pandoc/parse errors, not OJS runtime errors. It's a full-site crawl (all pages, several minutes) — **only run it when the user explicitly asks for it**, not as the default post-edit check. See `.claude/skills/verify/SKILL.md` for the full two-tier verification approach and why it's structured this way.
+
+**Default verification for a change scoped to one page**: `quarto preview` the project, then load just that page's URL (it renders on demand, nothing else) and check it there — for a scripted check, drive that same URL with a short one-off Playwright script, asserting zero `console.error`/`pageerror` while exercising its controls (see `.claude/skills/verify/SKILL.md`'s gotchas on why `file://` won't work and what to stub). Reach for the full `npm run verify` crawl instead only when the user asks for it, or the edit touches a shared `js/**` utility used by more than one page (a single-page check can't catch a regression on a page it didn't look at).
 
 There is no lint command. `package.json` is dev-only (Playwright for `npm run verify`, mathjs for testing `js/expressions/*`) — nothing in it is shipped to `docs/` or affects the site's runtime; the site itself still has no bundler and no build step beyond `quarto render`. JS is served as static files, not bundled.
 
@@ -27,8 +29,8 @@ Each method page (`<topic>/<method>/index.qmd`, e.g. `root-finding/newton-method
 2. `result` — runs the numerical method with the current inputs (e.g. Newton, bisection, fixed-point) and returns `{rows, f, ...}`. `rows` is the full iteration history; each page's `result` cell already reads like plain imperative code (`while` loop, explicit early returns) rather than a functional pipeline.
 3. `setup` — derives the data shared by the plots below from `result`: which rows are visible at the current step, axis ranges, and a sampled curve for the smooth function trace.
 4. `mainPlot` — builds the primary Plotly chart. It's a closure over a `_plotDiv` variable so the same DOM node is reused across reactive re-renders (`Plotly.react` instead of `Plotly.newPlot` after the first render) — this is what preserves user zoom/pan when the step slider moves.
-5. `iteratesPlot`, `convergencePlot` — Observable Plot charts covering the entire run (not just the current step), shown in a collapsed "Convergence plots" callout.
-6. `iterationTable` — builds a DOM table via `VM.ui.renderTable`, shown in a collapsed "Iteration table" callout.
+5. `iteratesPlot`, `convergencePlot` — Observable Plot charts covering the entire run (not just the current step), shown in an **open-by-default** "Convergence plots" callout (`::: {.callout-note collapse="false" title="Convergence plots"}`). They're diagnostic content worth seeing without an extra click, unlike the raw data dump below.
+6. `iterationTable` — builds a DOM table via `VM.ui.renderTable`, shown in a **collapsed-by-default** "Iteration table" callout (`collapse="true"`) — raw per-row data, useful on demand but not something to lead with.
 
 OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoints, max iterations) → `result` → an `Inputs.range` step slider → `setup` → `mainPlot(setup)`. OJS reactivity re-runs everything downstream when any input changes.
 

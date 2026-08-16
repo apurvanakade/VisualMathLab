@@ -333,6 +333,21 @@
   accent-color: #2563eb;
 }
 
+/* Inputs.radio()/checkbox() option groups render one block-level row per
+ * option by default (Observable Inputs' own stylesheet, not this project's)
+ * -- fine in a roomy .ojs-panel, but a tight chart-overlay bar shared with
+ * sliders reads better as one horizontal row for a short option list.
+ * Observable appends a "-checkbox" suffix to the form's class for both
+ * radio and checkbox groups, alongside its hashed "oi-<hash>" prefix (the
+ * same hash-prefix convention this file already relies on elsewhere via
+ * `form[class^="oi-"]`) -- matching on that stable suffix instead of the
+ * hash keeps this working across Observable Inputs versions. */
+.ojs-step-overlay form[class$="-checkbox"] > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
 /* ── Listing cards ───────────────────────────────────────────────── */
 
 .quarto-grid-item {

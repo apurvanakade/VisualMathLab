@@ -34,11 +34,13 @@ VM = window.VM
 //   degrees=1,5
 urlParams = new URLSearchParams(window.location.search)
 
-maxNoise = 1
+maxNoise = 2
 
 initialNoise = {
-  const raw = Number(urlParams.get("noise"))
-  return Number.isFinite(raw) ? Math.max(0, Math.min(maxNoise, raw)) : 0
+  const param = urlParams.get("noise")
+  if (param === null) return 0.5
+  const raw = Number(param)
+  return Number.isFinite(raw) ? Math.max(0, Math.min(maxNoise, raw)) : 0.5
 }
 
 degreeOptions = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5", "Data points"]
@@ -59,7 +61,7 @@ initialShownDegrees = {
   // "Data points" was always shown unconditionally before this checkbox
   // existed, and has no URL param of its own -- always include it here so
   // that behavior is unchanged regardless of what "degrees" says.
-  if (!raw) return ["Degree 5", "Data points"]
+  if (!raw) return ["Degree 1", "Degree 5", "Data points"]
 
   const labels = []
   const seen = new Set()
@@ -72,7 +74,7 @@ initialShownDegrees = {
     }
   }
 
-  if (labels.length === 0) return ["Degree 5", "Data points"]
+  if (labels.length === 0) return ["Degree 1", "Degree 5", "Data points"]
   labels.push("Data points")
   return labels
 }
@@ -182,7 +184,7 @@ axisSetup = {
   // the much wider bufferXRange instead, so panning or zooming out reveals
   // a high-degree curve's rapid growth/decay well beyond the fitted points
   // rather than running into blank space.
-  const viewXRange = VM.plotting.paddedRange(xs, {emptyRange: [-1, 6], relativePadding: 0.08, minPadding: 0.3})
+  const viewXRange = VM.plotting.paddedRange(xs, {emptyRange: [-1, 6], relativePadding: 0.25, minPadding: 0.3})
   const bufferXRange = VM.plotting.paddedRange(xs, {emptyRange: [-1, 6], relativePadding: 2, minPadding: 5})
 
   // A fixed y-range, set once from the full [0, maxNoise] reach of the

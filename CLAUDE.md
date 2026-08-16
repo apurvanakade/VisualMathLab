@@ -67,7 +67,7 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 **`VM.plotting`**
 
 - `js/plotting/padded-range.js` → `VM.plotting.paddedRange(values, opts)` — returns `{lo, hi}` with configurable padding for axis ranges.
-- `js/plotting/plotly-fullscreen-button.js` → `VM.plotting.fullscreenButton` — patches `Plotly.newPlot`/`Plotly.react` to add a fullscreen-toggle button to every chart's modebar automatically; the patching happens on load, so no per-page wiring or explicit call is needed, including on new method pages.
+- `js/plotting/plotly-fullscreen-button.js` → `VM.plotting.fullscreenButton` — patches `Plotly.newPlot`/`Plotly.react` to add a fullscreen-toggle button to every chart's modebar automatically, drop box/lasso select from the modebar, and default `dragmode` to `"pan"` (only if a page hasn't set its own `dragmode`); the patching happens on load, so no per-page wiring or explicit call is needed, including on new method pages.
 
 **`VM.ui`**
 

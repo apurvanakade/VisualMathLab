@@ -139,6 +139,38 @@
  * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
 .ojs-fill { width: 100% !important; max-width: none !important; }
 
+/* Lets the user drag an expression field's right edge wider -- for fields
+ * like fText/gText/"y' = f(t, y)" where a formula can outgrow the fixed
+ * 10em default and the user wants to see the whole thing at once. This is
+ * automatic, not opt-in: every expression field already gets .ojs-fill
+ * (see above) and no numeric field does (10em is plenty for a guess,
+ * endpoint, or seed) -- see the comment on the 10em rule below -- so
+ * `form.ojs-fill` containing a text input reliably means "this is an
+ * expression field," with no extra class or JS needed at the call site.
+ * :has() targets Observable Inputs' own wrapper <div> around the actual
+ * <input> (form > div > input), which is what needs `resize` -- browsers
+ * don't support resizing an <input> directly, only elements that establish
+ * their own scrollable box. Horizontal only: these are single-line fields,
+ * so a taller box never helps.
+ * Scoped under .ojs-panel with three selector parts (class + element +
+ * class) so this reliably beats two same-specificity competitors that
+ * would otherwise win purely on load order: Observable Inputs' own
+ * dynamically-injected `.oi-xxxxxx-input { width: 100% }` rule (appended to
+ * <head> at runtime, after this stylesheet) and this file's own
+ * `.ojs-panel input[type="text"] { width: 10em }` default below. */
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) {
+  display: inline-block;
+  width: 20em;
+  min-width: 10em;
+  max-width: 100%;
+  resize: horizontal;
+  overflow: hidden;
+}
+
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) > input[type="text"] {
+  width: 100%;
+}
+
 /* Attach to an Inputs.* wrapper div to keep it at its natural width instead
  * of Observable Inputs' 100%-wide default, which would otherwise force the
  * row to wrap. */
@@ -329,6 +361,29 @@
   display: flex;
   justify-content: flex-end;
   margin-bottom: 0.5rem;
+}
+
+/* ── Report-bug selection popup ──────────────────────────────────── */
+/* Floats next to the current text selection (see js/ui/report-bug.js);
+ * position: absolute against the document (top/left set inline in JS
+ * include scrollX/scrollY), not the viewport, so it scrolls with the page. */
+
+.vm-report-bug-popup {
+  position: absolute;
+  z-index: 1050;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.vm-report-bug-popup:hover {
+  background: #1d4ed8;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────── */

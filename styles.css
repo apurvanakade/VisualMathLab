@@ -139,6 +139,34 @@
  * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
 .ojs-fill { width: 100% !important; max-width: none !important; }
 
+/* Attach to the <div> Observable Inputs wraps around a text input's actual
+ * <input> element (input.parentElement, not the outer form/label wrapper)
+ * to let the user drag its right edge wider -- for expression fields
+ * (fText, gText, y' = f(t, y)) where a formula can outgrow the fixed 10em
+ * default and the user wants to see the whole thing at once. Horizontal
+ * only: these are single-line fields, so a taller box never helps.
+ * Deliberately not used for numeric fields (initial guesses, endpoints,
+ * seeds, ...) -- those values are always short, so resizing them would
+ * just be a control with nothing useful to do. */
+/* Scoped under .ojs-panel (two classes) rather than bare .ojs-resizable-field
+ * (one class) so this reliably beats two same-specificity competitors that
+ * would otherwise win purely on load order: Observable Inputs' own
+ * dynamically-injected `.oi-xxxxxx-input { width: 100% }` rule (appended to
+ * <head> at runtime, after this stylesheet) and this file's own
+ * `.ojs-panel input[type="text"] { width: 10em }` default above. */
+.ojs-panel .ojs-resizable-field {
+  display: inline-block;
+  width: 20em;
+  min-width: 10em;
+  max-width: 100%;
+  resize: horizontal;
+  overflow: hidden;
+}
+
+.ojs-panel .ojs-resizable-field input[type="text"] {
+  width: 100%;
+}
+
 /* Attach to an Inputs.* wrapper div to keep it at its natural width instead
  * of Observable Inputs' 100%-wide default, which would otherwise force the
  * row to wrap. */

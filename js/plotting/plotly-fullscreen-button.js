@@ -53,16 +53,28 @@
     }
   }
 
-  // Patch Plotly.newPlot/react so every chart gets the button automatically
-  // — pages call Plotly.newPlot(gd, data, layout, config) as plain imperative
+  // Patch Plotly.newPlot/react so every chart gets the button automatically,
+  // and box/lasso select are dropped from the modebar (this site's charts
+  // use selection-free zoom/pan, not point selection) with pan as the
+  // default drag tool instead of Plotly's own default of box zoom —
+  // pages call Plotly.newPlot(gd, data, layout, config) as plain imperative
   // code (see CLAUDE.md), so no per-page wiring is needed or expected.
   const addButton = (config) => {
     const buttons = (config && config.modeBarButtonsToAdd) || []
-    return {...config, modeBarButtonsToAdd: [...buttons, fullscreenButton]}
+    const removedButtons = (config && config.modeBarButtonsToRemove) || []
+    return {
+      ...config,
+      modeBarButtonsToAdd: [...buttons, fullscreenButton],
+      modeBarButtonsToRemove: [...removedButtons, "select2d", "lasso2d"]
+    }
+  }
+  const withDefaultDragmode = (layout) => {
+    if (layout && layout.dragmode !== undefined) return layout
+    return {...layout, dragmode: "pan"}
   }
   for (const name of ["newPlot", "react"]) {
     const original = globalThis.Plotly[name]
-    globalThis.Plotly[name] = (gd, data, layout, config) => original(gd, data, layout, addButton(config))
+    globalThis.Plotly[name] = (gd, data, layout, config) => original(gd, data, withDefaultDragmode(layout), addButton(config))
   }
 
   globalThis.VM = {...globalThis.VM, plotting: {...globalThis.VM?.plotting, fullscreenButton}}

@@ -1,0 +1,652 @@
+---
+title: "About Visual Math Lab"
+toc: false
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad, Apurva Nakade
+-->
+
+<style>
+.about-eyebrow {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 1rem 0 0.5rem;
+}
+
+.about-hero-lead {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--bs-secondary-color, #475569);
+}
+
+.about-visual {
+  max-width: 460px;
+  margin: 1.75rem auto 2rem;
+}
+
+.about-visual-plot {
+  width: 100%;
+  height: 260px;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.1));
+}
+
+/* Rotation between the three illustration scenes below. Each scene's own
+   internal animations keep their independent 12s duration/keyframes
+   unchanged; because 36s / 12s = 3 exactly, every scene's internal loop
+   is always back at its own phase 0 the instant the wrapper reveals it,
+   so no rescaling of any scene's internal percentages is needed. */
+.about-scene {
+  opacity: 0;
+  animation-duration: 36s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.about-scene-newton { animation-name: about-scene-newton; }
+.about-scene-kalman { animation-name: about-scene-kalman; }
+.about-scene-sperner { animation-name: about-scene-sperner; }
+
+@keyframes about-scene-newton {
+  0%, 32% { opacity: 1; }
+  33% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes about-scene-kalman {
+  0%, 33% { opacity: 0; }
+  34%, 65% { opacity: 1; }
+  66% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes about-scene-sperner {
+  0%, 66% { opacity: 0; }
+  67%, 99% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Newton's-method loop: exactly one stage is visible at a time (point0,
+   then each tangent+point group), crossfading into the next on a shared
+   12s cycle so they stay in phase forever without any JS driving them.
+   Within each group, the tangent/guide lines "draw" in via a moving
+   stroke-dashoffset and the new point pops in with a small scale
+   overshoot, layered on top of the parent group's opacity crossfade.
+   A plain opacity crossfade is low-risk motion, so it's left running
+   even under prefers-reduced-motion. */
+.about-newton-point0,
+.about-newton-group1,
+.about-newton-group2,
+.about-newton-group3 {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.about-newton-point0 { animation-name: about-newton-point0; transform-box: fill-box; transform-origin: center; }
+.about-newton-group1 { animation-name: about-newton-group1; }
+.about-newton-group2 { animation-name: about-newton-group2; }
+.about-newton-group3 { animation-name: about-newton-group3; }
+
+.about-newton-draw1, .about-newton-draw2, .about-newton-draw3 {
+  animation-duration: 12s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.about-newton-pop1, .about-newton-pop2, .about-newton-pop3 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 12s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation-iteration-count: infinite;
+}
+
+.about-newton-draw1 { animation-name: about-newton-draw1; }
+.about-newton-draw2 { animation-name: about-newton-draw2; }
+.about-newton-draw3 { animation-name: about-newton-draw3; }
+.about-newton-pop1 { animation-name: about-newton-pop1; }
+.about-newton-pop2 { animation-name: about-newton-pop2; }
+.about-newton-pop3 { animation-name: about-newton-pop3; }
+
+@keyframes about-newton-point0 {
+  0%, 100% { opacity: 0; transform: scale(0.3); }
+  5% { opacity: 1; transform: scale(1.15); }
+  8%, 17% { opacity: 1; transform: scale(1); }
+  23% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes about-newton-group1 {
+  0%, 17%, 100% { opacity: 0; }
+  23%, 35% { opacity: 1; }
+  41% { opacity: 0; }
+}
+
+@keyframes about-newton-group2 {
+  0%, 35%, 100% { opacity: 0; }
+  41%, 53% { opacity: 1; }
+  59% { opacity: 0; }
+}
+
+@keyframes about-newton-group3 {
+  0%, 53%, 100% { opacity: 0; }
+  59%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-newton-draw1 {
+  0%, 23% { stroke-dashoffset: 160; }
+  29%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-newton-draw2 {
+  0%, 41% { stroke-dashoffset: 160; }
+  47%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-newton-draw3 {
+  0%, 59% { stroke-dashoffset: 160; }
+  65%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-newton-pop1 {
+  0%, 27% { transform: scale(0.3); }
+  32% { transform: scale(1.18); }
+  35%, 100% { transform: scale(1); }
+}
+
+@keyframes about-newton-pop2 {
+  0%, 45% { transform: scale(0.3); }
+  50% { transform: scale(1.18); }
+  53%, 100% { transform: scale(1); }
+}
+
+@keyframes about-newton-pop3 {
+  0%, 63% { transform: scale(0.3); }
+  69% { transform: scale(1.25); }
+  73%, 100% { transform: scale(1); }
+}
+
+/* Noisy-to-smooth filter loop: the scattered measurements fade in first,
+   then the filtered estimate draws itself across left to right via a
+   moving stroke-dashoffset, holds, then everything fades out together.
+   Same 12s internal duration as the Newton scene, for the same reason. */
+.about-kalman-dots, .about-kalman-smooth {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.about-kalman-dots { animation-name: about-kalman-dots; }
+.about-kalman-smooth { animation-name: about-kalman-smooth; }
+
+@keyframes about-kalman-dots {
+  0%, 100% { opacity: 0; }
+  8%, 83% { opacity: 1; }
+  92% { opacity: 0; }
+}
+
+@keyframes about-kalman-smooth {
+  0%, 100% { opacity: 0; stroke-dashoffset: 680; }
+  8% { opacity: 1; stroke-dashoffset: 680; }
+  13% { stroke-dashoffset: 680; }
+  55% { stroke-dashoffset: 0; }
+  83% { opacity: 1; stroke-dashoffset: 0; }
+  92% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+/* Sperner's-lemma loop: the triangle assembles itself piece by piece
+   (outer edges, corner colors, inner subdivision, midpoint colors, then
+   the trichromatic triangle highlight), holds the complete picture, then
+   fades out together. Same 12s internal duration as the other scenes. */
+.about-sperner-outer, .about-sperner-corners, .about-sperner-inner, .about-sperner-mid-dots, .about-sperner-highlight {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.about-sperner-draw-outer, .about-sperner-draw-inner {
+  animation-duration: 12s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.about-sperner-pop-outer, .about-sperner-pop-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 12s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation-iteration-count: infinite;
+}
+
+.about-sperner-highlight { transform-box: fill-box; transform-origin: center; }
+
+.about-sperner-outer { animation-name: about-sperner-outer; }
+.about-sperner-corners { animation-name: about-sperner-corners; }
+.about-sperner-inner { animation-name: about-sperner-inner; }
+.about-sperner-mid-dots { animation-name: about-sperner-mid-dots; }
+.about-sperner-highlight { animation-name: about-sperner-highlight, about-sperner-highlight-pop; }
+.about-sperner-draw-outer { animation-name: about-sperner-draw-outer; }
+.about-sperner-draw-inner { animation-name: about-sperner-draw-inner; }
+.about-sperner-pop-outer { animation-name: about-sperner-pop-outer; }
+.about-sperner-pop-inner { animation-name: about-sperner-pop-inner; }
+
+@keyframes about-sperner-outer {
+  0%, 100% { opacity: 0; }
+  1%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-draw-outer {
+  0%, 1% { stroke-dashoffset: 220; }
+  15%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-sperner-corners {
+  0%, 10%, 100% { opacity: 0; }
+  13%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-pop-outer {
+  0%, 10% { transform: scale(0.3); }
+  15% { transform: scale(1.2); }
+  18%, 100% { transform: scale(1); }
+}
+
+@keyframes about-sperner-inner {
+  0%, 15%, 100% { opacity: 0; }
+  17%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-draw-inner {
+  0%, 17% { stroke-dashoffset: 110; }
+  30%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-sperner-mid-dots {
+  0%, 28%, 100% { opacity: 0; }
+  31%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-pop-inner {
+  0%, 28% { transform: scale(0.3); }
+  34% { transform: scale(1.2); }
+  37%, 100% { transform: scale(1); }
+}
+
+@keyframes about-sperner-highlight {
+  0%, 33%, 100% { opacity: 0; }
+  40%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-highlight-pop {
+  0%, 33% { transform: scale(0.5); }
+  40% { transform: scale(1.15); }
+  44%, 100% { transform: scale(1); }
+}
+</style>
+
+<p class="about-eyebrow">Our objective</p>
+
+<p class="about-hero-lead">
+Undergraduate mathematics is full of ideas that come alive the moment you can see them move. Visual Math Lab makes them touchable: pick a function, drag a slider, change a starting guess, and watch the idea unfold one step at a time — from root finding and differential equations to probability, model fitting, and combinatorial proofs.
+</p>
+
+<div class="about-visual">
+<svg class="about-visual-plot" viewBox="0 0 460 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looping rotation of three animated illustrations: Newton's method converging on a root, a filter smoothing a noisy signal into a clean estimate, and Sperner's lemma coloring a triangulated triangle to reveal a trichromatic triangle.">
+  <defs>
+    <filter id="about-newton-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="about-sperner-rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ca8a04" />
+      <stop offset="50%" stop-color="#0d9488" />
+      <stop offset="100%" stop-color="#c026d3" />
+    </linearGradient>
+  </defs>
+  <!-- scene 1/3: Newton's method finding a root of f(x) = x^2 - 2, starting from x = 2.2 -->
+  <g class="about-scene about-scene-newton">
+    <line x1="20" y1="172.8" x2="440" y2="172.8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
+    <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+      points="20.0,226.3 26.0,227.5 32.0,228.7 38.0,229.8 44.0,230.7 50.0,231.5 56.0,232.2 62.0,232.8 68.0,233.2 74.0,233.6 80.0,233.8 86.0,233.9 92.0,233.9 98.0,233.7 104.0,233.4 110.0,233.1 116.0,232.6 122.0,231.9 128.0,231.2 134.0,230.3 140.0,229.3 146.0,228.2 152.0,227.0 158.0,225.7 164.0,224.2 170.0,222.6 176.0,220.9 182.0,219.1 188.0,217.2 194.0,215.1 200.0,212.9 206.0,210.6 212.0,208.2 218.0,205.6 224.0,203.0 230.0,200.2 236.0,197.3 242.0,194.3 248.0,191.1 254.0,187.9 260.0,184.5 266.0,181.0 272.0,177.4 278.0,173.6 284.0,169.8 290.0,165.8 296.0,161.7 302.0,157.5 308.0,153.1 314.0,148.7 320.0,144.1 326.0,139.4 332.0,134.6 338.0,129.6 344.0,124.6 350.0,119.4 356.0,114.1 362.0,108.7 368.0,103.1 374.0,97.5 380.0,91.7 386.0,85.8 392.0,79.8 398.0,73.7 404.0,67.4 410.0,61.0 416.0,54.5 422.0,47.9 428.0,41.2 434.0,34.3 440.0,27.3" />
+    <circle class="about-newton-point0" cx="385.8" cy="86.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+    <g class="about-newton-group1">
+      <line class="about-newton-draw1" x1="385.8" y1="86.0" x2="298.4" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#about-newton-glow)" />
+      <line x1="298.4" y1="172.8" x2="298.4" y2="160.0" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4" />
+      <circle class="about-newton-pop1" cx="298.4" cy="160.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+    </g>
+    <g class="about-newton-group2">
+      <line class="about-newton-draw2" x1="298.4" y1="160.0" x2="280.2" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#about-newton-glow)" />
+      <line x1="280.2" y1="172.8" x2="280.2" y2="172.2" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4" />
+      <circle class="about-newton-pop2" cx="280.2" cy="172.2" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+    </g>
+    <g class="about-newton-group3">
+      <line class="about-newton-draw3" x1="280.2" y1="172.2" x2="279.3" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#about-newton-glow)" />
+      <circle class="about-newton-pop3" cx="279.3" cy="172.8" r="7" fill="#16a34a" stroke="white" stroke-width="1.5" filter="url(#about-newton-glow)" />
+    </g>
+  </g>
+  <!-- scene 2/3: a filter smoothing a noisy signal into a clean estimate -->
+  <g class="about-scene about-scene-kalman">
+    <g class="about-kalman-dots">
+      <circle cx="33.1" cy="77.7" r="4" fill="#94a3b8" />
+      <circle cx="59.4" cy="69.1" r="4" fill="#94a3b8" />
+      <circle cx="85.6" cy="42.6" r="4" fill="#94a3b8" />
+      <circle cx="111.9" cy="52.0" r="4" fill="#94a3b8" />
+      <circle cx="138.1" cy="60.0" r="4" fill="#94a3b8" />
+      <circle cx="164.4" cy="67.1" r="4" fill="#94a3b8" />
+      <circle cx="190.6" cy="99.9" r="4" fill="#94a3b8" />
+      <circle cx="216.9" cy="175.0" r="4" fill="#94a3b8" />
+      <circle cx="243.1" cy="215.3" r="4" fill="#94a3b8" />
+      <circle cx="269.4" cy="230.1" r="4" fill="#94a3b8" />
+      <circle cx="295.6" cy="225.9" r="4" fill="#94a3b8" />
+      <circle cx="321.9" cy="175.0" r="4" fill="#94a3b8" />
+      <circle cx="348.1" cy="162.6" r="4" fill="#94a3b8" />
+      <circle cx="374.4" cy="137.4" r="4" fill="#94a3b8" />
+      <circle cx="400.6" cy="96.6" r="4" fill="#94a3b8" />
+      <circle cx="426.9" cy="41.8" r="4" fill="#94a3b8" />
+    </g>
+    <polyline class="about-kalman-smooth" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="680" filter="url(#about-newton-glow)"
+      points="20.0,119.8 25.3,107.7 30.5,96.4 35.8,86.1 41.0,77.0 46.3,69.3 51.5,62.8 56.8,57.8 62.0,54.0 67.3,51.4 72.5,49.8 77.8,49.1 83.0,49.1 88.3,49.6 93.5,50.3 98.8,51.2 104.0,52.1 109.3,52.9 114.5,53.6 119.8,54.1 125.0,54.5 130.3,54.9 135.5,55.4 140.8,56.1 146.0,57.3 151.3,59.1 156.5,61.7 161.8,65.3 167.0,70.0 172.3,75.8 177.5,83.0 182.8,91.3 188.0,100.8 193.3,111.4 198.5,122.9 203.8,135.0 209.0,147.6 214.3,160.3 219.5,172.8 224.8,184.8 230.0,196.0 235.3,206.2 240.5,215.1 245.8,222.4 251.0,228.2 256.3,232.3 261.5,234.6 266.8,235.2 272.0,234.3 277.3,231.9 282.5,228.3 287.8,223.7 293.0,218.2 298.3,212.3 303.5,206.0 308.8,199.6 314.0,193.3 319.3,187.2 324.5,181.4 329.8,176.0 335.0,171.0 340.3,166.3 345.5,161.8 350.8,157.5 356.0,153.1 361.3,148.6 366.5,143.7 371.8,138.3 377.0,132.4 382.3,125.7 387.5,118.3 392.8,110.2 398.0,101.5 403.3,92.2 408.5,82.5 413.8,72.7 419.0,62.8 424.3,53.3 429.5,44.4 434.8,36.4 440.0,29.5" />
+  </g>
+  <!-- scene 3/3: Sperner's lemma — a triangulated triangle colored so one small triangle must show all three colors -->
+  <g class="about-scene about-scene-sperner">
+    <g class="about-sperner-outer">
+      <line class="about-sperner-draw-outer" x1="230" y1="40" x2="140" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220" />
+      <line class="about-sperner-draw-outer" x1="230" y1="40" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220" />
+      <line class="about-sperner-draw-outer" x1="140" y1="210" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220" />
+    </g>
+    <g class="about-sperner-corners">
+      <circle class="about-sperner-pop-outer" cx="230" cy="40" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+      <circle class="about-sperner-pop-outer" cx="140" cy="210" r="7" fill="#16a34a" stroke="white" stroke-width="1.5" />
+      <circle class="about-sperner-pop-outer" cx="320" cy="210" r="7" fill="#2563eb" stroke="white" stroke-width="1.5" />
+    </g>
+    <g class="about-sperner-inner">
+      <line class="about-sperner-draw-inner" x1="185" y1="125" x2="275" y2="125" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110" />
+      <line class="about-sperner-draw-inner" x1="185" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110" />
+      <line class="about-sperner-draw-inner" x1="275" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110" />
+    </g>
+    <polygon class="about-sperner-highlight" points="185,125 275,125 230,210" fill="url(#about-sperner-rainbow)" fill-opacity="0.4" stroke="url(#about-sperner-rainbow)" stroke-width="2" filter="url(#about-newton-glow)" />
+    <g class="about-sperner-mid-dots">
+      <circle class="about-sperner-pop-inner" cx="185" cy="125" r="6" fill="#ca8a04" stroke="white" stroke-width="1.5" />
+      <circle class="about-sperner-pop-inner" cx="275" cy="125" r="6" fill="#c026d3" stroke="white" stroke-width="1.5" />
+      <circle class="about-sperner-pop-inner" cx="230" cy="210" r="6" fill="#0d9488" stroke="white" stroke-width="1.5" />
+    </g>
+  </g>
+</svg>
+</div>
+
+## How it works
+
+Each page pairs the mathematics with a live app: change a function, an interval, a seed, or a starting guess, and the plot, the step counter, and the iteration table all move together. Every computation runs in your browser and every setting lives in the URL, so any view you build is instantly shareable — send the link and your reader lands on exactly the picture you were looking at.
+
+Explore on your own, use a page as a lecture demo, or hand one to students as a lab. Everything here is open source, so it is yours to fork, adapt, and extend.
+
+## See it in action
+
+Here's a small taste of what every page looks like: type a function, set the endpoints, and Plotly draws the curve. The default below is piecewise; the examples show a few more ways to phrase a function — arithmetic, powers, trig, exponentials, division, and nested calls.
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This mini demo uses VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.applyExampleParams.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// plotterExamples backs the "Try an example" dropdown below — each one
+// demonstrates a different way to phrase a function expression.
+plotterExamples = [
+  {
+    title: "Piecewise: clamped line",
+    params: {f: "x < -1 ? -1 : (x > 1 ? 1 : x)", left: "-3", right: "3"}
+  },
+  {
+    title: "Polynomial",
+    params: {f: "x^3 - 2*x^2 - 5*x + 6", left: "-3", right: "4"}
+  },
+  {
+    title: "Sum of trig functions",
+    params: {f: "sin(19x) + sin(20x)", left: "-4*pi", right: "4*pi"}
+  },
+  {
+    title: "Gaussian bell curve",
+    params: {f: "exp(-x^2/2) / sqrt(2*pi)", left: "-4", right: "4"}
+  },
+  {
+    title: "Rational function",
+    params: {f: "(x^2 - 1)/(x - 2)", left: "-3", right: "5"}
+  },
+  {
+    title: "Nested calls: sqrt of absolute value",
+    params: {f: "sqrt(abs(x))", left: "-5", right: "5"}
+  },
+  {
+    title: "Natural logarithm",
+    params: {f: "log(x + 5)", left: "-4.9", right: "10"}
+  },
+  {
+    title: "Cycloid",
+    params: {f: "abs(cos(x/2))", left: "-2*pi", right: "4*pi"}
+  },
+  
+]
+```
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof plotterFText = {
+  const input = Inputs.text({label: "Function f(x)", value: "x < -1 ? -1 : (x > 1 ? 1 : x)", placeholder: "Example: x^2 - 1, sin(x) + cos(2*x)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "plotter-f"
+  return input
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof plotterLeft = {
+  const input = Inputs.text({label: "Left endpoint", value: "-3", placeholder: "Example: -3, -pi"})
+  input.dataset.exampleField = "plotter-left"
+  return input
+}
+```
+
+```{ojs}
+viewof plotterRight = {
+  const input = Inputs.text({label: "Right endpoint", value: "3", placeholder: "Example: 3, pi"})
+  input.dataset.exampleField = "plotter-right"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof plotterExampleSelect = {
+  const options = [null, ...plotterExamples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+plotterFieldSelectors = ({
+  f: '[data-example-field="plotter-f"]',
+  left: '[data-example-field="plotter-left"]',
+  right: '[data-example-field="plotter-right"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place. A plain "change" listener attached once to the stable
+// native <select> (rather than an OJS cell reactive on
+// plotterExampleSelect's value) -- a <select> fires both "input" and
+// "change" per selection, and a reactive cell would run twice, with the
+// two overlapping calls racing each other.
+applyPlotterExampleFromSelect = {
+  const nativeSelect = (viewof plotterExampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof plotterExampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(plotterFieldSelectors, example.params, viewof plotterTrigger)
+  })
+}
+```
+
+```{ojs}
+// Plot commits the current function/endpoint fields -- edits above don't
+// take effect until this is clicked.
+viewof plotterTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto", "ojs-end")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/endpoint fields clicks Plot instead of
+// submitting the field's own (invisible) form.
+enterToPlotterPlot = {
+  for (const view of [viewof plotterFText, viewof plotterLeft, viewof plotterRight]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotterTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// plotterCommitted snapshots the fields only when Plot is clicked -- it
+// reads the stable `viewof` DOM views, not the reactive values, so it does
+// not rerun on every keystroke.
+plotterCommitted = {
+  plotterTrigger
+  const math = window.math
+  return {
+    fText: (viewof plotterFText).value,
+    left: VM.expressions.makeNumber(math, (viewof plotterLeft).value),
+    right: VM.expressions.makeNumber(math, (viewof plotterRight).value)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// plotterSetup samples f(x) across [left, right] for the curve trace and
+// computes padded axis ranges.
+plotterSetup = {
+  const math = window.math
+  const f = VM.expressions.makeFunction(math, plotterCommitted.fText)
+
+  let left = plotterCommitted.left
+  let right = plotterCommitted.right
+
+  if (!f || !Number.isFinite(left) || !Number.isFinite(right) || left === right) {
+    return {xs: [], ys: [], xRange: {lo: -5, hi: 5}, yRange: {lo: -1, hi: 1}}
+  }
+  if (left > right) { const temp = left; left = right; right = temp }
+
+  const sampleCount = 600
+  const xs = Array.from({length: sampleCount}, (_, i) => left + (right - left) * i / (sampleCount - 1))
+  const ys = []
+  const yValues = []
+  for (const x of xs) {
+    const y = f(x)
+    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
+      ys.push(y)
+      yValues.push(y)
+    } else {
+      ys.push(null)
+    }
+  }
+
+  const xRange = {lo: left, hi: right}
+  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.15, minPadding: 0.5})
+  return {xs, ys, xRange, yRange}
+}
+```
+
+```{ojs}
+//| output: false
+// plotterMainPlot is a closure over a _plotDiv variable so the same DOM
+// node is reused across reactive re-renders, preserving zoom/pan.
+plotterMainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({xs, ys, xRange, yRange}) => {
+    const data = [{
+      x: xs, y: ys, type: "scatter", mode: "lines",
+      line: {color: "#2563eb", width: 3}, name: "f(x)"
+    }]
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+plotterMainPlot(plotterSetup)
+```
+
+</div>
+
+## Built with
+
+[Quarto](https://quarto.org), [Observable JS](https://observablehq.com), [Plotly.js](https://plotly.com/javascript/), and [math.js](https://mathjs.org) — no backend, no build step beyond rendering.

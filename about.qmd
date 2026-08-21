@@ -1,14 +1,12 @@
 ---
 title: "About Visual Math Lab"
-page-layout: full
 toc: false
-sidebar: false
 ---
 
 <!--
 Copyright (c) 2026 Dhruv Azad. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Dhruv Azad
+Authors: Dhruv Azad, Apurva Nakade
 -->
 
 <style>
@@ -304,10 +302,10 @@ Authors: Dhruv Azad
 }
 </style>
 
-<p class="about-eyebrow">Why this exists</p>
+<p class="about-eyebrow">Our objective</p>
 
 <p class="about-hero-lead">
-Most numerical methods are taught as a formula on a page — an update rule, an integral, a matrix. Visual Math Lab turns each one into something you can touch: move an input, and watch the algorithm think its way to an answer, one step at a time.
+Undergraduate mathematics is full of ideas that come alive the moment you can see them move. Visual Math Lab makes them touchable: pick a function, drag a slider, change a starting guess, and watch the idea unfold one step at a time — from root finding and differential equations to probability, model fitting, and combinatorial proofs.
 </p>
 
 <div class="about-visual">
@@ -399,7 +397,255 @@ Most numerical methods are taught as a formula on a page — an update rule, an 
 
 ## How it works
 
-Each page pairs the math with a live app: change a function, an interval, a seed, or a starting guess, and the plot, the step counter, and the iteration table all move together. Nothing here needs a server — every computation runs in your browser, so a page is just as fast and just as shareable as any static site.
+Each page pairs the mathematics with a live app: change a function, an interval, a seed, or a starting guess, and the plot, the step counter, and the iteration table all move together. Every computation runs in your browser and every setting lives in the URL, so any view you build is instantly shareable — send the link and your reader lands on exactly the picture you were looking at.
+
+Explore on your own, use a page as a lecture demo, or hand one to students as a lab. Everything here is open source, so it is yours to fork, adapt, and extend.
+
+## See it in action
+
+Here's a small taste of what every page looks like: type a function, set the endpoints, and Plotly draws the curve. The default below is piecewise; the examples show a few more ways to phrase a function — arithmetic, powers, trig, exponentials, division, and nested calls.
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This mini demo uses VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.applyExampleParams.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// plotterExamples backs the "Try an example" dropdown below — each one
+// demonstrates a different way to phrase a function expression.
+plotterExamples = [
+  {
+    title: "Piecewise: clamped line",
+    params: {f: "x < -1 ? -1 : (x > 1 ? 1 : x)", left: "-3", right: "3"}
+  },
+  {
+    title: "Polynomial",
+    params: {f: "x^3 - 2*x^2 - 5*x + 6", left: "-3", right: "4"}
+  },
+  {
+    title: "Sum of trig functions",
+    params: {f: "sin(19x) + sin(20x)", left: "-4*pi", right: "4*pi"}
+  },
+  {
+    title: "Gaussian bell curve",
+    params: {f: "exp(-x^2/2) / sqrt(2*pi)", left: "-4", right: "4"}
+  },
+  {
+    title: "Rational function",
+    params: {f: "(x^2 - 1)/(x - 2)", left: "-3", right: "5"}
+  },
+  {
+    title: "Nested calls: sqrt of absolute value",
+    params: {f: "sqrt(abs(x))", left: "-5", right: "5"}
+  },
+  {
+    title: "Natural logarithm",
+    params: {f: "log(x + 5)", left: "-4.9", right: "10"}
+  },
+  {
+    title: "Cycloid",
+    params: {f: "abs(cos(x/2))", left: "-2*pi", right: "4*pi"}
+  },
+  
+]
+```
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof plotterFText = {
+  const input = Inputs.text({label: "Function f(x)", value: "x < -1 ? -1 : (x > 1 ? 1 : x)", placeholder: "Example: x^2 - 1, sin(x) + cos(2*x)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "plotter-f"
+  return input
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof plotterLeft = {
+  const input = Inputs.text({label: "Left endpoint", value: "-3", placeholder: "Example: -3, -pi"})
+  input.dataset.exampleField = "plotter-left"
+  return input
+}
+```
+
+```{ojs}
+viewof plotterRight = {
+  const input = Inputs.text({label: "Right endpoint", value: "3", placeholder: "Example: 3, pi"})
+  input.dataset.exampleField = "plotter-right"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof plotterExampleSelect = {
+  const options = [null, ...plotterExamples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+plotterFieldSelectors = ({
+  f: '[data-example-field="plotter-f"]',
+  left: '[data-example-field="plotter-left"]',
+  right: '[data-example-field="plotter-right"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place. A plain "change" listener attached once to the stable
+// native <select> (rather than an OJS cell reactive on
+// plotterExampleSelect's value) -- a <select> fires both "input" and
+// "change" per selection, and a reactive cell would run twice, with the
+// two overlapping calls racing each other.
+applyPlotterExampleFromSelect = {
+  const nativeSelect = (viewof plotterExampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof plotterExampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(plotterFieldSelectors, example.params, viewof plotterTrigger)
+  })
+}
+```
+
+```{ojs}
+// Plot commits the current function/endpoint fields -- edits above don't
+// take effect until this is clicked.
+viewof plotterTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto", "ojs-end")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/endpoint fields clicks Plot instead of
+// submitting the field's own (invisible) form.
+enterToPlotterPlot = {
+  for (const view of [viewof plotterFText, viewof plotterLeft, viewof plotterRight]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotterTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// plotterCommitted snapshots the fields only when Plot is clicked -- it
+// reads the stable `viewof` DOM views, not the reactive values, so it does
+// not rerun on every keystroke.
+plotterCommitted = {
+  plotterTrigger
+  const math = window.math
+  return {
+    fText: (viewof plotterFText).value,
+    left: VM.expressions.makeNumber(math, (viewof plotterLeft).value),
+    right: VM.expressions.makeNumber(math, (viewof plotterRight).value)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// plotterSetup samples f(x) across [left, right] for the curve trace and
+// computes padded axis ranges.
+plotterSetup = {
+  const math = window.math
+  const f = VM.expressions.makeFunction(math, plotterCommitted.fText)
+
+  let left = plotterCommitted.left
+  let right = plotterCommitted.right
+
+  if (!f || !Number.isFinite(left) || !Number.isFinite(right) || left === right) {
+    return {xs: [], ys: [], xRange: {lo: -5, hi: 5}, yRange: {lo: -1, hi: 1}}
+  }
+  if (left > right) { const temp = left; left = right; right = temp }
+
+  const sampleCount = 600
+  const xs = Array.from({length: sampleCount}, (_, i) => left + (right - left) * i / (sampleCount - 1))
+  const ys = []
+  const yValues = []
+  for (const x of xs) {
+    const y = f(x)
+    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
+      ys.push(y)
+      yValues.push(y)
+    } else {
+      ys.push(null)
+    }
+  }
+
+  const xRange = {lo: left, hi: right}
+  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.15, minPadding: 0.5})
+  return {xs, ys, xRange, yRange}
+}
+```
+
+```{ojs}
+//| output: false
+// plotterMainPlot is a closure over a _plotDiv variable so the same DOM
+// node is reused across reactive re-renders, preserving zoom/pan.
+plotterMainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({xs, ys, xRange, yRange}) => {
+    const data = [{
+      x: xs, y: ys, type: "scatter", mode: "lines",
+      line: {color: "#2563eb", width: 3}, name: "f(x)"
+    }]
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+```{ojs}
+plotterMainPlot(plotterSetup)
+```
+
+</div>
 
 ## Built with
 

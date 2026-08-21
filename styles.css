@@ -139,22 +139,26 @@
  * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
 .ojs-fill { width: 100% !important; max-width: none !important; }
 
-/* Attach to the <div> Observable Inputs wraps around a text input's actual
- * <input> element (input.parentElement, not the outer form/label wrapper)
- * to let the user drag its right edge wider -- for expression fields
- * (fText, gText, y' = f(t, y)) where a formula can outgrow the fixed 10em
- * default and the user wants to see the whole thing at once. Horizontal
- * only: these are single-line fields, so a taller box never helps.
- * Deliberately not used for numeric fields (initial guesses, endpoints,
- * seeds, ...) -- those values are always short, so resizing them would
- * just be a control with nothing useful to do. */
-/* Scoped under .ojs-panel (two classes) rather than bare .ojs-resizable-field
- * (one class) so this reliably beats two same-specificity competitors that
+/* Lets the user drag an expression field's right edge wider -- for fields
+ * like fText/gText/"y' = f(t, y)" where a formula can outgrow the fixed
+ * 10em default and the user wants to see the whole thing at once. This is
+ * automatic, not opt-in: every expression field already gets .ojs-fill
+ * (see above) and no numeric field does (10em is plenty for a guess,
+ * endpoint, or seed) -- see the comment on the 10em rule below -- so
+ * `form.ojs-fill` containing a text input reliably means "this is an
+ * expression field," with no extra class or JS needed at the call site.
+ * :has() targets Observable Inputs' own wrapper <div> around the actual
+ * <input> (form > div > input), which is what needs `resize` -- browsers
+ * don't support resizing an <input> directly, only elements that establish
+ * their own scrollable box. Horizontal only: these are single-line fields,
+ * so a taller box never helps.
+ * Scoped under .ojs-panel with three selector parts (class + element +
+ * class) so this reliably beats two same-specificity competitors that
  * would otherwise win purely on load order: Observable Inputs' own
  * dynamically-injected `.oi-xxxxxx-input { width: 100% }` rule (appended to
  * <head> at runtime, after this stylesheet) and this file's own
- * `.ojs-panel input[type="text"] { width: 10em }` default above. */
-.ojs-panel .ojs-resizable-field {
+ * `.ojs-panel input[type="text"] { width: 10em }` default below. */
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) {
   display: inline-block;
   width: 20em;
   min-width: 10em;
@@ -163,7 +167,7 @@
   overflow: hidden;
 }
 
-.ojs-panel .ojs-resizable-field input[type="text"] {
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) > input[type="text"] {
   width: 100%;
 }
 
@@ -327,6 +331,21 @@
 
 .ojs-step-overlay input[type="range"] {
   accent-color: #2563eb;
+}
+
+/* Inputs.radio()/checkbox() option groups render one block-level row per
+ * option by default (Observable Inputs' own stylesheet, not this project's)
+ * -- fine in a roomy .ojs-panel, but a tight chart-overlay bar shared with
+ * sliders reads better as one horizontal row for a short option list.
+ * Observable appends a "-checkbox" suffix to the form's class for both
+ * radio and checkbox groups, alongside its hashed "oi-<hash>" prefix (the
+ * same hash-prefix convention this file already relies on elsewhere via
+ * `form[class^="oi-"]`) -- matching on that stable suffix instead of the
+ * hash keeps this working across Observable Inputs versions. */
+.ojs-step-overlay form[class$="-checkbox"] > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
 }
 
 /* ── Listing cards ───────────────────────────────────────────────── */

@@ -11,6 +11,299 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dhruv Azad
 -->
 
+<style>
+.about-eyebrow {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin: 1rem 0 0.5rem;
+}
+
+.about-hero-lead {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--bs-secondary-color, #475569);
+}
+
+.about-visual {
+  max-width: 460px;
+  margin: 1.75rem auto 2rem;
+}
+
+.about-visual-plot {
+  width: 100%;
+  height: 260px;
+  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.1));
+}
+
+/* Rotation between the three illustration scenes below. Each scene's own
+   internal animations keep their independent 12s duration/keyframes
+   unchanged; because 36s / 12s = 3 exactly, every scene's internal loop
+   is always back at its own phase 0 the instant the wrapper reveals it,
+   so no rescaling of any scene's internal percentages is needed. */
+.about-scene {
+  opacity: 0;
+  animation-duration: 36s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.about-scene-newton { animation-name: about-scene-newton; }
+.about-scene-kalman { animation-name: about-scene-kalman; }
+.about-scene-sperner { animation-name: about-scene-sperner; }
+
+@keyframes about-scene-newton {
+  0%, 32% { opacity: 1; }
+  33% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes about-scene-kalman {
+  0%, 33% { opacity: 0; }
+  34%, 65% { opacity: 1; }
+  66% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes about-scene-sperner {
+  0%, 66% { opacity: 0; }
+  67%, 99% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Newton's-method loop: exactly one stage is visible at a time (point0,
+   then each tangent+point group), crossfading into the next on a shared
+   12s cycle so they stay in phase forever without any JS driving them.
+   Within each group, the tangent/guide lines "draw" in via a moving
+   stroke-dashoffset and the new point pops in with a small scale
+   overshoot, layered on top of the parent group's opacity crossfade.
+   A plain opacity crossfade is low-risk motion, so it's left running
+   even under prefers-reduced-motion. */
+.about-newton-point0,
+.about-newton-group1,
+.about-newton-group2,
+.about-newton-group3 {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.about-newton-point0 { animation-name: about-newton-point0; transform-box: fill-box; transform-origin: center; }
+.about-newton-group1 { animation-name: about-newton-group1; }
+.about-newton-group2 { animation-name: about-newton-group2; }
+.about-newton-group3 { animation-name: about-newton-group3; }
+
+.about-newton-draw1, .about-newton-draw2, .about-newton-draw3 {
+  animation-duration: 12s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.about-newton-pop1, .about-newton-pop2, .about-newton-pop3 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 12s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation-iteration-count: infinite;
+}
+
+.about-newton-draw1 { animation-name: about-newton-draw1; }
+.about-newton-draw2 { animation-name: about-newton-draw2; }
+.about-newton-draw3 { animation-name: about-newton-draw3; }
+.about-newton-pop1 { animation-name: about-newton-pop1; }
+.about-newton-pop2 { animation-name: about-newton-pop2; }
+.about-newton-pop3 { animation-name: about-newton-pop3; }
+
+@keyframes about-newton-point0 {
+  0%, 100% { opacity: 0; transform: scale(0.3); }
+  5% { opacity: 1; transform: scale(1.15); }
+  8%, 17% { opacity: 1; transform: scale(1); }
+  23% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes about-newton-group1 {
+  0%, 17%, 100% { opacity: 0; }
+  23%, 35% { opacity: 1; }
+  41% { opacity: 0; }
+}
+
+@keyframes about-newton-group2 {
+  0%, 35%, 100% { opacity: 0; }
+  41%, 53% { opacity: 1; }
+  59% { opacity: 0; }
+}
+
+@keyframes about-newton-group3 {
+  0%, 53%, 100% { opacity: 0; }
+  59%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-newton-draw1 {
+  0%, 23% { stroke-dashoffset: 160; }
+  29%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-newton-draw2 {
+  0%, 41% { stroke-dashoffset: 160; }
+  47%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-newton-draw3 {
+  0%, 59% { stroke-dashoffset: 160; }
+  65%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-newton-pop1 {
+  0%, 27% { transform: scale(0.3); }
+  32% { transform: scale(1.18); }
+  35%, 100% { transform: scale(1); }
+}
+
+@keyframes about-newton-pop2 {
+  0%, 45% { transform: scale(0.3); }
+  50% { transform: scale(1.18); }
+  53%, 100% { transform: scale(1); }
+}
+
+@keyframes about-newton-pop3 {
+  0%, 63% { transform: scale(0.3); }
+  69% { transform: scale(1.25); }
+  73%, 100% { transform: scale(1); }
+}
+
+/* Noisy-to-smooth filter loop: the scattered measurements fade in first,
+   then the filtered estimate draws itself across left to right via a
+   moving stroke-dashoffset, holds, then everything fades out together.
+   Same 12s internal duration as the Newton scene, for the same reason. */
+.about-kalman-dots, .about-kalman-smooth {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.about-kalman-dots { animation-name: about-kalman-dots; }
+.about-kalman-smooth { animation-name: about-kalman-smooth; }
+
+@keyframes about-kalman-dots {
+  0%, 100% { opacity: 0; }
+  8%, 83% { opacity: 1; }
+  92% { opacity: 0; }
+}
+
+@keyframes about-kalman-smooth {
+  0%, 100% { opacity: 0; stroke-dashoffset: 680; }
+  8% { opacity: 1; stroke-dashoffset: 680; }
+  13% { stroke-dashoffset: 680; }
+  55% { stroke-dashoffset: 0; }
+  83% { opacity: 1; stroke-dashoffset: 0; }
+  92% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+/* Sperner's-lemma loop: the triangle assembles itself piece by piece
+   (outer edges, corner colors, inner subdivision, midpoint colors, then
+   the trichromatic triangle highlight), holds the complete picture, then
+   fades out together. Same 12s internal duration as the other scenes. */
+.about-sperner-outer, .about-sperner-corners, .about-sperner-inner, .about-sperner-mid-dots, .about-sperner-highlight {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.about-sperner-draw-outer, .about-sperner-draw-inner {
+  animation-duration: 12s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.about-sperner-pop-outer, .about-sperner-pop-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 12s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation-iteration-count: infinite;
+}
+
+.about-sperner-highlight { transform-box: fill-box; transform-origin: center; }
+
+.about-sperner-outer { animation-name: about-sperner-outer; }
+.about-sperner-corners { animation-name: about-sperner-corners; }
+.about-sperner-inner { animation-name: about-sperner-inner; }
+.about-sperner-mid-dots { animation-name: about-sperner-mid-dots; }
+.about-sperner-highlight { animation-name: about-sperner-highlight, about-sperner-highlight-pop; }
+.about-sperner-draw-outer { animation-name: about-sperner-draw-outer; }
+.about-sperner-draw-inner { animation-name: about-sperner-draw-inner; }
+.about-sperner-pop-outer { animation-name: about-sperner-pop-outer; }
+.about-sperner-pop-inner { animation-name: about-sperner-pop-inner; }
+
+@keyframes about-sperner-outer {
+  0%, 100% { opacity: 0; }
+  1%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-draw-outer {
+  0%, 1% { stroke-dashoffset: 220; }
+  15%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-sperner-corners {
+  0%, 10%, 100% { opacity: 0; }
+  13%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-pop-outer {
+  0%, 10% { transform: scale(0.3); }
+  15% { transform: scale(1.2); }
+  18%, 100% { transform: scale(1); }
+}
+
+@keyframes about-sperner-inner {
+  0%, 15%, 100% { opacity: 0; }
+  17%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-draw-inner {
+  0%, 17% { stroke-dashoffset: 110; }
+  30%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes about-sperner-mid-dots {
+  0%, 28%, 100% { opacity: 0; }
+  31%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-pop-inner {
+  0%, 28% { transform: scale(0.3); }
+  34% { transform: scale(1.2); }
+  37%, 100% { transform: scale(1); }
+}
+
+@keyframes about-sperner-highlight {
+  0%, 33%, 100% { opacity: 0; }
+  40%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes about-sperner-highlight-pop {
+  0%, 33% { transform: scale(0.5); }
+  40% { transform: scale(1.15); }
+  44%, 100% { transform: scale(1); }
+}
+</style>
+
 <p class="about-eyebrow">Why this exists</p>
 
 <p class="about-hero-lead">

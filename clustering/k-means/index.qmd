@@ -1,0 +1,820 @@
+---
+title: "K-Means Clustering"
+author: Dhruv Azad
+date: 2026-08-12
+order: 1
+image: k-means.png
+categories:
+  - Data Science
+  - Clustering
+  - Unsupervised Learning
+  - K-Means
+  - Lloyd's Algorithm
+  - MacQueen's Algorithm
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.sampling.seededRandom, VM.sampling.gaussianRandom, VM.plotting.paddedRange, VM.expressions.makeNumber, VM.ui.renderTable, VM.ui.applyExampleParams.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL preset helpers for examples.
+// Supported query parameters:
+//   mode    "batch" (Lloyd's algorithm) or "online" (sequential/MacQueen)
+//   k       number of clusters k-means looks for
+//   groups  true number of Gaussian blobs the data was generated from
+//   spread  standard deviation of each blob
+//   seed    random seed for the data draw, point arrival order, and centroid initialization
+//   max     maximum iterations (batch mode only)
+urlParams = new URLSearchParams(window.location.search)
+
+maxK = 8
+maxTrueGroups = 8
+pointsPerGroup = 40
+
+modeOptions = ["Batch (Lloyd's)", "Online (sequential)"]
+
+initialMode = {
+  const raw = (urlParams.get("mode") ?? "").toLowerCase()
+  return raw === "batch" ? "Batch (Lloyd's)" : "Online (sequential)"
+}
+
+initialK = {
+  // Number.parseInt(null, 10), unlike Number(null), is NaN -- Number()
+  // coerces a missing param (urlParams.get returns null) to 0, which would
+  // silently pass Number.isInteger/the range check below and mask "no
+  // param" as an explicit "0".
+  const raw = Number.parseInt(urlParams.get("k"), 10)
+  return Number.isInteger(raw) && raw >= 1 && raw <= maxK ? raw : 3
+}
+
+initialTrueGroups = {
+  const raw = Number.parseInt(urlParams.get("groups"), 10)
+  return Number.isInteger(raw) && raw >= 1 && raw <= maxTrueGroups ? raw : 3
+}
+
+initialSpread = {
+  const raw = Number.parseFloat(urlParams.get("spread"))
+  return Number.isFinite(raw) ? Math.max(0.2, Math.min(3, raw)) : 1.6
+}
+
+initialSeed = {
+  const raw = Number.parseInt(urlParams.get("seed"), 10)
+  return Number.isInteger(raw) && raw >= 0 ? raw : 7
+}
+
+initialMax = urlParams.get("max") ?? "20"
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+//
+// Every seed/spread combination below was chosen empirically (loading each
+// URL and inspecting the actual run), not guessed -- with 40 points/group
+// (see pointsPerGroup above), most parameter choices now converge in just
+// 2-5 batch iterations, which leaves nothing to watch the step slider do;
+// these are picked to take a double-digit number of iterations to settle
+// (except "Well-separated clusters" itself, where a fast, clean
+// convergence in a handful of steps IS the point). Two former examples
+// ("Trivial case: one cluster", "Many small clusters") were dropped as
+// redundant with this one -- same "k matches the truth" story, just
+// smaller/larger.
+//
+// Batch and Online don't share a "good" seed even at the same spread:
+// Batch's initial centroids are seeded independently of Online's arrival
+// order (see runBatchKMeans below), so a seed that gives Online a clean,
+// balanced result can just as easily leave Batch's own random start stuck
+// in a bad local minimum, and vice versa -- confirmed by checking each
+// mode's final per-cluster point counts directly (a lopsided split, e.g.
+// one cluster with 6 points, is a bad seed for that mode's baseline
+// example even when the underlying blobs are genuinely well-separated).
+examples = [
+  {
+    title: "Well-separated clusters",
+    params: {mode: "Batch (Lloyd's)", k: 3, groups: 3, spread: 0.6, seed: 1, max: "20"}
+  },
+  {
+    title: "Too few clusters",
+    params: {mode: "Batch (Lloyd's)", k: 4, groups: 6, spread: 2, seed: 9, max: "25"}
+  },
+  {
+    title: "Too many clusters",
+    params: {mode: "Batch (Lloyd's)", k: 6, groups: 4, spread: 2.5, seed: 77, max: "25"}
+  },
+  {
+    title: "Overlapping clusters",
+    params: {mode: "Batch (Lloyd's)", k: 3, groups: 3, spread: 2.5, seed: 5, max: "25"}
+  },
+  {
+    title: "Online: watch it build point by point",
+    params: {mode: "Online (sequential)", k: 3, groups: 3, spread: 0.6, seed: 5, max: "20"}
+  },
+  {
+    title: "Online: an early point gets stuck",
+    params: {mode: "Online (sequential)", k: 3, groups: 3, spread: 1.6, seed: 9, max: "20"}
+  }
+]
+```
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof k = {
+  const input = Inputs.range([1, maxK], {step: 1, value: initialK, label: "Number of clusters (k)"})
+  input.dataset.exampleField = "k"
+  return input
+}
+```
+
+```{ojs}
+// viewof trueGroups: how many Gaussian blobs the data is drawn from --
+// changing this redraws basePoints with a different point count/structure
+// (see basePoints below), not just how the existing points are displayed.
+viewof trueGroups = {
+  const input = Inputs.range([1, maxTrueGroups], {step: 1, value: initialTrueGroups, label: "True number of groups"})
+  input.dataset.exampleField = "groups"
+  return input
+}
+```
+
+```{ojs}
+viewof spread = {
+  const input = Inputs.range([0.2, 3], {step: 0.1, value: initialSpread, label: "Cluster spread"})
+  input.dataset.exampleField = "spread"
+  return input
+}
+```
+
+```{ojs}
+// viewof seedValue: like trueGroups above, this redraws basePoints (a new
+// random draw for the same seed formula) rather than just changing how the
+// existing points are shown -- see basePoints' RNG seed below.
+viewof seedValue = {
+  const input = Inputs.number({value: initialSeed, min: 0, step: 1, label: "Random seed"})
+  input.dataset.exampleField = "seed"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({
+  mode: '[data-example-field="mode"]',
+  k: '[data-example-field="k"]',
+  groups: '[data-example-field="groups"]',
+  spread: '[data-example-field="spread"]',
+  seed: '[data-example-field="seed"]',
+  max: '[data-example-field="max"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above, in place --
+// no page reload, so no scroll jump either. A plain "change" listener
+// attached once to the stable native <select> (rather than an OJS cell
+// reactive on exampleSelect's value) -- a <select> fires both "input" and
+// "change" per selection, and a reactive cell would run once per event,
+// with two overlapping calls racing each other.
+//
+// Every field this page has (mode, k, groups, spread, seed, max) is
+// already live-reactive, so there's no Plot-style commit button to click
+// once the fields are set. The trigger element passed to
+// applyExampleParams is deliberately an inert div with no <button> inside
+// it, NOT the "Regenerate points" button below: that button's click count
+// feeds directly into every RNG seed on the page (see basePoints,
+// pointOrder, and runBatchKMeans further down), so clicking it here would
+// perturb the draw away from what the example's seed value alone is
+// supposed to reproduce.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  const noopTrigger = document.createElement("div")
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, noopTrigger)
+  })
+}
+```
+
+```{ojs}
+// regenerateTrigger: clicking "Regenerate points" bumps this, which is the
+// only thing basePoints depends on below — that's what makes a fresh draw
+// happen on click instead of only once at page load.
+viewof regenerateTrigger = {
+  const button = Inputs.button("Regenerate points", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// maxIterations parses the Max field's expression, falling back to 20 for
+// invalid input so the step slider and result loop always get a usable bound.
+maxIterations = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxIterationsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 20
+  return Math.max(1, Math.round(parsed))
+}
+```
+
+```{ojs}
+//| output: false
+// Keeps mode, k, true groups, spread, seed, and max iterations shareable
+// as the reactive controls change.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("mode", mode === "Online (sequential)" ? "online" : "batch")
+  params.set("k", String(k))
+  params.set("groups", String(trueGroups))
+  params.set("spread", String(spread))
+  params.set("seed", String(seedValue))
+  params.set("max", maxIterationsInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// basePoints: trueGroups Gaussian blobs of pointsPerGroup points each. Blob
+// centers and each point's unit-normal offset are drawn once per (seed,
+// regenerate, trueGroups) combination — the spread slider below only
+// scales these fixed offsets, so it stays a smooth live control instead of
+// redrawing new randomness on every tick (same trick as the noise slider on
+// the Polynomial Fits page).
+basePoints = {
+  regenerateTrigger
+  const rand = VM.sampling.seededRandom((Math.floor(seedValue) + regenerateTrigger * 1000003 + trueGroups * 97) >>> 0)
+  const gaussian = VM.sampling.gaussianRandom(rand)
+
+  const centers = []
+  for (let g = 0; g < trueGroups; g++) {
+    centers.push({x: -8 + 16 * rand(), y: -8 + 16 * rand()})
+  }
+
+  const points = []
+  for (let g = 0; g < trueGroups; g++) {
+    for (let i = 0; i < pointsPerGroup; i++) {
+      points.push({group: g, cx: centers[g].x, cy: centers[g].y, ox: gaussian(), oy: gaussian()})
+    }
+  }
+  return {centers, points}
+}
+```
+
+```{ojs}
+//| output: false
+// points: each point sits at its blob center plus its fixed unit-normal
+// offset scaled by the spread slider — all coincident with their center at
+// spread 0, drifting further apart as spread increases.
+points = {
+  const pts = []
+  for (const p of basePoints.points) {
+    pts.push({x: p.cx + spread * p.ox, y: p.cy + spread * p.oy, trueGroup: p.group})
+  }
+  return pts
+}
+```
+
+```{ojs}
+//| output: false
+// pointOrder: a fixed random arrival order for Online mode, reshuffled
+// whenever the seed changes or new points are drawn — but NOT when k
+// changes, since which point arrives when shouldn't depend on how many
+// clusters you're asking for.
+pointOrder = {
+  const rand = VM.sampling.seededRandom((Math.floor(seedValue) + regenerateTrigger * 1000003 + 424243) >>> 0)
+  const order = []
+  for (let i = 0; i < points.length; i++) order.push(i)
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1))
+    const tmp = order[i]
+    order[i] = order[j]
+    order[j] = tmp
+  }
+  return order
+}
+```
+
+```{ojs}
+//| output: false
+distSq = (a, b) => {
+  const dx = a.x - b.x, dy = a.y - b.y
+  return dx * dx + dy * dy
+}
+```
+
+```{ojs}
+//| output: false
+// runBatchKMeans: Lloyd's algorithm.
+//   rows — array of { iter, centroids, assignments, inertia, reassigned },
+//   one entry per iteration. `centroids`/`assignments` are the state used
+//   to produce that row (i.e. the centroids the assignment step read from),
+//   matching how Newton's method rows record x_n before the update to
+//   x_{n+1} — so the step slider shows "here's what iteration n saw."
+//   Stops early once no point's assignment changes from the previous
+//   iteration (converged), or at maxIterations.
+function runBatchKMeans(points, k, maxIterations, seedValue, regenerateTrigger) {
+  // Initial centroids: k distinct data points, chosen with a seeded RNG of
+  // its own (not a continuation of basePoints' RNG) so changing k always
+  // starts from a reproducible draw rather than just extending whatever
+  // sequence point generation happened to leave off at.
+  const initRand = VM.sampling.seededRandom((Math.floor(seedValue) + regenerateTrigger * 1000003 + k * 7919) >>> 0)
+  const order = []
+  for (let i = 0; i < points.length; i++) order.push(i)
+  for (let i = 0; i < Math.min(k, order.length); i++) {
+    const j = i + Math.floor(initRand() * (order.length - i))
+    const tmp = order[i]
+    order[i] = order[j]
+    order[j] = tmp
+  }
+  let centroids = []
+  for (let c = 0; c < k; c++) {
+    const idx = order[c % order.length]
+    centroids.push({x: points[idx].x, y: points[idx].y})
+  }
+
+  const rows = []
+  let prevAssignments = null
+  let iter = 0
+  while (iter < maxIterations) {
+    // Assignment step: each point joins its nearest centroid.
+    const assignments = []
+    for (const p of points) {
+      let best = 0, bestDist = Infinity
+      for (let c = 0; c < centroids.length; c++) {
+        const d = distSq(p, centroids[c])
+        if (d < bestDist) {
+          bestDist = d
+          best = c
+        }
+      }
+      assignments.push(best)
+    }
+
+    let inertia = 0
+    for (let i = 0; i < points.length; i++) inertia += distSq(points[i], centroids[assignments[i]])
+
+    let reassigned = assignments.length
+    if (prevAssignments) {
+      reassigned = 0
+      for (let i = 0; i < assignments.length; i++) {
+        if (assignments[i] !== prevAssignments[i]) reassigned++
+      }
+    }
+
+    const centroidSnapshot = []
+    for (const c of centroids) centroidSnapshot.push({x: c.x, y: c.y})
+    rows.push({iter, centroids: centroidSnapshot, assignments, inertia, reassigned})
+
+    if (prevAssignments !== null && reassigned === 0) break
+
+    // Update step: each centroid moves to the mean of its assigned points.
+    // An empty cluster (no points assigned) keeps its previous centroid
+    // rather than jumping to an undefined mean.
+    const sums = []
+    for (let c = 0; c < k; c++) sums.push({x: 0, y: 0, count: 0})
+    for (let i = 0; i < points.length; i++) {
+      const c = assignments[i]
+      sums[c].x += points[i].x
+      sums[c].y += points[i].y
+      sums[c].count++
+    }
+    const nextCentroids = []
+    for (let c = 0; c < k; c++) {
+      if (sums[c].count > 0) nextCentroids.push({x: sums[c].x / sums[c].count, y: sums[c].y / sums[c].count})
+      else nextCentroids.push(centroids[c])
+    }
+    centroids = nextCentroids
+
+    prevAssignments = assignments
+    iter++
+  }
+
+  return {rows}
+}
+```
+
+```{ojs}
+//| output: false
+// runOnlineKMeans: sequential/online k-means (MacQueen's original 1967
+// algorithm — the one the name "k-means" comes from). The first k points
+// to arrive (in `order`) become their own singleton centroids directly;
+// every later point is assigned to its nearest *current* centroid and
+// immediately folded into that centroid's running mean via the
+// incremental-average update μ ← μ + (x − μ)/n. Unlike Lloyd's algorithm,
+// a point's assignment is never revisited once made — this single pass is
+// the whole algorithm, and it's why the result depends on arrival order.
+//   rows — array of { iter, pointIndex, centroids, assignments, inertia,
+//   displacement }. Row 0 is the initialization state (only the first k
+//   points assigned, everything else unseen — assignments hold -1 for
+//   points not yet seen); each later row is the state right after one more
+//   point arrived and joined a cluster.
+function runOnlineKMeans(points, k, order) {
+  const n = points.length
+  if (n < k) return {rows: []}
+
+  const centroids = []
+  const counts = []
+  const assignments = new Array(n).fill(-1)
+
+  for (let c = 0; c < k; c++) {
+    const idx = order[c]
+    centroids.push({x: points[idx].x, y: points[idx].y})
+    counts.push(1)
+    assignments[idx] = c
+  }
+
+  const rows = [{
+    iter: 0,
+    pointIndex: order[k - 1],
+    centroids: centroids.map(c => ({x: c.x, y: c.y})),
+    assignments: assignments.slice(),
+    inertia: 0,
+    displacement: 0
+  }]
+
+  let cumulativeInertia = 0
+  for (let step = k; step < n; step++) {
+    const idx = order[step]
+    const p = points[idx]
+
+    let best = 0, bestDist = Infinity
+    for (let c = 0; c < k; c++) {
+      const d = distSq(p, centroids[c])
+      if (d < bestDist) {
+        bestDist = d
+        best = c
+      }
+    }
+
+    const before = {x: centroids[best].x, y: centroids[best].y}
+    counts[best]++
+    centroids[best] = {
+      x: before.x + (p.x - before.x) / counts[best],
+      y: before.y + (p.y - before.y) / counts[best]
+    }
+    const displacement = Math.sqrt(distSq(before, centroids[best]))
+
+    assignments[idx] = best
+    cumulativeInertia += bestDist
+
+    rows.push({
+      iter: rows.length,
+      pointIndex: idx,
+      centroids: centroids.map(c => ({x: c.x, y: c.y})),
+      assignments: assignments.slice(),
+      inertia: cumulativeInertia,
+      displacement
+    })
+  }
+
+  return {rows}
+}
+```
+
+```{ojs}
+//| output: false
+result = {
+  if (points.length === 0 || k < 1) return {rows: []}
+  if (mode === "Online (sequential)") return runOnlineKMeans(points, k, pointOrder)
+  return runBatchKMeans(points, k, maxIterations, seedValue, regenerateTrigger)
+}
+```
+
+```{ojs}
+//| output: false
+// setup: which row is visible at the current step, and fixed axis ranges
+// computed from all points so the axes don't rescale as the step changes.
+setup = {
+  if (result.rows.length === 0) {
+    return {row: null, points: [], xRange: {lo: -10, hi: 10}, yRange: {lo: -10, hi: 10}}
+  }
+
+  const step = Math.min(Math.max(Math.round(Number(stepControl)), 0), result.rows.length - 1)
+  const row = result.rows[step]
+
+  const xs = [], ys = []
+  for (const p of points) {
+    xs.push(p.x)
+    ys.push(p.y)
+  }
+  const xRange = VM.plotting.paddedRange(xs, {emptyRange: [-10, 10], relativePadding: 0.15, minPadding: 1})
+  const yRange = VM.plotting.paddedRange(ys, {emptyRange: [-10, 10], relativePadding: 0.15, minPadding: 1})
+
+  return {row, points, xRange, yRange}
+}
+```
+
+```{ojs}
+//| output: false
+// clusterColors: one fixed color per cluster slot (up to maxK), reused by
+// both points and centroids so a centroid's "x" marker always matches the
+// color of the points currently assigned to it.
+clusterColors = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#f59e0b", "#0891b2", "#db2777", "#65a30d"]
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws the current step's points (colored by cluster assignment)
+// and centroids ("x" markers, colored to match).
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the step changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({row, points, xRange, yRange}) => {
+    const data = []
+
+    if (row) {
+      const byCluster = []
+      for (let c = 0; c < row.centroids.length; c++) byCluster.push({xs: [], ys: []})
+      const unseenXs = [], unseenYs = []
+      for (let i = 0; i < points.length; i++) {
+        const c = row.assignments[i]
+        if (c === -1) {
+          unseenXs.push(points[i].x)
+          unseenYs.push(points[i].y)
+        } else {
+          byCluster[c].xs.push(points[i].x)
+          byCluster[c].ys.push(points[i].y)
+        }
+      }
+      if (unseenXs.length > 0) {
+        data.push({
+          x: unseenXs, y: unseenYs, type: "scatter", mode: "markers",
+          name: "Not yet seen", showlegend: true,
+          marker: {color: "#cbd5e1", size: 7, line: {color: "white", width: 0.5}}
+        })
+      }
+      for (let c = 0; c < byCluster.length; c++) {
+        data.push({
+          x: byCluster[c].xs, y: byCluster[c].ys, type: "scatter", mode: "markers",
+          name: `Cluster ${c + 1}`, showlegend: true,
+          marker: {color: clusterColors[c % clusterColors.length], size: 8, line: {color: "white", width: 0.5}}
+        })
+      }
+
+      const cxs = [], cys = [], ccolors = []
+      for (let c = 0; c < row.centroids.length; c++) {
+        cxs.push(row.centroids[c].x)
+        cys.push(row.centroids[c].y)
+        ccolors.push(clusterColors[c % clusterColors.length])
+      }
+      data.push({
+        x: cxs, y: cys, type: "scatter", mode: "markers", name: "Centroids", showlegend: true,
+        marker: {color: ccolors, size: 16, symbol: "x", line: {color: "#111827", width: 2}}
+      })
+    }
+
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      // scaleanchor/scaleratio lock the y-axis to the same scale as x, so
+      // clusters that are geometrically round don't render as skewed
+      // ellipses just because the plot box isn't square.
+      yaxis: {title: "y", range: [yRange.lo, yRange.hi], zeroline: true, scaleanchor: "x", scaleratio: 1},
+      legend: {orientation: "h", y: -0.08},
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-output-wide">
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+mainPlot(setup)
+```
+
+<div class="ojs-step-overlay ojs-grid">
+
+```{ojs}
+// viewof stepControl: in Batch mode, the slider's range is tied directly
+// to maxIterations (same "Step" + "Max" relationship as every other
+// method page, e.g. root-finding/newton-method) rather than to however
+// many rows the algorithm actually computed -- setup below clamps the
+// visible row to result.rows.length regardless, so dragging past
+// convergence just holds on the final, converged state. In Online mode
+// there's no Max field (see maxIterationsInput's comment below), so the
+// range is however many rows the single pass over every point produced.
+viewof stepControl = {
+  const isOnline = mode === "Online (sequential)"
+  const maxStep = isOnline ? Math.max(0, result.rows.length - 1) : Math.max(0, maxIterations - 1)
+  const stepSlider = Inputs.range([0, maxStep], {step: 1, value: 0, label: "Step"})
+  return stepSlider
+}
+```
+
+```{ojs}
+// maxIterationsInput only bounds Batch mode's assign/update loop — Online
+// mode runs exactly once through every point, so this field is ignored
+// there (but left visible/URL-synced so switching back to Batch keeps
+// whatever value was set).
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: initialMax, label: "Max", placeholder: "Example: 20, 5*4"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
+
+```{ojs}
+// viewof mode: Batch (Lloyd's algorithm — the version implemented earlier)
+// alternates a full assignment pass and a full centroid-update pass over
+// every point, repeated to convergence. Online (sequential/MacQueen's
+// algorithm, the version the name "k-means" originally comes from) instead
+// feeds points in one at a time, updating one centroid's running mean
+// immediately after each point arrives — see the formula section below.
+// This only changes how the current fixed set of points is clustered, not
+// the points themselves, so — unlike trueGroups/seedValue above — it lives
+// here on the chart rather than in the panel.
+viewof mode = {
+  // format shortens the two options' displayed text to fit the overlay's
+  // narrow grid column on one horizontal row (see the .ojs-step-overlay
+  // form[class$="-checkbox"] rule in styles.css) -- it only changes what's
+  // shown, not mode's actual value, so every comparison against the full
+  // "Batch (Lloyd's)"/"Online (sequential)" strings elsewhere on this page
+  // (result, urlSyncControls, examples) is unaffected.
+  const shortLabel = (d) => d === "Online (sequential)" ? "Online" : "Batch"
+  const input = Inputs.radio(modeOptions, {value: initialMode, label: "Algorithm", format: shortLabel})
+  input.dataset.exampleField = "mode"
+  return input
+}
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot: inertia (the k-means cost function) vs step, for the
+// entire run -- doesn't depend on the current step, so it's plotted once
+// per run. Lloyd's algorithm (Batch) computes this over every point each
+// iteration and never lets it increase; Online k-means only ever has
+// inertia accumulated over the points seen SO FAR, which is a genuinely
+// different quantity (not just a differently-scoped one), so the y-axis
+// label says which is shown.
+iteratesPlot = {
+  const isOnline = mode === "Online (sequential)"
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "step"},
+    y: {label: isOnline ? "inertia (points seen so far)" : "inertia (all points)"},
+    marks: [
+      Plot.lineY(result.rows, {x: "iter", y: "inertia", stroke: "#2563eb"}),
+      Plot.dot(result.rows, {x: "iter", y: "inertia", fill: "#2563eb", r: 4})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot: total centroid displacement since the previous step --
+// summed over every centroid, computed the exact same way regardless of
+// mode, directly from each row's stored `centroids` snapshot (both
+// runBatchKMeans and runOnlineKMeans already keep one; see their comments
+// above). In Batch this is how far ALL k centroids moved during that
+// iteration's update step; in Online only one centroid ever moves per
+// row, so the same sum naturally reduces to that single centroid's
+// movement -- no mode branching needed. Trends to 0 as clustering
+// stabilizes in either mode, same as the "points reassigned"/"centroid
+// displacement" fields this replaces, but in one consistent unit.
+convergencePlot = {
+  const rows = result.rows
+  const series = []
+  for (let i = 0; i < rows.length; i++) {
+    let total = 0
+    if (i > 0) {
+      for (let c = 0; c < rows[i].centroids.length; c++) {
+        total += Math.sqrt(distSq(rows[i].centroids[c], rows[i - 1].centroids[c]))
+      }
+    }
+    series.push({iter: rows[i].iter, displacement: total})
+  }
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "step"},
+    y: {label: "total centroid displacement"},
+    marks: [
+      Plot.lineY(series, {x: "iter", y: "displacement", stroke: "#dc2626"}),
+      Plot.dot(series, {x: "iter", y: "displacement", fill: "#dc2626", r: 4})
+    ]
+  })
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Iteration table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const isOnline = mode === "Online (sequential)"
+  const headers = isOnline
+    ? ["Step", "Cumulative inertia (SSE)", "Centroid displacement"]
+    : ["Iteration", "Inertia (SSE)", "Points reassigned"]
+
+  const rows = []
+  for (const row of result.rows) {
+    if (isOnline) rows.push([row.iter, row.inertia.toFixed(2), row.displacement.toFixed(4)])
+    else rows.push([row.iter, row.inertia.toFixed(2), row.reassigned])
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers,
+    csvHeaders: headers,
+    filename: isOnline ? "k-means-online-steps.csv" : "k-means-iterations.csv",
+    rows
+  })
+}
+```
+
+::::
+
+</div>
+
+K-means partitions $n$ points into $k$ clusters by minimizing the total squared distance from each point to its cluster's centroid — the **inertia**,
+
+$$
+J = \sum_{i=1}^n \big\lVert x_i - \mu_{z_i} \big\rVert^2,
+$$
+
+where $z_i \in \{1, \dots, k\}$ is the cluster point $x_i$ is assigned to and $\mu_c$ is cluster $c$'s centroid. **Lloyd's algorithm** finds a local minimum of $J$ by alternating two steps until nothing changes:
+
+1. **Assignment step** — fix the centroids, and assign every point to its nearest one: $z_i = \operatorname*{arg\,min}_c \lVert x_i - \mu_c \rVert^2$.
+2. **Update step** — fix the assignments, and move each centroid to the mean of the points now assigned to it: $\mu_c = \frac{1}{|\{i : z_i = c\}|}\sum_{i : z_i = c} x_i$.
+
+Neither step can ever increase $J$, so the algorithm always converges — but only to a local minimum, and which one depends on where the centroids started.
+
+**Online (sequential) k-means** — MacQueen's original 1967 algorithm, the one the name "k-means" actually comes from — never makes a full pass over all the data at once. The first $k$ points to arrive become the initial centroids directly; every point after that is assigned to its nearest *current* centroid and immediately folded into that one centroid's running mean, with $n_c$ the number of points assigned to cluster $c$ so far (including this one):
+
+$$
+\mu_c \leftarrow \mu_c + \frac{1}{n_c}\big(x - \mu_c\big).
+$$
+
+A point's assignment, once made, is never revisited — there is no separate assignment/update pass, just one point at a time, once each. That's what makes the result depend on the order points arrive in, unlike Lloyd's algorithm.

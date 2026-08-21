@@ -139,6 +139,38 @@
  * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
 .ojs-fill { width: 100% !important; max-width: none !important; }
 
+/* Lets the user drag an expression field's right edge wider -- for fields
+ * like fText/gText/"y' = f(t, y)" where a formula can outgrow the fixed
+ * 10em default and the user wants to see the whole thing at once. This is
+ * automatic, not opt-in: every expression field already gets .ojs-fill
+ * (see above) and no numeric field does (10em is plenty for a guess,
+ * endpoint, or seed) -- see the comment on the 10em rule below -- so
+ * `form.ojs-fill` containing a text input reliably means "this is an
+ * expression field," with no extra class or JS needed at the call site.
+ * :has() targets Observable Inputs' own wrapper <div> around the actual
+ * <input> (form > div > input), which is what needs `resize` -- browsers
+ * don't support resizing an <input> directly, only elements that establish
+ * their own scrollable box. Horizontal only: these are single-line fields,
+ * so a taller box never helps.
+ * Scoped under .ojs-panel with three selector parts (class + element +
+ * class) so this reliably beats two same-specificity competitors that
+ * would otherwise win purely on load order: Observable Inputs' own
+ * dynamically-injected `.oi-xxxxxx-input { width: 100% }` rule (appended to
+ * <head> at runtime, after this stylesheet) and this file's own
+ * `.ojs-panel input[type="text"] { width: 10em }` default below. */
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) {
+  display: inline-block;
+  width: 20em;
+  min-width: 10em;
+  max-width: 100%;
+  resize: horizontal;
+  overflow: hidden;
+}
+
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) > input[type="text"] {
+  width: 100%;
+}
+
 /* Attach to an Inputs.* wrapper div to keep it at its natural width instead
  * of Observable Inputs' 100%-wide default, which would otherwise force the
  * row to wrap. */
@@ -301,6 +333,21 @@
   accent-color: #2563eb;
 }
 
+/* Inputs.radio()/checkbox() option groups render one block-level row per
+ * option by default (Observable Inputs' own stylesheet, not this project's)
+ * -- fine in a roomy .ojs-panel, but a tight chart-overlay bar shared with
+ * sliders reads better as one horizontal row for a short option list.
+ * Observable appends a "-checkbox" suffix to the form's class for both
+ * radio and checkbox groups, alongside its hashed "oi-<hash>" prefix (the
+ * same hash-prefix convention this file already relies on elsewhere via
+ * `form[class^="oi-"]`) -- matching on that stable suffix instead of the
+ * hash keeps this working across Observable Inputs versions. */
+.ojs-step-overlay form[class$="-checkbox"] > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
 /* ── Listing cards ───────────────────────────────────────────────── */
 
 .quarto-grid-item {
@@ -331,6 +378,29 @@
   margin-bottom: 0.5rem;
 }
 
+/* ── Report-bug selection popup ──────────────────────────────────── */
+/* Floats next to the current text selection (see js/ui/report-bug.js);
+ * position: absolute against the document (top/left set inline in JS
+ * include scrollX/scrollY), not the viewport, so it scrolls with the page. */
+
+.vm-report-bug-popup {
+  position: absolute;
+  z-index: 1050;
+  padding: 0.3rem 0.6rem;
+  border: none;
+  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+.vm-report-bug-popup:hover {
+  background: #1d4ed8;
+}
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -343,295 +413,59 @@
   .ojs-grid { grid-template-columns: 1fr; }
 }
 
-/* ── About page ──────────────────────────────────────────────────── */
+/* ── Example preset cards ─────────────────────────────────────────── */
+/* Colors reuse the same --bs-* tokens as the panel chrome above (light
+ * theme: cosmo, dark theme: cyborg) so the cards stay legible in both;
+ * #2563eb is the site's fixed accent blue, same as the panel's button/
+ * focus color and Plotly's reference-line color, and doesn't flip with
+ * the theme. */
 
-.about-eyebrow {
-  text-align: center;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.78rem;
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 2rem 0;
+}
+
+.example-card {
+  display: block;
+  padding: 1rem 1.1rem;
+  border-radius: 18px;
+  background: var(--bs-light, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.example-card:hover,
+.example-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: #2563eb;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+}
+
+.example-card:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.example-card-title {
   font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.example-card-formula {
+  font-size: 0.92rem;
+  font-weight: 600;
   color: #2563eb;
-  margin: 1rem 0 0.5rem;
+  margin-bottom: 0.45rem;
 }
 
-.about-hero-lead {
-  max-width: 640px;
-  margin: 0 auto;
-  text-align: center;
-  font-size: 1.1rem;
-  line-height: 1.6;
+.example-card-text {
+  font-size: 0.9rem;
+  line-height: 1.45;
   color: var(--bs-secondary-color, #475569);
-}
-
-.about-visual {
-  max-width: 460px;
-  margin: 1.75rem auto 2rem;
-}
-
-.about-visual-plot {
-  width: 100%;
-  height: 260px;
-  filter: drop-shadow(0 2px 6px rgba(15, 23, 42, 0.1));
-}
-
-/* Rotation between the three illustration scenes below. Each scene's own
-   internal animations keep their independent 12s duration/keyframes
-   unchanged; because 36s / 12s = 3 exactly, every scene's internal loop
-   is always back at its own phase 0 the instant the wrapper reveals it,
-   so no rescaling of any scene's internal percentages is needed. */
-.about-scene {
-  opacity: 0;
-  animation-duration: 36s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-.about-scene-newton { animation-name: about-scene-newton; }
-.about-scene-kalman { animation-name: about-scene-kalman; }
-.about-scene-sperner { animation-name: about-scene-sperner; }
-
-@keyframes about-scene-newton {
-  0%, 32% { opacity: 1; }
-  33% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-@keyframes about-scene-kalman {
-  0%, 33% { opacity: 0; }
-  34%, 65% { opacity: 1; }
-  66% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-@keyframes about-scene-sperner {
-  0%, 66% { opacity: 0; }
-  67%, 99% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-/* Newton's-method loop: exactly one stage is visible at a time (point0,
-   then each tangent+point group), crossfading into the next on a shared
-   12s cycle so they stay in phase forever without any JS driving them.
-   Within each group, the tangent/guide lines "draw" in via a moving
-   stroke-dashoffset and the new point pops in with a small scale
-   overshoot, layered on top of the parent group's opacity crossfade.
-   A plain opacity crossfade is low-risk motion, so it's left running
-   even under prefers-reduced-motion. */
-.about-newton-point0,
-.about-newton-group1,
-.about-newton-group2,
-.about-newton-group3 {
-  opacity: 0;
-  animation-duration: 12s;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-.about-newton-point0 { animation-name: about-newton-point0; transform-box: fill-box; transform-origin: center; }
-.about-newton-group1 { animation-name: about-newton-group1; }
-.about-newton-group2 { animation-name: about-newton-group2; }
-.about-newton-group3 { animation-name: about-newton-group3; }
-
-.about-newton-draw1, .about-newton-draw2, .about-newton-draw3 {
-  animation-duration: 12s;
-  animation-timing-function: ease-out;
-  animation-iteration-count: infinite;
-}
-
-.about-newton-pop1, .about-newton-pop2, .about-newton-pop3 {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation-duration: 12s;
-  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation-iteration-count: infinite;
-}
-
-.about-newton-draw1 { animation-name: about-newton-draw1; }
-.about-newton-draw2 { animation-name: about-newton-draw2; }
-.about-newton-draw3 { animation-name: about-newton-draw3; }
-.about-newton-pop1 { animation-name: about-newton-pop1; }
-.about-newton-pop2 { animation-name: about-newton-pop2; }
-.about-newton-pop3 { animation-name: about-newton-pop3; }
-
-@keyframes about-newton-point0 {
-  0%, 100% { opacity: 0; transform: scale(0.3); }
-  5% { opacity: 1; transform: scale(1.15); }
-  8%, 17% { opacity: 1; transform: scale(1); }
-  23% { opacity: 0; transform: scale(1); }
-}
-
-@keyframes about-newton-group1 {
-  0%, 17%, 100% { opacity: 0; }
-  23%, 35% { opacity: 1; }
-  41% { opacity: 0; }
-}
-
-@keyframes about-newton-group2 {
-  0%, 35%, 100% { opacity: 0; }
-  41%, 53% { opacity: 1; }
-  59% { opacity: 0; }
-}
-
-@keyframes about-newton-group3 {
-  0%, 53%, 100% { opacity: 0; }
-  59%, 83% { opacity: 1; }
-  90% { opacity: 0; }
-}
-
-@keyframes about-newton-draw1 {
-  0%, 23% { stroke-dashoffset: 160; }
-  29%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes about-newton-draw2 {
-  0%, 41% { stroke-dashoffset: 160; }
-  47%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes about-newton-draw3 {
-  0%, 59% { stroke-dashoffset: 160; }
-  65%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes about-newton-pop1 {
-  0%, 27% { transform: scale(0.3); }
-  32% { transform: scale(1.18); }
-  35%, 100% { transform: scale(1); }
-}
-
-@keyframes about-newton-pop2 {
-  0%, 45% { transform: scale(0.3); }
-  50% { transform: scale(1.18); }
-  53%, 100% { transform: scale(1); }
-}
-
-@keyframes about-newton-pop3 {
-  0%, 63% { transform: scale(0.3); }
-  69% { transform: scale(1.25); }
-  73%, 100% { transform: scale(1); }
-}
-
-/* Noisy-to-smooth filter loop: the scattered measurements fade in first,
-   then the filtered estimate draws itself across left to right via a
-   moving stroke-dashoffset, holds, then everything fades out together.
-   Same 12s internal duration as the Newton scene, for the same reason. */
-.about-kalman-dots, .about-kalman-smooth {
-  opacity: 0;
-  animation-duration: 12s;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-.about-kalman-dots { animation-name: about-kalman-dots; }
-.about-kalman-smooth { animation-name: about-kalman-smooth; }
-
-@keyframes about-kalman-dots {
-  0%, 100% { opacity: 0; }
-  8%, 83% { opacity: 1; }
-  92% { opacity: 0; }
-}
-
-@keyframes about-kalman-smooth {
-  0%, 100% { opacity: 0; stroke-dashoffset: 680; }
-  8% { opacity: 1; stroke-dashoffset: 680; }
-  13% { stroke-dashoffset: 680; }
-  55% { stroke-dashoffset: 0; }
-  83% { opacity: 1; stroke-dashoffset: 0; }
-  92% { opacity: 0; stroke-dashoffset: 0; }
-}
-
-/* Sperner's-lemma loop: the triangle assembles itself piece by piece
-   (outer edges, corner colors, inner subdivision, midpoint colors, then
-   the trichromatic triangle highlight), holds the complete picture, then
-   fades out together. Same 12s internal duration as the other scenes. */
-.about-sperner-outer, .about-sperner-corners, .about-sperner-inner, .about-sperner-mid-dots, .about-sperner-highlight {
-  opacity: 0;
-  animation-duration: 12s;
-  animation-timing-function: ease-in-out;
-  animation-iteration-count: infinite;
-}
-
-.about-sperner-draw-outer, .about-sperner-draw-inner {
-  animation-duration: 12s;
-  animation-timing-function: ease-out;
-  animation-iteration-count: infinite;
-}
-
-.about-sperner-pop-outer, .about-sperner-pop-inner {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation-duration: 12s;
-  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation-iteration-count: infinite;
-}
-
-.about-sperner-highlight { transform-box: fill-box; transform-origin: center; }
-
-.about-sperner-outer { animation-name: about-sperner-outer; }
-.about-sperner-corners { animation-name: about-sperner-corners; }
-.about-sperner-inner { animation-name: about-sperner-inner; }
-.about-sperner-mid-dots { animation-name: about-sperner-mid-dots; }
-.about-sperner-highlight { animation-name: about-sperner-highlight, about-sperner-highlight-pop; }
-.about-sperner-draw-outer { animation-name: about-sperner-draw-outer; }
-.about-sperner-draw-inner { animation-name: about-sperner-draw-inner; }
-.about-sperner-pop-outer { animation-name: about-sperner-pop-outer; }
-.about-sperner-pop-inner { animation-name: about-sperner-pop-inner; }
-
-@keyframes about-sperner-outer {
-  0%, 100% { opacity: 0; }
-  1%, 83% { opacity: 1; }
-  90% { opacity: 0; }
-}
-
-@keyframes about-sperner-draw-outer {
-  0%, 1% { stroke-dashoffset: 220; }
-  15%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes about-sperner-corners {
-  0%, 10%, 100% { opacity: 0; }
-  13%, 83% { opacity: 1; }
-  90% { opacity: 0; }
-}
-
-@keyframes about-sperner-pop-outer {
-  0%, 10% { transform: scale(0.3); }
-  15% { transform: scale(1.2); }
-  18%, 100% { transform: scale(1); }
-}
-
-@keyframes about-sperner-inner {
-  0%, 15%, 100% { opacity: 0; }
-  17%, 83% { opacity: 1; }
-  90% { opacity: 0; }
-}
-
-@keyframes about-sperner-draw-inner {
-  0%, 17% { stroke-dashoffset: 110; }
-  30%, 100% { stroke-dashoffset: 0; }
-}
-
-@keyframes about-sperner-mid-dots {
-  0%, 28%, 100% { opacity: 0; }
-  31%, 83% { opacity: 1; }
-  90% { opacity: 0; }
-}
-
-@keyframes about-sperner-pop-inner {
-  0%, 28% { transform: scale(0.3); }
-  34% { transform: scale(1.2); }
-  37%, 100% { transform: scale(1); }
-}
-
-@keyframes about-sperner-highlight {
-  0%, 33%, 100% { opacity: 0; }
-  40%, 83% { opacity: 1; }
-  90% { opacity: 0; }
-}
-
-@keyframes about-sperner-highlight-pop {
-  0%, 33% { transform: scale(0.5); }
-  40% { transform: scale(1.15); }
-  44%, 100% { transform: scale(1); }
 }

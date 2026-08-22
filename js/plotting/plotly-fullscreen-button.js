@@ -53,19 +53,68 @@
     }
   }
 
+  // Plotly's own zoom in/out buttons step by a factor of 2 -- one click
+  // halves or doubles the visible span, which overshoots badly when you're
+  // trying to frame a curve. These replace them with a gentler step; this
+  // one constant is the whole knob.
+  const ZOOM_STEP = 1.25
+
+  const zoomBy = (gd, factor) => {
+    const Plotly = globalThis.Plotly
+    const update = {}
+    // _fullLayout rather than gd.layout: an axis left to autorange has no
+    // range in the supplied layout at all, only a computed one here.
+    for (const key of Object.keys(gd._fullLayout)) {
+      if (!/^[xy]axis\d*$/.test(key)) continue
+      const axis = gd._fullLayout[key]
+      if (!axis.range || axis.fixedrange) continue
+      // r2l/l2r so a log or date axis zooms about its own linearized
+      // midpoint, instead of having raw range values scaled arithmetically.
+      const lo = axis.r2l(axis.range[0])
+      const hi = axis.r2l(axis.range[1])
+      const middle = (lo + hi) / 2
+      const half = (hi - lo) / 2 * factor
+      update[key + ".range"] = [axis.l2r(middle - half), axis.l2r(middle + half)]
+    }
+    Plotly.relayout(gd, update)
+  }
+
+  const zoomInButton = {
+    name: "zoomIn",
+    title: "Zoom in",
+    icon: globalThis.Plotly.Icons.zoom_plus,
+    click: (gd) => zoomBy(gd, 1 / ZOOM_STEP)
+  }
+
+  const zoomOutButton = {
+    name: "zoomOut",
+    title: "Zoom out",
+    icon: globalThis.Plotly.Icons.zoom_minus,
+    click: (gd) => zoomBy(gd, ZOOM_STEP)
+  }
+
   // Patch Plotly.newPlot/react so every chart gets the button automatically,
   // and box/lasso select are dropped from the modebar (this site's charts
   // use selection-free zoom/pan, not point selection) with pan as the
   // default drag tool instead of Plotly's own default of box zoom —
   // pages call Plotly.newPlot(gd, data, layout, config) as plain imperative
   // code (see CLAUDE.md), so no per-page wiring is needed or expected.
+  // Spelled out as an explicit modeBarButtons list rather than the
+  // ToAdd/ToRemove pair, because swapping the two zoom buttons for the
+  // gentler ones above via ToRemove+ToAdd would also relocate them to the
+  // end of the bar (added buttons always append), shuffling an otherwise
+  // familiar modebar. This keeps Plotly's own cartesian order intact, minus
+  // box/lasso select. Every chart on this site is 2D cartesian, which is
+  // what makes hardcoding this list safe.
   const addButton = (config) => {
-    const buttons = (config && config.modeBarButtonsToAdd) || []
-    const removedButtons = (config && config.modeBarButtonsToRemove) || []
     return {
       ...config,
-      modeBarButtonsToAdd: [...buttons, fullscreenButton],
-      modeBarButtonsToRemove: [...removedButtons, "select2d", "lasso2d"]
+      modeBarButtons: [
+        ["toImage"],
+        ["zoom2d", "pan2d"],
+        [zoomInButton, zoomOutButton, "autoScale2d", "resetScale2d"],
+        [fullscreenButton]
+      ]
     }
   }
   const withDefaultDragmode = (layout) => {

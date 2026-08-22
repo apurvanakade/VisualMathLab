@@ -10,14 +10,29 @@ Authors: Dhruv Azad, Apurva Nakade
 -->
 
 <style>
-.about-eyebrow {
+/* Small centered blue label, used on every section heading below. Applied
+   via a Pandoc heading attribute (## Heading {.about-eyebrow}) so each one
+   stays a real <h2> for document structure, and only its presentation
+   changes.
+
+   Must stay scoped to h2: with _quarto.yml's section-divs, Pandoc copies a
+   heading's classes onto the <section> wrapper it generates as well as onto
+   the heading itself, so a bare `.about-eyebrow` selector also matches the
+   whole section — and every inheritable property here (color, text-align,
+   text-transform, letter-spacing, font-weight) then cascades into that
+   section's body paragraphs.
+
+   The !important on font-size overrides Quarto's own heading scale, which
+   is set on the element and would otherwise win. */
+h2.about-eyebrow {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.78rem;
+  font-size: 0.78rem !important;
   font-weight: 700;
   color: #2563eb;
-  margin: 1rem 0 0.5rem;
+  margin: 2.75rem 0 0.75rem;
+  border-bottom: none;
 }
 
 .about-hero-lead {
@@ -302,8 +317,6 @@ Authors: Dhruv Azad, Apurva Nakade
 }
 </style>
 
-<p class="about-eyebrow">Our objective</p>
-
 <p class="about-hero-lead">
 Undergraduate mathematics is full of ideas that come alive the moment you can see them move. Visual Math Lab makes them touchable: pick a function, drag a slider, change a starting guess, and watch the idea unfold one step at a time — from root finding and differential equations to probability, model fitting, and combinatorial proofs.
 </p>
@@ -395,88 +408,142 @@ Undergraduate mathematics is full of ideas that come alive the moment you can se
 </svg>
 </div>
 
-## How it works
+## How it works {.about-eyebrow}
 
 Each page pairs the mathematics with a live app: change a function, an interval, a seed, or a starting guess, and the plot, the step counter, and the iteration table all move together. Every computation runs in your browser and every setting lives in the URL, so any view you build is instantly shareable — send the link and your reader lands on exactly the picture you were looking at.
 
 Explore on your own, use a page as a lecture demo, or hand one to students as a lab. Everything here is open source, so it is yours to fork, adapt, and extend.
 
-## See it in action
+## See it in action {.about-eyebrow}
 
-Here's a small taste of what every page looks like: type a function, set the endpoints, and Plotly draws the curve. The default below is piecewise; the examples show a few more ways to phrase a function — arithmetic, powers, trig, exponentials, division, and nested calls.
+A small taste of what most pages here looks like. The examples are a tour of curves with names — butterfly, rose, spirograph, cardioid — plus an ordinary graph `y = f(x)`, which is just the special case `x = t`.
+
+Piecewise formulas are written as a conditional, `condition ? value if true : value otherwise` — so `t < 1 ? t : 1` means "`t` while `t < 1`, and `1` after that" — and nest for more than two pieces, the way the square-path example gives each side of the square its own piece.
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This mini demo uses VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.applyExampleParams.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This mini demo uses VM.expressions.makeFunctionOfT, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.applyExampleParams.
 VM = window.VM
 ```
 
 ```{ojs}
 //| output: false
-// plotterExamples backs the "Try an example" dropdown below — each one
-// demonstrates a different way to phrase a function expression.
+// plotterExamples backs the "Try an example" dropdown below -- each one is a
+// named curve, and between them they demonstrate the ways a parametric
+// expression can be phrased.
 plotterExamples = [
   {
-    title: "Piecewise: clamped line",
-    params: {f: "x < -1 ? -1 : (x > 1 ? 1 : x)", left: "-3", right: "3"}
+    title: "Butterfly curve",
+    params: {x: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", y: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", tmin: "0", tmax: "2*pi"}
   },
   {
-    title: "Polynomial",
-    params: {f: "x^3 - 2*x^2 - 5*x + 6", left: "-3", right: "4"}
+    // A parametric path doesn't have to be smooth -- ternaries let one
+    // formula switch between pieces, here tracing the four sides of a
+    // square as t runs 0 -> 4.
+    title: "Piecewise: square path",
+    params: {x: "t < 1 ? t : (t < 2 ? 1 : (t < 3 ? 3 - t : 0))", y: "t < 1 ? 0 : (t < 2 ? t - 1 : (t < 3 ? 1 : 4 - t))", tmin: "0", tmax: "4"}
   },
   {
-    title: "Sum of trig functions",
-    params: {f: "sin(19x) + sin(20x)", left: "-4*pi", right: "4*pi"}
+    title: "Lissajous curve (3:4)",
+    params: {x: "sin(3*t)", y: "sin(4*t)", tmin: "0", tmax: "2*pi"}
   },
   {
-    title: "Gaussian bell curve",
-    params: {f: "exp(-x^2/2) / sqrt(2*pi)", left: "-4", right: "4"}
+    title: "Rose (five petals)",
+    params: {x: "cos(5*t) * cos(t)", y: "cos(5*t) * sin(t)", tmin: "0", tmax: "pi"}
   },
   {
-    title: "Rational function",
-    params: {f: "(x^2 - 1)/(x - 2)", left: "-3", right: "5"}
+    title: "Cardioid",
+    params: {x: "(1 - cos(t)) * cos(t)", y: "(1 - cos(t)) * sin(t)", tmin: "0", tmax: "2*pi"}
   },
   {
-    title: "Nested calls: sqrt of absolute value",
-    params: {f: "sqrt(abs(x))", left: "-5", right: "5"}
+    title: "Astroid",
+    params: {x: "cos(t)^3", y: "sin(t)^3", tmin: "0", tmax: "2*pi"}
   },
   {
-    title: "Natural logarithm",
-    params: {f: "log(x + 5)", left: "-4.9", right: "10"}
+    title: "Lemniscate of Bernoulli",
+    params: {x: "cos(t) / (1 + sin(t)^2)", y: "sin(t) * cos(t) / (1 + sin(t)^2)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Spirograph (epitrochoid)",
+    params: {x: "6*cos(t) - 3*cos(6*t)", y: "6*sin(t) - 3*sin(6*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Deltoid",
+    params: {x: "2*cos(t) + cos(2*t)", y: "2*sin(t) - sin(2*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Archimedean spiral",
+    params: {x: "t * cos(t)", y: "t * sin(t)", tmin: "0", tmax: "8*pi"}
   },
   {
     title: "Cycloid",
-    params: {f: "abs(cos(x/2))", left: "-2*pi", right: "4*pi"}
+    params: {x: "t - sin(t)", y: "1 - cos(t)", tmin: "0", tmax: "6*pi"}
   },
-  
+  {
+    title: "Heart curve",
+    params: {x: "16*sin(t)^3", y: "13*cos(t) - 5*cos(2*t) - 2*cos(3*t) - cos(4*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Squircle (superellipse)",
+    params: {x: "sign(cos(t)) * abs(cos(t))^0.5", y: "sign(sin(t)) * abs(sin(t))^0.5", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Ordinary graph y = f(x)",
+    params: {x: "t", y: "t^3 - 3*t", tmin: "-2.2", tmax: "2.2"}
+  }
 ]
+```
+
+```{ojs}
+//| output: false
+plotterTraceOptions = ["Curve", "Point at t"]
+
+// Matches the colors plotterMainPlot draws each trace in, so the overlay
+// legend's swatches double as a color key.
+plotterTraceColors = new Map([
+  ["Curve", "#2563eb"],
+  ["Point at t", "#dc2626"]
+])
 ```
 
 <div class="ojs-panel">
 
+<div class="ojs-grid">
+
 ```{ojs}
-viewof plotterFText = {
-  const input = Inputs.text({label: "Function f(x)", value: "x < -1 ? -1 : (x > 1 ? 1 : x)", placeholder: "Example: x^2 - 1, sin(x) + cos(2*x)"})
+viewof plotterXText = {
+  const input = Inputs.text({label: "x(t)", value: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: cos(t), t - sin(t)"})
   input.classList.add("ojs-fill")
-  input.dataset.exampleField = "plotter-f"
+  input.dataset.exampleField = "plotter-x"
   return input
 }
 ```
+
+```{ojs}
+viewof plotterYText = {
+  const input = Inputs.text({label: "y(t)", value: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: sin(t), 1 - cos(t)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "plotter-y"
+  return input
+}
+```
+
+</div>
 
 <div class="ojs-grid">
 
 ```{ojs}
-viewof plotterLeft = {
-  const input = Inputs.text({label: "Left endpoint", value: "-3", placeholder: "Example: -3, -pi"})
-  input.dataset.exampleField = "plotter-left"
+viewof plotterTMin = {
+  const input = Inputs.text({label: "t from", value: "0", placeholder: "Example: 0, -pi"})
+  input.dataset.exampleField = "plotter-tmin"
   return input
 }
 ```
 
 ```{ojs}
-viewof plotterRight = {
-  const input = Inputs.text({label: "Right endpoint", value: "3", placeholder: "Example: 3, pi"})
-  input.dataset.exampleField = "plotter-right"
+viewof plotterTMax = {
+  const input = Inputs.text({label: "t to", value: "12*pi", placeholder: "Example: 2*pi, 10"})
+  input.dataset.exampleField = "plotter-tmax"
   return input
 }
 ```
@@ -497,9 +564,10 @@ viewof plotterExampleSelect = {
 // Plain CSS selectors, not direct viewof references -- see
 // js/ui/apply-example.js's comment for why.
 plotterFieldSelectors = ({
-  f: '[data-example-field="plotter-f"]',
-  left: '[data-example-field="plotter-left"]',
-  right: '[data-example-field="plotter-right"]'
+  x: '[data-example-field="plotter-x"]',
+  y: '[data-example-field="plotter-y"]',
+  tmin: '[data-example-field="plotter-tmin"]',
+  tmax: '[data-example-field="plotter-tmax"]'
 })
 ```
 
@@ -523,8 +591,8 @@ applyPlotterExampleFromSelect = {
 ```
 
 ```{ojs}
-// Plot commits the current function/endpoint fields -- edits above don't
-// take effect until this is clicked.
+// Plot commits the current formula/parameter-range fields -- edits above
+// don't take effect until this is clicked.
 viewof plotterTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -536,10 +604,10 @@ viewof plotterTrigger = {
 
 ```{ojs}
 //| output: false
-// Pressing Enter in the function/endpoint fields clicks Plot instead of
-// submitting the field's own (invisible) form.
+// Pressing Enter in the formula/parameter-range fields clicks Plot instead
+// of submitting the field's own (invisible) form.
 enterToPlotterPlot = {
-  for (const view of [viewof plotterFText, viewof plotterLeft, viewof plotterRight]) {
+  for (const view of [viewof plotterXText, viewof plotterYText, viewof plotterTMin, viewof plotterTMax]) {
     const input = view.querySelector("input")
     if (!input) continue
     input.addEventListener("keydown", (e) => {
@@ -560,46 +628,64 @@ plotterCommitted = {
   plotterTrigger
   const math = window.math
   return {
-    fText: (viewof plotterFText).value,
-    left: VM.expressions.makeNumber(math, (viewof plotterLeft).value),
-    right: VM.expressions.makeNumber(math, (viewof plotterRight).value)
+    xText: (viewof plotterXText).value,
+    yText: (viewof plotterYText).value,
+    tMin: VM.expressions.makeNumber(math, (viewof plotterTMin).value),
+    tMax: VM.expressions.makeNumber(math, (viewof plotterTMax).value)
   }
 }
 ```
 
 ```{ojs}
 //| output: false
-// plotterSetup samples f(x) across [left, right] for the curve trace and
-// computes padded axis ranges.
+// plotterSetup samples (x(t), y(t)) across the committed t-range. `key`
+// changes whenever a new curve is committed, and is used as the plot's
+// uirevision so a fresh curve autoscales instead of inheriting the
+// previous curve's zoom.
 plotterSetup = {
   const math = window.math
-  const f = VM.expressions.makeFunction(math, plotterCommitted.fText)
+  const x = VM.expressions.makeFunctionOfT(math, plotterCommitted.xText)
+  const y = VM.expressions.makeFunctionOfT(math, plotterCommitted.yText)
 
-  let left = plotterCommitted.left
-  let right = plotterCommitted.right
+  let tMin = plotterCommitted.tMin
+  let tMax = plotterCommitted.tMax
+  const key = JSON.stringify(plotterCommitted)
 
-  if (!f || !Number.isFinite(left) || !Number.isFinite(right) || left === right) {
-    return {xs: [], ys: [], xRange: {lo: -5, hi: 5}, yRange: {lo: -1, hi: 1}}
+  if (!x || !y || !Number.isFinite(tMin) || !Number.isFinite(tMax) || tMin === tMax) {
+    return {ts: [], xs: [], ys: [], tMin: 0, tMax: 1, xRange: {lo: -1, hi: 1}, yRange: {lo: -1, hi: 1}, key}
   }
-  if (left > right) { const temp = left; left = right; right = temp }
+  if (tMin > tMax) { const temp = tMin; tMin = tMax; tMax = temp }
 
-  const sampleCount = 600
-  const xs = Array.from({length: sampleCount}, (_, i) => left + (right - left) * i / (sampleCount - 1))
+  // Parametric curves double back on themselves, so they need a good deal
+  // more samples than a graph over an interval before the polyline stops
+  // looking faceted.
+  const sampleCount = 2400
+  const ts = []
+  const xs = []
   const ys = []
-  const yValues = []
-  for (const x of xs) {
-    const y = f(x)
-    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
-      ys.push(y)
-      yValues.push(y)
+  for (let i = 0; i < sampleCount; i++) {
+    const t = tMin + (tMax - tMin) * i / (sampleCount - 1)
+    const xValue = x(t)
+    const yValue = y(t)
+    ts.push(t)
+    if (Number.isFinite(xValue) && Number.isFinite(yValue) && Math.abs(xValue) < 1e8 && Math.abs(yValue) < 1e8) {
+      xs.push(xValue)
+      ys.push(yValue)
     } else {
+      // A null in both coordinates breaks the trace here instead of
+      // drawing a spurious segment across a pole or a gap in the domain.
+      xs.push(null)
       ys.push(null)
     }
   }
 
-  const xRange = {lo: left, hi: right}
-  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.15, minPadding: 0.5})
-  return {xs, ys, xRange, yRange}
+  // Padded explicitly rather than left to Plotly's autorange: an axis pair
+  // tied together by scaleanchor (see plotterMainPlot) autoranges with no
+  // padding at all on the constraining axis, which put the square path
+  // example's two vertical sides exactly on the plot's edges.
+  const xRange = VM.plotting.paddedRange(xs, {relativePadding: 0.06, minPadding: 0.1})
+  const yRange = VM.plotting.paddedRange(ys, {relativePadding: 0.06, minPadding: 0.1})
+  return {ts, xs, ys, tMin, tMax, xRange, yRange, key}
 }
 ```
 
@@ -611,17 +697,49 @@ plotterMainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({xs, ys, xRange, yRange}) => {
-    const data = [{
-      x: xs, y: ys, type: "scatter", mode: "lines",
-      line: {color: "#2563eb", width: 3}, name: "f(x)"
-    }]
+  return ({ts, xs, ys, xRange, yRange, key}, cursorIndex, showCurve, showCursor) => {
+    const data = []
+
+    if (showCurve) {
+      data.push({
+        x: xs, y: ys, type: "scatter", mode: "lines", name: "Curve", showlegend: false,
+        line: {color: "#2563eb", width: 2.5, shape: "spline"},
+        customdata: ts,
+        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
+      })
+    }
+
+    // The cursor reads straight out of the sampled arrays rather than
+    // re-evaluating x(t)/y(t), so the marker always sits exactly on the
+    // polyline that's drawn, never a hair off it.
+    const i = cursorIndex
+    if (showCursor && i !== null && i >= 0 && i < xs.length && xs[i] !== null) {
+      data.push({
+        x: [xs[i]], y: [ys[i]], type: "scatter", mode: "markers", name: "Point at t", showlegend: false,
+        marker: {color: "#dc2626", size: 12, line: {color: "white", width: 2}},
+        customdata: [ts[i]],
+        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
+      })
+    }
     const layout = {
       margin: {l: 0, r: 0, t: 0, b: 0},
-      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
-      yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      xaxis: {title: "x", zeroline: true, range: [xRange.lo, xRange.hi], constrain: "domain"},
+      // scaleanchor keeps one unit of y the same length on screen as one
+      // unit of x -- without it a circle plots as an ellipse, which ruins
+      // every curve below.
+      //
+      // constrain: "domain" -- on both axes, or the unconstrained one still
+      // gets widened -- makes Plotly satisfy that by shrinking the drawn
+      // plot area to the curve's own aspect ratio, leaving the ranges above
+      // exactly as asked for. The default ("range") instead widens
+      // whichever range is too tight for the box -- and since newPlot runs
+      // on a still-detached div (Plotly measures its 700x450 default) while
+      // every later react runs at the real size, the two widened by
+      // different amounts and the first slider nudge visibly jumped the
+      // zoom. Pinning the ranges removes the discrepancy at the source.
+      yaxis: {title: "y", zeroline: true, range: [yRange.lo, yRange.hi], scaleanchor: "x", scaleratio: 1, constrain: "domain"},
       hovermode: "closest",
-      uirevision: "static",
+      uirevision: key,
       autosize: true
     }
     const config = {responsive: true, displaylogo: false}
@@ -639,14 +757,74 @@ plotterMainPlot = {
 }
 ```
 
-<div class="ojs-output-wide">
+```{ojs}
+//| output: false
+// The slider steps by one sample of plotterSetup, so its value doubles as
+// an index into the sampled arrays -- see plotterMainPlot's cursor trace.
+plotterCursorIndex = {
+  if (plotterSetup.ts.length === 0) return null
+  const span = plotterSetup.tMax - plotterSetup.tMin
+  const index = Math.round((plotterT - plotterSetup.tMin) / span * (plotterSetup.ts.length - 1))
+  return index
+}
+```
 
 ```{ojs}
-plotterMainPlot(plotterSetup)
+//| output: false
+plotterShowCurve = plotterTraces.includes("Curve")
+```
+
+```{ojs}
+//| output: false
+plotterShowCursor = plotterTraces.includes("Point at t")
+```
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+plotterMainPlot(plotterSetup, plotterCursorIndex, plotterShowCurve, plotterShowCursor)
+```
+
+```{ojs}
+viewof plotterTraces = {
+  const items = []
+  for (const label of plotterTraceOptions) items.push({label, color: plotterTraceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: plotterTraceOptions})
+}
+```
+
+<div class="ojs-step-overlay">
+
+```{ojs}
+// Always-live: the cursor moves as the slider is dragged, no Plot click
+// needed. Recreated whenever a new curve is committed, so its range always
+// spans that curve's own t interval.
+viewof plotterT = {
+  const {tMin, tMax} = plotterSetup
+
+  // Round the step to the nearest 1/2/5 x 10^k below span/500, so the
+  // slider's own number readout stays short (0.05, not 0.0157145109...)
+  // whatever t-range the current curve happens to span.
+  const raw = (tMax - tMin) / 500
+  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)))
+  const normalized = raw / magnitude
+  let nice
+  if (normalized <= 1) nice = 1
+  else if (normalized <= 2) nice = 2
+  else if (normalized <= 5) nice = 5
+  else nice = 10
+  const step = nice * magnitude
+
+  const slider = Inputs.range([tMin, tMax], {label: "t", step, value: tMin})
+  slider.classList.add("ojs-fill")
+  return slider
+}
 ```
 
 </div>
 
-## Built with
+</div>
+
+## Built with {.about-eyebrow}
 
 [Quarto](https://quarto.org), [Observable JS](https://observablehq.com), [Plotly.js](https://plotly.com/javascript/), and [math.js](https://mathjs.org) — no backend, no build step beyond rendering.

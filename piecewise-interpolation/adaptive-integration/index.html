@@ -1249,45 +1249,44 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<div class="ojs-output-wide">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb20" data-startfrom="494" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 493;"><span id="cb20-494"><a href="#cb20-494" aria-hidden="true" tabindex="-1"></a><span class="co">// summary reports the headline numbers for the current tolerance: how many</span></span>
-<span id="cb20-495"><a href="#cb20-495" aria-hidden="true" tabindex="-1"></a><span class="co">// leaves the adaptive partition needed, the resulting estimate, its</span></span>
-<span id="cb20-496"><a href="#cb20-496" aria-hidden="true" tabindex="-1"></a><span class="co">// self-reported (Richardson) error bound, and the actual error against a</span></span>
-<span id="cb20-497"><a href="#cb20-497" aria-hidden="true" tabindex="-1"></a><span class="co">// fine reference integral.</span></span>
-<span id="cb20-498"><a href="#cb20-498" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
-<span id="cb20-499"><a href="#cb20-499" aria-hidden="true" tabindex="-1"></a><span class="co">// Defined (and displayed) right here, rather than as a hidden cell invoked</span></span>
-<span id="cb20-500"><a href="#cb20-500" aria-hidden="true" tabindex="-1"></a><span class="co">// from elsewhere: it already returns the final displayable node, and a</span></span>
-<span id="cb20-501"><a href="#cb20-501" aria-hidden="true" tabindex="-1"></a><span class="co">// `//| output: false` cell still attaches its returned node to its own</span></span>
-<span id="cb20-502"><a href="#cb20-502" aria-hidden="true" tabindex="-1"></a><span class="co">// (hidden) output slot — a later bare reference to it would then find the</span></span>
-<span id="cb20-503"><a href="#cb20-503" aria-hidden="true" tabindex="-1"></a><span class="co">// node already parented elsewhere and fall back to showing an inspector</span></span>
-<span id="cb20-504"><a href="#cb20-504" aria-hidden="true" tabindex="-1"></a><span class="co">// summary instead of the node itself.</span></span>
-<span id="cb20-505"><a href="#cb20-505" aria-hidden="true" tabindex="-1"></a>summary <span class="op">=</span> {</span>
-<span id="cb20-506"><a href="#cb20-506" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"p"</span>)</span>
-<span id="cb20-507"><a href="#cb20-507" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-508"><a href="#cb20-508" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb20-509"><a href="#cb20-509" aria-hidden="true" tabindex="-1"></a>    container<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> <span class="st">"Enter a valid function and interval, then click Plot."</span></span>
-<span id="cb20-510"><a href="#cb20-510" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> container</span>
-<span id="cb20-511"><a href="#cb20-511" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb20-512"><a href="#cb20-512" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-513"><a href="#cb20-513" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> stats <span class="op">=</span> [</span>
-<span id="cb20-514"><a href="#cb20-514" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Tolerance ε"</span><span class="op">,</span> tolerance<span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">2</span>)]<span class="op">,</span></span>
-<span id="cb20-515"><a href="#cb20-515" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Subintervals used"</span><span class="op">,</span> <span class="bu">String</span>(result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span>)]<span class="op">,</span></span>
-<span id="cb20-516"><a href="#cb20-516" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Estimate"</span><span class="op">,</span> result<span class="op">.</span><span class="at">totalEstimate</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">8</span>)]<span class="op">,</span></span>
-<span id="cb20-517"><a href="#cb20-517" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Estimated error"</span><span class="op">,</span> result<span class="op">.</span><span class="at">totalErrorEstimate</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)]<span class="op">,</span></span>
-<span id="cb20-518"><a href="#cb20-518" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Actual error"</span><span class="op">,</span> result<span class="op">.</span><span class="at">actualError</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)]</span>
-<span id="cb20-519"><a href="#cb20-519" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb20-520"><a href="#cb20-520" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-521"><a href="#cb20-521" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> stats<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb20-522"><a href="#cb20-522" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> [label<span class="op">,</span> value] <span class="op">=</span> stats[i]</span>
-<span id="cb20-523"><a href="#cb20-523" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (i <span class="op">&gt;</span> <span class="dv">0</span>) container<span class="op">.</span><span class="fu">append</span>(<span class="bu">document</span><span class="op">.</span><span class="fu">createTextNode</span>(<span class="st">"  ·  "</span>))</span>
-<span id="cb20-524"><a href="#cb20-524" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> strong <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"strong"</span>)</span>
-<span id="cb20-525"><a href="#cb20-525" aria-hidden="true" tabindex="-1"></a>    strong<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> <span class="vs">`</span><span class="sc">${</span>label<span class="sc">}</span><span class="vs">: `</span></span>
-<span id="cb20-526"><a href="#cb20-526" aria-hidden="true" tabindex="-1"></a>    container<span class="op">.</span><span class="fu">append</span>(strong<span class="op">,</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createTextNode</span>(value))</span>
-<span id="cb20-527"><a href="#cb20-527" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb20-528"><a href="#cb20-528" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-529"><a href="#cb20-529" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
-<span id="cb20-530"><a href="#cb20-530" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb20" data-startfrom="492" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 491;"><span id="cb20-492"><a href="#cb20-492" aria-hidden="true" tabindex="-1"></a><span class="co">// summary reports the headline numbers for the current tolerance: how many</span></span>
+<span id="cb20-493"><a href="#cb20-493" aria-hidden="true" tabindex="-1"></a><span class="co">// leaves the adaptive partition needed, the resulting estimate, its</span></span>
+<span id="cb20-494"><a href="#cb20-494" aria-hidden="true" tabindex="-1"></a><span class="co">// self-reported (Richardson) error bound, and the actual error against a</span></span>
+<span id="cb20-495"><a href="#cb20-495" aria-hidden="true" tabindex="-1"></a><span class="co">// fine reference integral.</span></span>
+<span id="cb20-496"><a href="#cb20-496" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
+<span id="cb20-497"><a href="#cb20-497" aria-hidden="true" tabindex="-1"></a><span class="co">// Defined (and displayed) right here, rather than as a hidden cell invoked</span></span>
+<span id="cb20-498"><a href="#cb20-498" aria-hidden="true" tabindex="-1"></a><span class="co">// from elsewhere: it already returns the final displayable node, and a</span></span>
+<span id="cb20-499"><a href="#cb20-499" aria-hidden="true" tabindex="-1"></a><span class="co">// `//| output: false` cell still attaches its returned node to its own</span></span>
+<span id="cb20-500"><a href="#cb20-500" aria-hidden="true" tabindex="-1"></a><span class="co">// (hidden) output slot — a later bare reference to it would then find the</span></span>
+<span id="cb20-501"><a href="#cb20-501" aria-hidden="true" tabindex="-1"></a><span class="co">// node already parented elsewhere and fall back to showing an inspector</span></span>
+<span id="cb20-502"><a href="#cb20-502" aria-hidden="true" tabindex="-1"></a><span class="co">// summary instead of the node itself.</span></span>
+<span id="cb20-503"><a href="#cb20-503" aria-hidden="true" tabindex="-1"></a>summary <span class="op">=</span> {</span>
+<span id="cb20-504"><a href="#cb20-504" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"p"</span>)</span>
+<span id="cb20-505"><a href="#cb20-505" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-506"><a href="#cb20-506" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb20-507"><a href="#cb20-507" aria-hidden="true" tabindex="-1"></a>    container<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> <span class="st">"Enter a valid function and interval, then click Plot."</span></span>
+<span id="cb20-508"><a href="#cb20-508" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> container</span>
+<span id="cb20-509"><a href="#cb20-509" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-510"><a href="#cb20-510" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-511"><a href="#cb20-511" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> stats <span class="op">=</span> [</span>
+<span id="cb20-512"><a href="#cb20-512" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Tolerance ε"</span><span class="op">,</span> tolerance<span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">2</span>)]<span class="op">,</span></span>
+<span id="cb20-513"><a href="#cb20-513" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Subintervals used"</span><span class="op">,</span> <span class="bu">String</span>(result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span>)]<span class="op">,</span></span>
+<span id="cb20-514"><a href="#cb20-514" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Estimate"</span><span class="op">,</span> result<span class="op">.</span><span class="at">totalEstimate</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">8</span>)]<span class="op">,</span></span>
+<span id="cb20-515"><a href="#cb20-515" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Estimated error"</span><span class="op">,</span> result<span class="op">.</span><span class="at">totalErrorEstimate</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)]<span class="op">,</span></span>
+<span id="cb20-516"><a href="#cb20-516" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"Actual error"</span><span class="op">,</span> result<span class="op">.</span><span class="at">actualError</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)]</span>
+<span id="cb20-517"><a href="#cb20-517" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb20-518"><a href="#cb20-518" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-519"><a href="#cb20-519" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> stats<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb20-520"><a href="#cb20-520" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> [label<span class="op">,</span> value] <span class="op">=</span> stats[i]</span>
+<span id="cb20-521"><a href="#cb20-521" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (i <span class="op">&gt;</span> <span class="dv">0</span>) container<span class="op">.</span><span class="fu">append</span>(<span class="bu">document</span><span class="op">.</span><span class="fu">createTextNode</span>(<span class="st">"  ·  "</span>))</span>
+<span id="cb20-522"><a href="#cb20-522" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> strong <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"strong"</span>)</span>
+<span id="cb20-523"><a href="#cb20-523" aria-hidden="true" tabindex="-1"></a>    strong<span class="op">.</span><span class="at">textContent</span> <span class="op">=</span> <span class="vs">`</span><span class="sc">${</span>label<span class="sc">}</span><span class="vs">: `</span></span>
+<span id="cb20-524"><a href="#cb20-524" aria-hidden="true" tabindex="-1"></a>    container<span class="op">.</span><span class="fu">append</span>(strong<span class="op">,</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createTextNode</span>(value))</span>
+<span id="cb20-525"><a href="#cb20-525" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb20-526"><a href="#cb20-526" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-527"><a href="#cb20-527" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
+<span id="cb20-528"><a href="#cb20-528" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-20" data-nodetype="declaration">
 
@@ -1295,14 +1294,14 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb21" data-startfrom="535" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 534;"><span id="cb21-535"><a href="#cb21-535" aria-hidden="true" tabindex="-1"></a><span class="co">// maxDepth parses the Max depth field's expression, falling back to 15 for</span></span>
-<span id="cb21-536"><a href="#cb21-536" aria-hidden="true" tabindex="-1"></a><span class="co">// invalid input so the recursion always gets a usable depth limit.</span></span>
-<span id="cb21-537"><a href="#cb21-537" aria-hidden="true" tabindex="-1"></a>maxDepth <span class="op">=</span> {</span>
-<span id="cb21-538"><a href="#cb21-538" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> math <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">math</span></span>
-<span id="cb21-539"><a href="#cb21-539" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> parsed <span class="op">=</span> VM<span class="op">.</span><span class="at">expressions</span><span class="op">.</span><span class="fu">makeNumber</span>(math<span class="op">,</span> maxDepthInput)</span>
-<span id="cb21-540"><a href="#cb21-540" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (parsed <span class="op">===</span> <span class="kw">null</span> <span class="op">||</span> <span class="op">!</span><span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(parsed)) <span class="cf">return</span> <span class="dv">15</span></span>
-<span id="cb21-541"><a href="#cb21-541" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="dv">1</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(parsed))</span>
-<span id="cb21-542"><a href="#cb21-542" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb21" data-startfrom="533" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 532;"><span id="cb21-533"><a href="#cb21-533" aria-hidden="true" tabindex="-1"></a><span class="co">// maxDepth parses the Max depth field's expression, falling back to 15 for</span></span>
+<span id="cb21-534"><a href="#cb21-534" aria-hidden="true" tabindex="-1"></a><span class="co">// invalid input so the recursion always gets a usable depth limit.</span></span>
+<span id="cb21-535"><a href="#cb21-535" aria-hidden="true" tabindex="-1"></a>maxDepth <span class="op">=</span> {</span>
+<span id="cb21-536"><a href="#cb21-536" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> math <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">math</span></span>
+<span id="cb21-537"><a href="#cb21-537" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> parsed <span class="op">=</span> VM<span class="op">.</span><span class="at">expressions</span><span class="op">.</span><span class="fu">makeNumber</span>(math<span class="op">,</span> maxDepthInput)</span>
+<span id="cb21-538"><a href="#cb21-538" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (parsed <span class="op">===</span> <span class="kw">null</span> <span class="op">||</span> <span class="op">!</span><span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(parsed)) <span class="cf">return</span> <span class="dv">15</span></span>
+<span id="cb21-539"><a href="#cb21-539" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="dv">1</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(parsed))</span>
+<span id="cb21-540"><a href="#cb21-540" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-21" data-nodetype="declaration">
 
@@ -1311,7 +1310,7 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-plot-overlay">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb22" data-startfrom="548" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 547;"><span id="cb22-548"><a href="#cb22-548" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showFCurve<span class="op">,</span> showPanels<span class="op">,</span> showPartitionPoints)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb22" data-startfrom="546" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 545;"><span id="cb22-546"><a href="#cb22-546" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showFCurve<span class="op">,</span> showPanels<span class="op">,</span> showPartitionPoints)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-22" data-nodetype="expression">
 
@@ -1319,11 +1318,11 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb23" data-startfrom="552" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 551;"><span id="cb23-552"><a href="#cb23-552" aria-hidden="true" tabindex="-1"></a>viewof traces <span class="op">=</span> {</span>
-<span id="cb23-553"><a href="#cb23-553" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> items <span class="op">=</span> []</span>
-<span id="cb23-554"><a href="#cb23-554" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> label <span class="kw">of</span> traceOptions) items<span class="op">.</span><span class="fu">push</span>({label<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> traceColors<span class="op">.</span><span class="fu">get</span>(label)})</span>
-<span id="cb23-555"><a href="#cb23-555" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">legendOverlay</span>(items<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> traceOptions})</span>
-<span id="cb23-556"><a href="#cb23-556" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb23" data-startfrom="550" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 549;"><span id="cb23-550"><a href="#cb23-550" aria-hidden="true" tabindex="-1"></a>viewof traces <span class="op">=</span> {</span>
+<span id="cb23-551"><a href="#cb23-551" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> items <span class="op">=</span> []</span>
+<span id="cb23-552"><a href="#cb23-552" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> label <span class="kw">of</span> traceOptions) items<span class="op">.</span><span class="fu">push</span>({label<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> traceColors<span class="op">.</span><span class="fu">get</span>(label)})</span>
+<span id="cb23-553"><a href="#cb23-553" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">legendOverlay</span>(items<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> traceOptions})</span>
+<span id="cb23-554"><a href="#cb23-554" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-23" data-nodetype="declaration">
 
@@ -1332,11 +1331,11 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-step-overlay ojs-row">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb24" data-startfrom="562" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 561;"><span id="cb24-562"><a href="#cb24-562" aria-hidden="true" tabindex="-1"></a>viewof tolExponent <span class="op">=</span> {</span>
-<span id="cb24-563"><a href="#cb24-563" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> tolSlider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">1</span><span class="op">,</span> <span class="dv">10</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Tolerance exponent e (ε = 10⁻ᵉ)"</span>})</span>
-<span id="cb24-564"><a href="#cb24-564" aria-hidden="true" tabindex="-1"></a>  tolSlider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb24-565"><a href="#cb24-565" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> tolSlider</span>
-<span id="cb24-566"><a href="#cb24-566" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb24" data-startfrom="560" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 559;"><span id="cb24-560"><a href="#cb24-560" aria-hidden="true" tabindex="-1"></a>viewof tolExponent <span class="op">=</span> {</span>
+<span id="cb24-561"><a href="#cb24-561" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> tolSlider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">1</span><span class="op">,</span> <span class="dv">10</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">4</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Tolerance exponent e (ε = 10⁻ᵉ)"</span>})</span>
+<span id="cb24-562"><a href="#cb24-562" aria-hidden="true" tabindex="-1"></a>  tolSlider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb24-563"><a href="#cb24-563" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> tolSlider</span>
+<span id="cb24-564"><a href="#cb24-564" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-24" data-nodetype="declaration">
 
@@ -1344,11 +1343,11 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb25" data-startfrom="570" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 569;"><span id="cb25-570"><a href="#cb25-570" aria-hidden="true" tabindex="-1"></a>viewof maxDepthInput <span class="op">=</span> {</span>
-<span id="cb25-571"><a href="#cb25-571" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">text</span>({<span class="dt">value</span><span class="op">:</span> <span class="st">"15"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Max depth"</span><span class="op">,</span> <span class="dt">placeholder</span><span class="op">:</span> <span class="st">"Example: 15, 5*3"</span>})</span>
-<span id="cb25-572"><a href="#cb25-572" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
-<span id="cb25-573"><a href="#cb25-573" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
-<span id="cb25-574"><a href="#cb25-574" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb25" data-startfrom="568" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 567;"><span id="cb25-568"><a href="#cb25-568" aria-hidden="true" tabindex="-1"></a>viewof maxDepthInput <span class="op">=</span> {</span>
+<span id="cb25-569"><a href="#cb25-569" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">text</span>({<span class="dt">value</span><span class="op">:</span> <span class="st">"15"</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Max depth"</span><span class="op">,</span> <span class="dt">placeholder</span><span class="op">:</span> <span class="st">"Example: 15, 5*3"</span>})</span>
+<span id="cb25-570"><a href="#cb25-570" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
+<span id="cb25-571"><a href="#cb25-571" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
+<span id="cb25-572"><a href="#cb25-572" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-25" data-nodetype="declaration">
 
@@ -1359,83 +1358,83 @@ Authors: Apurva Nakade
 </div>
 <!-- The recursion tree below traces every interval the algorithm considered while building the partition above — gray segments were split further, green segments were accepted as a leaf. It shares the same x-axis as the main chart, so you can line up a cluster of low, refined segments with the region of $f$ that caused it. -->
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb26" data-startfrom="584" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 583;"><span id="cb26-584"><a href="#cb26-584" aria-hidden="true" tabindex="-1"></a><span class="co">// decisionTreePlot draws that recursion tree: one horizontal segment per</span></span>
-<span id="cb26-585"><a href="#cb26-585" aria-hidden="true" tabindex="-1"></a><span class="co">// interval the algorithm ever considered, positioned at its actual [a, b]</span></span>
-<span id="cb26-586"><a href="#cb26-586" aria-hidden="true" tabindex="-1"></a><span class="co">// range on the x-axis (shared with the main chart above) and stacked by</span></span>
-<span id="cb26-587"><a href="#cb26-587" aria-hidden="true" tabindex="-1"></a><span class="co">// recursion depth on the y-axis. Gray segments were split further; green</span></span>
-<span id="cb26-588"><a href="#cb26-588" aria-hidden="true" tabindex="-1"></a><span class="co">// segments were accepted as a leaf of the final partition. Connector lines</span></span>
-<span id="cb26-589"><a href="#cb26-589" aria-hidden="true" tabindex="-1"></a><span class="co">// link each interval to the two children it was split into.</span></span>
-<span id="cb26-590"><a href="#cb26-590" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
-<span id="cb26-591"><a href="#cb26-591" aria-hidden="true" tabindex="-1"></a><span class="co">// Defined (and displayed) right here for the same reason as `summary`</span></span>
-<span id="cb26-592"><a href="#cb26-592" aria-hidden="true" tabindex="-1"></a><span class="co">// above — it already returns the final displayable node.</span></span>
-<span id="cb26-593"><a href="#cb26-593" aria-hidden="true" tabindex="-1"></a>decisionTreePlot <span class="op">=</span> {</span>
-<span id="cb26-594"><a href="#cb26-594" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">calls</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb26-595"><a href="#cb26-595" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
-<span id="cb26-596"><a href="#cb26-596" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
-<span id="cb26-597"><a href="#cb26-597" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb26-598"><a href="#cb26-598" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb26-599"><a href="#cb26-599" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-600"><a href="#cb26-600" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> byId <span class="op">=</span> <span class="kw">new</span> <span class="bu">Map</span>()</span>
-<span id="cb26-601"><a href="#cb26-601" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> call <span class="kw">of</span> result<span class="op">.</span><span class="at">calls</span>) byId<span class="op">.</span><span class="fu">set</span>(call<span class="op">.</span><span class="at">id</span><span class="op">,</span> call)</span>
-<span id="cb26-602"><a href="#cb26-602" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-603"><a href="#cb26-603" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> links <span class="op">=</span> []</span>
-<span id="cb26-604"><a href="#cb26-604" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> call <span class="kw">of</span> result<span class="op">.</span><span class="at">calls</span>) {</span>
-<span id="cb26-605"><a href="#cb26-605" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">parentId</span> <span class="op">===</span> <span class="op">-</span><span class="dv">1</span>) <span class="cf">continue</span></span>
-<span id="cb26-606"><a href="#cb26-606" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> parent <span class="op">=</span> byId<span class="op">.</span><span class="fu">get</span>(call<span class="op">.</span><span class="at">parentId</span>)</span>
-<span id="cb26-607"><a href="#cb26-607" aria-hidden="true" tabindex="-1"></a>    links<span class="op">.</span><span class="fu">push</span>({<span class="dt">x1</span><span class="op">:</span> parent<span class="op">.</span><span class="at">mid</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> parent<span class="op">.</span><span class="at">depth</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> call<span class="op">.</span><span class="at">mid</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> call<span class="op">.</span><span class="at">depth</span>})</span>
-<span id="cb26-608"><a href="#cb26-608" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb26-609"><a href="#cb26-609" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-610"><a href="#cb26-610" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> maxDepthUsed <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb26-611"><a href="#cb26-611" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> call <span class="kw">of</span> result<span class="op">.</span><span class="at">calls</span>) {</span>
-<span id="cb26-612"><a href="#cb26-612" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">depth</span> <span class="op">&gt;</span> maxDepthUsed) maxDepthUsed <span class="op">=</span> call<span class="op">.</span><span class="at">depth</span></span>
-<span id="cb26-613"><a href="#cb26-613" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb26-614"><a href="#cb26-614" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-615"><a href="#cb26-615" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> acceptedName <span class="op">=</span> <span class="st">"Accepted (leaf)"</span></span>
-<span id="cb26-616"><a href="#cb26-616" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> splitName <span class="op">=</span> <span class="st">"Split further"</span></span>
-<span id="cb26-617"><a href="#cb26-617" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-618"><a href="#cb26-618" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> statusOf <span class="op">=</span> call <span class="kw">=&gt;</span> {</span>
-<span id="cb26-619"><a href="#cb26-619" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">accepted</span>) <span class="cf">return</span> acceptedName</span>
-<span id="cb26-620"><a href="#cb26-620" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> splitName</span>
-<span id="cb26-621"><a href="#cb26-621" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb26-622"><a href="#cb26-622" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-623"><a href="#cb26-623" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> tooltipOf <span class="op">=</span> call <span class="kw">=&gt;</span> {</span>
-<span id="cb26-624"><a href="#cb26-624" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> label <span class="op">=</span> <span class="vs">`[</span><span class="sc">${</span>call<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="sc">}</span><span class="vs">, </span><span class="sc">${</span>call<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="sc">}</span><span class="vs">]  depth </span><span class="sc">${</span>call<span class="op">.</span><span class="at">depth</span><span class="sc">}</span><span class="vs">`</span></span>
-<span id="cb26-625"><a href="#cb26-625" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">accepted</span>) {</span>
-<span id="cb26-626"><a href="#cb26-626" aria-hidden="true" tabindex="-1"></a>      label <span class="op">+=</span> <span class="st">"  accepted"</span></span>
-<span id="cb26-627"><a href="#cb26-627" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb26-628"><a href="#cb26-628" aria-hidden="true" tabindex="-1"></a>      label <span class="op">+=</span> <span class="st">"  split further"</span></span>
-<span id="cb26-629"><a href="#cb26-629" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb26-630"><a href="#cb26-630" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> label</span>
-<span id="cb26-631"><a href="#cb26-631" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb26-632"><a href="#cb26-632" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-633"><a href="#cb26-633" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> [splitName<span class="op">,</span> acceptedName]</span>
-<span id="cb26-634"><a href="#cb26-634" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorRange <span class="op">=</span> [<span class="st">"#d3d7dc9e"</span><span class="op">,</span> <span class="st">"#16a34a"</span>]</span>
-<span id="cb26-635"><a href="#cb26-635" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-636"><a href="#cb26-636" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb26-637"><a href="#cb26-637" aria-hidden="true" tabindex="-1"></a>    width<span class="op">,</span></span>
-<span id="cb26-638"><a href="#cb26-638" aria-hidden="true" tabindex="-1"></a>    <span class="dt">height</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(<span class="dv">520</span><span class="op">,</span> <span class="dv">90</span> <span class="op">+</span> <span class="dv">26</span> <span class="op">*</span> (maxDepthUsed <span class="op">+</span> <span class="dv">1</span>))<span class="op">,</span></span>
-<span id="cb26-639"><a href="#cb26-639" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb26-640"><a href="#cb26-640" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marginBottom</span><span class="op">:</span> <span class="dv">30</span><span class="op">,</span></span>
-<span id="cb26-641"><a href="#cb26-641" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"x"</span>}<span class="op">,</span></span>
-<span id="cb26-642"><a href="#cb26-642" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"recursion depth"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> maxDepthUsed]<span class="op">,</span> <span class="dt">reverse</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">tickFormat</span><span class="op">:</span> <span class="st">"d"</span>}<span class="op">,</span></span>
-<span id="cb26-643"><a href="#cb26-643" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
-<span id="cb26-644"><a href="#cb26-644" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
-<span id="cb26-645"><a href="#cb26-645" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">link</span>(links<span class="op">,</span> {<span class="dt">x1</span><span class="op">:</span> <span class="st">"x1"</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> <span class="st">"y1"</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> <span class="st">"x2"</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> <span class="st">"y2"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#cbd5e1"</span>})<span class="op">,</span></span>
-<span id="cb26-646"><a href="#cb26-646" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">ruleY</span>(result<span class="op">.</span><span class="at">calls</span><span class="op">,</span> {</span>
-<span id="cb26-647"><a href="#cb26-647" aria-hidden="true" tabindex="-1"></a>        <span class="dt">x1</span><span class="op">:</span> <span class="st">"a"</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> <span class="st">"b"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"depth"</span><span class="op">,</span></span>
-<span id="cb26-648"><a href="#cb26-648" aria-hidden="true" tabindex="-1"></a>        <span class="dt">stroke</span><span class="op">:</span> statusOf<span class="op">,</span></span>
-<span id="cb26-649"><a href="#cb26-649" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">6</span><span class="op">,</span></span>
-<span id="cb26-650"><a href="#cb26-650" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeLinecap</span><span class="op">:</span> <span class="st">"round"</span><span class="op">,</span></span>
-<span id="cb26-651"><a href="#cb26-651" aria-hidden="true" tabindex="-1"></a>        <span class="dt">title</span><span class="op">:</span> tooltipOf</span>
-<span id="cb26-652"><a href="#cb26-652" aria-hidden="true" tabindex="-1"></a>      })</span>
-<span id="cb26-653"><a href="#cb26-653" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb26-654"><a href="#cb26-654" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb26-655"><a href="#cb26-655" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}})</span>
-<span id="cb26-656"><a href="#cb26-656" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb26-657"><a href="#cb26-657" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb26-658"><a href="#cb26-658" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart<span class="op">,</span> legend)</span>
-<span id="cb26-659"><a href="#cb26-659" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
-<span id="cb26-660"><a href="#cb26-660" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb26" data-startfrom="582" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 581;"><span id="cb26-582"><a href="#cb26-582" aria-hidden="true" tabindex="-1"></a><span class="co">// decisionTreePlot draws that recursion tree: one horizontal segment per</span></span>
+<span id="cb26-583"><a href="#cb26-583" aria-hidden="true" tabindex="-1"></a><span class="co">// interval the algorithm ever considered, positioned at its actual [a, b]</span></span>
+<span id="cb26-584"><a href="#cb26-584" aria-hidden="true" tabindex="-1"></a><span class="co">// range on the x-axis (shared with the main chart above) and stacked by</span></span>
+<span id="cb26-585"><a href="#cb26-585" aria-hidden="true" tabindex="-1"></a><span class="co">// recursion depth on the y-axis. Gray segments were split further; green</span></span>
+<span id="cb26-586"><a href="#cb26-586" aria-hidden="true" tabindex="-1"></a><span class="co">// segments were accepted as a leaf of the final partition. Connector lines</span></span>
+<span id="cb26-587"><a href="#cb26-587" aria-hidden="true" tabindex="-1"></a><span class="co">// link each interval to the two children it was split into.</span></span>
+<span id="cb26-588"><a href="#cb26-588" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
+<span id="cb26-589"><a href="#cb26-589" aria-hidden="true" tabindex="-1"></a><span class="co">// Defined (and displayed) right here for the same reason as `summary`</span></span>
+<span id="cb26-590"><a href="#cb26-590" aria-hidden="true" tabindex="-1"></a><span class="co">// above — it already returns the final displayable node.</span></span>
+<span id="cb26-591"><a href="#cb26-591" aria-hidden="true" tabindex="-1"></a>decisionTreePlot <span class="op">=</span> {</span>
+<span id="cb26-592"><a href="#cb26-592" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">calls</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb26-593"><a href="#cb26-593" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
+<span id="cb26-594"><a href="#cb26-594" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
+<span id="cb26-595"><a href="#cb26-595" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb26-596"><a href="#cb26-596" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb26-597"><a href="#cb26-597" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-598"><a href="#cb26-598" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> byId <span class="op">=</span> <span class="kw">new</span> <span class="bu">Map</span>()</span>
+<span id="cb26-599"><a href="#cb26-599" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> call <span class="kw">of</span> result<span class="op">.</span><span class="at">calls</span>) byId<span class="op">.</span><span class="fu">set</span>(call<span class="op">.</span><span class="at">id</span><span class="op">,</span> call)</span>
+<span id="cb26-600"><a href="#cb26-600" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-601"><a href="#cb26-601" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> links <span class="op">=</span> []</span>
+<span id="cb26-602"><a href="#cb26-602" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> call <span class="kw">of</span> result<span class="op">.</span><span class="at">calls</span>) {</span>
+<span id="cb26-603"><a href="#cb26-603" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">parentId</span> <span class="op">===</span> <span class="op">-</span><span class="dv">1</span>) <span class="cf">continue</span></span>
+<span id="cb26-604"><a href="#cb26-604" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> parent <span class="op">=</span> byId<span class="op">.</span><span class="fu">get</span>(call<span class="op">.</span><span class="at">parentId</span>)</span>
+<span id="cb26-605"><a href="#cb26-605" aria-hidden="true" tabindex="-1"></a>    links<span class="op">.</span><span class="fu">push</span>({<span class="dt">x1</span><span class="op">:</span> parent<span class="op">.</span><span class="at">mid</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> parent<span class="op">.</span><span class="at">depth</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> call<span class="op">.</span><span class="at">mid</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> call<span class="op">.</span><span class="at">depth</span>})</span>
+<span id="cb26-606"><a href="#cb26-606" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb26-607"><a href="#cb26-607" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-608"><a href="#cb26-608" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> maxDepthUsed <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb26-609"><a href="#cb26-609" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> call <span class="kw">of</span> result<span class="op">.</span><span class="at">calls</span>) {</span>
+<span id="cb26-610"><a href="#cb26-610" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">depth</span> <span class="op">&gt;</span> maxDepthUsed) maxDepthUsed <span class="op">=</span> call<span class="op">.</span><span class="at">depth</span></span>
+<span id="cb26-611"><a href="#cb26-611" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb26-612"><a href="#cb26-612" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-613"><a href="#cb26-613" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> acceptedName <span class="op">=</span> <span class="st">"Accepted (leaf)"</span></span>
+<span id="cb26-614"><a href="#cb26-614" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> splitName <span class="op">=</span> <span class="st">"Split further"</span></span>
+<span id="cb26-615"><a href="#cb26-615" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-616"><a href="#cb26-616" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> statusOf <span class="op">=</span> call <span class="kw">=&gt;</span> {</span>
+<span id="cb26-617"><a href="#cb26-617" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">accepted</span>) <span class="cf">return</span> acceptedName</span>
+<span id="cb26-618"><a href="#cb26-618" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> splitName</span>
+<span id="cb26-619"><a href="#cb26-619" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb26-620"><a href="#cb26-620" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-621"><a href="#cb26-621" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> tooltipOf <span class="op">=</span> call <span class="kw">=&gt;</span> {</span>
+<span id="cb26-622"><a href="#cb26-622" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> label <span class="op">=</span> <span class="vs">`[</span><span class="sc">${</span>call<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="sc">}</span><span class="vs">, </span><span class="sc">${</span>call<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="sc">}</span><span class="vs">]  depth </span><span class="sc">${</span>call<span class="op">.</span><span class="at">depth</span><span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb26-623"><a href="#cb26-623" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (call<span class="op">.</span><span class="at">accepted</span>) {</span>
+<span id="cb26-624"><a href="#cb26-624" aria-hidden="true" tabindex="-1"></a>      label <span class="op">+=</span> <span class="st">"  accepted"</span></span>
+<span id="cb26-625"><a href="#cb26-625" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb26-626"><a href="#cb26-626" aria-hidden="true" tabindex="-1"></a>      label <span class="op">+=</span> <span class="st">"  split further"</span></span>
+<span id="cb26-627"><a href="#cb26-627" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb26-628"><a href="#cb26-628" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> label</span>
+<span id="cb26-629"><a href="#cb26-629" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb26-630"><a href="#cb26-630" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-631"><a href="#cb26-631" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> [splitName<span class="op">,</span> acceptedName]</span>
+<span id="cb26-632"><a href="#cb26-632" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorRange <span class="op">=</span> [<span class="st">"#d3d7dc9e"</span><span class="op">,</span> <span class="st">"#16a34a"</span>]</span>
+<span id="cb26-633"><a href="#cb26-633" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-634"><a href="#cb26-634" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb26-635"><a href="#cb26-635" aria-hidden="true" tabindex="-1"></a>    width<span class="op">,</span></span>
+<span id="cb26-636"><a href="#cb26-636" aria-hidden="true" tabindex="-1"></a>    <span class="dt">height</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(<span class="dv">520</span><span class="op">,</span> <span class="dv">90</span> <span class="op">+</span> <span class="dv">26</span> <span class="op">*</span> (maxDepthUsed <span class="op">+</span> <span class="dv">1</span>))<span class="op">,</span></span>
+<span id="cb26-637"><a href="#cb26-637" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb26-638"><a href="#cb26-638" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marginBottom</span><span class="op">:</span> <span class="dv">30</span><span class="op">,</span></span>
+<span id="cb26-639"><a href="#cb26-639" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"x"</span>}<span class="op">,</span></span>
+<span id="cb26-640"><a href="#cb26-640" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"recursion depth"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> maxDepthUsed]<span class="op">,</span> <span class="dt">reverse</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">tickFormat</span><span class="op">:</span> <span class="st">"d"</span>}<span class="op">,</span></span>
+<span id="cb26-641"><a href="#cb26-641" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
+<span id="cb26-642"><a href="#cb26-642" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb26-643"><a href="#cb26-643" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">link</span>(links<span class="op">,</span> {<span class="dt">x1</span><span class="op">:</span> <span class="st">"x1"</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> <span class="st">"y1"</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> <span class="st">"x2"</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> <span class="st">"y2"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> <span class="st">"#cbd5e1"</span>})<span class="op">,</span></span>
+<span id="cb26-644"><a href="#cb26-644" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">ruleY</span>(result<span class="op">.</span><span class="at">calls</span><span class="op">,</span> {</span>
+<span id="cb26-645"><a href="#cb26-645" aria-hidden="true" tabindex="-1"></a>        <span class="dt">x1</span><span class="op">:</span> <span class="st">"a"</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> <span class="st">"b"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"depth"</span><span class="op">,</span></span>
+<span id="cb26-646"><a href="#cb26-646" aria-hidden="true" tabindex="-1"></a>        <span class="dt">stroke</span><span class="op">:</span> statusOf<span class="op">,</span></span>
+<span id="cb26-647"><a href="#cb26-647" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">6</span><span class="op">,</span></span>
+<span id="cb26-648"><a href="#cb26-648" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeLinecap</span><span class="op">:</span> <span class="st">"round"</span><span class="op">,</span></span>
+<span id="cb26-649"><a href="#cb26-649" aria-hidden="true" tabindex="-1"></a>        <span class="dt">title</span><span class="op">:</span> tooltipOf</span>
+<span id="cb26-650"><a href="#cb26-650" aria-hidden="true" tabindex="-1"></a>      })</span>
+<span id="cb26-651"><a href="#cb26-651" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb26-652"><a href="#cb26-652" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb26-653"><a href="#cb26-653" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}})</span>
+<span id="cb26-654"><a href="#cb26-654" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-655"><a href="#cb26-655" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb26-656"><a href="#cb26-656" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart<span class="op">,</span> legend)</span>
+<span id="cb26-657"><a href="#cb26-657" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
+<span id="cb26-658"><a href="#cb26-658" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-26" data-nodetype="declaration">
 
@@ -1455,41 +1454,40 @@ Authors: Apurva Nakade
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb27" data-startfrom="666" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 665;"><span id="cb27-666"><a href="#cb27-666" aria-hidden="true" tabindex="-1"></a><span class="co">// Partition table — one row per leaf of the accepted adaptive partition,</span></span>
-<span id="cb27-667"><a href="#cb27-667" aria-hidden="true" tabindex="-1"></a><span class="co">// left to right.</span></span>
-<span id="cb27-668"><a href="#cb27-668" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
-<span id="cb27-669"><a href="#cb27-669" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb27-670"><a href="#cb27-670" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
-<span id="cb27-671"><a href="#cb27-671" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
-<span id="cb27-672"><a href="#cb27-672" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb27-673"><a href="#cb27-673" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-674"><a href="#cb27-674" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-675"><a href="#cb27-675" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
-<span id="cb27-676"><a href="#cb27-676" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb27-677"><a href="#cb27-677" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> leaf <span class="op">=</span> result<span class="op">.</span><span class="at">leaves</span>[i]</span>
-<span id="cb27-678"><a href="#cb27-678" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
-<span id="cb27-679"><a href="#cb27-679" aria-hidden="true" tabindex="-1"></a>      i<span class="op">,</span></span>
-<span id="cb27-680"><a href="#cb27-680" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb27-681"><a href="#cb27-681" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb27-682"><a href="#cb27-682" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">width</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb27-683"><a href="#cb27-683" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">depth</span><span class="op">,</span></span>
-<span id="cb27-684"><a href="#cb27-684" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">estimate</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb27-685"><a href="#cb27-685" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">errorEstimate</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
-<span id="cb27-686"><a href="#cb27-686" aria-hidden="true" tabindex="-1"></a>    ])</span>
-<span id="cb27-687"><a href="#cb27-687" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb27-688"><a href="#cb27-688" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-689"><a href="#cb27-689" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb27-690"><a href="#cb27-690" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb27-691"><a href="#cb27-691" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`a_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`b_i`</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`S_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`|E_i|`</span>]<span class="op">,</span></span>
-<span id="cb27-692"><a href="#cb27-692" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"a_i"</span><span class="op">,</span> <span class="st">"b_i"</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="st">"S_i (leaf estimate)"</span><span class="op">,</span> <span class="st">"|E_i| (leaf error estimate)"</span>]<span class="op">,</span></span>
-<span id="cb27-693"><a href="#cb27-693" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"adaptive-integration-partition.csv"</span><span class="op">,</span></span>
-<span id="cb27-694"><a href="#cb27-694" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
-<span id="cb27-695"><a href="#cb27-695" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb27-696"><a href="#cb27-696" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb27" data-startfrom="664" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 663;"><span id="cb27-664"><a href="#cb27-664" aria-hidden="true" tabindex="-1"></a><span class="co">// Partition table — one row per leaf of the accepted adaptive partition,</span></span>
+<span id="cb27-665"><a href="#cb27-665" aria-hidden="true" tabindex="-1"></a><span class="co">// left to right.</span></span>
+<span id="cb27-666"><a href="#cb27-666" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
+<span id="cb27-667"><a href="#cb27-667" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb27-668"><a href="#cb27-668" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
+<span id="cb27-669"><a href="#cb27-669" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
+<span id="cb27-670"><a href="#cb27-670" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb27-671"><a href="#cb27-671" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb27-672"><a href="#cb27-672" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-673"><a href="#cb27-673" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
+<span id="cb27-674"><a href="#cb27-674" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb27-675"><a href="#cb27-675" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> leaf <span class="op">=</span> result<span class="op">.</span><span class="at">leaves</span>[i]</span>
+<span id="cb27-676"><a href="#cb27-676" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
+<span id="cb27-677"><a href="#cb27-677" aria-hidden="true" tabindex="-1"></a>      i<span class="op">,</span></span>
+<span id="cb27-678"><a href="#cb27-678" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb27-679"><a href="#cb27-679" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb27-680"><a href="#cb27-680" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">width</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb27-681"><a href="#cb27-681" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">depth</span><span class="op">,</span></span>
+<span id="cb27-682"><a href="#cb27-682" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">estimate</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb27-683"><a href="#cb27-683" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">errorEstimate</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
+<span id="cb27-684"><a href="#cb27-684" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb27-685"><a href="#cb27-685" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb27-686"><a href="#cb27-686" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-687"><a href="#cb27-687" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb27-688"><a href="#cb27-688" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb27-689"><a href="#cb27-689" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`a_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`b_i`</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`S_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`|E_i|`</span>]<span class="op">,</span></span>
+<span id="cb27-690"><a href="#cb27-690" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"a_i"</span><span class="op">,</span> <span class="st">"b_i"</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="st">"S_i (leaf estimate)"</span><span class="op">,</span> <span class="st">"|E_i| (leaf error estimate)"</span>]<span class="op">,</span></span>
+<span id="cb27-691"><a href="#cb27-691" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"adaptive-integration-partition.csv"</span><span class="op">,</span></span>
+<span id="cb27-692"><a href="#cb27-692" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
+<span id="cb27-693"><a href="#cb27-693" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb27-694"><a href="#cb27-694" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-27" data-nodetype="declaration">
 
-</div>
 </div>
 </div>
 </div>

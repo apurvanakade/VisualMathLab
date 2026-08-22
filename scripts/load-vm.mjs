@@ -29,10 +29,15 @@ export function loadVM(mathjs) {
   // own process, so setting real globals here doesn't leak across files.
   globalThis.window = globalThis
   globalThis.document = globalThis.document ?? { addEventListener: () => {} }
-  // plotly-fullscreen-button.js registers a document listener and patches
-  // Plotly.newPlot/react at load time (not inside a callable), so both
-  // need a minimal stand-in even though these tests never touch the DOM.
-  globalThis.Plotly = globalThis.Plotly ?? { newPlot: () => {}, react: () => {} }
+  // plotly-fullscreen-button.js registers a document listener, patches
+  // Plotly.newPlot/react, and reads Plotly.Icons for its custom zoom
+  // buttons -- all at load time, not inside a callable -- so each needs a
+  // minimal stand-in even though these tests never touch the DOM.
+  globalThis.Plotly = globalThis.Plotly ?? {
+    newPlot: () => {},
+    react: () => {},
+    Icons: { zoom_plus: {}, zoom_minus: {} }
+  }
 
   for (const scriptPath of localScriptPaths) {
     const filePath = path.join(repoRoot, scriptPath)

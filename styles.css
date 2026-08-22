@@ -329,8 +329,22 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
+/* Observable Inputs sizes every range input to a fixed ~180px track of its
+ * own, which strands an overlay slider at a fraction of the bar it sits in
+ * -- and leaves it that same fixed size when the chart is fullscreened,
+ * instead of growing with the bar. The .ojs-panel rule above already gives
+ * panel sliders a fluid track; overlay bars need the same. */
 .ojs-step-overlay input[type="range"] {
   accent-color: #2563eb;
+  width: 100%;
+}
+
+/* ...and with the track now fluid, cap the number readout beside it the way
+ * .ojs-panel already does, so the pair splits the bar sensibly instead of
+ * the spinner eating a third of it. */
+.ojs-step-overlay input[type="number"] {
+  width: 5.5em;
+  flex: none !important;
 }
 
 /* Inputs.radio()/checkbox() option groups render one block-level row per

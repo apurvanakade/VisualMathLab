@@ -6,10 +6,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Apurva Nakade">
-<meta name="dcterms.date" content="2026-07-13">
 
-<title>Piecewise Interpolation – Visual Math Lab</title>
+<title>Privacy &amp; Cookies – Visual Math Lab</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -31,31 +29,27 @@ ul.task-list li input[type="checkbox"] {
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="../site_libs/quarto-nav/headroom.min.js"></script>
-<script src="../site_libs/clipboard/clipboard.min.js"></script>
-<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="../site_libs/quarto-search/fuse.min.js"></script>
-<script src="../site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="../">
-<link href="../piecewise-interpolation/linear-cubic/index.html" rel="next">
-<link href="../root-finding/secant-method/index.html" rel="prev">
-<script src="../site_libs/quarto-listing/list.min.js"></script>
-<script src="../site_libs/quarto-listing/quarto-listing.js"></script>
-<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="../site_libs/quarto-html/popper.min.js"></script>
-<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="../site_libs/quarto-html/anchor.min.js"></script>
-<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
-<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-611f9a4f5276f3aa6c7bc3c7843ec587.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../site_libs/bootstrap/bootstrap-dark-39ae64530572cc3572611afcf9baa685.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../site_libs/bootstrap/bootstrap-611f9a4f5276f3aa6c7bc3c7843ec587.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-611f9a4f5276f3aa6c7bc3c7843ec587.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-39ae64530572cc3572611afcf9baa685.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-611f9a4f5276f3aa6c7bc3c7843ec587.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -82,35 +76,6 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<script>
-
-  window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
-    if (!listingTargetEl) {
-      // No listing discovered, do not attach.
-      return; 
-    }
-
-    const options = {
-      valueNames: ['listing-image','listing-title','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
-      
-      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description","listing-categories"],
-    };
-
-    window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
-
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  });
-
-  window.addEventListener('hashchange',() => {
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  })
-  </script>
 <!--
 Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -119,69 +84,40 @@ Authors: Apurva Nakade
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="../js/expressions/make-function.js"></script>
-<script src="../js/expressions/make-derivative.js"></script>
-<script src="../js/expressions/make-number.js"></script>
-<script src="../js/expressions/make-rational.js"></script>
-<script src="../js/expressions/make-ode-function.js"></script>
-<script src="../js/expressions/make-function-of-t.js"></script>
-<script src="../js/plotting/padded-range.js"></script>
-<script src="../js/plotting/plotly-fullscreen-button.js"></script>
-<script src="../js/numerical/linear-regression.js"></script>
-<script src="../js/numerical/l1-regression.js"></script>
-<script src="../js/numerical/polynomial-fit.js"></script>
-<script src="../js/numerical/euler-solve.js"></script>
-<script src="../js/numerical/rk4-solve.js"></script>
-<script src="../js/numerical/simpson-estimate.js"></script>
-<script src="../js/numerical/lagrange-quadratic.js"></script>
-<script src="../js/sampling/seeded-random.js"></script>
-<script src="../js/sampling/gaussian-random.js"></script>
-<script src="../js/filters/moving-average-filter.js"></script>
-<script src="../js/filters/ema-filter.js"></script>
-<script src="../js/filters/kalman-1d-filter.js"></script>
-<script src="../js/ui/render-table.js"></script>
-<script src="../js/ui/apply-example.js"></script>
-<script src="../js/ui/legend-overlay.js"></script>
-<script src="../js/ui/report-bug.js"></script>
-<script src="../js/discrete-math/barycentric-triples.js"></script>
-<script src="../js/discrete-math/sub-triangles.js"></script>
-<script src="../js/discrete-math/triangulation-edges.js"></script>
-<script src="../js/discrete-math/sperner-color.js"></script>
-<script src="../js/discrete-math/random-color.js"></script>
-<script src="../js/discrete-math/mixed-pair-color.js"></script>
-<script src="../js/discrete-math/triangle-fill-color.js"></script>
+<script src="./js/expressions/make-function.js"></script>
+<script src="./js/expressions/make-derivative.js"></script>
+<script src="./js/expressions/make-number.js"></script>
+<script src="./js/expressions/make-rational.js"></script>
+<script src="./js/expressions/make-ode-function.js"></script>
+<script src="./js/expressions/make-function-of-t.js"></script>
+<script src="./js/plotting/padded-range.js"></script>
+<script src="./js/plotting/plotly-fullscreen-button.js"></script>
+<script src="./js/numerical/linear-regression.js"></script>
+<script src="./js/numerical/l1-regression.js"></script>
+<script src="./js/numerical/polynomial-fit.js"></script>
+<script src="./js/numerical/euler-solve.js"></script>
+<script src="./js/numerical/rk4-solve.js"></script>
+<script src="./js/numerical/simpson-estimate.js"></script>
+<script src="./js/numerical/lagrange-quadratic.js"></script>
+<script src="./js/sampling/seeded-random.js"></script>
+<script src="./js/sampling/gaussian-random.js"></script>
+<script src="./js/filters/moving-average-filter.js"></script>
+<script src="./js/filters/ema-filter.js"></script>
+<script src="./js/filters/kalman-1d-filter.js"></script>
+<script src="./js/ui/render-table.js"></script>
+<script src="./js/ui/apply-example.js"></script>
+<script src="./js/ui/legend-overlay.js"></script>
+<script src="./js/ui/report-bug.js"></script>
+<script src="./js/discrete-math/barycentric-triples.js"></script>
+<script src="./js/discrete-math/sub-triangles.js"></script>
+<script src="./js/discrete-math/triangulation-edges.js"></script>
+<script src="./js/discrete-math/sperner-color.js"></script>
+<script src="./js/discrete-math/random-color.js"></script>
+<script src="./js/discrete-math/mixed-pair-color.js"></script>
+<script src="./js/discrete-math/triangle-fill-color.js"></script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
-
-<link rel="stylesheet" href="../styles.css">
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
@@ -353,7 +289,7 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="../index.html">
+    <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">Visual Math Lab</span>
     </a>
   </div>
@@ -364,7 +300,7 @@ window.Quarto = {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../about.html"> 
+    <a class="nav-link" href="./about.html"> 
 <span class="menu-text">About</span></a>
   </li>  
 </ul>
@@ -386,7 +322,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../root-finding/index.html">Computational Math</a></li><li class="breadcrumb-item"><a href="../piecewise-interpolation/index.html">Piecewise Interpolation</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item">Privacy &amp; Cookies</li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -409,7 +345,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../root-finding/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./root-finding/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Root Finding</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -418,25 +354,25 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/bisection-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./root-finding/bisection-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Bisection Method</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/fixed-point/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./root-finding/fixed-point/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Fixed Point Iteration</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/newton-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./root-finding/newton-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Newton’s Method</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../root-finding/secant-method/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./root-finding/secant-method/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Secant Method</span></a>
   </div>
 </li>
@@ -444,28 +380,28 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link active">
+            <a href="./piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Piecewise Interpolation</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 show">  
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./piecewise-interpolation/linear-cubic/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Polynomial Interpolation</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../piecewise-interpolation/integration/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./piecewise-interpolation/integration/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Numerical Integration</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../piecewise-interpolation/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./piecewise-interpolation/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Adaptive Integration</span></a>
   </div>
 </li>
@@ -473,7 +409,7 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../differential-equations/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./differential-equations/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Differential Equations</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -482,25 +418,25 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/explicit-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./differential-equations/explicit-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Explicit Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/implicit-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./differential-equations/implicit-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Implicit Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/adaptive-methods/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./differential-equations/adaptive-methods/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Adaptive Methods for ODEs</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../differential-equations/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./differential-equations/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Butcher Tableau Explorer</span></a>
   </div>
 </li>
@@ -519,7 +455,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../sperners-lemma/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./sperners-lemma/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner's Lemma</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -528,25 +464,25 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./sperners-lemma/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Barycentric Coordinates</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/statement/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./sperners-lemma/statement/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Statement</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./sperners-lemma/combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Combinatorial Proof</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../sperners-lemma/geometric-proof/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./sperners-lemma/geometric-proof/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Sperner’s Lemma - Geometric Proof</span></a>
   </div>
 </li>
@@ -565,7 +501,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-7" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../model-fitting/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./model-fitting/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Model Fitting</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-8" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -574,13 +510,13 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-8" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../model-fitting/polynomial-fit/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./model-fitting/polynomial-fit/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Polynomial Fits</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./model-fitting/l1-vs-l2/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">L1 vs.&nbsp;L2 Regression</span></a>
   </div>
 </li>
@@ -588,7 +524,7 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../clustering/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./clustering/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Clustering</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-9" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -597,7 +533,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-9" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../clustering/k-means/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./clustering/k-means/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">K-Means Clustering</span></a>
   </div>
 </li>
@@ -616,7 +552,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-10" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../probability/bayes/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./probability/bayes/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Bayes' Theorem</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-11" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -625,7 +561,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-11" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../probability/bayes/ppv/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./probability/bayes/ppv/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Positive Predictive Value</span></a>
   </div>
 </li>
@@ -633,7 +569,7 @@ window.Quarto = {
   </li>
           <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a href="../probability/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+            <a href="./probability/recursive-filters/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Recursive Filters</span></a>
           <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-12" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
@@ -642,7 +578,7 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-12" class="collapse list-unstyled sidebar-section depth2 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../probability/recursive-filters/1d-recursive-filters/index.html" class="sidebar-item-text sidebar-link">
+  <a href="./probability/recursive-filters/1d-recursive-filters/index.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">1D Recursive Filters</span></a>
   </div>
 </li>
@@ -656,33 +592,33 @@ window.Quarto = {
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(3)</span></div><div class="category" data-category="QWRhcHRpdmUlMjBRdWFkcmF0dXJl">Adaptive Quadrature <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QXJjJTIwTGVuZ3Ro">Arc Length <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q29tcHV0YXRpb25hbCUyME1hdGg=">Computational Math <span class="quarto-category-count">(3)</span></div><div class="category" data-category="Q3ViaWMlMjBTcGxpbmVz">Cubic Splines <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RXJyb3IlMjBFc3RpbWF0aW9u">Error Estimation <span class="quarto-category-count">(1)</span></div><div class="category" data-category="SW50ZWdyYXRpb24=">Integration <span class="quarto-category-count">(2)</span></div><div class="category" data-category="SW50ZXJwb2xhdGlvbg==">Interpolation <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TGluZWFyJTIwSW50ZXJwb2xhdGlvbg==">Linear Interpolation <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UmllbWFubiUyMFN1bXM=">Riemann Sums <span class="quarto-category-count">(1)</span></div><div class="category" data-category="U2ltcHNvbidzJTIwUnVsZQ==">Simpson's Rule <span class="quarto-category-count">(2)</span></div><div class="category" data-category="VHJhcGV6b2lkYWwlMjBSdWxl">Trapezoidal Rule <span class="quarto-category-count">(1)</span></div></div></div>
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#what-is-collected" id="toc-what-is-collected" class="nav-link active" data-scroll-target="#what-is-collected">What is collected</a></li>
+  <li><a href="#what-is-not-collected" id="toc-what-is-not-collected" class="nav-link" data-scroll-target="#what-is-not-collected">What is <em>not</em> collected</a></li>
+  <li><a href="#cookies-and-local-storage" id="toc-cookies-and-local-storage" class="nav-link" data-scroll-target="#cookies-and-local-storage">Cookies and local storage</a></li>
+  <li><a href="#changing-your-mind" id="toc-changing-your-mind" class="nav-link" data-scroll-target="#changing-your-mind">Changing your mind</a></li>
+  <li><a href="#why-collect-anything" id="toc-why-collect-anything" class="nav-link" data-scroll-target="#why-collect-anything">Why collect anything</a></li>
+  <li><a href="#questions" id="toc-questions" class="nav-link" data-scroll-target="#questions">Questions</a></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
 
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../root-finding/index.html">Computational Math</a></li><li class="breadcrumb-item"><a href="../piecewise-interpolation/index.html">Piecewise Interpolation</a></li></ol></nav>
+<header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Piecewise Interpolation</h1>
+<h1 class="title">Privacy &amp; Cookies</h1>
 </div>
 
 
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Apurva Nakade </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">July 13, 2026</p>
-    </div>
-  </div>
   
     
   </div>
@@ -697,103 +633,57 @@ Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
-<p>Piecewise interpolation methods approximate a function using simple pieces — straight line segments or low-degree polynomials — fit between a set of sample points. These methods are central to numerical analysis because they let us work with unknown or expensive-to-evaluate functions using only a handful of samples.</p>
+<p>Visual Math Lab is a static website. Every visualization on it runs entirely in your browser: the functions you type, the parameters you set, and the numbers that come out of them are computed locally and never sent anywhere. There is no backend, no account system, and no database.</p>
+<p>The only data that leaves your browser is anonymous usage analytics, and only if you agree to it.</p>
+<section id="what-is-collected" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-collected">What is collected</h2>
+<p>If you accept analytics, the site sends a small event to <a href="https://policies.google.com/privacy">Google Analytics</a> when you open a page, when you scroll to the bottom of one, when you follow a link to another site, and when you leave a page. Each event carries:</p>
+<ul>
+<li>the address of the page you are on, and its title</li>
+<li>the address of the page that referred you, if any</li>
+<li>your screen size and browser language</li>
+<li>a randomly generated identifier, described below</li>
+<li>how long you spent on the page</li>
+</ul>
+<p>Google derives an approximate location (typically city-level) from your IP address. The IP address itself is not stored by Google Analytics 4.</p>
+</section>
+<section id="what-is-not-collected" class="level2">
+<h2 class="anchored" data-anchor-id="what-is-not-collected">What is <em>not</em> collected</h2>
+<ul>
+<li><strong>No advertising.</strong> Google Signals, ads personalization, and remarketing are all off. Nothing collected here is used to target advertising, and it is not shared with advertisers or data brokers.</li>
+<li><strong>No personal information.</strong> The site never asks for your name, email address, or any other identifying detail, and has no way to receive one.</li>
+<li><strong>No mathematical input.</strong> The expressions, parameters, and data points you enter into a visualization stay in your browser. They are part of the page address so that you can share a link to a particular example, but the address recorded in analytics is stripped of that query string before it is sent.</li>
+</ul>
+</section>
+<section id="cookies-and-local-storage" class="level2">
+<h2 class="anchored" data-anchor-id="cookies-and-local-storage">Cookies and local storage</h2>
+<p><strong>This site sets no cookies.</strong> Not for analytics, not for remembering your choice about analytics, not for anything else.</p>
+<p>A small number of values are kept in your browser’s local storage instead:</p>
+<ul>
+<li><strong>Your answer to the analytics question</strong>, so you are not asked again on every page. Stored whether you say yes or no — declining is worth remembering too.</li>
+<li><strong>A random identifier</strong>, only if you allowed analytics: something like <code>529229690.1787577926</code>, so that repeat visits from the same browser are counted as one returning visitor rather than several new ones. It is generated on your device, is not derived from anything about you, and is not linked to any other service. A few related values record whether the current visit continues a recent one.</li>
+<li><strong>Which tab you had selected</strong> in any tabbed section, regardless of your answer, so it stays selected as you move between pages.</li>
+</ul>
+<p>All of it stays on your device. Clearing your browser’s site data for this domain erases every one of these values, and you become an unrecognized first-time visitor who will be asked again.</p>
+</section>
+<section id="changing-your-mind" class="level2">
+<h2 class="anchored" data-anchor-id="changing-your-mind">Changing your mind</h2>
+<p>Use the <strong>Analytics preferences</strong> link in the footer of any page. It reopens the same question and shows what is currently set, so you can switch either way at any time. Turning analytics off also deletes the identifier described above.</p>
+<p>If you say no, the analytics code is never executed at all — it is not merely told to stay quiet. It is delivered to your browser as inert text, and only becomes a running script if you say yes.</p>
+<p>If your browser sends a Global Privacy Control or Do Not Track signal, that is taken as an answer already given: analytics stays off and you are not asked. You can still turn it on deliberately through the footer link.</p>
+</section>
+<section id="why-collect-anything" class="level2">
+<h2 class="anchored" data-anchor-id="why-collect-anything">Why collect anything</h2>
+<p>To find out which topics people actually read, so that time spent writing new material goes where it is useful, and to notice pages that are being opened and immediately abandoned, which usually means something on them is broken. That is the entire purpose. The data is not sold, shared, or used for any other end.</p>
+</section>
+<section id="questions" class="level2">
+<h2 class="anchored" data-anchor-id="questions">Questions</h2>
+<p>Please open an issue on <a href="https://github.com/apurvanakade/VisualMathLab/issues">GitHub</a>.</p>
 
 
+</section>
 
-
-<div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
-<div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411362" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4028">
-<a href="../piecewise-interpolation/adaptive-integration/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img loading="lazy" src="../piecewise-interpolation/adaptive-integration/adaptive-integration.png" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
-Adaptive Integration
-</h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW50ZWdyYXRpb24='); return false;">Integration</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QWRhcHRpdmUlMjBRdWFkcmF0dXJl'); return false;">Adaptive Quadrature</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('U2ltcHNvbidzJTIwUnVsZQ=='); return false;">Simpson's Rule</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RXJyb3IlMjBFc3RpbWF0aW9u'); return false;">Error Estimation</div>
-
-</div>
-<div class="card-text listing-description delink">
-<strong>Adaptive quadrature</strong> refines the partition of <span class="math inline">\([a,b]\)</span> only where it’s needed, instead of the fixed grid used in Numerical Integration. Simpson’s rule on an interval <span class="math inline">\([p,q]\)</span>…<span class="math inline"></span>
-</div>
-</div>
-</div></a>
-</div>
-<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411362" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5139">
-<a href="../piecewise-interpolation/integration/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img loading="lazy" src="../piecewise-interpolation/integration/integration.png" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
-Numerical Integration
-</h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW50ZWdyYXRpb24='); return false;">Integration</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UmllbWFubiUyMFN1bXM='); return false;">Riemann Sums</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJhcGV6b2lkYWwlMjBSdWxl'); return false;">Trapezoidal Rule</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('U2ltcHNvbidzJTIwUnVsZQ=='); return false;">Simpson's Rule</div>
-
-</div>
-<div class="card-text listing-description delink">
-Approximates <span class="math inline">\(\int_a^b f(x)\, dx\)</span> by replacing <span class="math inline">\(f\)</span> with a simple piecewise interpolant on <span class="math inline">\(n\)</span> equally spaced subintervals of width <span class="math inline">\(h=(b-a)/n\)</span>, at nodes <span class="math inline">\(x_i=a+ih\)</span>…
-</div>
-</div>
-</div></a>
-</div>
-<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aA==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411363" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4346">
-<a href="../piecewise-interpolation/linear-cubic/index.html" class="quarto-grid-link">
-<div class="quarto-grid-item card h-100 card-left">
-<p class="card-img-top">
-<img loading="lazy" src="../piecewise-interpolation/linear-cubic/linear-cubic.png" class="thumbnail-image card-img" style="height: 150px;">
-</p>
-<div class="card-body post-contents">
-<h5 class="no-anchor card-title listing-title">
-Polynomial Interpolation
-</h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW50ZXJwb2xhdGlvbg=='); return false;">Interpolation</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TGluZWFyJTIwSW50ZXJwb2xhdGlvbg=='); return false;">Linear Interpolation</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q3ViaWMlMjBTcGxpbmVz'); return false;">Cubic Splines</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QXJjJTIwTGVuZ3Ro'); return false;">Arc Length</div>
-
-</div>
-<div class="card-text listing-description delink">
-Connects <span class="math inline">\(n+1\)</span> samples <span class="math inline">\((x_k,y_k)\)</span>, <span class="math inline">\(y_k=f(x_k)\)</span>, of <span class="math inline">\(f\)</span> on <span class="math inline">\([a,b]\)</span> with straight segments (<strong>linear</strong>),
-</div>
-</div>
-</div></a>
-</div>
-</div>
-<div class="listing-no-matching d-none">No matching items</div>
-</div></main> <!-- /main -->
+</main> <!-- /main -->
 <!--
 Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
@@ -980,7 +870,7 @@ localStorage, so this site sets no cookies at all.
       topics are being read, so that effort goes where it is most useful.
       No advertising, no personal information, and nothing shared with third
       parties. The mathematics you enter never leaves your browser.
-      <a href="../privacy.html">What is collected</a>.
+      <a href="./privacy.html">What is collected</a>.
     </p>
     <p class="vml-consent-text vml-consent-text-secondary">
       No cookies are stored by this site, at any point, for any purpose. This
@@ -1559,18 +1449,6 @@ localStorage, so this site sets no cookies at all.
     }
   });
   </script>
-<nav class="page-navigation">
-  <div class="nav-page nav-page-previous">
-      <a href="../root-finding/secant-method/index.html" class="pagination-link" aria-label="Secant Method">
-        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Secant Method</span>
-      </a>          
-  </div>
-  <div class="nav-page nav-page-next">
-      <a href="../piecewise-interpolation/linear-cubic/index.html" class="pagination-link" aria-label="Polynomial Interpolation">
-        <span class="nav-page-text">Polynomial Interpolation</span> <i class="bi bi-arrow-right-short"></i>
-      </a>
-  </div>
-</nav>
 </div> <!-- /content -->
 <footer class="footer">
   <div class="nav-footer">
@@ -1578,7 +1456,7 @@ localStorage, so this site sets no cookies at all.
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p>Copyright © 2025-2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="../privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
+<p>Copyright © 2025-2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="./privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;

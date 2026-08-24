@@ -10,6 +10,7 @@ Visual Math Lab is a Quarto website of interactive, browser-based visualizations
 - `quarto render root-finding/newton-method/index.qmd` — re-renders that page plus any listing/index pages that glob-discover it (its topic index, the homepage) — lighter than a full-site render, but **not** a true single-page render (it's still a multi-file batch job, not something you can point a browser at). For actually isolating one page, use `quarto preview` instead.
 - `quarto preview` — local live-reload preview server, and the right tool for rendering/iterating on just one page: it renders (and re-renders on save, via its own mtime-based file watcher) only the page you actually navigate to, not the whole site or its listing pages.
 - `npm test` — runs `js/**/*.test.js` (Node's built-in test runner) against pure-logic `VM.*` functions. Requires `npm install` once first.
+- `npm run verify:analytics` — real-browser test of the analytics consent flow (`_includes/analytics.html` + `_includes/consent.html`): banner display, Allow/No thanks, the footer reopen link, withdrawal, and Do Not Track/Global Privacy Control. Requires `docs/` to already be rendered. Fast to re-run on its own while iterating on consent copy or wiring, without paying for a full-site `npm run verify` crawl.
 - `npm run verify` — `quarto render` then a headless-browser pass over **every** rendered page on the site (clicks every button, nudges every slider, asserts zero console/page errors). This is what actually catches a broken `VM.category.fn` call site — `quarto render` alone only catches Pandoc/parse errors, not OJS runtime errors. It's a full-site crawl (all pages, several minutes) — **only run it when the user explicitly asks for it**, not as the default post-edit check. See `.claude/skills/verify/SKILL.md` for the full two-tier verification approach and why it's structured this way.
 
 **Default verification for a change scoped to one page**: `quarto preview` the project, then load just that page's URL (it renders on demand, nothing else) and check it there — for a scripted check, drive that same URL with a short one-off Playwright script, asserting zero `console.error`/`pageerror` while exercising its controls (see `.claude/skills/verify/SKILL.md`'s gotchas on why `file://` won't work and what to stub). Reach for the full `npm run verify` crawl instead only when the user asks for it, or the edit touches a shared `js/**` utility used by more than one page (a single-page check can't catch a regression on a page it didn't look at).
@@ -21,6 +22,50 @@ There is no lint command. `package.json` is dev-only (Playwright for `npm run ve
 - Edit `.qmd`, `.css`, and `js/**` files. **`docs/` is generated** — never edit it by hand; re-render instead. (`.gitignore` ignores `docs/`, though a prior build is still tracked.)
 - **Releasing (`develop` → `main`): fast-forward only.** `develop` is where work lands; `main` is a pointer to the last published state, and pushing it deploys (see below). Release with `git checkout main && git merge --ff-only develop && git push origin main`, then `git checkout develop`. Do **not** squash-merge into `main`: a squash commit records no parent link back to `develop`, so the merge base between the branches never advances — every later merge re-diffs the entire branch from an ancient base and conflicts with content `main` already has (13 squash-merges had frozen the base at a commit 52 commits back, and the last one conflicted across 8 files with zero real divergence). If `--ff-only` is ever refused, the histories have diverged again; reconcile once with `git merge -s ours main` on `develop` (records `main` as an ancestor without changing `develop`'s tree) rather than force-pushing `main`.
 - `.github/workflows/publish.yml` renders the site and publishes `docs/` to the `gh-pages` branch automatically on every push to `main`. `.github/workflows/deploy.yml` then deploys whatever is on `gh-pages` to GitHub Pages (triggered by pushes to that branch) — the two are separate workflows because `actions/deploy-pages` needs the already-rendered output as its own checkout ref.
+
+## Analytics and consent
+
+Usage analytics only — no ads signals, no remarketing, no Google Signals.
+
+- `_includes/analytics.html` is the minimal GA4 snippet (~3kB, vendored from
+  [dariusz.wieckiewicz.org](https://dariusz.wieckiewicz.org/en/minimal-google-analytics-4-snippet/)),
+  talking straight to the Measurement Protocol v2 endpoint instead of loading
+  gtag.js. The file's header comment lists every local deviation from
+  upstream; keep that list accurate when re-vendoring a newer version.
+- `_includes/consent.html` is the consent banner, plus the gate that actually
+  runs the snippet. **Quarto's built-in `cookie-consent:` is deliberately not
+  used** — its copy is baked into its bundle and claims the site shows
+  personalized content and targeted ads, with a whole "Targeting and
+  advertising cookies" section in its preferences center; there is no
+  supported way to change those strings, its 34-language switcher would leave
+  every other translation making the same false claim, and it weighs 207kB to
+  gate a 3kB snippet. Don't reintroduce it.
+- **The gate**: analytics.html ships as `<script type="text/plain"
+  data-consent="analytics">`, which no browser will execute. consent.html
+  re-creates it as a real `<script>` once the visitor allows analytics.
+  Assigning to `.type` in place would not work — a script only runs when it is
+  inserted. Don't "fix" that `text/plain` type; it is the gate.
+- Both are loaded through `include-after-body`, **in that order** — consent.html
+  searches the DOM for the script analytics.html emits, and the snippet reads
+  `document.body`/`document.title` at call time, so neither belongs in
+  `include-in-header`.
+- The consent choice lives in `localStorage`, so **the site sets no cookies at
+  all**. Global Privacy Control and Do Not Track are honoured as an answer
+  already given.
+- `privacy.qmd` (linked from the footer, alongside an "Analytics preferences"
+  link that reopens the banner) documents exactly what is sent and what is
+  stored. **It is a factual claim about the code**: if you change what the
+  snippet collects or what is stored, change that page in the same commit.
+- The snippet drops the query string from the reported page location. On this
+  site a query string is the visitor's own math input (see the URL-shareable
+  inputs section below), which doesn't belong in an analytics report and would
+  fragment one page into hundreds of addresses.
+- Covered by both test tiers: `scripts/analytics.test.js` (Tier 1 — structural
+  invariants on both files' contents, plus the snippet's client-side logic run
+  against a stubbed DOM) and `scripts/verify-analytics.mjs` / `npm run
+  verify:analytics` (Tier 2 — the consent gate itself in a real browser, since
+  a `text/plain` script only fails to execute there, not in a stub). Update
+  both when changing this wiring.
 
 ## Architecture
 

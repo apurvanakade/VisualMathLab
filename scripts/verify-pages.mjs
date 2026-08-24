@@ -72,7 +72,7 @@ function startPreview() {
     let output = ''
     const onOutput = (data) => {
       output += data.toString()
-      if (!settled && /Listening on/i.test(output)) {
+      if (!settled && /Listening on|Browse at/i.test(output)) {
         settled = true
         resolve(proc)
       }

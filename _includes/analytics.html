@@ -1,0 +1,53 @@
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+Minimal Google Analytics 4 snippet (v1.12.0), vendored verbatim from
+https://dariusz.wieckiewicz.org/en/minimal-google-analytics-4-snippet/
+by Dariusz Wieckiewicz. ~3kB instead of gtag.js's ~171kB; talks straight to
+the GA4 Measurement Protocol v2 endpoint. No ads/remarketing signals, no
+Google Signals, no cookies (client id lives in localStorage) - it only sends
+page_view, scroll, click, file_download, view_search_results and
+user_engagement events.
+
+Two local modifications to the upstream code, both marked "LOCAL:" below:
+  1. `tid` is this site's GA4 measurement ID (property 544270689).
+  2. An early return on localhost/127.0.0.1 so `quarto preview` sessions
+     don't pollute the property with development traffic.
+  3. The <script> tag is `type="text/plain" data-consent="analytics"`, which
+     is the consent gate: a browser will not execute a text/plain script, so
+     this code is inert until _includes/consent.html re-creates it as a real
+     script after the visitor allows analytics. Until then there are no
+     requests to Google and nothing is written to localStorage.
+  4. Do Not Track and Global Privacy Control are honoured, so a visitor
+     signalling either is not measured even if they accepted the banner.
+  5. `dl` (the reported page location) drops the query string. On this site a
+     query string is the visitor's own input - the function they typed, their
+     initial guess, their seed - which has no place in an analytics report,
+     and which would also fragment one page into hundreds of distinct
+     addresses. UTM campaign parameters are still read from the live URL, so
+     referral attribution is unaffected.
+  6. `searchKeys` is emptied, disabling site-search tracking. Quarto's navbar
+     search is entirely client-side and never puts a query in the URL, while
+     `?s=` here means something else entirely (the stage count on
+     differential-equations/butcher-tableau) - with the upstream default
+     that page's shared links would report as `view_search_results`
+     instead of `page_view`.
+
+Loaded via `include-after-body` (not `include-in-header`) in _quarto.yml:
+the snippet reads document.body and document.title at call time, so it has
+to run once the DOM exists.
+-->
+
+<script type="text/plain" data-consent="analytics">
+(function(){
+/* LOCAL: don't report local preview traffic. */
+if(location.hostname==="localhost"||location.hostname==="127.0.0.1"||location.hostname==="[::1]")return;
+/* LOCAL: honour Do Not Track / Global Privacy Control, even after consent. */
+if(navigator.doNotTrack==="1"||window.doNotTrack==="1"||navigator.msDoNotTrack==="1"||navigator.globalPrivacyControl===!0)return;
+/* LOCAL: measurement ID of the web data stream on GA4 property 544270689. */
+const l={tid:"G-76ZBFD9S9B",timeout:18e5,ext:["pdf","xls","xlsx","doc","docx","txt","rtf","csv","exe","key","pps","ppt","pptx","7z","pkg","rar","gz","zip","avi","mov","mp4","mpe","mpeg","wmv","mid","midi","mp3","wav","wma"],searchKeys:[]},T=!1,D=Math.floor(Math.random()*1e9)+1,p=Date.now();let j=p,s=!1,a=!1,r=!1,n=!1,d=!1;const e=function(){try{return localStorage.setItem("t","t"),localStorage.removeItem("t"),localStorage}catch{return{getItem:()=>null,setItem:()=>null,removeItem:()=>null}}}(),t=document,h=document.documentElement,x=document.body,i=document.location,w=screen,c=navigator||{},A=()=>Math.floor(Math.random()*1e9)+1,b=()=>Math.floor(Date.now()/1e3),k=()=>A()+"."+b(),y=encodeURIComponent,E=()=>{let t=e.getItem("cid_v4");return t||(t=k(),e.setItem("cid_v4",t)),t},C=e=>{let t=[];for(let n in e)e.hasOwnProperty(n)&&e[n]!==0[0]&&t.push(y(n)+"="+y(e[n]));return t.join("&")},O=i.search,m=new URLSearchParams(O),u=e=>m.get("utm_"+e),_=[...m.keys()].find(e=>l.searchKeys.includes(e.toLowerCase())),f=_?m.get(_):0[0],v=!!f,S=()=>s?"scroll":a?"file_download":r?"user_engagement":n?"click":v?"view_search_results":"page_view",M=()=>s?"90":0[0],F=()=>!v||s||a||r||n?0[0]:f;function o(o,d,h,m){const A=Date.now()-j;j=Date.now();const L=e.getItem("cid_v4"),N=()=>L?0[0]:s||a||r||n?0[0]:"1",v=b(),z=e.getItem("_ga_last")||0;let f=e.getItem("_ga_sid"),g=e.getItem("_ga_sct")||0,y=!1;(!f||v-z>l.timeout/1e3)&&(y=!0,f=v,g=Number(g)+1,e.setItem("_ga_sid",f),e.setItem("_ga_sct",g),e.setItem("_ga_hits","0")),e.setItem("_ga_last",v);const _=Number(e.getItem("_ga_hits")||0)+1;e.setItem("_ga_hits",_);const x=u("source"),R=u("medium"),P=u("campaign");y&&(x?(e.setItem("_ga_utm_source",x),e.setItem("_ga_utm_medium",R||""),e.setItem("_ga_utm_campaign",P||"")):(e.removeItem("_ga_utm_source"),e.removeItem("_ga_utm_medium"),e.removeItem("_ga_utm_campaign")));const H="https://www.google-analytics.com/g/collect",I=C({v:"2",tid:l.tid,_p:D,sr:w.width+"x"+w.height,ul:c.language?c.language.toLowerCase():0[0],cid:E(),_fv:N(),dl:i.origin+i.pathname,dt:t.title||0[0],dr:t.referrer||0[0],seg:_>1||Date.now()-p>1e4?"1":0[0],"epn.percent_scrolled":M(),"ep.search_term":F(),"ep.file_extension":o||0[0],"ep.file_name":d||0[0],"ep.link_text":h||0[0],"ep.link_url":m||0[0],_s:_,sid:f,sct:g,_ss:y?"1":0[0],en:S(),_et:A,cs:e.getItem("_ga_utm_source")||0[0],cm:e.getItem("_ga_utm_medium")||0[0],cn:e.getItem("_ga_utm_campaign")||0[0],"ep.outbound":n?"true":0[0],_dbg:T?1:0[0]}),k=H+"?"+I;if(c.sendBeacon)c.sendBeacon(k);else{let e=new XMLHttpRequest;e.open("POST",k,!0),e.send()}}o();function z(){const e=(h.scrollHeight||x.scrollHeight)-h.clientHeight;return e>0?(h.scrollTop||x.scrollTop)/e*100:0}t.addEventListener("scroll",g,{passive:!0});function g(){if(d)return;d=!0,requestAnimationFrame(function(){d=!1;const e=z();e>=90&&(s=!0,o(),t.removeEventListener("scroll",g),s=!1)})}t.addEventListener("click",function(e){if(!(e.target instanceof Element))return;const t=e.target.closest("a");if(t&&t.getAttribute("href")){const r=t.getAttribute("href"),c=r.split(/[?#]/)[0],e=c.substring(c.lastIndexOf("/")+1),s=e.lastIndexOf("."),d=s!==-1?e.substring(s+1).toLowerCase():"",h=s!==-1?e.substring(0,s):e,u=t.textContent?t.textContent.trim().substring(0,100):"";t.hasAttribute("download")||l.ext.includes(d)?(a=!0,o(d||0[0],h||0[0],u,r.replace(i.origin,"")),a=!1):t.hostname&&t.hostname!==i.hostname&&(n=!0,o(0[0],0[0],u,r),n=!1)}},!0),t.addEventListener("visibilitychange",function(){t.visibilityState==="hidden"&&(r=!0,o(),r=!1)})})()
+</script>

@@ -23,6 +23,11 @@ format:
     html-math-method: mathjax
     include-in-header:
       - _includes/head-scripts.html
+    # Order matters: consent.html looks for the gated <script> that
+    # analytics.html emits, so analytics.html has to be in the DOM first.
+    include-after-body:
+      - _includes/analytics.html
+      - _includes/consent.html
 
 website:
   title: "Visual Math Lab"
@@ -44,8 +49,12 @@ website:
     location: navbar
     type: textbox
 
+  # Quarto's built-in `cookie-consent:` is deliberately NOT used here - its
+  # banner copy is baked into the bundle and claims the site shows
+  # personalized content and targeted ads, which is false. _includes/consent.html
+  # is a small replacement with accurate copy. See CLAUDE.md.
   page-footer:
-    center: "Copyright © 2025-2026 Apurva Nakade. Released under the [Apache 2.0 license](https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE)."
+    center: "Copyright © 2025-2026 Apurva Nakade. Released under the [Apache 2.0 license](https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE). [Privacy](/privacy.qmd) · [Analytics preferences](#analytics-preferences)."
 
   sidebar:
     - style: floating

@@ -45,10 +45,47 @@ Prints `OK`/`FAIL` per page; a `FAIL` includes the exact console error (which OJ
 
 Using `quarto preview` instead of `quarto render` means only files that actually changed since the last run get re-rendered (`quarto preview`'s file watcher does this on its own, based on mtimes) — `quarto render` unconditionally re-renders the whole site every single invocation, which is wasted work in the common edit-then-verify loop. The first run in a session (or after `docs/` is deleted) still pays a full-site render up front, same as `quarto render` would — `quarto preview` needs the whole project's metadata to build navigation/search regardless of how many pages actually changed.
 
+## `npm run verify:analytics` — the analytics consent flow, in a real browser
+
+```bash
+npm run verify:analytics   # = node scripts/verify-analytics.mjs
+```
+
+A separate, narrower Tier 2 script for `_includes/analytics.html` (the GA4
+snippet) and `_includes/consent.html` (the banner that gates it) — see
+CLAUDE.md's "Analytics and consent" section for what these files do. It's
+kept out of the main `npm run verify` crawl because it needs a fundamentally
+different setup: `analytics.html` deliberately refuses to run on
+`localhost`/`127.0.0.1` (so ordinary `quarto preview` sessions during
+development don't pollute the real GA property), so this script serves the
+already-rendered `docs/` directory itself and points Chromium's
+`--host-resolver-rules` at a real-looking hostname instead — `verify-pages.mjs`'s
+`quarto preview`-on-localhost approach can't exercise this path at all. Every
+request to `google-analytics.com` is intercepted and aborted, so nothing this
+script does ever reaches the live property.
+
+It checks: the banner shows on a fresh visit and nothing is sent before a
+choice is made; Allow sends exactly one correctly-shaped `page_view` and sets
+no cookies; No thanks sends nothing and isn't asked again; the footer's
+"Analytics preferences" link reopens the banner and withdrawing consent
+actually stops measurement (not just promises to); and Do Not Track / Global
+Privacy Control are honoured as an answer already given. Requires `docs/` to
+already be rendered — run `quarto render` or `npm run verify` first if it
+isn't.
+
+The snippet's pure client-side logic (client-id generation, the
+localhost/DNT/GPC guards, dropping the query string from the reported page
+location) is covered separately by `scripts/analytics.test.js`, part of Tier
+1 (`npm test`) — that file also has structural assertions on both files'
+contents, e.g. that the `tid` is correct and the gate hasn't been "fixed"
+away. A real browser is only needed for the gate itself: a `text/plain`
+script fails to execute there, not in a stubbed sandbox.
+
 ## When to run which
 
 - Editing a `js/**` shared utility (adding a math function, renaming, refactoring): `npm test` first (fast), then `npm run verify` before considering it done — a function can pass its own unit tests and still be wired wrong at a call site.
 - Editing a `.qmd` page only (new page, new OJS cells, no shared-utility changes): `npm run verify` is what actually exercises it; `npm test` won't see it.
+- Editing `_includes/analytics.html` or `_includes/consent.html`: `npm test` first (fast, catches a dropped local patch or a re-broken gate expression), then `npm run verify:analytics` — the full `npm run verify` crawl doesn't exercise the consent flow at all, since it never accepts or declines the banner on any page.
 - Adding a new shared utility function: add its `.test.js` alongside it (same pattern as the existing files), covering the properties that actually matter mathematically where possible (e.g. `sperner-color.test.js` doesn't just check "is a function" — it verifies the *end-to-end Sperner's-lemma property* that a colored triangulation always has an odd number of rainbow triangles, which is a far stronger regression guard than checking individual return values).
 
 ## Gotchas learned building this

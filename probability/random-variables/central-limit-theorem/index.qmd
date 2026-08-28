@@ -1,0 +1,833 @@
+---
+title: "Central Limit Theorem"
+author: Dhruv Azad
+date: 2026-08-27
+order: 1
+image: central-limit-theorem.png
+categories:
+  - Probability
+  - Random Variables
+  - Central Limit Theorem
+  - Sampling Distributions
+  - Normal Distribution
+format:
+  html:
+    include-in-header:
+      - text: |
+          <script src="distributions.js"></script>
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad
+-->
+
+Average enough independent draws from *almost* any distribution and that average is normally distributed — no matter how un-bell-shaped the thing you started with. Pick a base distribution, choose how many draws go into each average ($n$), and watch the histogram of many such averages settle onto the normal curve. Everything is drawn in **standardized units** $(\bar x - \mu)\sqrt{n}/\sigma$, so at $n = 1$ the histogram *is* the base distribution and the only thing that changes as you raise $n$ is its shape.
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**), plus this page's own distributions.js (loaded via the include-in-header above). This page uses VM.distributions, VM.distributionOrder, VM.sampling.seededRandom, VM.expressions.makeNumber, VM.ui.renderTable, VM.ui.legendOverlay, VM.ui.applyExampleParams.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL preset helpers for the "Try an example" dropdown and shareable links.
+// Supported query parameters:
+//   dist   base distribution slug (one of VM.distributionOrder)
+//   num    how many sample means to simulate (the histogram's sample size)
+//   seed   RNG seed for the draws (reproducible)
+//   n      draws averaged into each sample mean
+//   bins   histogram bin count
+//   show   comma-separated traces: hist, normal, base
+urlParams = new URLSearchParams(window.location.search)
+
+maxN = 100
+
+traceOptions = ["Sample-mean histogram", "Normal N(0, 1)", "Base distribution (n = 1)"]
+
+// Matches the colors mainPlot uses for each trace, so the overlay legend's
+// swatches double as a color key.
+traceColors = new Map([
+  ["Sample-mean histogram", "#2563eb"],
+  ["Normal N(0, 1)", "#dc2626"],
+  ["Base distribution (n = 1)", "#9ca3af"]
+])
+
+showSlugToLabel = new Map([
+  ["hist", "Sample-mean histogram"],
+  ["histogram", "Sample-mean histogram"],
+  ["normal", "Normal N(0, 1)"],
+  ["gaussian", "Normal N(0, 1)"],
+  ["base", "Base distribution (n = 1)"],
+  ["n1", "Base distribution (n = 1)"]
+])
+
+showLabelToSlug = new Map([
+  ["Sample-mean histogram", "hist"],
+  ["Normal N(0, 1)", "normal"],
+  ["Base distribution (n = 1)", "base"]
+])
+
+initialDist = {
+  const raw = urlParams.get("dist")
+  if (raw !== null && VM.distributions[raw]) return raw
+  return "exponential"
+}
+
+initialNum = urlParams.get("num") ?? "3000"
+
+initialSeed = urlParams.get("seed") ?? "1"
+
+initialN = {
+  const raw = Number.parseInt(urlParams.get("n"), 10)
+  if (Number.isInteger(raw) && raw >= 1 && raw <= maxN) return raw
+  return 8
+}
+
+initialBins = {
+  const raw = Number.parseInt(urlParams.get("bins"), 10)
+  if (Number.isInteger(raw) && raw >= 12 && raw <= 60) return raw
+  return 34
+}
+
+initialShow = {
+  const raw = urlParams.get("show")
+  if (raw === null || raw.trim() === "") return traceOptions
+  const selected = []
+  for (const piece of raw.split(",")) {
+    const label = showSlugToLabel.get(piece.trim().toLowerCase())
+    if (label && !selected.includes(label)) selected.push(label)
+  }
+  return selected.length > 0 ? selected : traceOptions
+}
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls. Each
+// params object's keys must all appear in exampleFieldSelectors below, or
+// the example silently doesn't do what its title claims. "show" holds the
+// actual trace labels (what the legend overlay's value expects), not the
+// URL's short slugs.
+allTraces = traceOptions
+
+examples = [
+  {
+    title: "Uniform: nearly normal by n = 3",
+    params: {dist: "uniform", num: "3000", seed: "1", n: 3, bins: 32, show: allTraces}
+  },
+  {
+    title: "Exponential: the right skew fades slowly",
+    params: {dist: "exponential", num: "3000", seed: "2", n: 12, bins: 34, show: allTraces}
+  },
+  {
+    title: "Rare Bernoulli (p = 0.05): slowest to converge",
+    params: {dist: "bernoulliRare", num: "4000", seed: "3", n: 40, bins: 30, show: allTraces}
+  },
+  {
+    title: "Poisson (λ = 2): discrete, still bell-shaped",
+    params: {dist: "poisson", num: "3000", seed: "4", n: 15, bins: 30, show: allTraces}
+  },
+  {
+    title: "Bimodal: two humps merge into one",
+    params: {dist: "bimodal", num: "3000", seed: "5", n: 10, bins: 40, show: allTraces}
+  },
+  {
+    title: "Log-normal: a heavy right tail resists",
+    params: {dist: "lognormal", num: "4000", seed: "6", n: 25, bins: 34, show: allTraces}
+  },
+  {
+    title: "n = 1: the CLT hasn't started yet",
+    params: {dist: "lognormal", num: "3000", seed: "6", n: 1, bins: 40, show: allTraces}
+  }
+]
+```
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof distSelect = {
+  const input = Inputs.select(VM.distributionOrder, {
+    label: "Base distribution",
+    value: initialDist,
+    format: slug => VM.distributions[slug].label
+  })
+  input.dataset.exampleField = "dist"
+  return input
+}
+```
+
+```{ojs}
+viewof numInput = {
+  const input = Inputs.text({value: initialNum, label: "Sample means simulated", placeholder: "Example: 3000, 2^12"})
+  input.dataset.exampleField = "num"
+  return input
+}
+```
+
+```{ojs}
+viewof seedInput = {
+  const input = Inputs.text({value: initialSeed, label: "Random seed", placeholder: "Example: 1, 42"})
+  input.dataset.exampleField = "seed"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+viewof resampleTrigger = {
+  const button = Inputs.button("Resample", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto", "ojs-end")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why (a cell that references a view
+// by name becomes reactive on it, and since applying an example is what
+// changes those fields, that forms a feedback loop).
+exampleFieldSelectors = ({
+  dist: '[data-example-field="dist"]',
+  num: '[data-example-field="num"]',
+  seed: '[data-example-field="seed"]',
+  n: '[data-example-field="n"]',
+  bins: '[data-example-field="bins"]',
+  show: '[data-example-field="show"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above (including the
+// sliders overlaid on the chart) and clicks Resample, in place -- no page
+// reload, so no scroll jump. A plain "change" listener attached once to the
+// stable native <select> (not an OJS cell reactive on exampleSelect's
+// value): a <select> fires both "input" and "change" per selection, and a
+// reactive cell would run once per event, with two overlapping calls
+// racing.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof resampleTrigger)
+  })
+}
+```
+
+```{ojs}
+//| output: false
+// Pressing Enter in the num/seed fields clicks Resample instead of
+// submitting the field's own (invisible) form.
+enterToResample = {
+  for (const view of [viewof numInput, viewof seedInput]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof resampleTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots the base distribution / count / seed fields only when
+// Resample is clicked (it reads the stable `viewof` DOM nodes, not the
+// reactive values, so it does not rerun on every keystroke) and writes them
+// back into the URL. It deliberately does NOT read the live n / bins /
+// trace-visibility controls -- those would make it reactive on them, so
+// every slider tick would return a fresh object and force basePool to
+// redraw the whole sample. urlSyncControls below keeps that trio in the URL
+// instead. committed still runs once on initial load, so the first render
+// honours a URL-provided (or default) setup with no click.
+committed = {
+  resampleTrigger
+  const math = window.math
+
+  const distVal = (viewof distSelect).value
+  const numRaw = VM.expressions.makeNumber(math, (viewof numInput).value)
+  const seedRaw = VM.expressions.makeNumber(math, (viewof seedInput).value)
+
+  let M = 3000
+  if (numRaw !== null && Number.isFinite(numRaw)) M = Math.round(numRaw)
+  if (M < 400) M = 400
+  if (M > 20000) M = 20000
+
+  let seed = 1
+  if (seedRaw !== null && Number.isFinite(seedRaw)) seed = Math.max(0, Math.floor(seedRaw))
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("dist", distVal)
+  params.set("num", (viewof numInput).value)
+  params.set("seed", (viewof seedInput).value)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {dist: distVal, M, seed}
+}
+```
+
+```{ojs}
+//| output: false
+// shownSlugs -- the legend's current selection as a stable comma-separated
+// slug string for the URL.
+shownSlugs = () => {
+  const slugs = []
+  for (const label of shownTraces) {
+    const slug = showLabelToSlug.get(label)
+    if (slug) slugs.push(slug)
+  }
+  return slugs.join(",")
+}
+```
+
+```{ojs}
+//| output: false
+// Keeps the always-live controls (sample size, bin count, trace visibility)
+// in the URL as they change, independent of the Resample button.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("n", String(n))
+  params.set("bins", String(bins))
+  params.set("show", shownSlugs())
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// basePool draws committed.M independent groups of maxN raw base-distribution
+// samples, once per Resample. `result` below averages the first n of each
+// group -- so raising n folds in more of the SAME draws rather than
+// reshuffling, which is what makes the histogram evolve smoothly as the
+// slider moves (same trick as the noise slider on Polynomial Fits and the
+// spread slider on K-Means).
+basePool = {
+  const dist = VM.distributions[committed.dist]
+  const M = committed.M
+  const rng = VM.sampling.seededRandom((Math.imul(committed.seed, 2654435761) + 12345) >>> 0)
+
+  const pool = new Float64Array(M * maxN)
+  for (let g = 0; g < M; g++) {
+    const base = g * maxN
+    for (let i = 0; i < maxN; i++) pool[base + i] = dist.sample(rng)
+  }
+  return {pool, M, dist}
+}
+```
+
+```{ojs}
+//| output: false
+// standardizedSampleMeans: for each of the M groups, the mean of its first
+// `count` draws, standardized to (mean - mu) * sqrt(count) / sigma using the
+// distribution's ANALYTIC mean and variance -- so at large count these land
+// on N(0, 1) exactly, not merely on the empirical spread.
+standardizedSampleMeans = (pool, M, dist, count) => {
+  const mu = dist.mean
+  const sigma = Math.sqrt(dist.variance)
+  const zs = new Array(M)
+  for (let g = 0; g < M; g++) {
+    const base = g * maxN
+    let sum = 0
+    for (let i = 0; i < count; i++) sum += pool[base + i]
+    zs[g] = (sum / count - mu) * Math.sqrt(count) / sigma
+  }
+  return zs
+}
+```
+
+```{ojs}
+//| output: false
+// result: the standardized sample means at the current n, plus the
+// standardized single draws (the n = 1 base-distribution reference).
+result = {
+  const {pool, M, dist} = basePool
+  const zMeans = standardizedSampleMeans(pool, M, dist, n)
+
+  const mu = dist.mean
+  const sigma = Math.sqrt(dist.variance)
+  const zBase = new Array(M)
+  for (let g = 0; g < M; g++) zBase[g] = (pool[g * maxN] - mu) / sigma
+
+  return {zMeans, zBase, M, n}
+}
+```
+
+```{ojs}
+//| output: false
+sweepNs = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100]
+```
+
+```{ojs}
+//| output: false
+// sweep: how non-normal the sample-mean distribution still is at a ladder
+// of sample sizes -- computed once per Resample (it does not depend on the
+// live n slider), so the convergence plot and table below stay put while
+// you scrub n. skewness and excess kurtosis of the mean of n i.i.d. draws
+// are exactly gamma1/sqrt(n) and gamma2/n; the plot overlays those.
+sweep = {
+  const {pool, M, dist} = basePool
+  const rows = []
+  for (const count of sweepNs) {
+    const zs = standardizedSampleMeans(pool, M, dist, count)
+    const m = standardMomentSummary(zs)
+    rows.push({
+      n: count,
+      mean: m.mean,
+      sd: m.sd,
+      skewness: m.skewness,
+      excessKurtosis: m.excessKurtosis,
+      ks: ksDistanceToNormal(zs)
+    })
+  }
+  return rows
+}
+```
+
+```{ojs}
+//| output: false
+activeDist = VM.distributions[committed.dist]
+```
+
+```{ojs}
+//| output: false
+// standardMomentSummary: mean, standard deviation, skewness, and excess
+// kurtosis of an array, computed directly from central moments.
+standardMomentSummary = (values) => {
+  const count = values.length
+  let sum = 0
+  for (const v of values) sum += v
+  const mean = sum / count
+
+  let m2 = 0, m3 = 0, m4 = 0
+  for (const v of values) {
+    const d = v - mean
+    const d2 = d * d
+    m2 += d2
+    m3 += d2 * d
+    m4 += d2 * d2
+  }
+  m2 /= count
+  m3 /= count
+  m4 /= count
+
+  const sd = Math.sqrt(m2)
+  return {mean, sd, skewness: m3 / (sd * sd * sd), excessKurtosis: m4 / (m2 * m2) - 3}
+}
+```
+
+```{ojs}
+//| output: false
+// erf: Abramowitz & Stegun 7.1.26 rational approximation (|error| < 1.5e-7),
+// enough for a Kolmogorov-Smirnov readout.
+erf = (x) => {
+  let sign = 1
+  if (x < 0) sign = -1
+  const ax = Math.abs(x)
+  const t = 1 / (1 + 0.3275911 * ax)
+  const poly = ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t
+  return sign * (1 - poly * Math.exp(-ax * ax))
+}
+
+normalCdf = (z) => 0.5 * (1 + erf(z / Math.SQRT2))
+
+normalPdf = (x) => Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI)
+```
+
+```{ojs}
+//| output: false
+// normalQuantile: Acklam's rational approximation to the standard-normal
+// inverse CDF, for the QQ-plot's theoretical quantiles.
+normalQuantile = (p) => {
+  if (p <= 0) return -Infinity
+  if (p >= 1) return Infinity
+
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00]
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01]
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00]
+  const d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00]
+  const plow = 0.02425
+  const phigh = 1 - plow
+
+  if (p < plow) {
+    const q = Math.sqrt(-2 * Math.log(p))
+    return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+      ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+  }
+  if (p <= phigh) {
+    const q = p - 0.5
+    const r = q * q
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+      (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1)
+  }
+  const q = Math.sqrt(-2 * Math.log(1 - p))
+  return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+    ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1)
+}
+```
+
+```{ojs}
+//| output: false
+// ksDistanceToNormal: the Kolmogorov-Smirnov statistic sup_x |F_n(x) - Phi(x)|
+// between the empirical CDF of `values` and the standard normal.
+ksDistanceToNormal = (values) => {
+  const sorted = values.slice().sort((a, b) => a - b)
+  const count = sorted.length
+  let d = 0
+  for (let i = 0; i < count; i++) {
+    const cdf = normalCdf(sorted[i])
+    const above = (i + 1) / count - cdf
+    const below = cdf - i / count
+    if (above > d) d = above
+    if (below > d) d = below
+  }
+  return d
+}
+```
+
+```{ojs}
+//| output: false
+// setup: bins the standardized sample means (and the n = 1 reference) into
+// density histograms over a fixed [-4.5, 4.5], samples the N(0, 1) curve,
+// and builds the QQ-plot points -- everything mainPlot and qqPlot need.
+// The x-range is fixed so the picture doesn't jitter as n or the bin count
+// changes.
+setup = {
+  const lo = -4.5
+  const hi = 4.5
+  const binCount = bins
+  const binW = (hi - lo) / binCount
+
+  const centers = new Array(binCount)
+  for (let bIdx = 0; bIdx < binCount; bIdx++) centers[bIdx] = lo + (bIdx + 0.5) * binW
+
+  const meanDensity = new Float64Array(binCount)
+  const baseDensity = new Float64Array(binCount)
+  const tally = (values, target) => {
+    for (const v of values) {
+      let idx = Math.floor((v - lo) / binW)
+      if (idx < 0) idx = 0
+      if (idx >= binCount) idx = binCount - 1
+      target[idx]++
+    }
+  }
+  tally(result.zMeans, meanDensity)
+  tally(result.zBase, baseDensity)
+
+  const scale = 1 / (result.M * binW)
+  const meanDensityArr = new Array(binCount)
+  const baseDensityArr = new Array(binCount)
+  for (let bIdx = 0; bIdx < binCount; bIdx++) {
+    meanDensityArr[bIdx] = meanDensity[bIdx] * scale
+    baseDensityArr[bIdx] = baseDensity[bIdx] * scale
+  }
+
+  const curveXs = []
+  const curveYs = []
+  const steps = 220
+  for (let s = 0; s <= steps; s++) {
+    const x = -4.7 + 9.4 * s / steps
+    curveXs.push(x)
+    curveYs.push(normalPdf(x))
+  }
+
+  // The y-axis is scaled to the sample-mean histogram and the N(0, 1) peak
+  // only -- NOT the n = 1 base reference. For a discrete or nearly-degenerate
+  // base (rare Bernoulli, Poisson), almost every standardized single draw
+  // lands in one bin, so that bar's density towers over everything; letting
+  // it set the range would squash the actual comparison into a sliver. It
+  // just clips off the top instead.
+  let meanPeak = 0.42
+  for (let bIdx = 0; bIdx < binCount; bIdx++) {
+    if (meanDensityArr[bIdx] > meanPeak) meanPeak = meanDensityArr[bIdx]
+  }
+  const yTop = meanPeak * 1.15
+
+  const sortedMeans = result.zMeans.slice().sort((a, b) => a - b)
+  const total = sortedMeans.length
+  const stride = Math.max(1, Math.floor(total / 400))
+  const qq = []
+  for (let i = 0; i < total; i += stride) {
+    qq.push({t: normalQuantile((i + 0.5) / total), s: sortedMeans[i]})
+  }
+
+  return {
+    centers,
+    meanDensity: meanDensityArr,
+    baseDensity: baseDensityArr,
+    curveXs,
+    curveYs,
+    xRange: {lo: -4.7, hi: 4.7},
+    yRange: {lo: 0, hi: yTop},
+    qq
+  }
+}
+```
+
+```{ojs}
+//| output: false
+showHist = shownTraces.includes("Sample-mean histogram")
+```
+
+```{ojs}
+//| output: false
+showNormal = shownTraces.includes("Normal N(0, 1)")
+```
+
+```{ojs}
+//| output: false
+showBase = shownTraces.includes("Base distribution (n = 1)")
+```
+
+```{ojs}
+//| output: false
+// mainPlot: the n = 1 base histogram (behind), the standardized sample-mean
+// histogram, and the N(0, 1) curve on top.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates -- this preserves zoom and pan when n or the bin count
+// changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (data, showHist, showNormal, showBase) => {
+    const traces = []
+    if (showBase) {
+      traces.push({x: data.centers, y: data.baseDensity, type: "bar", name: "Base distribution (n = 1)", showlegend: false, marker: {color: "#9ca3af"}, opacity: 0.45})
+    }
+    if (showHist) {
+      traces.push({x: data.centers, y: data.meanDensity, type: "bar", name: "Sample-mean histogram", showlegend: false, marker: {color: "#2563eb"}, opacity: 0.85})
+    }
+    if (showNormal) {
+      traces.push({x: data.curveXs, y: data.curveYs, type: "scatter", mode: "lines", name: "Normal N(0, 1)", showlegend: false, line: {color: "#dc2626", width: 3}})
+    }
+
+    const layout = {
+      margin: {l: 0, r: 0, t: 0, b: 0},
+      barmode: "overlay",
+      bargap: 0.05,
+      xaxis: {title: "standardized value", range: [data.xRange.lo, data.xRange.hi], zeroline: true},
+      yaxis: {title: "density", range: [data.yRange.lo, data.yRange.hi], zeroline: true},
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = {responsive: true, displaylogo: false}
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, traces, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, traces, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+mainPlot(setup, showHist, showNormal, showBase)
+```
+
+```{ojs}
+viewof shownTraces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  const legend = VM.ui.legendOverlay(items, {value: initialShow})
+  legend.dataset.exampleField = "show"
+  return legend
+}
+```
+
+<div class="ojs-step-overlay ojs-grid">
+
+```{ojs}
+viewof n = {
+  const input = Inputs.range([1, maxN], {step: 1, value: initialN, label: "Sample size n"})
+  input.dataset.exampleField = "n"
+  return input
+}
+```
+
+```{ojs}
+viewof bins = {
+  const input = Inputs.range([12, 60], {step: 2, value: initialBins, label: "Histogram bins"})
+  input.dataset.exampleField = "bins"
+  return input
+}
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// qqPlot: a normal QQ-plot of the standardized sample means at the CURRENT
+// n -- theoretical normal quantile on x, observed sample quantile on y.
+// Points hug the dashed y = x line once the sample-mean distribution has
+// gone normal; they bow away from it (S-shape for skew, tails off the line
+// for heavy/light tails) when it hasn't.
+qqPlot = {
+  const line = [{x: -3.6, y: -3.6}, {x: 3.6, y: 3.6}]
+  return Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "theoretical normal quantile"},
+    y: {label: "sample quantile (standardized mean)"},
+    marks: [
+      Plot.line(line, {x: "x", y: "y", stroke: "#9ca3af", strokeDasharray: "4,3"}),
+      Plot.dot(setup.qq, {x: "t", y: "s", fill: "#2563eb", r: 2})
+    ]
+  })
+}
+```
+
+```{ojs}
+// convergencePlot: how fast non-normality dies as n grows. The solid lines
+// are the |skewness| and |excess kurtosis| measured from the simulated
+// sample means at each n on the ladder; the dashed lines are the exact
+// theoretical decays |gamma1|/sqrt(n) and |gamma2|/n for this base
+// distribution. Both axes are logarithmic, so those power laws show up as
+// straight lines.
+convergencePlot = {
+  const skewName = "|skewness| (measured)"
+  const skewTheoryName = "|γ₁|/√n (exact)"
+  const kurtName = "|excess kurtosis| (measured)"
+  const kurtTheoryName = "|γ₂|/n (exact)"
+
+  const floor = 1e-3
+  const clampFloor = (value) => Math.max(Math.abs(value), floor)
+
+  const skewPts = []
+  const kurtPts = []
+  const skewTheoryPts = []
+  const kurtTheoryPts = []
+  for (const row of sweep) {
+    skewPts.push({n: row.n, y: clampFloor(row.skewness)})
+    kurtPts.push({n: row.n, y: clampFloor(row.excessKurtosis)})
+    skewTheoryPts.push({n: row.n, y: clampFloor(activeDist.skewness / Math.sqrt(row.n))})
+    kurtTheoryPts.push({n: row.n, y: clampFloor(activeDist.excessKurtosis / row.n)})
+  }
+
+  const colorDomain = [skewName, skewTheoryName, kurtName, kurtTheoryName]
+  const colorRange = ["#2563eb", "#2563eb", "#f59e0b", "#f59e0b"]
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "sample size n", type: "log"},
+    y: {label: "|standardized moment|", type: "log"},
+    color: {domain: colorDomain, range: colorRange},
+    marks: [
+      Plot.lineY(skewTheoryPts, {x: "n", y: "y", stroke: () => skewTheoryName, strokeDasharray: "4,3"}),
+      Plot.lineY(kurtTheoryPts, {x: "n", y: "y", stroke: () => kurtTheoryName, strokeDasharray: "4,3"}),
+      Plot.lineY(skewPts, {x: "n", y: "y", stroke: () => skewName}),
+      Plot.dot(skewPts, {x: "n", y: "y", fill: () => skewName, r: 3}),
+      Plot.lineY(kurtPts, {x: "n", y: "y", stroke: () => kurtName}),
+      Plot.dot(kurtPts, {x: "n", y: "y", fill: () => kurtName, r: 3})
+    ]
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Convergence table"}
+
+```{ojs}
+// Convergence table -- one row per sample size on the ladder, over the
+// whole simulated set (not the current n).
+convergenceTable = {
+  const rows = []
+  for (const row of sweep) {
+    rows.push([
+      row.n,
+      row.mean.toFixed(4),
+      row.sd.toFixed(4),
+      row.skewness.toFixed(4),
+      row.excessKurtosis.toFixed(4),
+      row.ks.toFixed(4)
+    ])
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers: ["n", "mean", "std. dev.", "skewness", "excess kurtosis", tex`\sup_x |F_n - \Phi|`],
+    csvHeaders: ["n", "mean", "std dev", "skewness", "excess kurtosis", "KS distance to N(0,1)"],
+    filename: "central-limit-theorem-convergence.csv",
+    rows
+  })
+}
+```
+
+::::
+
+The **central limit theorem** says that for independent, identically distributed $X_1, X_2, \dots$ with finite mean $\mu$ and finite variance $\sigma^2$, the standardized sample mean
+
+$$
+Z_n = \frac{\bar X_n - \mu}{\sigma / \sqrt{n}}, \qquad \bar X_n = \frac{1}{n}\sum_{i=1}^{n} X_i,
+$$
+
+converges in distribution to a standard normal as $n \to \infty$ — whatever the shape of the $X_i$. That is the histogram above marching onto the red curve.
+
+**How fast** depends on the base distribution's higher moments. The skewness and excess kurtosis of $\bar X_n$ shrink at exactly
+
+$$
+\operatorname{skew}(\bar X_n) = \frac{\gamma_1}{\sqrt{n}}, \qquad
+\operatorname{exkurt}(\bar X_n) = \frac{\gamma_2}{n},
+$$
+
+where $\gamma_1, \gamma_2$ are the skewness and excess kurtosis of a single $X_i$ — the dashed lines in the convergence plot. The distance to normality itself is bounded by the **Berry–Esseen theorem**,
+
+$$
+\sup_x \big| P(Z_n \le x) - \Phi(x) \big| \;\le\; \frac{C\,\rho}{\sigma^3 \sqrt{n}},
+\qquad \rho = \operatorname{E}\!\big[\,|X_i - \mu|^3\,\big],
+$$
+
+with $C < 0.48$ an absolute constant. So a badly skewed or heavy-tailed base distribution (Exponential, rare Bernoulli, Log-normal) needs a much larger $n$ before $\bar X_n$ looks normal — the $1/\sqrt{n}$ rate is the same, but the constant in front is large.
+
+The finite-variance hypothesis is not optional. Averaging draws from a **Cauchy** distribution (no finite mean, infinite variance) leaves you with the *same* Cauchy distribution for every $n$: $\bar X_n$ never concentrates and the theorem simply does not apply. Such distributions have their own limit theory built on the [stable distributions](https://en.wikipedia.org/wiki/Stable_distribution) instead.
+
+## References
+
+- Wikipedia. "Central limit theorem." [https://en.wikipedia.org/wiki/Central_limit_theorem](https://en.wikipedia.org/wiki/Central_limit_theorem)
+- Wikipedia. "Berry–Esseen theorem." [https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem](https://en.wikipedia.org/wiki/Berry%E2%80%93Esseen_theorem)

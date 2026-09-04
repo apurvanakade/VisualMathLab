@@ -181,6 +181,15 @@ function drawDiagnosticCanvas(points, prevalence, sensitivity, specificity, opti
   const highlightColor = options.highlightColor ?? null
 
   const canvas = DOM.canvas(width, height)
+  // The canvas's pixel buffer stays fixed at `width`x`height` (every
+  // coordinate above is computed in that space), but its on-page box
+  // scales to fill the column via CSS -- otherwise it renders at its
+  // fixed 720px intrinsic size, left-aligned and narrower than the
+  // full-width explanation panel below it, so the two never share a
+  // right edge.
+  canvas.style.display = "block"
+  canvas.style.width = "100%"
+  canvas.style.height = "auto"
   const ctx = canvas.getContext("2d")
 
   const {linePositions} = calculateTestMetrics(points, prevalence, sensitivity, specificity, width)

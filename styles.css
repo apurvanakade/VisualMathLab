@@ -544,6 +544,22 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   flex: none !important;
 }
 
+/* .ojs-panel input[type="text"] (below) caps every text field on the site at
+ * 10em -- except this one never got the equivalent, so the one text-type
+ * field that lives in the overlay bar (every page's "Max"/"Max steps"/"Max
+ * depth" field) had nothing capping it. Without a width, it falls through to
+ * `width: inherit` from Observable's own wrapper div, which in turn inherits
+ * from the form's own natural size -- and since that form is .ojs-auto
+ * (width: auto, sized toward Observable's ~360px form max-width rather than
+ * shrinking to its actual "20"/"2000" content), the input rendered at 273px:
+ * three times the width of the number spinner (94px, capped just above) it
+ * sits right next to in the same bar. */
+.ojs-step-overlay input[type="text"] {
+  width: 10em;
+  max-width: 100%;
+  flex: none !important;
+}
+
 /* Inputs.radio()/checkbox() option groups render one block-level row per
  * option by default (Observable Inputs' own stylesheet, not this project's)
  * -- fine in a roomy .ojs-panel, but a tight chart-overlay bar shared with

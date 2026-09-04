@@ -6,8 +6,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Apurva Nakade">
-<meta name="dcterms.date" content="2026-06-25">
 
 <title>Visual Math Lab</title>
 <style>
@@ -28,6 +26,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -38,6 +71,7 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
+<link href="./favicon.png" rel="icon" type="image/png">
 <script src="site_libs/quarto-listing/list.min.js"></script>
 <script src="site_libs/quarto-listing/quarto-listing.js"></script>
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
@@ -46,14 +80,14 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b85bc7c33db8c58e0ec93c3465666fed.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-dark-b72d44010710761ef2be279569eaa82e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-611f9a4f5276f3aa6c7bc3c7843ec587.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-39ae64530572cc3572611afcf9baa685.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-611f9a4f5276f3aa6c7bc3c7843ec587.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-849ea11a8c853c8a723331ce1ebdb403.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-74786022625516ebed391b5f3f7b7272.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-849ea11a8c853c8a723331ce1ebdb403.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -83,21 +117,21 @@ ul.task-list li input[type="checkbox"] {
 <script>
 
   window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
+    const listingTargetEl = window.document.querySelector('#listing-latest-listing .list');
     if (!listingTargetEl) {
       // No listing discovered, do not attach.
       return; 
     }
 
     const options = {
-      valueNames: ['listing-image','listing-title','listing-description','listing-categories',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
+      valueNames: ['listing-image','listing-title','listing-description',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
       page: 18,
     pagination: { item: "<li class='page-item'><a class='page page-link' href='#'></a></li>" },
-      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description","listing-categories"],
+      searchColumns: ["listing-title","listing-author","listing-date","listing-image","listing-description"],
     };
 
     window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
+    window['quarto-listings']['listing-latest-listing'] = new List('listing-latest-listing', options);
 
     if (window['quarto-listing-loaded']) {
       window['quarto-listing-loaded']();
@@ -116,6 +150,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <script src="./js/expressions/make-function.js"></script>
@@ -125,6 +163,7 @@ Authors: Apurva Nakade
 <script src="./js/expressions/make-ode-function.js"></script>
 <script src="./js/expressions/make-function-of-t.js"></script>
 <script src="./js/plotting/padded-range.js"></script>
+<script src="./js/plotting/chart-theme.js"></script>
 <script src="./js/plotting/plotly-fullscreen-button.js"></script>
 <script src="./js/numerical/linear-regression.js"></script>
 <script src="./js/numerical/l1-regression.js"></script>
@@ -139,8 +178,10 @@ Authors: Apurva Nakade
 <script src="./js/filters/ema-filter.js"></script>
 <script src="./js/filters/kalman-1d-filter.js"></script>
 <script src="./js/ui/render-table.js"></script>
+<script src="./js/ui/range-progress.js"></script>
 <script src="./js/ui/apply-example.js"></script>
 <script src="./js/ui/legend-overlay.js"></script>
+<script src="./js/ui/draggable-overlay.js"></script>
 <script src="./js/ui/report-bug.js"></script>
 <script src="./js/discrete-math/barycentric-triples.js"></script>
 <script src="./js/discrete-math/sub-triangles.js"></script>
@@ -149,6 +190,8 @@ Authors: Apurva Nakade
 <script src="./js/discrete-math/random-color.js"></script>
 <script src="./js/discrete-math/mixed-pair-color.js"></script>
 <script src="./js/discrete-math/triangle-fill-color.js"></script>
+<script type="module" src="site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
@@ -181,9 +224,21 @@ window.Quarto = {
 </script>
 
 <link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Visual Math Lab">
+<meta property="og:description" content="Interactive, browser-based visualizations of numerical methods.">
+<meta property="og:image" content="https://www.visualmathlab.com/clustering/k-means/k-means.png">
+<meta property="og:site_name" content="Visual Math Lab">
+<meta property="og:image:height" content="1250">
+<meta property="og:image:width" content="1746">
+<meta name="twitter:title" content="Visual Math Lab">
+<meta name="twitter:description" content="Interactive, browser-based visualizations of numerical methods.">
+<meta name="twitter:image" content="https://www.visualmathlab.com/clustering/k-means/k-means.png">
+<meta name="twitter:image-height" content="1250">
+<meta name="twitter:image-width" content="1746">
+<meta name="twitter:card" content="summary_large_image">
 </head>
 
-<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+<body class="nav-sidebar floating nav-fixed fullcontent quarto-light"><script id="quarto-html-before-body" type="application/javascript">
     const toggleBodyColorMode = (bsSheetEl) => {
       const mode = bsSheetEl.getAttribute("data-mode");
       const bodyEl = window.document.querySelector("body");
@@ -654,8 +709,7 @@ window.Quarto = {
 </nav>
 <div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-    <h5 class="quarto-listing-category-title">Categories</h5><div class="quarto-listing-category category-default"><div class="category" data-category="">All <span class="quarto-category-count">(20)</span></div><div class="category" data-category="QWRhcHRpdmUlMjBRdWFkcmF0dXJl">Adaptive Quadrature <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QWRhcHRpdmUlMjBTdGVwJTIwU2l6ZQ==">Adaptive Step Size <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QXJjJTIwTGVuZ3Ro">Arc Length <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==">Barycentric Coordinates <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QmF5ZXMlMjBUaGVvcmVt">Bayes Theorem <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Qmlhcy1WYXJpYW5jZSUyMFRyYWRlb2Zm">Bias-Variance Tradeoff <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QnJhY2tldGluZw==">Bracketing <span class="quarto-category-count">(1)</span></div><div class="category" data-category="QnV0Y2hlciUyMFRhYmxlYXU=">Butcher Tableau <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q2x1c3RlcmluZw==">Clustering <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q29sb3Jpbmc=">Coloring <span class="quarto-category-count">(3)</span></div><div class="category" data-category="Q29tYmluYXRvcmlhbCUyMFByb29m">Combinatorial Proof <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q29tYmluYXRvcmljcw==">Combinatorics <span class="quarto-category-count">(2)</span></div><div class="category" data-category="Q29tcHV0YXRpb25hbCUyME1hdGg=">Computational Math <span class="quarto-category-count">(11)</span></div><div class="category" data-category="Q29uZGl0aW9uYWwlMjBQcm9iYWJpbGl0eQ==">Conditional Probability <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Q3ViaWMlMjBTcGxpbmVz">Cubic Splines <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RGF0YSUyMFNjaWVuY2U=">Data Science <span class="quarto-category-count">(3)</span></div><div class="category" data-category="RGVyaXZhdGl2ZXM=">Derivatives <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RGV0ZXJtaW5hbnQ=">Determinant <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RGlmZmVyZW50aWFsJTIwRXF1YXRpb25z">Differential Equations <span class="quarto-category-count">(4)</span></div><div class="category" data-category="RGlzY3JldGUlMjBNYXRo">Discrete Math <span class="quarto-category-count">(4)</span></div><div class="category" data-category="RXJyb3IlMjBFc3RpbWF0aW9u">Error Estimation <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RXVsZXIncyUyME1ldGhvZA==">Euler's Method <span class="quarto-category-count">(2)</span></div><div class="category" data-category="RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl">Exponential Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="RmFzdCUyMENvbnZlcmdlbmNl">Fast Convergence <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Rml4ZWQlMjBQb2ludHM=">Fixed Points <span class="quarto-category-count">(1)</span></div><div class="category" data-category="R3VhcmFudGVlZCUyMENvbnZlcmdlbmNl">Guaranteed Convergence <span class="quarto-category-count">(1)</span></div><div class="category" data-category="SW1wbGljaXQlMjBNZXRob2Rz">Implicit Methods <span class="quarto-category-count">(1)</span></div><div class="category" data-category="SW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=">Initial Value Problems <span class="quarto-category-count">(3)</span></div><div class="category" data-category="SW50ZWdyYXRpb24=">Integration <span class="quarto-category-count">(2)</span></div><div class="category" data-category="SW50ZXJwb2xhdGlvbg==">Interpolation <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Sy1NZWFucw==">K-Means <span class="quarto-category-count">(1)</span></div><div class="category" data-category="S2FsbWFuJTIwRmlsdGVy">Kalman Filter <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TDElMjBSZWdyZXNzaW9u">L1 Regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TDIlMjBSZWdyZXNzaW9u">L2 Regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TGluZWFyJTIwQ29udmVyZ2VuY2U=">Linear Convergence <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TGluZWFyJTIwSW50ZXJwb2xhdGlvbg==">Linear Interpolation <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TGluZWFyJTIwUmVncmVzc2lvbg==">Linear Regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TGxveWQncyUyMEFsZ29yaXRobQ==">Lloyd's Algorithm <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TWFjUXVlZW4ncyUyMEFsZ29yaXRobQ==">MacQueen's Algorithm <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TWVkaWNhbCUyMFRlc3Rpbmc=">Medical Testing <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW9kZWwlMjBDb21wbGV4aXR5">Model Complexity <span class="quarto-category-count">(1)</span></div><div class="category" data-category="TW92aW5nJTIwQXZlcmFnZQ==">Moving Average <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Tm8lMjBEZXJpdmF0aXZlcw==">No Derivatives <span class="quarto-category-count">(3)</span></div><div class="category" data-category="T3V0bGllcnM=">Outliers <span class="quarto-category-count">(1)</span></div><div class="category" data-category="T3ZlcmZpdHRpbmc=">Overfitting <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UG9seW5vbWlhbCUyMFJlZ3Jlc3Npb24=">Polynomial Regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UHJvYmFiaWxpdHk=">Probability <span class="quarto-category-count">(2)</span></div><div class="category" data-category="UXVhZHJhdGljJTIwQ29udmVyZ2VuY2U=">Quadratic Convergence <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UmVjdXJzaXZlJTIwRmlsdGVycw==">Recursive Filters <span class="quarto-category-count">(1)</span></div><div class="category" data-category="UmllbWFubiUyMFN1bXM=">Riemann Sums <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Um9idXN0JTIwUmVncmVzc2lvbg==">Robust Regression <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Um9vdCUyMEZpbmRpbmc=">Root Finding <span class="quarto-category-count">(3)</span></div><div class="category" data-category="UnVuZ2UtS3V0dGElMjBNZXRob2Rz">Runge-Kutta Methods <span class="quarto-category-count">(3)</span></div><div class="category" data-category="U2ltcHNvbidzJTIwUnVsZQ==">Simpson's Rule <span class="quarto-category-count">(2)</span></div><div class="category" data-category="U2xvdyUyMENvbnZlcmdlbmNl">Slow Convergence <span class="quarto-category-count">(1)</span></div><div class="category" data-category="U3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZQ==">Superlinear Convergence <span class="quarto-category-count">(1)</span></div><div class="category" data-category="VGF5bG9yJTIwU2VyaWVz">Taylor Series <span class="quarto-category-count">(1)</span></div><div class="category" data-category="VHJhcGV6b2lkYWwlMjBSdWxl">Trapezoidal Rule <span class="quarto-category-count">(1)</span></div><div class="category" data-category="VHJpYW5nbGVz">Triangles <span class="quarto-category-count">(4)</span></div><div class="category" data-category="VW5kZXJmaXR0aW5n">Underfitting <span class="quarto-category-count">(1)</span></div><div class="category" data-category="VW5zdXBlcnZpc2VkJTIwTGVhcm5pbmc=">Unsupervised Learning <span class="quarto-category-count">(1)</span></div><div class="category" data-category="Vm9sdW1l">Volume <span class="quarto-category-count">(1)</span></div></div></div>
+    
 <!-- main -->
 <main class="content" id="quarto-document-content">
 
@@ -670,19 +724,7 @@ window.Quarto = {
 
 <div class="quarto-title-meta">
 
-    <div>
-    <div class="quarto-title-meta-heading">Author</div>
-    <div class="quarto-title-meta-contents">
-             <p>Apurva Nakade </p>
-          </div>
-  </div>
     
-    <div>
-    <div class="quarto-title-meta-heading">Published</div>
-    <div class="quarto-title-meta-contents">
-      <p class="date">June 25, 2026</p>
-    </div>
-  </div>
   
     
   </div>
@@ -697,592 +739,463 @@ Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
-<p>Visual Math Lab collects interactive, browser-based visualizations for exploring computational math, probability theory, data science, and discrete mathematics.</p>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="25" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 24;"><span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co">// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This hero uses VM.plotting.config.</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>VM <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">VM</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb2" data-startfrom="31" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 30;"><span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">// A fixed, non-editable decorative curve -- unlike every method page's</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co">// plotter, nothing here is user input, so this skips the expression</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co">// parser and math.js entirely and just samples plain JS closures. A</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">// Lissajous figure traces out a closed loop that's visually busy enough to</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">// read as "a live simulation" at a glance, and cheap enough to resample</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co">// every frame with no caching.</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">// A closure over _plotDiv, called (not referenced bare) from the display</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">// cell below as heroPlot() -- matching every other page's mainPlot(setup)</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="co">// convention. A bare `heroPlot` reference, without the call, renders as</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co">// Observable's generic object inspector instead of embedding the DOM node</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co">// (verified the hard way: it dumped the div's internal Plotly properties</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co">// as inspectable object keys instead of showing the chart).</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>heroPlot <span class="op">=</span> {</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> Plotly <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">Plotly</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> _plotDiv <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> SAMPLES <span class="op">=</span> <span class="dv">720</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ts <span class="op">=</span> []</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xs <span class="op">=</span> []</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ys <span class="op">=</span> []</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;=</span> SAMPLES<span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> t <span class="op">=</span> (i <span class="op">/</span> SAMPLES) <span class="op">*</span> <span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="cn">PI</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    ts<span class="op">.</span><span class="fu">push</span>(t)</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    xs<span class="op">.</span><span class="fu">push</span>(<span class="bu">Math</span><span class="op">.</span><span class="fu">sin</span>(<span class="dv">3</span> <span class="op">*</span> t))</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    ys<span class="op">.</span><span class="fu">push</span>(<span class="bu">Math</span><span class="op">.</span><span class="fu">sin</span>(<span class="dv">4</span> <span class="op">*</span> t))</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> layout <span class="op">=</span> {</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>    <span class="dt">margin</span><span class="op">:</span> {<span class="dt">l</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">t</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">b</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>    <span class="dt">xaxis</span><span class="op">:</span> {<span class="dt">visible</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [<span class="op">-</span><span class="fl">1.2</span><span class="op">,</span> <span class="fl">1.2</span>]<span class="op">,</span> <span class="dt">fixedrange</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    <span class="dt">yaxis</span><span class="op">:</span> {<span class="dt">visible</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [<span class="op">-</span><span class="fl">1.2</span><span class="op">,</span> <span class="fl">1.2</span>]<span class="op">,</span> <span class="dt">scaleanchor</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">scaleratio</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">fixedrange</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>    <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a>    <span class="dt">paper_bgcolor</span><span class="op">:</span> <span class="st">"rgba(0,0,0,0)"</span><span class="op">,</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    <span class="dt">plot_bgcolor</span><span class="op">:</span> <span class="st">"rgba(0,0,0,0)"</span><span class="op">,</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="dt">hovermode</span><span class="op">:</span> <span class="kw">false</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> config <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">config</span>({<span class="dt">staticPlot</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">displayModeBar</span><span class="op">:</span> <span class="kw">false</span>})</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>_plotDiv) {</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>      _plotDiv <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>      _plotDiv<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"vm-hero-plot"</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">newPlot</span>(_plotDiv<span class="op">,</span> [</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        {<span class="dt">x</span><span class="op">:</span> xs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> ys<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#8ab4ff"</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span><span class="op">,</span> <span class="dt">shape</span><span class="op">:</span> <span class="st">"spline"</span>}<span class="op">,</span> <span class="dt">opacity</span><span class="op">:</span> <span class="fl">0.85</span>}<span class="op">,</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        {<span class="dt">x</span><span class="op">:</span> [xs[<span class="dv">0</span>]]<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> [ys[<span class="dv">0</span>]]<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#f87171"</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">11</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#171b29"</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">2</span>}}}</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>      ]<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>      <span class="co">// _plotDiv is created detached (document.createElement, not yet in</span></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>      <span class="co">// the page), so it measures 0x0 at the moment newPlot runs --</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Plotly's autosize falls back to its hardcoded 700x450 default</span></span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>      <span class="co">// instead of the real (947-ish px wide) container, which left the</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>      <span class="co">// curve sitting left-aligned instead of centered/filling the hero</span></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>      <span class="co">// panel. Every mainPlot cell on the site works around exactly this</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a>      <span class="co">// with the same ResizeObserver once the div is actually attached and</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>      <span class="co">// has a real size.</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>      VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">autoResize</span>(_plotDiv)</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>      <span class="co">// Advances the marker one sample per tick and keeps it running for</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>      <span class="co">// the life of the page -- this cell has no reactive inputs, so it</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>      <span class="co">// only ever runs once, and the interval is what keeps the curve</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>      <span class="co">// moving after that.</span></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span> frame <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>      <span class="pp">setInterval</span>(() <span class="kw">=&gt;</span> {</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>        frame <span class="op">=</span> (frame <span class="op">+</span> <span class="dv">1</span>) <span class="op">%</span> (SAMPLES <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        Plotly<span class="op">.</span><span class="fu">restyle</span>(_plotDiv<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> [[xs[frame]]]<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> [[ys[frame]]]}<span class="op">,</span> [<span class="dv">1</span>])</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>      }<span class="op">,</span> <span class="dv">30</span>)</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _plotDiv</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-2" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="vm-hero">
+<div class="vm-hero-plot-wrap">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb3" data-startfrom="106" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 105;"><span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a><span class="fu">heroPlot</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-3" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+</div>
+<div class="vm-hero-overlay">
+<p class="vm-hero-kicker">
+A picture is worth a thousand equations.
+</p>
+<p><a class="vm-hero-cta" href="#browse-topics">Start exploring ↓</a></p>
+</div>
+</div>
+<section id="browse-topics" class="level2">
+<h2 class="anchored" data-anchor-id="browse-topics">Browse by topic</h2>
+<div class="vm-topic-grid">
+<p><a href="./root-finding/index.html" class="vm-topic-tile"><strong>Root Finding</strong><br>
+Newton, bisection, secant, and fixed-point iteration for solving <span class="math inline">\(f(x) = 0\)</span>.</a></p>
+<p><a href="./piecewise-interpolation/index.html" class="vm-topic-tile"><strong>Piecewise Interpolation</strong><br>
+Numerical integration and interpolation by linear and cubic splines.</a></p>
+<p><a href="./differential-equations/index.html" class="vm-topic-tile"><strong>Differential Equations</strong><br>
+Explicit, implicit, and adaptive solvers for ODEs, and the Butcher tableau behind them.</a></p>
+<p><a href="./sperners-lemma/index.html" class="vm-topic-tile"><strong>Sperner’s Lemma</strong><br>
+A combinatorial fixed-point theorem, built up from barycentric coordinates to two independent proofs.</a></p>
+<p><a href="./model-fitting/index.html" class="vm-topic-tile"><strong>Model Fitting</strong><br>
+Least-squares vs.&nbsp;robust regression, and polynomial fits at increasing degree.</a></p>
+<p><a href="./clustering/index.html" class="vm-topic-tile"><strong>Clustering</strong><br>
+Partitioning points into clusters with Lloyd’s algorithm.</a></p>
+<p><a href="./probability/bayes/index.html" class="vm-topic-tile"><strong>Bayes’ Theorem</strong><br>
+Updating a belief in light of new evidence, from base rates to positive predictive value.</a></p>
+<p><a href="./probability/recursive-filters/index.html" class="vm-topic-tile"><strong>Recursive Filters</strong><br>
+Smoothing a noisy signal one measurement at a time.</a></p>
+</div>
+</section>
+<section id="latest" class="level2">
+<h2 class="anchored" data-anchor-id="latest">Latest</h2>
 
 
 
+</section>
 
-<div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
+<div class="quarto-listing quarto-listing-container-grid" id="listing-latest-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMFNjaWVuY2UlMkNDbHVzdGVyaW5nJTJDVW5zdXBlcnZpc2VkJTIwTGVhcm5pbmclMkNLLU1lYW5zJTJDTGxveWQncyUyMEFsZ29yaXRobSUyQ01hY1F1ZWVuJ3MlMjBBbGdvcml0aG0=" data-listing-date-sort="1786492800000" data-listing-file-modified-sort="1787582411356" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5026">
+<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMFNjaWVuY2UlMkNDbHVzdGVyaW5nJTJDVW5zdXBlcnZpc2VkJTIwTGVhcm5pbmclMkNLLU1lYW5zJTJDTGxveWQncyUyMEFsZ29yaXRobSUyQ01hY1F1ZWVuJ3MlMjBBbGdvcml0aG0=" data-listing-date-sort="1786492800000" data-listing-file-modified-sort="1788523885994" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5114">
 <a href="./clustering/k-means/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./clustering/k-means/k-means.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./clustering/k-means/k-means.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 K-Means Clustering
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGF0YSUyMFNjaWVuY2U='); return false;">Data Science</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q2x1c3RlcmluZw=='); return false;">Clustering</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VW5zdXBlcnZpc2VkJTIwTGVhcm5pbmc='); return false;">Unsupervised Learning</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Sy1NZWFucw=='); return false;">K-Means</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TGxveWQncyUyMEFsZ29yaXRobQ=='); return false;">Lloyd's Algorithm</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TWFjUXVlZW4ncyUyMEFsZ29yaXRobQ=='); return false;">MacQueen's Algorithm</div>
-
-</div>
 <div class="card-text listing-description delink">
-K-means partitions <span class="math inline">\(n\)</span> points into <span class="math inline">\(k\)</span> clusters by minimizing the total squared distance from each point to its cluster’s centroid — the <strong>inertia</strong>,
+<p>Partitions points into k clusters by iterating Lloyd’s algorithm to convergence.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1787582411364" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4039">
+<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1788523886005" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4099">
 <a href="./probability/recursive-filters/1d-recursive-filters/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./probability/recursive-filters/1d-recursive-filters/1d-recursive-filters.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./probability/recursive-filters/1d-recursive-filters/1d-recursive-filters.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 1D Recursive Filters
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('S2FsbWFuJTIwRmlsdGVy'); return false;">Kalman Filter</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TW92aW5nJTIwQXZlcmFnZQ=='); return false;">Moving Average</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdl'); return false;">Exponential Moving Average</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UmVjdXJzaXZlJTIwRmlsdGVycw=='); return false;">Recursive Filters</div>
-
-</div>
 <div class="card-text listing-description delink">
-Each of these filters updates a running estimate from only the previous estimate and the newest measurement <span class="math inline">\(z_i\)</span> — no stored history of the stream — which is what makes…<strong></strong><strong></strong><strong></strong><span class="math inline"></span><span class="math inline"></span>
+<p>Compares a moving average, an exponential moving average, and a Kalman filter for smoothing a noisy 1D signal.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1787582411364" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1849">
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1788523886003" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1997">
 <a href="./probability/bayes/ppv/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./probability/bayes/ppv/ppv.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./probability/bayes/ppv/ppv.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Positive Predictive Value
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('UHJvYmFiaWxpdHk='); return false;">Probability</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QmF5ZXMlMjBUaGVvcmVt'); return false;">Bayes Theorem</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29uZGl0aW9uYWwlMjBQcm9iYWJpbGl0eQ=='); return false;">Conditional Probability</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TWVkaWNhbCUyMFRlc3Rpbmc='); return false;">Medical Testing</div>
-
-</div>
 <div class="card-text listing-description delink">
-A standard mammogram has 80% sensitivity and 90% specificity: if you have cancer, it comes back positive 80% of the time; if you don’t, it comes back negative 90% of the…
+<p>Shows how a test’s positive predictive value depends on disease prevalence, not just its sensitivity and specificity.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1787582411361" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2249">
+<div class="g-col-1" data-index="3" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1788523886000" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
 <a href="./model-fitting/l1-vs-l2/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./model-fitting/l1-vs-l2/l1-vs-l2.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./model-fitting/l1-vs-l2/l1-vs-l2.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 L1 vs.&nbsp;L2 Regression
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGF0YSUyMFNjaWVuY2U='); return false;">Data Science</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Um9idXN0JTIwUmVncmVzc2lvbg=='); return false;">Robust Regression</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('T3V0bGllcnM='); return false;">Outliers</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TDElMjBSZWdyZXNzaW9u'); return false;">L1 Regression</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TDIlMjBSZWdyZXNzaW9u'); return false;">L2 Regression</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TGluZWFyJTIwUmVncmVzc2lvbg=='); return false;">Linear Regression</div>
-
-</div>
 <div class="card-text listing-description delink">
-Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes <span class="math inline">\(\sum_i (y_i - \hat y_i)^2\)</span>; L1 minimizes <span class="math inline">\(\sum_i |y_i - \hat y_i|\)</span>.…<strong></strong><strong></strong>
+<p>Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="4" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1787582411361" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3155">
+<div class="g-col-1" data-index="4" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1788523886000" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
 <a href="./model-fitting/polynomial-fit/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./model-fitting/polynomial-fit/polynomial-fit.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./model-fitting/polynomial-fit/polynomial-fit.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Polynomial Fits
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGF0YSUyMFNjaWVuY2U='); return false;">Data Science</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('T3ZlcmZpdHRpbmc='); return false;">Overfitting</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VW5kZXJmaXR0aW5n'); return false;">Underfitting</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Qmlhcy1WYXJpYW5jZSUyMFRyYWRlb2Zm'); return false;">Bias-Variance Tradeoff</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UG9seW5vbWlhbCUyMFJlZ3Jlc3Npb24='); return false;">Polynomial Regression</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TW9kZWwlMjBDb21wbGV4aXR5'); return false;">Model Complexity</div>
-
-</div>
 <div class="card-text listing-description delink">
-A degree-<span class="math inline">\(d\)</span> least-squares fit chooses coefficients <span class="math inline">\(\beta_0,\dots,\beta_d\)</span> minimizing the sum of squared residuals over the <span class="math inline">\(n\)</span> data points:
+<p>Fits polynomials of increasing degree to noisy data and shows the resulting overfitting.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="5" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411357" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4119">
+<div class="g-col-1" data-index="5" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523885995" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4168">
 <a href="./differential-equations/adaptive-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./differential-equations/adaptive-methods/adaptive-methods.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./differential-equations/adaptive-methods/adaptive-methods.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Adaptive Methods for ODEs
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlmZmVyZW50aWFsJTIwRXF1YXRpb25z'); return false;">Differential Equations</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UnVuZ2UtS3V0dGElMjBNZXRob2Rz'); return false;">Runge-Kutta Methods</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QWRhcHRpdmUlMjBTdGVwJTIwU2l6ZQ=='); return false;">Adaptive Step Size</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM='); return false;">Initial Value Problems</div>
-
-</div>
 <div class="card-text listing-description delink">
-The chart below shows each accepted step’s increment <span class="math inline">\(\Delta y_i = y_{i+1}^{(5)} - y_i\)</span> across its time interval <span class="math inline">\([t_i, t_{i+1}]\)</span>, with a semi-transparent overlay of the…<span class="math inline"></span><span class="math inline"></span><span class="math inline"></span><em></em><span class="math inline"></span>
+<p>Steps an ODE solver with an adaptive step size that shrinks or grows to hold the local error near a tolerance.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="6" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411357" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4187">
+<div class="g-col-1" data-index="6" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523885995" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4187">
 <a href="./differential-equations/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./differential-equations/butcher-tableau/butcher-tableau.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./differential-equations/butcher-tableau/butcher-tableau.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Butcher Tableau Explorer
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlmZmVyZW50aWFsJTIwRXF1YXRpb25z'); return false;">Differential Equations</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UnVuZ2UtS3V0dGElMjBNZXRob2Rz'); return false;">Runge-Kutta Methods</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QnV0Y2hlciUyMFRhYmxlYXU='); return false;">Butcher Tableau</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VGF5bG9yJTIwU2VyaWVz'); return false;">Taylor Series</div>
-
-</div>
 <div class="card-text listing-description delink">
-An <span class="math inline">\(s\)</span>-stage Runge-Kutta method is specified by a <strong>Butcher tableau</strong> of nodes <span class="math inline">\(c_i\)</span>, coefficients <span class="math inline">\(a_{ij}\)</span>, and weights <span class="math inline">\(b_i\)</span>, defining each step by
+<p>Explores how a Runge-Kutta method’s Butcher tableau determines its stages and order.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411358" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4056">
+<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523885996" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4105">
 <a href="./differential-equations/explicit-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./differential-equations/explicit-methods/explicit-methods.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./differential-equations/explicit-methods/explicit-methods.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Explicit Methods for ODEs
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlmZmVyZW50aWFsJTIwRXF1YXRpb25z'); return false;">Differential Equations</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RXVsZXIncyUyME1ldGhvZA=='); return false;">Euler's Method</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UnVuZ2UtS3V0dGElMjBNZXRob2Rz'); return false;">Runge-Kutta Methods</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM='); return false;">Initial Value Problems</div>
-
-</div>
 <div class="card-text listing-description delink">
-Given <span class="math inline">\(y' = f(t, y)\)</span>, <span class="math inline">\(y(0) = y_0\)</span>, an <strong>explicit</strong> method computes each <span class="math inline">\(y_{i+1} \approx y(t_{i+1})\)</span> directly from already-known values, using <span class="math inline">\(h\)</span> for the step size and <span class="math inline">…</span><strong></strong>
+<p>Compares explicit ODE solvers – Euler, midpoint, and RK4 – on the same initial value problem.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411358" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3416">
+<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523885996" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3465">
 <a href="./differential-equations/implicit-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./differential-equations/implicit-methods/implicit-methods.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./differential-equations/implicit-methods/implicit-methods.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Implicit Methods for ODEs
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlmZmVyZW50aWFsJTIwRXF1YXRpb25z'); return false;">Differential Equations</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RXVsZXIncyUyME1ldGhvZA=='); return false;">Euler's Method</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW1wbGljaXQlMjBNZXRob2Rz'); return false;">Implicit Methods</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM='); return false;">Initial Value Problems</div>
-
-</div>
 <div class="card-text listing-description delink">
-Explicit (forward) Euler uses the slope at the <em>start</em> of the step:
+<p>Compares implicit ODE solvers against explicit ones on a stiff initial value problem.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411362" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4028">
+<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523886001" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4075">
 <a href="./piecewise-interpolation/adaptive-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./piecewise-interpolation/adaptive-integration/adaptive-integration.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./piecewise-interpolation/adaptive-integration/adaptive-integration.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Adaptive Integration
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW50ZWdyYXRpb24='); return false;">Integration</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QWRhcHRpdmUlMjBRdWFkcmF0dXJl'); return false;">Adaptive Quadrature</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('U2ltcHNvbidzJTIwUnVsZQ=='); return false;">Simpson's Rule</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RXJyb3IlMjBFc3RpbWF0aW9u'); return false;">Error Estimation</div>
-
-</div>
 <div class="card-text listing-description delink">
-<strong>Adaptive quadrature</strong> refines the partition of <span class="math inline">\([a,b]\)</span> only where it’s needed, instead of the fixed grid used in Numerical Integration. Simpson’s rule on an interval <span class="math inline">\([p,q]\)</span>…<span class="math inline"></span>
+<p>Refines a numerical integral by subdividing only the sub-intervals where the estimate is still inaccurate.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411362" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5139">
+<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523886001" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5193">
 <a href="./piecewise-interpolation/integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./piecewise-interpolation/integration/integration.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./piecewise-interpolation/integration/integration.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Numerical Integration
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW50ZWdyYXRpb24='); return false;">Integration</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UmllbWFubiUyMFN1bXM='); return false;">Riemann Sums</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJhcGV6b2lkYWwlMjBSdWxl'); return false;">Trapezoidal Rule</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('U2ltcHNvbidzJTIwUnVsZQ=='); return false;">Simpson's Rule</div>
-
-</div>
 <div class="card-text listing-description delink">
-Approximates <span class="math inline">\(\int_a^b f(x)\, dx\)</span> by replacing <span class="math inline">\(f\)</span> with a simple piecewise interpolant on <span class="math inline">\(n\)</span> equally spaced subintervals of width <span class="math inline">\(h=(b-a)/n\)</span>, at nodes <span class="math inline">\(x_i=a+ih\)</span>…
+<p>Compares Riemann sums, the trapezoid rule, and Simpson’s rule for approximating a definite integral.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aA==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1787582411363" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4346">
+<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aA==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1788523886002" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4395">
 <a href="./piecewise-interpolation/linear-cubic/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./piecewise-interpolation/linear-cubic/linear-cubic.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./piecewise-interpolation/linear-cubic/linear-cubic.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Polynomial Interpolation
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('SW50ZXJwb2xhdGlvbg=='); return false;">Interpolation</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TGluZWFyJTIwSW50ZXJwb2xhdGlvbg=='); return false;">Linear Interpolation</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q3ViaWMlMjBTcGxpbmVz'); return false;">Cubic Splines</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QXJjJTIwTGVuZ3Ro'); return false;">Arc Length</div>
-
-</div>
 <div class="card-text listing-description delink">
-Connects <span class="math inline">\(n+1\)</span> samples <span class="math inline">\((x_k,y_k)\)</span>, <span class="math inline">\(y_k=f(x_k)\)</span>, of <span class="math inline">\(f\)</span> on <span class="math inline">\([a,b]\)</span> with straight segments (<strong>linear</strong>),
+<p>Compares piecewise linear and natural cubic spline interpolation through a set of points.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1787582411365" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3903">
+<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1788523886005" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3977">
 <a href="./root-finding/bisection-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./root-finding/bisection-method/bisection.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./root-finding/bisection-method/bisection.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Bisection Method
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QnJhY2tldGluZw=='); return false;">Bracketing</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Tm8lMjBEZXJpdmF0aXZlcw=='); return false;">No Derivatives</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('R3VhcmFudGVlZCUyMENvbnZlcmdlbmNl'); return false;">Guaranteed Convergence</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Um9vdCUyMEZpbmRpbmc='); return false;">Root Finding</div>
-
-</div>
 <div class="card-text listing-description delink">
-The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a_n,b_n]\)</span> that brackets a sign change of <span class="math inline">\(f\)</span>, keeping whichever half still brackets it:
+<p>Finds a root by repeatedly halving a bracketing interval where the function changes sign.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1787582411366" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2856">
+<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1788523886006" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2899">
 <a href="./root-finding/fixed-point/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./root-finding/fixed-point/fixed-point.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./root-finding/fixed-point/fixed-point.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Fixed Point Iteration
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Tm8lMjBEZXJpdmF0aXZlcw=='); return false;">No Derivatives</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Rml4ZWQlMjBQb2ludHM='); return false;">Fixed Points</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('TGluZWFyJTIwQ29udmVyZ2VuY2U='); return false;">Linear Convergence</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('U2xvdyUyMENvbnZlcmdlbmNl'); return false;">Slow Convergence</div>
-
-</div>
 <div class="card-text listing-description delink">
-Fixed point iteration solves <span class="math inline">\(x=g(x)\)</span> by repeatedly applying <span class="math inline">\(g\)</span>: <span class="math inline">\(x_{n+1}=g(x_n)\)</span>. If the sequence converges to a value <span class="math inline">\(\alpha\)</span>, then <span class="math inline">\(\alpha=g(\alpha)\)</span> — a…<span class="math inline"></span>
+<p>Solves x = g(x) by repeatedly applying g, and shows when that iteration converges or diverges.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1787582411366" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3643">
+<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1788523886006" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3913">
 <a href="./root-finding/newton-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./root-finding/newton-method/newton-method.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./root-finding/newton-method/newton-method.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Newton’s Method
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGVyaXZhdGl2ZXM='); return false;">Derivatives</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RmFzdCUyMENvbnZlcmdlbmNl'); return false;">Fast Convergence</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('UXVhZHJhdGljJTIwQ29udmVyZ2VuY2U='); return false;">Quadratic Convergence</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Um9vdCUyMEZpbmRpbmc='); return false;">Root Finding</div>
-
-</div>
 <div class="card-text listing-description delink">
-Newton’s method finds roots of <span class="math inline">\(f(x)=0\)</span> by repeatedly linearizing: from <span class="math inline">\(x_n\)</span>, it follows the tangent line at <span class="math inline">\((x_n, f(x_n))\)</span> to its <span class="math inline">\(x\)</span>-intercept,
+<p>Finds roots by repeatedly following the tangent line to its x-intercept, converging quadratically near a simple root.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1787582411366" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4052">
+<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1788523886006" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4101">
 <a href="./root-finding/secant-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./root-finding/secant-method/secant-method.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./root-finding/secant-method/secant-method.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Secant Method
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tcHV0YXRpb25hbCUyME1hdGg='); return false;">Computational Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Tm8lMjBEZXJpdmF0aXZlcw=='); return false;">No Derivatives</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('U3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZQ=='); return false;">Superlinear Convergence</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Um9vdCUyMEZpbmRpbmc='); return false;">Root Finding</div>
-
-</div>
 <div class="card-text listing-description delink">
-The secant method finds roots of <span class="math inline">\(f(x)=0\)</span> like Newton’s method, but replaces the tangent line with the secant line through the two most recent approximations, so no…
+<p>Approximates Newton’s method without a derivative, using the secant line through the last two iterates.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="16" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1787582411369" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2530">
+<div class="g-col-1" data-index="16" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1788523886009" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2530">
 <a href="./sperners-lemma/geometric-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./sperners-lemma/geometric-proof/geometric-proof.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./sperners-lemma/geometric-proof/geometric-proof.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Sperner’s Lemma - Geometric Proof
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29sb3Jpbmc='); return false;">Coloring</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGV0ZXJtaW5hbnQ='); return false;">Determinant</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Vm9sdW1l'); return false;">Volume</div>
-
-</div>
 <div class="card-text listing-description delink">
-This is my new favorite proof of Sperner’s lemma. In the following app the vertices are slowly morphed to the “cardinal” <code>R</code>, <code>G</code>, <code>B</code> vertices with time while preserving the…<code></code><span style="background-color:rgba(75, 0, 130, 0.25)"></span><span style="background-color:rgba(75, 0, 130, 0.6)"></span>
+<p>Proves Sperner’s Lemma with a discrete degree argument that counts oriented RGB triangles.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="17" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1787582411368" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3211">
+<div class="g-col-1" data-index="17" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1788523886007" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3211">
 <a href="./sperners-lemma/combinatorial-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" src="./sperners-lemma/combinatorial-proof/combinatorial-proof.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" src="./sperners-lemma/combinatorial-proof/combinatorial-proof.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Sperner’s Lemma - Combinatorial Proof
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tYmluYXRvcmljcw=='); return false;">Combinatorics</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29sb3Jpbmc='); return false;">Coloring</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tYmluYXRvcmlhbCUyMFByb29m'); return false;">Combinatorial Proof</div>
-
-</div>
 <div class="card-text listing-description delink">
-This picture is a combinatorial proof of Sperner’s Lemma.
+<p>Proves Sperner’s Lemma with the ‘doors’ argument: a path that must exit through an odd number of bicolored edges.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1787582411369" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1138">
+<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1788523886009" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1138">
 <a href="./sperners-lemma/statement/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" data-src="./sperners-lemma/statement/statement.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" data-src="./sperners-lemma/statement/statement.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Sperner’s Lemma - Statement
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29tYmluYXRvcmljcw=='); return false;">Combinatorics</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('Q29sb3Jpbmc='); return false;">Coloring</div>
-
-</div>
 <div class="card-text listing-description delink">
-Consider a triangulation of a triangle. (Below, we show a regular triangulation of an equilateral triangle, but the theorem applies to <em>any</em> triangulation of a triangle.) We…<span style="color:white; background-color:red"></span><span style="color:white; background-color:green"></span><span style="color:white; background-color:blue"></span>
+<p>States Sperner’s Lemma on a triangulated triangle and lets you color vertices to test the condition interactively.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1787582411367" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2374">
+<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1788523886007" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2374">
 <a href="./sperners-lemma/barycentric-coordinates/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
-<img loading="lazy" data-src="./sperners-lemma/barycentric-coordinates/barycentric-coordinates.png" class="thumbnail-image card-img" style="height: 150px;">
+<img loading="lazy" data-src="./sperners-lemma/barycentric-coordinates/barycentric-coordinates.png" class="thumbnail-image card-img" style="height: 160px;">
 </p>
 <div class="card-body post-contents">
 <h5 class="no-anchor card-title listing-title">
 Barycentric Coordinates
 </h5>
-<div class="listing-categories">
-
-<div class="listing-category" onclick="window.quartoListingCategory('RGlzY3JldGUlMjBNYXRo'); return false;">Discrete Math</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('VHJpYW5nbGVz'); return false;">Triangles</div>
-
-<div class="listing-category" onclick="window.quartoListingCategory('QmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw=='); return false;">Barycentric Coordinates</div>
-
-</div>
 <div class="card-text listing-description delink">
-<strong>Barycentric coordinates</strong> are a coordinate system for describing points inside a triangle.
+<p>Introduces barycentric coordinates on a triangle as the setting for Sperner’s Lemma.</p>
 </div>
 </div>
 </div></a>
 </div>
 </div>
 <div class="listing-no-matching d-none">No matching items</div>
-<nav id="listing-pagination" class="listing-pagination" aria-label="Page Navigation">
+<nav id="latest-listing-pagination" class="listing-pagination" aria-label="Page Navigation">
   <ul class="pagination"></ul>
 </nav>
 </div></main> <!-- /main -->
@@ -1637,6 +1550,141 @@ localStorage, so this site sets no cookies at all.
     if (choice === null && !privacySignalSet()) show();
   }
 })();
+</script>
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
+hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
+JS; styles.css forces the same off-canvas treatment at every width, driven
+by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
+.collapse/.show. This script owns those two classes and provides the one
+thing that treatment removes: a permanently visible way back in -- a slim
+rail at the left edge with a hamburger toggle, open-on-hover for a quick
+peek, click-to-pin for a session that stays open, Escape/click-outside to
+close.
+-->
+<script>
+(function () {
+  function init() {
+    var sidebar = document.getElementById("quarto-sidebar")
+    if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
+
+    var PIN_KEY = "vml-sidebar-pinned"
+    var body = document.body
+
+    var rail = document.createElement("div")
+    rail.id = "vm-sidebar-rail"
+    rail.innerHTML =
+      '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
+      '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>' +
+      "</button>" +
+      '<button type="button" data-vm-pin aria-label="Keep sidebar open" title="Keep sidebar open">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.037l-1.394 1.393c.18.613.185 1.373.021 2.023-.212.828-.696 1.747-1.435 2.486l-.104.104a.5.5 0 0 1-.707 0l-2.404-2.404-2.968 2.967c-.09.09-.203.203-.401.401-.081.08-.181.18-.297.294a1.001 1.001 0 0 1-.399.245.998.998 0 0 1-.797-.061.998.998 0 0 1-.4-.245l-.106-.106a1 1 0 0 1-.06-.797 1 1 0 0 1 .245-.399l.294-.297.401-.401 2.967-2.968-2.404-2.404a.5.5 0 0 1 0-.707l.104-.104c.739-.739 1.658-1.223 2.486-1.435.65-.164 1.41-.159 2.023.021L9.617 2.65a5 5 0 0 1-.037-.46c0-.431.108-1.023.588-1.503A.5.5 0 0 1 9.828.722z"/></svg>' +
+      "</button>"
+    document.body.appendChild(rail)
+
+    var toggleBtn = rail.querySelector("[data-vm-toggle]")
+    var pinBtn = rail.querySelector("[data-vm-pin]")
+    var closeTimer = null
+    var COARSE_POINTER = window.matchMedia && window.matchMedia("(hover: none), (pointer: coarse)").matches
+
+    function isPinned() {
+      try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
+    }
+
+    function setPinned(pinned) {
+      try { localStorage.setItem(PIN_KEY, pinned ? "1" : "0") } catch (e) { /* storage unavailable */ }
+      body.classList.toggle("vm-sidebar-pinned", pinned)
+      pinBtn.setAttribute("aria-pressed", String(pinned))
+    }
+
+    function openSidebar() {
+      if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
+      body.classList.add("vm-sidebar-open")
+      toggleBtn.setAttribute("aria-expanded", "true")
+    }
+
+    function closeSidebar() {
+      if (isPinned()) return
+      body.classList.remove("vm-sidebar-open")
+      toggleBtn.setAttribute("aria-expanded", "false")
+    }
+
+    function scheduleClose() {
+      if (closeTimer) clearTimeout(closeTimer)
+      closeTimer = setTimeout(closeSidebar, 200)
+    }
+
+    // Hover-to-preview (mouse only -- COARSE_POINTER skips it so a tap on
+    // the rail doesn't also fire a hover-open right before the click
+    // handler runs).
+    if (!COARSE_POINTER) {
+      rail.addEventListener("mouseenter", openSidebar)
+      rail.addEventListener("mouseleave", scheduleClose)
+      sidebar.addEventListener("mouseenter", openSidebar)
+      sidebar.addEventListener("mouseleave", scheduleClose)
+    }
+
+    toggleBtn.addEventListener("click", function () {
+      if (body.classList.contains("vm-sidebar-open")) {
+        setPinned(false)
+        closeSidebar()
+      } else {
+        openSidebar()
+      }
+    })
+
+    pinBtn.addEventListener("click", function () {
+      var next = !isPinned()
+      setPinned(next)
+      if (next) openSidebar()
+    })
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return
+      if (!body.classList.contains("vm-sidebar-open")) return
+      setPinned(false)
+      closeSidebar()
+    })
+
+    // Click-outside: covers touch (no hover/mouseleave to rely on) and
+    // mouse clicks that land directly on the page content rather than
+    // drifting out through the sidebar's own edge.
+    document.addEventListener("click", function (event) {
+      if (!body.classList.contains("vm-sidebar-open")) return
+      if (isPinned()) return
+      if (sidebar.contains(event.target) || rail.contains(event.target)) return
+      closeSidebar()
+    })
+
+    if (isPinned()) {
+      setPinned(true)
+      openSidebar()
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init)
+  } else {
+    init()
+  }
+})()
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIFZNIGlzIHRoZSBzaGFyZWQgdXRpbGl0eSBsaWJyYXJ5LCBsb2FkZWQgZ2xvYmFsbHkgdmlhIF9pbmNsdWRlcy9oZWFkLXNjcmlwdHMuaHRtbCAoanMvKiopLiBUaGlzIGhlcm8gdXNlcyBWTS5wbG90dGluZy5jb25maWcuXG5WTSA9IHdpbmRvdy5WTVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0yIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gQSBmaXhlZCwgbm9uLWVkaXRhYmxlIGRlY29yYXRpdmUgY3VydmUgLS0gdW5saWtlIGV2ZXJ5IG1ldGhvZCBwYWdlJ3Ncbi8vIHBsb3R0ZXIsIG5vdGhpbmcgaGVyZSBpcyB1c2VyIGlucHV0LCBzbyB0aGlzIHNraXBzIHRoZSBleHByZXNzaW9uXG4vLyBwYXJzZXIgYW5kIG1hdGguanMgZW50aXJlbHkgYW5kIGp1c3Qgc2FtcGxlcyBwbGFpbiBKUyBjbG9zdXJlcy4gQVxuLy8gTGlzc2Fqb3VzIGZpZ3VyZSB0cmFjZXMgb3V0IGEgY2xvc2VkIGxvb3AgdGhhdCdzIHZpc3VhbGx5IGJ1c3kgZW5vdWdoIHRvXG4vLyByZWFkIGFzIFwiYSBsaXZlIHNpbXVsYXRpb25cIiBhdCBhIGdsYW5jZSwgYW5kIGNoZWFwIGVub3VnaCB0byByZXNhbXBsZVxuLy8gZXZlcnkgZnJhbWUgd2l0aCBubyBjYWNoaW5nLlxuLy8gQSBjbG9zdXJlIG92ZXIgX3Bsb3REaXYsIGNhbGxlZCAobm90IHJlZmVyZW5jZWQgYmFyZSkgZnJvbSB0aGUgZGlzcGxheVxuLy8gY2VsbCBiZWxvdyBhcyBoZXJvUGxvdCgpIC0tIG1hdGNoaW5nIGV2ZXJ5IG90aGVyIHBhZ2UncyBtYWluUGxvdChzZXR1cClcbi8vIGNvbnZlbnRpb24uIEEgYmFyZSBgaGVyb1Bsb3RgIHJlZmVyZW5jZSwgd2l0aG91dCB0aGUgY2FsbCwgcmVuZGVycyBhc1xuLy8gT2JzZXJ2YWJsZSdzIGdlbmVyaWMgb2JqZWN0IGluc3BlY3RvciBpbnN0ZWFkIG9mIGVtYmVkZGluZyB0aGUgRE9NIG5vZGVcbi8vICh2ZXJpZmllZCB0aGUgaGFyZCB3YXk6IGl0IGR1bXBlZCB0aGUgZGl2J3MgaW50ZXJuYWwgUGxvdGx5IHByb3BlcnRpZXNcbi8vIGFzIGluc3BlY3RhYmxlIG9iamVjdCBrZXlzIGluc3RlYWQgb2Ygc2hvd2luZyB0aGUgY2hhcnQpLlxuaGVyb1Bsb3QgPSB7XG4gIGNvbnN0IFBsb3RseSA9IHdpbmRvdy5QbG90bHlcbiAgbGV0IF9wbG90RGl2ID0gbnVsbFxuXG4gIGNvbnN0IFNBTVBMRVMgPSA3MjBcbiAgY29uc3QgdHMgPSBbXVxuICBjb25zdCB4cyA9IFtdXG4gIGNvbnN0IHlzID0gW11cbiAgZm9yIChsZXQgaSA9IDA7IGkgPD0gU0FNUExFUzsgaSsrKSB7XG4gICAgY29uc3QgdCA9IChpIC8gU0FNUExFUykgKiAyICogTWF0aC5QSVxuICAgIHRzLnB1c2godClcbiAgICB4cy5wdXNoKE1hdGguc2luKDMgKiB0KSlcbiAgICB5cy5wdXNoKE1hdGguc2luKDQgKiB0KSlcbiAgfVxuXG4gIGNvbnN0IGxheW91dCA9IHtcbiAgICBtYXJnaW46IHtsOiAwLCByOiAwLCB0OiAwLCBiOiAwfSxcbiAgICB4YXhpczoge3Zpc2libGU6IGZhbHNlLCByYW5nZTogWy0xLjIsIDEuMl0sIGZpeGVkcmFuZ2U6IHRydWV9LFxuICAgIHlheGlzOiB7dmlzaWJsZTogZmFsc2UsIHJhbmdlOiBbLTEuMiwgMS4yXSwgc2NhbGVhbmNob3I6IFwieFwiLCBzY2FsZXJhdGlvOiAxLCBmaXhlZHJhbmdlOiB0cnVlfSxcbiAgICBzaG93bGVnZW5kOiBmYWxzZSxcbiAgICBwYXBlcl9iZ2NvbG9yOiBcInJnYmEoMCwwLDAsMClcIixcbiAgICBwbG90X2JnY29sb3I6IFwicmdiYSgwLDAsMCwwKVwiLFxuICAgIGhvdmVybW9kZTogZmFsc2VcbiAgfVxuICBjb25zdCBjb25maWcgPSBWTS5wbG90dGluZy5jb25maWcoe3N0YXRpY1Bsb3Q6IHRydWUsIGRpc3BsYXlNb2RlQmFyOiBmYWxzZX0pXG5cbiAgcmV0dXJuICgpID0+IHtcbiAgICBpZiAoIV9wbG90RGl2KSB7XG4gICAgICBfcGxvdERpdiA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoXCJkaXZcIilcbiAgICAgIF9wbG90RGl2LmNsYXNzTmFtZSA9IFwidm0taGVyby1wbG90XCJcbiAgICAgIFBsb3RseS5uZXdQbG90KF9wbG90RGl2LCBbXG4gICAgICAgIHt4OiB4cywgeTogeXMsIHR5cGU6IFwic2NhdHRlclwiLCBtb2RlOiBcImxpbmVzXCIsIGxpbmU6IHtjb2xvcjogXCIjOGFiNGZmXCIsIHdpZHRoOiAyLjUsIHNoYXBlOiBcInNwbGluZVwifSwgb3BhY2l0eTogMC44NX0sXG4gICAgICAgIHt4OiBbeHNbMF1dLCB5OiBbeXNbMF1dLCB0eXBlOiBcInNjYXR0ZXJcIiwgbW9kZTogXCJtYXJrZXJzXCIsIG1hcmtlcjoge2NvbG9yOiBcIiNmODcxNzFcIiwgc2l6ZTogMTEsIGxpbmU6IHtjb2xvcjogXCIjMTcxYjI5XCIsIHdpZHRoOiAyfX19XG4gICAgICBdLCBsYXlvdXQsIGNvbmZpZylcblxuICAgICAgLy8gX3Bsb3REaXYgaXMgY3JlYXRlZCBkZXRhY2hlZCAoZG9jdW1lbnQuY3JlYXRlRWxlbWVudCwgbm90IHlldCBpblxuICAgICAgLy8gdGhlIHBhZ2UpLCBzbyBpdCBtZWFzdXJlcyAweDAgYXQgdGhlIG1vbWVudCBuZXdQbG90IHJ1bnMgLS1cbiAgICAgIC8vIFBsb3RseSdzIGF1dG9zaXplIGZhbGxzIGJhY2sgdG8gaXRzIGhhcmRjb2RlZCA3MDB4NDUwIGRlZmF1bHRcbiAgICAgIC8vIGluc3RlYWQgb2YgdGhlIHJlYWwgKDk0Ny1pc2ggcHggd2lkZSkgY29udGFpbmVyLCB3aGljaCBsZWZ0IHRoZVxuICAgICAgLy8gY3VydmUgc2l0dGluZyBsZWZ0LWFsaWduZWQgaW5zdGVhZCBvZiBjZW50ZXJlZC9maWxsaW5nIHRoZSBoZXJvXG4gICAgICAvLyBwYW5lbC4gRXZlcnkgbWFpblBsb3QgY2VsbCBvbiB0aGUgc2l0ZSB3b3JrcyBhcm91bmQgZXhhY3RseSB0aGlzXG4gICAgICAvLyB3aXRoIHRoZSBzYW1lIFJlc2l6ZU9ic2VydmVyIG9uY2UgdGhlIGRpdiBpcyBhY3R1YWxseSBhdHRhY2hlZCBhbmRcbiAgICAgIC8vIGhhcyBhIHJlYWwgc2l6ZS5cbiAgICAgIFZNLnBsb3R0aW5nLmF1dG9SZXNpemUoX3Bsb3REaXYpXG5cbiAgICAgIC8vIEFkdmFuY2VzIHRoZSBtYXJrZXIgb25lIHNhbXBsZSBwZXIgdGljayBhbmQga2VlcHMgaXQgcnVubmluZyBmb3JcbiAgICAgIC8vIHRoZSBsaWZlIG9mIHRoZSBwYWdlIC0tIHRoaXMgY2VsbCBoYXMgbm8gcmVhY3RpdmUgaW5wdXRzLCBzbyBpdFxuICAgICAgLy8gb25seSBldmVyIHJ1bnMgb25jZSwgYW5kIHRoZSBpbnRlcnZhbCBpcyB3aGF0IGtlZXBzIHRoZSBjdXJ2ZVxuICAgICAgLy8gbW92aW5nIGFmdGVyIHRoYXQuXG4gICAgICBsZXQgZnJhbWUgPSAwXG4gICAgICBzZXRJbnRlcnZhbCgoKSA9PiB7XG4gICAgICAgIGZyYW1lID0gKGZyYW1lICsgMSkgJSAoU0FNUExFUyArIDEpXG4gICAgICAgIFBsb3RseS5yZXN0eWxlKF9wbG90RGl2LCB7eDogW1t4c1tmcmFtZV1dXSwgeTogW1t5c1tmcmFtZV1dXX0sIFsxXSlcbiAgICAgIH0sIDMwKVxuICAgIH1cbiAgICByZXR1cm4gX3Bsb3REaXZcbiAgfVxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0zIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiaGVyb1Bsb3QoKVxuIn1dfQ==
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../..";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
 </script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {

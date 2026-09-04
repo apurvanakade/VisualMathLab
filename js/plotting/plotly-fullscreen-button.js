@@ -121,9 +121,96 @@
     if (layout && layout.dragmode !== undefined) return layout
     return {...layout, dragmode: "pan"}
   }
+  // Layers the shared theme (js/plotting/chart-theme.js) UNDER whatever
+  // layout a page passes, so every existing mainPlot cell picks up
+  // themed axes/fonts/background with no page-level edit -- a page's own
+  // layout keys (margin, xaxis.range, ...) still win where they overlap,
+  // since VM.plotting.layout deep-merges the page's object on top of its
+  // own defaults.
+  const withTheme = (layout) => {
+    if (!globalThis.VM?.plotting?.layout) return layout
+    return globalThis.VM.plotting.layout(layout)
+  }
+  // layout.hoverlabel is not enough on its own: Plotly derives each trace's
+  // hover-label background from that *trace's* own color unless the trace
+  // sets hoverlabel itself, so the shared layout default never applies and
+  // every tooltip renders as a light box regardless of theme. Injecting the
+  // themed hoverlabel per trace here keeps that fix in one place instead of
+  // on every trace on every page.
+  const withTraceDefaults = (data) => {
+    if (!Array.isArray(data) || !globalThis.VM?.plotting?.hoverLabel) return data
+    const hoverlabel = globalThis.VM.plotting.hoverLabel()
+    const out = []
+    for (const trace of data) {
+      if (!trace || typeof trace !== "object" || trace.hoverlabel !== undefined) {
+        out.push(trace)
+        continue
+      }
+      out.push({ ...trace, hoverlabel })
+    }
+    return out
+  }
+
   for (const name of ["newPlot", "react"]) {
     const original = globalThis.Plotly[name]
-    globalThis.Plotly[name] = (gd, data, layout, config) => original(gd, data, withDefaultDragmode(layout), addButton(config))
+    globalThis.Plotly[name] = (gd, data, layout, config) =>
+      original(gd, withTraceDefaults(data), withDefaultDragmode(withTheme(layout)), addButton(globalThis.VM?.plotting?.config ? globalThis.VM.plotting.config(config) : config))
+  }
+
+  // A page's chart is normally re-themed the next time it reactively
+  // rebuilds (Plotly.react runs VM.plotting.layout() fresh every call, per
+  // withTheme above) -- but toggling dark mode alone doesn't touch any
+  // OJS input, so nothing would otherwise trigger that rebuild. Watch
+  // <body>'s class for the quarto-dark/quarto-light flip
+  // (toggleBodyColorMode in Quarto's own inline script is what sets it,
+  // see docs/**/*.html) and relayout every live chart on the page
+  // immediately, without needing a per-page listener.
+  //
+  // Registration is deferred to DOMContentLoaded. This file is loaded from
+  // _includes/head-scripts.html via include-in-header, i.e. from <head> --
+  // at which point document.body is still null, so guarding on
+  // `document.body` and registering inline (which this did) silently
+  // skipped the observer on every page and the toggle re-themed nothing.
+  const watchThemeToggle = () => {
+    if (typeof document === "undefined" || !document.body) return
+    if (typeof MutationObserver === "undefined") return
+    const repaint = () => {
+      if (!globalThis.Plotly?.relayout || !globalThis.VM?.plotting?.themePatch) return
+      for (const gd of document.querySelectorAll(".js-plotly-plot")) {
+        globalThis.Plotly.relayout(gd, globalThis.VM.plotting.themePatch())
+      }
+    }
+
+    // <body>'s class list is not the theme's alone -- the sidebar rail writes
+    // .vm-sidebar-open to it on every hover-to-preview and .vm-sidebar-pinned
+    // on every pin (_includes/sidebar-rail.html). Without this check, opening
+    // the sidebar relayouted every chart on the page for nothing.
+    let lastTheme = globalThis.VM?.plotting?.themeName?.()
+
+    const themeObserver = new MutationObserver(() => {
+      // Deferred by two frames, not run inline. Quarto's toggle flips the
+      // body class and swaps the light/dark stylesheet as separate steps,
+      // and the class lands first -- so reading --vm-* here synchronously
+      // returns the *outgoing* theme's tokens (measured: colorway, which
+      // comes from classList, flipped correctly while hoverlabel.bgcolor,
+      // which comes from getComputedStyle, stayed on the light surface).
+      // One frame for the stylesheet to apply, one for style recalc. The
+      // theme comparison goes inside that wait, not around it, so a real
+      // toggle still gets both frames before anything reads a token.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const theme = globalThis.VM?.plotting?.themeName?.()
+        if (theme === lastTheme) return
+        lastTheme = theme
+        repaint()
+      }))
+    })
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
+  }
+
+  if (typeof document !== "undefined" && document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", watchThemeToggle)
+  } else {
+    watchThemeToggle()
   }
 
   globalThis.VM = {...globalThis.VM, plotting: {...globalThis.VM?.plotting, fullscreenButton}}

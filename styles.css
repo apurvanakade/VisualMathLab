@@ -4,6 +4,186 @@
  * Authors: Apurva Nakade
  */
 
+/* Design tokens (--vm-*) are defined in _theme/vml-light.scss and
+ * _theme/vml-dark.scss, which also feed Bootstrap's own $variables so
+ * Quarto's built-in components (navbar, cards, callouts, tables) inherit
+ * the same palette. Everything in this file consumes --vm-* — no --bs-*
+ * fallback chains, no hardcoded hex — so a single edit to the two theme
+ * files re-themes both this stylesheet and Quarto's own chrome together. */
+
+/* ── Page grid / collapsible sidebar ─────────────────────────────── */
+/* Quarto only makes #quarto-sidebar an off-canvas overlay below 992px
+ * (Bootstrap's .collapse.collapse-horizontal); above that it switches to
+ * `position: sticky` and reserves its own page-columns grid track. These
+ * rules force the off-canvas treatment at every width instead, driven by
+ * our own .vm-sidebar-open/.vm-sidebar-pinned classes on <body> (see
+ * _includes/sidebar-rail.html) rather than Bootstrap's .collapse/.show —
+ * bypassing Bootstrap's own JS entirely is what lets the rail's
+ * hover-to-preview interaction work without fighting it. */
+
+/* Scoped to >=992px on purpose. Below that Quarto's own responsive grid
+ * already collapses the sidebar track and sizes the body column to the
+ * viewport, and it does it correctly -- an unscoped override here (which
+ * this was) forced a `minmax(500px, ...)` floor onto phone viewports too,
+ * so a 390px screen laid out a 500px column and scrolled sideways:
+ * document.scrollWidth measured 551px against a 390px viewport, clipping
+ * the title, byline and every input. The floor is minmax(0, ...) now as
+ * well, so the column can always shrink to whatever space actually
+ * exists. */
+@media (min-width: 992px) {
+  body.floating .page-columns {
+    grid-template-columns:
+      [screen-start] 1.5em [screen-start-inset] 5fr
+      [page-start page-start-inset body-start-outset body-start] 1.5em
+      [body-content-start] minmax(0, calc(1000px - 3em)) [body-content-end] 1.5em
+      [body-end body-end-outset page-end-inset] 1.5em
+      [page-end] 5fr [screen-end-inset] 1.5em [screen-end] !important;
+  }
+
+  /* ...except on the handful of pages that actually have a table of
+   * contents. Quarto places #quarto-margin-sidebar at
+   * `grid-column: body-end / page-end`, and the rule above collapses that
+   * whole span onto a single 1.5em track -- so the TOC laid out 26px wide
+   * against 100px of content on every page that has one (measured at 1440px
+   * on privacy, sperners-lemma/geometric-proof and 1d-recursive-filters).
+   * Restoring Quarto's own right-hand margin tracks just for those pages
+   * keeps the wide, centered body column everywhere else, which is the
+   * point of the override above: the interactive method pages have no
+   * headings at all, so they render no TOC and shouldn't reserve a column
+   * for one.
+   *
+   * :has() rather than Quarto's `fullcontent` body class, which looks like
+   * the right discriminator but isn't -- it's set on the homepage listing
+   * and NOT on root-finding/newton-method, which has no TOC either. The
+   * presence of the nav element is the only thing that actually tracks
+   * whether a TOC exists. (:has() is already used further down this file
+   * for the fullscreen chart chain.) */
+  body.floating:has(nav#TOC) .page-columns {
+    grid-template-columns:
+      [screen-start] 1.5em [screen-start-inset] 5fr
+      [page-start page-start-inset body-start-outset body-start] 1.5em
+      [body-content-start] minmax(0, calc(1000px - 3em)) [body-content-end] 1.5em
+      [body-end] minmax(20px, 40px)
+      [body-end-outset] minmax(40px, 160px)
+      [page-end-inset] minmax(20px, 40px)
+      [page-end] 5fr [screen-end-inset] 1.5em [screen-end] !important;
+  }
+}
+
+/* 66px matches #quarto-header's measured rendered height -- the sidebar's
+ * own box starts below the navbar rather than under it (padding-top alone
+ * would still paint the sidebar's background/shadow over the navbar's
+ * brand text, since both are position: fixed and the sidebar's z-index
+ * has to be above the navbar's for the off-canvas panel to show at all). */
+#quarto-sidebar.sidebar-navigation {
+  position: fixed !important;
+  top: 66px !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: min(280px, 85vw) !important;
+  max-width: min(280px, 85vw) !important;
+  height: calc(100vh - 66px) !important;
+  z-index: 1055;
+  display: flex !important;
+  flex-direction: column;
+  background: var(--vm-bg);
+  border-right: 1px solid var(--vm-border);
+  box-shadow: var(--vm-shadow);
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  overflow-y: auto;
+}
+
+body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
+  transform: translateX(0);
+}
+
+/* Quarto's own backdrop is Bootstrap-collapse-driven and unused here —
+ * sidebar-rail.html's own mouseleave/click-outside/Escape handling
+ * replaces it. */
+#quarto-sidebar-glass {
+  display: none !important;
+}
+
+/* The always-visible rail: a slim strip at the left edge with a hamburger
+ * toggle, present regardless of sidebar state so there's always something
+ * to hover or click to bring the sidebar back. */
+#vm-sidebar-rail {
+  position: fixed;
+  top: 66px;
+  left: 0;
+  bottom: 0;
+  width: 2.75rem;
+  z-index: 1056;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.6rem;
+  transition: left 0.22s ease;
+}
+
+/* Once open, the sidebar's own box occupies x:0-280px at the same z-index
+ * band the rail sits in -- move the rail to the sidebar's right edge
+ * instead of leaving it stacked on top of the sidebar's nav tree text. */
+body.vm-sidebar-open #vm-sidebar-rail {
+  left: min(280px, 85vw);
+}
+
+#vm-sidebar-rail button {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--vm-radius-sm, 6px);
+  background: transparent;
+  color: var(--vm-text-soft);
+  cursor: pointer;
+}
+
+#vm-sidebar-rail button:hover,
+body.vm-sidebar-open #vm-sidebar-rail button[data-vm-toggle] {
+  background: var(--vm-surface);
+  border-color: var(--vm-border);
+  color: var(--vm-text);
+}
+
+body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
+  color: var(--vm-accent);
+  border-color: var(--vm-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #quarto-sidebar.sidebar-navigation {
+    transition: none;
+  }
+}
+
+/* ── Navbar / footer ─────────────────────────────────────────────── */
+
+#quarto-header .navbar {
+  background: color-mix(in srgb, var(--vm-bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--vm-border);
+}
+
+.footer {
+  border-top: 1px solid var(--vm-border);
+  color: var(--vm-text-soft);
+  background: var(--vm-bg);
+}
+
+.footer a {
+  color: var(--vm-text-soft);
+}
+
+.footer a:hover {
+  color: var(--vm-accent);
+}
+
 /* ── Parameter controls panel ────────────────────────────────────── */
 /* Composable primitives: .ojs-panel is chrome only, .ojs-row/.ojs-grid are
  * layout only. Combine them (e.g. class="ojs-panel ojs-row") for a
@@ -14,9 +194,9 @@
 .ojs-panel {
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--bs-border-radius, 0.375rem);
-  background: var(--bs-light, #f8f9fa);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
 }
 
 .ojs-row {
@@ -26,10 +206,20 @@
   align-items: flex-end;
 }
 
-/* First control grows to fill the row; later ones (e.g. a button) keep their natural width */
+/* First control grows to fill the row; later ones (e.g. a button) keep their
+ * natural width.
+ *
+ * :first-of-type/:last-of-type rather than :first-child/:last-child, which
+ * these were. The child forms mean "a div that is ALSO the first/last child",
+ * so any non-div sibling inserted at either end stops them matching anything
+ * at all -- which is what happened when js/ui/draggable-overlay.js started
+ * appending its <button> grip to the step-overlay bars, silently dropping the
+ * `flex: 1 1 200px` that makes a step slider fill its row. Every .ojs-row's
+ * children are Quarto `div.cell` wrappers, so the two forms are otherwise
+ * equivalent here. */
 .ojs-row > div { margin: 0; }
-.ojs-row > div:first-child { flex: 1 1 200px; }
-.ojs-row > div:last-child { flex: 0 0 auto; }
+.ojs-row > div:first-of-type { flex: 1 1 200px; }
+.ojs-row > div:last-of-type { flex: 0 0 auto; }
 
 /* auto-fit so empty tracks collapse instead of pinning real ones to the minmax floor */
 .ojs-grid {
@@ -41,11 +231,12 @@
 
 /* Skin every native input inside a panel to match its chrome */
 .ojs-panel input {
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
   padding: 0.25rem 0.5rem;
   font-size: 0.9rem;
-  background: white;
+  background: var(--vm-bg);
+  color: var(--vm-text);
 }
 
 /* !important overrides Observable Inputs' own flex-shrink on the number spinner */
@@ -68,15 +259,15 @@
 
 .ojs-panel input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.2);
+  border-color: var(--vm-accent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
 }
 
 .ojs-panel input[type="range"] {
   border: none;
   padding: 0;
   background: none;
-  accent-color: #2563eb;
+  accent-color: var(--vm-accent);
   width: 100%;
 }
 
@@ -87,22 +278,26 @@
  * quarto-ojs.css) so this doesn't also catch Quarto's own per-cell
  * "Copy to Clipboard" button, which lives in the same panel. */
 .ojs-panel form[class^="oi-"] button {
-  border: 1px solid #2563eb;
-  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  border: 1px solid var(--vm-accent);
+  border-radius: var(--vm-radius-sm);
   padding: 0.25rem 0.75rem;
   font-size: 0.9rem;
+  font-weight: 500;
   color: #fff;
-  background: #2563eb;
+  background: var(--vm-accent);
+  box-shadow: rgba(27, 31, 36, 0.1) 0 1px 0 0 inset;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
   cursor: pointer;
 }
 
 .ojs-panel form[class^="oi-"] button:hover {
-  background: #1d4ed8;
+  background: var(--vm-accent-hover);
+  border-color: var(--vm-accent-hover);
 }
 
 .ojs-panel form[class^="oi-"] button:focus {
   outline: none;
-  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 35%, transparent);
 }
 
 /* Observable Inputs lays out every control as <form class="oi-...">
@@ -222,7 +417,7 @@
  * Plotly.Plots.resize whenever this box resizes, so Plotly's own redraw
  * picks up the letterboxed size with no extra JS here. */
 .ojs-plot-overlay:fullscreen {
-  background: var(--bs-body-bg, #fff);
+  background: var(--vm-bg);
 }
 
 /* Quarto/Observable sits several plain wrapper divs between .ojs-plot-overlay
@@ -267,11 +462,12 @@
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.5rem 0.65rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--bs-border-radius, 0.375rem);
-  background: var(--bs-body-bg, #fff);
-  opacity: 0.92;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
   font-size: 0.85rem;
   max-width: min(220px, 45vw);
 }
@@ -282,11 +478,11 @@
   gap: 0.4rem;
   cursor: pointer;
   user-select: none;
-  color: var(--bs-body-color, #212529);
+  color: var(--vm-text);
 }
 
 .ojs-legend-overlay .ojs-legend-item:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--vm-accent);
   outline-offset: 2px;
 }
 
@@ -298,11 +494,11 @@
 }
 
 .ojs-legend-overlay .ojs-legend-item[aria-checked="false"] {
-  color: var(--bs-secondary-color, #6c757d);
+  color: var(--vm-text-soft);
 }
 
 .ojs-legend-overlay .ojs-legend-item[aria-checked="false"] .ojs-legend-swatch {
-  background: var(--bs-secondary-bg, #e9ecef) !important;
+  background: var(--vm-border) !important;
 }
 
 .ojs-legend-overlay .ojs-legend-item[aria-checked="false"] span:last-child {
@@ -322,11 +518,12 @@
   right: 0.75rem;
   z-index: 5;
   padding: 0.4rem 0.75rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--bs-border-radius, 0.375rem);
-  background: var(--bs-body-bg, #fff);
-  opacity: 0.92;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
 }
 
 /* Observable Inputs sizes every range input to a fixed ~180px track of its
@@ -335,7 +532,7 @@
  * instead of growing with the bar. The .ojs-panel rule above already gives
  * panel sliders a fluid track; overlay bars need the same. */
 .ojs-step-overlay input[type="range"] {
-  accent-color: #2563eb;
+  accent-color: var(--vm-accent);
   width: 100%;
 }
 
@@ -344,6 +541,22 @@
  * the spinner eating a third of it. */
 .ojs-step-overlay input[type="number"] {
   width: 5.5em;
+  flex: none !important;
+}
+
+/* .ojs-panel input[type="text"] (below) caps every text field on the site at
+ * 10em -- except this one never got the equivalent, so the one text-type
+ * field that lives in the overlay bar (every page's "Max"/"Max steps"/"Max
+ * depth" field) had nothing capping it. Without a width, it falls through to
+ * `width: inherit` from Observable's own wrapper div, which in turn inherits
+ * from the form's own natural size -- and since that form is .ojs-auto
+ * (width: auto, sized toward Observable's ~360px form max-width rather than
+ * shrinking to its actual "20"/"2000" content), the input rendered at 273px:
+ * three times the width of the number spinner (94px, capped just above) it
+ * sits right next to in the same bar. */
+.ojs-step-overlay input[type="text"] {
+  width: 10em;
+  max-width: 100%;
   flex: none !important;
 }
 
@@ -362,22 +575,297 @@
   gap: 0.25rem 1rem;
 }
 
-/* ── Listing cards ───────────────────────────────────────────────── */
+/* Observable Inputs hardcodes every <label> to width: 120px; flex-shrink: 0
+ * (see the .ojs-panel rule above for the full explanation). A step-overlay
+ * slider's label is normally short enough ("Step", "n", "α") that this never
+ * shows -- but "Tolerance exponent e (ε = 10⁻ᵉ)" (adaptive-methods,
+ * adaptive-integration) wraps to 3 lines at 120px, making that field 93px
+ * tall against its "Max steps" neighbor's 37px and centering the slider
+ * roughly mid-label instead of level with it.
+ *
+ * Unlike the .ojs-panel fix, this does NOT also switch to flex-direction:
+ * column -- .ojs-panel has room to spare and stacking there is the established
+ * look, but the overlay bar is deliberately compact with the label beside the
+ * control (see every other page's Step/Max), and column-stacking here would
+ * grow that bar's height on every page, not just this one. Letting the label
+ * size to its content on a single line is enough: short labels were already
+ * narrower than 120px so this is a no-op for them, and the long one no longer
+ * wraps.
+ *
+ * :not([class$="-checkbox"]) excludes Inputs.radio()/checkbox() groups (e.g.
+ * k-means' "Algorithm" picker), which already get their own row-wrap
+ * treatment immediately above and would otherwise also match
+ * `form[class^="oi-"]`.
+ *
+ * No `white-space: nowrap` here (an earlier version of this rule had it,
+ * to force the long label onto one line): at 390px this bar has nowhere
+ * near enough room for an un-wrapping ~280px label, and since a flex item's
+ * default min-width is its content's min-content size, nowrap text can't
+ * shrink to fit -- it just overflows the viewport instead of wrapping,
+ * scrollWidth measured 360px past the viewport. Left free to wrap, the label
+ * shrinks back to multiple lines exactly like it did before this rule, but
+ * `.ojs-row`'s own `flex-wrap: wrap` has already dropped this field onto its
+ * own line below "Max steps" by the width this matters at, so the two no
+ * longer need to share a row's height in the first place. */
+.ojs-step-overlay form[class^="oi-"]:not([class$="-checkbox"]) label {
+  width: auto;
+}
 
-.quarto-grid-item {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.07);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+/* ── Draggable overlay panels ────────────────────────────────────── */
+/* Both floating panels above are pinned to a corner by default, which is
+ * sometimes exactly where the interesting part of the curve is. A grip fades
+ * in at each panel's right edge; js/ui/draggable-overlay.js does the actual
+ * dragging (and remembers where each panel was put), this is only its
+ * chrome. */
+
+/* The gutter the grip sits in, so it can never overlap a legend label or the
+ * "Max" field at the end of a step bar. */
+.ojs-legend-overlay,
+.ojs-step-overlay {
+  padding-right: 1.5rem;
+}
+
+.vm-overlay-grip {
+  position: absolute;
+  right: 0.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: var(--vm-radius-sm);
+  background: none;
+  color: var(--vm-text-soft);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  /* Without this, a touch drag scrolls the page instead of moving the panel. */
+  touch-action: none;
+  /* Stops a press-and-drag from selecting the panel's text. The JS can't do
+   * this by cancelling pointerdown, which would also suppress the synthesized
+   * click/dblclick and break double-click-to-reset. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Revealed on hover, matching the modebar pill below rather than adding a
+ * third piece of always-on chrome to a chart. */
+.ojs-legend-overlay:hover .vm-overlay-grip,
+.ojs-step-overlay:hover .vm-overlay-grip,
+.vm-overlay-grip:focus-visible {
+  opacity: 1;
+}
+
+.vm-overlay-grip:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 1px;
+}
+
+.vm-overlay-grip:active,
+.vm-overlay-dragging .vm-overlay-grip {
+  cursor: grabbing;
+}
+
+/* A touch device never fires hover, so a hover-only affordance would be
+ * permanently invisible there. */
+@media (hover: none) {
+  .vm-overlay-grip {
+    opacity: 1;
+  }
+}
+
+/* ── Plotly modebar ──────────────────────────────────────────────── */
+/* Plotly ships its modebar as a bare row of gray icon buttons with no
+ * container chrome -- stock #999 icons on a transparent strip, which reads
+ * as a foreign toolbar dropped onto the page (and as a light-gray bar on
+ * the dark theme). Plotly already fades it in on hover by itself, via the
+ * .modebar--hover class it sets; these rules only change how it looks, not
+ * when it appears. The icon colors themselves come from layout.modebar in
+ * js/plotting/chart-theme.js -- only Plotly can set those, since it paints
+ * the SVG fills inline. Everything here is the surrounding chrome, matching
+ * .ojs-legend-overlay / .ojs-step-overlay so all three float in the same
+ * visual language. */
+
+.js-plotly-plot .modebar {
+  display: flex;
+  align-items: center;
+  padding: 0.15rem 0.2rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
+}
+
+/* Plotly's own .modebar--hover fades the BUTTONS in on hover but leaves the
+ * bar itself always present -- which, once the bar has chrome of its own,
+ * shows as an empty floating pill over the chart at rest. Fade the whole
+ * pill on the same trigger and timing instead, so at rest there is nothing
+ * but the chart. */
+.js-plotly-plot .modebar--hover {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.js-plotly-plot:hover .modebar--hover,
+.js-plotly-plot .modebar--hover:focus-within {
+  opacity: 1;
+}
+
+/* Plotly splits the buttons into four .modebar-group blocks (see the
+ * modeBarButtons list in js/plotting/plotly-fullscreen-button.js) and
+ * spaces each group out; collapse that into one continuous bar so the pill
+ * reads as a single control rather than four floating clusters. */
+.js-plotly-plot .modebar-group {
+  display: flex;
+  align-items: center;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+}
+
+.js-plotly-plot .modebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: var(--vm-radius-sm);
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.js-plotly-plot .modebar-btn:hover {
+  background: var(--vm-surface-hover);
+}
+
+.js-plotly-plot .modebar-btn:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: -2px;
+}
+
+/* ── Range sliders ───────────────────────────────────────────────── */
+/* Every other control in a panel is fully styled (border, radius, focus
+ * ring); the sliders were the one holdout, left at browser-default geometry
+ * with only accent-color set. --sx is the filled fraction of the track,
+ * written by js/ui/range-progress.js on every input event -- WebKit has no
+ * native equivalent of Firefox's ::-moz-range-progress, so the fill has to
+ * be painted as a gradient on the track itself. */
+
+.ojs-panel input[type="range"],
+.ojs-step-overlay input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  border: none;
+  padding: 0;
+  background: none;
   cursor: pointer;
 }
 
-.quarto-grid-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.13), 0 2px 4px rgba(0, 0, 0, 0.08);
+.ojs-panel input[type="range"]::-webkit-slider-runnable-track,
+.ojs-step-overlay input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.3rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--vm-accent), var(--vm-accent)) 0 / var(--sx, 0%) 100% no-repeat,
+    var(--vm-border);
 }
 
-.quarto-grid-item:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+.ojs-panel input[type="range"]::-webkit-slider-thumb,
+.ojs-step-overlay input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  /* centers the thumb on a 0.3rem track: (track - thumb) / 2 */
+  margin-top: -0.325rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--vm-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-bg) 70%, transparent);
+  transition: transform 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ojs-panel input[type="range"]:active::-webkit-slider-thumb,
+.ojs-step-overlay input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* Firefox paints the filled portion itself via ::-moz-range-progress, so it
+ * needs no --sx and gets a plain track underneath. */
+.ojs-panel input[type="range"]::-moz-range-track,
+.ojs-step-overlay input[type="range"]::-moz-range-track {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--vm-border);
+}
+
+.ojs-panel input[type="range"]::-moz-range-progress,
+.ojs-step-overlay input[type="range"]::-moz-range-progress {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--vm-accent);
+}
+
+.ojs-panel input[type="range"]::-moz-range-thumb,
+.ojs-step-overlay input[type="range"]::-moz-range-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--vm-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-bg) 70%, transparent);
+}
+
+.ojs-panel input[type="range"]:focus-visible,
+.ojs-step-overlay input[type="range"]:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 2px;
+}
+
+/* ── Invalid input ───────────────────────────────────────────────── */
+/* Promoted from the page-local .bt-invalid in
+ * differential-equations/butcher-tableau/index.qmd, which was the only
+ * error affordance anywhere on the site. Pairs with the in-chart empty
+ * state (VM.plotting.emptyState) so a formula that won't parse is flagged
+ * both at the field and on the chart. */
+
+.ojs-panel input.vm-invalid,
+input.vm-invalid {
+  border-color: var(--vm-alt, #dc2626) !important;
+  background: color-mix(in srgb, var(--vm-alt, #dc2626) 7%, transparent);
+}
+
+.ojs-panel input.vm-invalid:focus,
+input.vm-invalid:focus {
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-alt, #dc2626) 25%, transparent);
+}
+
+/* ── Listing cards ───────────────────────────────────────────────── */
+/* No shadow-lift on hover -- a bordered tile that tints its own background
+ * instead, matching visualpde.com's card treatment rather than a
+ * skeuomorphic elevation change. */
+
+.quarto-grid-item {
+  border: 1px solid var(--vm-border) !important;
+  border-radius: var(--vm-radius);
+  cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.quarto-grid-item:hover {
+  background-color: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
+}
+
+.quarto-grid-item .card-img,
+.quarto-grid-item .thumbnail-image {
+  height: 160px !important;
+  object-fit: cover;
 }
 
 /* ── Iteration table ─────────────────────────────────────────────── */
@@ -402,8 +890,8 @@
   z-index: 1050;
   padding: 0.3rem 0.6rem;
   border: none;
-  border-radius: var(--bs-border-radius-sm, 0.25rem);
-  background: #2563eb;
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-accent);
   color: #fff;
   font-size: 0.8rem;
   line-height: 1.2;
@@ -412,74 +900,132 @@
 }
 
 .vm-report-bug-popup:hover {
-  background: #1d4ed8;
+  background: var(--vm-accent-hover);
+}
+
+/* ── Callouts ─────────────────────────────────────────────────────── */
+/* Quarto's default callout-note is a Bootstrap-alert-style colored bar
+ * (blue left border + tinted background); this site uses "Convergence
+ * plots" / "Iteration table" callouts as plain content containers (38
+ * uses site-wide), not as attention-grabbing notes, so it's restyled to
+ * match .ojs-panel's quiet bordered chrome instead. */
+
+.callout.callout-style-default {
+  border: 1px solid var(--vm-border);
+  border-left: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-bg);
+}
+
+.callout.callout-style-default .callout-header {
+  background: var(--vm-surface);
 }
 
 /* ── Responsive ──────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  .page-layout-full main.content { padding-inline: 0.75rem; }
   .plotly-box-large { height: 65vh; min-height: 400px; }
   .ojs-grid { grid-template-columns: 1fr 1fr; }
+  #quarto-sidebar.sidebar-navigation { width: min(85vw, 320px) !important; max-width: min(85vw, 320px) !important; }
+  body.vm-sidebar-open #vm-sidebar-rail { left: min(85vw, 320px); }
 }
 
 @media (max-width: 480px) {
   .ojs-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Example preset cards ─────────────────────────────────────────── */
-/* Colors reuse the same --bs-* tokens as the panel chrome above (light
- * theme: cosmo, dark theme: cyborg) so the cards stay legible in both;
- * #2563eb is the site's fixed accent blue, same as the panel's button/
- * focus color and Plotly's reference-line color, and doesn't flip with
- * the theme. */
+/* ── Homepage hero / topic grid ──────────────────────────────────── */
 
-.example-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+.vm-hero {
+  position: relative;
+  height: min(52vh, 420px);
+  min-height: 280px;
+  margin: 0.5rem 0 2rem;
+  border-radius: var(--vm-radius);
+  overflow: hidden;
+  background: #14162a;
+  border: 1px solid var(--vm-border);
+}
+
+.vm-hero-plot-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.vm-hero-plot {
+  width: 100%;
+  height: 100%;
+}
+
+.vm-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
   gap: 1rem;
-  margin: 1.25rem 0 2rem 0;
+  padding: 2rem 1.5rem 2.25rem;
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 22, 42, 0) 0%, rgba(20, 22, 42, 0.55) 70%, rgba(20, 22, 42, 0.85) 100%);
 }
 
-.example-card {
-  display: block;
-  padding: 1rem 1.1rem;
-  border-radius: 18px;
-  background: var(--bs-light, #f8f9fa);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  color: inherit;
+.vm-hero-kicker {
+  margin: 0;
+  color: #dfe3f5;
+  font-size: 1.05rem;
+  font-weight: 300;
+  max-width: 32rem;
+}
+
+.vm-hero-cta {
+  pointer-events: all;
+  display: inline-block;
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--vm-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--vm-accent) 90%, transparent);
+  color: #fff;
+  font-weight: 500;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: rgba(27, 31, 36, 0.1) 0 1px 0 0 inset;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
-.example-card:hover,
-.example-card:focus-visible {
-  transform: translateY(-2px);
-  border-color: #2563eb;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+.vm-hero-cta:hover {
+  background: var(--vm-accent-hover);
+  text-decoration: none;
+  color: #fff;
 }
 
-.example-card:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+.vm-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2.5rem;
 }
 
-.example-card-title {
-  font-weight: 700;
-  font-size: 1rem;
-  margin-bottom: 0.35rem;
-}
-
-.example-card-formula {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #2563eb;
-  margin-bottom: 0.45rem;
-}
-
-.example-card-text {
-  font-size: 0.9rem;
+.vm-topic-tile {
+  display: block;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  color: var(--vm-text);
+  text-decoration: none !important;
   line-height: 1.45;
-  color: var(--bs-secondary-color, #475569);
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.vm-topic-tile:hover {
+  background: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
+}
+
+.vm-topic-tile strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--vm-accent);
+  font-weight: 600;
 }

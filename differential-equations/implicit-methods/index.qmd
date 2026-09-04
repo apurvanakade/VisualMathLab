@@ -185,6 +185,29 @@ viewof plotTrigger = {
 }
 ```
 
+<div class="ojs-grid">
+
+```{ojs}
+// Its own group, below the commit-gated fields and the Plot button: these
+// are always-live and describe how the slider sweeps rather than what gets
+// computed. They live here rather than in the chart overlay so that bar
+// holds nothing but the slider itself.
+viewof maxNInput = Inputs.text({value: "20", label: "Max n", placeholder: "Example: 20, 5*4"})
+```
+
+```{ojs}
+// How many steps each tick of the slider's play button advances -- read by
+// js/ui/slider-play.js via the data-vm-play-step tag, so raising it speeds
+// the sweep up.
+viewof playStep = {
+  const input = Inputs.text({value: "1", label: "n step size", placeholder: "Example: 1, 2*2"})
+  input.dataset.vmPlayStep = ""
+  return input
+}
+```
+
+</div>
+
 </div>
 
 ```{ojs}
@@ -472,21 +495,15 @@ viewof methods = {
 }
 ```
 
-<div class="ojs-step-overlay ojs-row">
+<div class="ojs-step-overlay">
 
 ```{ojs}
 viewof nControl = {
   const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(4, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
+  // Opts this slider into the play/pause button (js/ui/slider-play.js).
+  nSlider.dataset.vmPlay = ""
   return nSlider
-}
-```
-
-```{ojs}
-viewof maxNInput = {
-  const input = Inputs.text({value: "20", label: "Max", placeholder: "Example: 20, 5*4"})
-  input.classList.add("ojs-auto")
-  return input
 }
 ```
 

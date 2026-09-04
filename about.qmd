@@ -608,6 +608,22 @@ viewof plotterTrigger = {
 }
 ```
 
+<div class="ojs-grid">
+
+```{ojs}
+// How many steps each tick of the t slider's play button advances -- read
+// by js/ui/slider-play.js via the data-vm-play-step tag, so raising it
+// speeds the sweep up. It defaults higher than the other pages' because
+// this slider divides its interval into 500 steps, not a dozen or two.
+viewof playStep = {
+  const input = Inputs.text({value: "5", label: "t step size", placeholder: "Example: 5, 2*2"})
+  input.dataset.vmPlayStep = ""
+  return input
+}
+```
+
+</div>
+
 </div>
 
 ```{ojs}
@@ -824,6 +840,9 @@ viewof plotterT = {
 
   const slider = Inputs.range([tMin, tMax], {label: "t", step, value: tMin})
   slider.classList.add("ojs-fill")
+  // Opts this slider into the play/pause button (js/ui/slider-play.js), so
+  // the point can be watched tracing the curve rather than dragged along it.
+  slider.dataset.vmPlay = ""
   return slider
 }
 ```

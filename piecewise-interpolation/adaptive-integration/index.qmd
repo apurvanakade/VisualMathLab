@@ -181,6 +181,18 @@ viewof plotTrigger = {
 }
 ```
 
+<div class="ojs-grid">
+
+```{ojs}
+// Its own group, below the commit-gated fields and the Plot button: these
+// are always-live and describe how the slider sweeps rather than what gets
+// computed. They live here rather than in the chart overlay so that bar
+// holds nothing but the slider itself.
+viewof maxDepthInput = Inputs.text({value: "15", label: "Max depth", placeholder: "Example: 15, 5*3"})
+```
+
+</div>
+
 </div>
 
 ```{ojs}
@@ -565,21 +577,13 @@ viewof traces = {
 }
 ```
 
-<div class="ojs-step-overlay ojs-row">
+<div class="ojs-step-overlay">
 
 ```{ojs}
 viewof tolExponent = {
   const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
   tolSlider.classList.add("ojs-fill")
   return tolSlider
-}
-```
-
-```{ojs}
-viewof maxDepthInput = {
-  const input = Inputs.text({value: "15", label: "Max depth", placeholder: "Example: 15, 5*3"})
-  input.classList.add("ojs-auto")
-  return input
 }
 ```
 

@@ -871,6 +871,79 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   outline-offset: 2px;
 }
 
+/* ── Slider playback button ──────────────────────────────────────── */
+/* js/ui/slider-play.js gives an opted-in slider a play/pause button that
+ * sweeps it end to end, and inserts that button immediately before the
+ * range track inside Observable Inputs' own <form>. Adding the class here
+ * rather than styling by position keeps this off every other slider.
+ *
+ * Laid out as a wrapping flex row so it works with both form layouts the
+ * site already has: in a .ojs-step-overlay the label stays beside the
+ * control (see the overlay label rule above) and everything sits on one
+ * line, while in a .ojs-panel the label is given a full-width basis below
+ * so it keeps the stacked look the panel rule established.
+ *
+ * Repeated at the panel rule's own specificity, because that rule
+ * (`.ojs-panel form[class^="oi-"]`, a class plus an attribute selector) sets
+ * flex-direction: column and outranks a lone class -- which left the button
+ * stacked on a line of its own between the label and the track. */
+.vm-has-play,
+.ojs-panel form[class^="oi-"].vm-has-play {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.4rem;
+}
+
+.ojs-panel .vm-has-play > label {
+  flex: 0 0 100%;
+}
+
+/* Whatever holds the track -- Observable Inputs puts the range and its
+ * number readout either directly in the form or inside a wrapper div,
+ * depending on version -- takes the leftover width, so the button never
+ * shortens the track by its own size. The number readout opts back out
+ * via its own `flex: none !important` rules above. */
+/* flex-basis 0, not auto: the track inside carries `width: 100%`, so sizing
+ * this off its content asks for a full line's width and wraps the button --
+ * which is a couple of dozen pixels wide -- onto a line of its own above it.
+ * From zero, flex-grow hands it every pixel the button doesn't use. */
+.vm-has-play > *:not(label):not(.vm-play-button) {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+/* A quiet icon button, like .vm-overlay-grip rather than the filled accent
+ * button Observable Inputs' own <button> gets -- it sits inside a control,
+ * not at the end of a form, and a filled button there would read as the
+ * page's primary action. The !important overrides are aimed at the
+ * `.ojs-panel form[class^="oi-"] button` skin above, which is written for
+ * the Plot/Regenerate button and would otherwise paint this solid accent. */
+.vm-play-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0.15rem !important;
+  border: 0 !important;
+  border-radius: var(--vm-radius-sm);
+  color: var(--vm-text-soft) !important;
+  background: none !important;
+  cursor: pointer;
+  transition: color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.vm-play-button:hover,
+.vm-play-button.vm-playing {
+  color: var(--vm-accent) !important;
+}
+
+.vm-play-button:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 1px;
+}
+
 /* ── Invalid input ───────────────────────────────────────────────── */
 /* Promoted from the page-local .bt-invalid in
  * differential-equations/butcher-tableau/index.qmd, which was the only

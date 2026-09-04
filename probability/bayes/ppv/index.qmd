@@ -28,12 +28,16 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// This page draws on a plain <canvas>, not Plotly/Observable Plot, so it
-// doesn't get the automatic dark-mode relayout the fullscreen-button patch
-// gives every .js-plotly-plot -- like every other page's chartColors, this
-// reads the palette once at load and matches whichever theme was active
-// then, not live on a later toggle.
-chartColors = VM.plotting.colors()
+// This page draws on a plain <canvas>, not Plotly, so it gets none of the
+// automatic re-theming the fullscreen-button patch gives every
+// .js-plotly-plot. Depending on vmTheme is what makes it re-theme anyway:
+// the generator emits on each toggle, so chartColors recomputes and every
+// canvas-drawing cell downstream redraws with the new palette. See
+// VM.plotting.onThemeChange for why it fires a couple of frames after the
+// toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 config = ({
   colors: {

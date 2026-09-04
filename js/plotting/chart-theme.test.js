@@ -44,9 +44,68 @@ test('VM.plotting.colors covers every palette name with a distinct value', () =>
   stubDocument(false)
   const VM = loadVM()
   const colors = VM.plotting.colors()
-  const names = ['fn', 'alt', 'ok', 'muted', 'ink', 'warn', 'accent2']
+  const names = ['fn', 'alt', 'ok', 'muted', 'ink', 'warn', 'accent2', 'halo']
   for (const name of names) assert.ok(colors[name], `missing color for ${name}`)
   assert.equal(new Set(Object.values(colors)).size, names.length, 'expected every color to be distinct')
+})
+
+test('VM.plotting.colorway excludes halo, which is a background color not a trace color', () => {
+  stubDocument(false)
+  const VM = loadVM()
+  const colors = VM.plotting.colors()
+  const colorway = VM.plotting.colorway()
+  assert.ok(!colorway.includes(colors.halo), 'a trace cycled onto halo would be drawn in the background color')
+  assert.ok(colorway.includes(colors.fn))
+  assert.equal(colorway.length, Object.keys(colors).length - 1)
+})
+
+test('VM.plotting.colors.halo flips to the page background on the dark theme', () => {
+  stubDocument(false)
+  assert.equal(loadVM().plotting.colors().halo, '#ffffff')
+  stubDocument(true)
+  assert.equal(loadVM().plotting.colors().halo, '#171b29')
+})
+
+test('VM.plotting.themeName reports the active theme', () => {
+  stubDocument(false)
+  assert.equal(loadVM().plotting.themeName(), 'light')
+  stubDocument(true)
+  assert.equal(loadVM().plotting.themeName(), 'dark')
+})
+
+test('VM.plotting.alpha derives a translucent fill from a palette token', () => {
+  stubDocument(false)
+  let VM = loadVM()
+  assert.equal(VM.plotting.alpha('ok', 0.2), 'rgba(22, 163, 74, 0.2)')
+  // ...and follows the theme, so a fill never drifts from its own stroke
+  stubDocument(true)
+  VM = loadVM()
+  assert.equal(VM.plotting.alpha('ok', 0.2), 'rgba(74, 222, 128, 0.2)')
+})
+
+test('VM.plotting.alpha passes a raw hex through for colors outside the palette', () => {
+  stubDocument(false)
+  const VM = loadVM()
+  assert.equal(VM.plotting.alpha('#8b5cf6', 0.25), 'rgba(139, 92, 246, 0.25)')
+})
+
+test('VM.plotting.emptyState returns one centered paper-anchored annotation', () => {
+  stubDocument(false)
+  const VM = loadVM()
+  const annotations = VM.plotting.emptyState('no dice')
+  assert.equal(annotations.length, 1)
+  assert.equal(annotations[0].text, 'no dice')
+  assert.equal(annotations[0].xref, 'paper')
+  assert.equal(annotations[0].yref, 'paper')
+  assert.equal(annotations[0].showarrow, false)
+})
+
+test('VM.plotting.themePatch repaints colorway so uncolored traces follow a toggle', () => {
+  stubDocument(true)
+  const VM = loadVM()
+  const patch = VM.plotting.themePatch()
+  assert.deepEqual(patch.colorway, VM.plotting.colorway())
+  assert.ok(patch.colorway.includes('#8ab4ff'), 'expected the dark palette after a toggle to dark')
 })
 
 test('VM.plotting.layout merges a page override on top of the shared defaults', () => {
@@ -89,5 +148,5 @@ test('VM.plotting.plotOptions carries the same palette into Observable Plot colo
   stubDocument(false)
   const VM = loadVM()
   const opts = VM.plotting.plotOptions()
-  assert.deepEqual(opts.color.range, Object.values(VM.plotting.colors()))
+  assert.deepEqual(opts.color.range, VM.plotting.colorway())
 })

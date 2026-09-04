@@ -32,14 +32,19 @@ VM = window.VM
 //| output: false
 traceOptions = ["f(x)", "Tangent line", "Newton points", "Tangent x-intercepts"]
 
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key. Reads the theme once at
-// page load (js/plotting/chart-theme.js) -- like every trace color on this
-// page, it doesn't reactively repaint on a dark-mode toggle mid-session,
-// only on next load; the chart's background/axes/gridlines do repaint
-// live, via the shared Plotly.newPlot/react patch in
-// plotly-fullscreen-button.js.
-chartColors = VM.plotting.colors()
+// overlay legend's swatches double as a color key. vmTheme is passed only
+// to create the reactive dependency -- colors() reads the live theme itself.
+chartColors = VM.plotting.colors(vmTheme)
 
 traceColors = new Map([
   ["f(x)", chartColors.fn],
@@ -345,7 +350,11 @@ mainPlot = {
     const data = []
 
     if (showFCurve) {
-      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
+      data.push({
+        x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false,
+        line: {color: chartColors.fn, width: 3},
+        hovertemplate: "<b>f(x)</b><br>x = %{x:.4g}<br>f(x) = %{y:.4g}<extra></extra>"
+      })
     }
 
     // Dotted vertical lines from the x-axis up to each Newton point
@@ -377,7 +386,7 @@ mainPlot = {
         data.push({
           x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
           type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
-          line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
+          line: {color: VM.plotting.alpha("alt", 0.18), width: 1.5}
         })
       }
       if (currentTangent) {
@@ -387,7 +396,8 @@ mainPlot = {
         data.push({
           x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
           type: "scatter", mode: "lines", name: "Tangent line", showlegend: false,
-          line: {color: chartColors.alt, width: 2.5}
+          line: {color: chartColors.alt, width: 2.5},
+          hovertemplate: "<b>Tangent line</b><br>x = %{x:.4g}<br>y = %{y:.4g}<extra></extra>"
         })
       }
     }
@@ -398,13 +408,14 @@ mainPlot = {
       for (const r of newtonPoints) {
         xs.push(r.x)
         ys.push(r.fx)
-        labels.push(`x_${r.i}`)
+        labels.push(`x${VM.plotting.subscript(r.i)}`)
       }
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Newton points",
         text: labels, textposition: "top center", showlegend: false,
-        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}},
+        hovertemplate: "<b>Newton point %{text}</b><br>x = %{x:.6g}<br>f(x) = %{y:.4g}<extra></extra>"
       })
     }
 
@@ -418,22 +429,32 @@ mainPlot = {
       for (const r of intercepts) {
         xs.push(r.x)
         ys.push(0)
-        labels.push(`x_${r.i}`)
+        labels.push(`x${VM.plotting.subscript(r.i)}`)
       }
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Tangent x-intercepts",
         text: labels, textposition: "bottom center", showlegend: false,
-        marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}},
+        hovertemplate: "<b>Tangent x-intercept %{text}</b><br>x = %{x:.6g}<extra></extra>"
       })
     }
 
+    // An unparseable f(x) makes result.rows empty and every sample NaN, so
+    // without this the chart would just draw an empty grid -- visually
+    // identical to a valid function that happens to plot nothing.
+    let hasCurve = false
+    for (const y of sampleYs) {
+      if (Number.isFinite(y)) { hasCurve = true; break }
+    }
+
     const layout = {
-      // title: {text: "Newton's Method Tangent Visualization"},
-      margin: {l: 0, r: 0, t: 0, b: 0},
+      // margin is intentionally not set here: VM.plotting.layout's shared
+      // margins plus automargin give the axis titles and tick labels room,
+      // which a flat {l:0,r:0,t:0,b:0} took away.
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
+      annotations: hasCurve ? [] : VM.plotting.emptyState("Couldn't read that function — check the formula for f(x)."),
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -448,7 +469,7 @@ mainPlot = {
       // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
       // A ResizeObserver catches the real size once it's inserted and laid out,
       // and keeps correcting it on any later layout/viewport change.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

@@ -37,7 +37,16 @@ traceOptions = ["f(x)", "Previous midpoints", "Endpoints", "Midpoint", "Exact ro
 // VM.plotting.colors() token -- left as a literal, same as other
 // beyond-the-core-palette accents elsewhere on the site (e.g. k-means'
 // extra cluster hues).
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 traceColors = new Map([
   ["f(x)", chartColors.fn],
@@ -391,7 +400,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Previous midpoints", showlegend: false,
         text: labels, textposition: "top center",
-        marker: {color: "#f97316", size: 8, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: "#f97316", size: 8, symbol: "circle", line: {color: chartColors.halo, width: 1}}
       })
     }
 
@@ -402,7 +411,7 @@ mainPlot = {
           // Endpoints a and b
           {x: [row.a, row.b], y: [row.fa, row.fb], type: "scatter", mode: "markers+text", name: "Endpoints",
             text: ["a", "b"], textposition: "top center", showlegend: false,
-            marker: {color: chartColors.fn, size: 11, symbol: "circle", line: {color: "white", width: 1}}},
+            marker: {color: chartColors.fn, size: 11, symbol: "circle", line: {color: chartColors.halo, width: 1}}},
           // Dotted verticals from x-axis to the endpoint markers
           {x: [row.a, row.a], y: [0, row.fa], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}},
           {x: [row.b, row.b], y: [0, row.fb], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}}
@@ -413,7 +422,7 @@ mainPlot = {
           // Current midpoint m
           {x: [row.m], y: [row.fm], type: "scatter", mode: "markers+text", name: "Midpoint",
             text: [`m${row.n}`], textposition: "top center", showlegend: false,
-            marker: {color: chartColors.alt, size: 13, symbol: "circle", line: {color: "white", width: 1}}},
+            marker: {color: chartColors.alt, size: 13, symbol: "circle", line: {color: chartColors.halo, width: 1}}},
           // Dotted vertical from x-axis to the midpoint marker
           {x: [row.m, row.m], y: [0, row.fm], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.alt, width: 1.5, dash: "dot"}}
         )
@@ -433,7 +442,7 @@ mainPlot = {
             color: chartColors.ok,
             size: 16,
             symbol: "star",
-            line: {color: "white", width: 1.5}
+            line: {color: chartColors.halo, width: 1.5}
           }
         })
       }
@@ -450,11 +459,9 @@ mainPlot = {
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
       shapes,
-      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -466,7 +473,7 @@ mainPlot = {
       _plotDiv = document.createElement("div")
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, data, layout, config)
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

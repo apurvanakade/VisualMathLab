@@ -131,10 +131,30 @@
     if (!globalThis.VM?.plotting?.layout) return layout
     return globalThis.VM.plotting.layout(layout)
   }
+  // layout.hoverlabel is not enough on its own: Plotly derives each trace's
+  // hover-label background from that *trace's* own color unless the trace
+  // sets hoverlabel itself, so the shared layout default never applies and
+  // every tooltip renders as a light box regardless of theme. Injecting the
+  // themed hoverlabel per trace here keeps that fix in one place instead of
+  // on every trace on every page.
+  const withTraceDefaults = (data) => {
+    if (!Array.isArray(data) || !globalThis.VM?.plotting?.hoverLabel) return data
+    const hoverlabel = globalThis.VM.plotting.hoverLabel()
+    const out = []
+    for (const trace of data) {
+      if (!trace || typeof trace !== "object" || trace.hoverlabel !== undefined) {
+        out.push(trace)
+        continue
+      }
+      out.push({ ...trace, hoverlabel })
+    }
+    return out
+  }
+
   for (const name of ["newPlot", "react"]) {
     const original = globalThis.Plotly[name]
     globalThis.Plotly[name] = (gd, data, layout, config) =>
-      original(gd, data, withDefaultDragmode(withTheme(layout)), addButton(globalThis.VM?.plotting?.config ? globalThis.VM.plotting.config(config) : config))
+      original(gd, withTraceDefaults(data), withDefaultDragmode(withTheme(layout)), addButton(globalThis.VM?.plotting?.config ? globalThis.VM.plotting.config(config) : config))
   }
 
   // A page's chart is normally re-themed the next time it reactively
@@ -145,14 +165,39 @@
   // (toggleBodyColorMode in Quarto's own inline script is what sets it,
   // see docs/**/*.html) and relayout every live chart on the page
   // immediately, without needing a per-page listener.
-  if (typeof document !== "undefined" && document.body && typeof MutationObserver !== "undefined") {
-    const themeObserver = new MutationObserver(() => {
+  //
+  // Registration is deferred to DOMContentLoaded. This file is loaded from
+  // _includes/head-scripts.html via include-in-header, i.e. from <head> --
+  // at which point document.body is still null, so guarding on
+  // `document.body` and registering inline (which this did) silently
+  // skipped the observer on every page and the toggle re-themed nothing.
+  const watchThemeToggle = () => {
+    if (typeof document === "undefined" || !document.body) return
+    if (typeof MutationObserver === "undefined") return
+    const repaint = () => {
       if (!globalThis.Plotly?.relayout || !globalThis.VM?.plotting?.themePatch) return
       for (const gd of document.querySelectorAll(".js-plotly-plot")) {
         globalThis.Plotly.relayout(gd, globalThis.VM.plotting.themePatch())
       }
+    }
+
+    const themeObserver = new MutationObserver(() => {
+      // Deferred by two frames, not run inline. Quarto's toggle flips the
+      // body class and swaps the light/dark stylesheet as separate steps,
+      // and the class lands first -- so reading --vm-* here synchronously
+      // returns the *outgoing* theme's tokens (measured: colorway, which
+      // comes from classList, flipped correctly while hoverlabel.bgcolor,
+      // which comes from getComputedStyle, stayed on the light surface).
+      // One frame for the stylesheet to apply, one for style recalc.
+      requestAnimationFrame(() => requestAnimationFrame(repaint))
     })
     themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
+  }
+
+  if (typeof document !== "undefined" && document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", watchThemeToggle)
+  } else {
+    watchThemeToggle()
   }
 
   globalThis.VM = {...globalThis.VM, plotting: {...globalThis.VM?.plotting, fullscreenButton}}

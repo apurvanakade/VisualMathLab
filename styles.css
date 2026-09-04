@@ -21,13 +21,24 @@
  * bypassing Bootstrap's own JS entirely is what lets the rail's
  * hover-to-preview interaction work without fighting it. */
 
-body.floating .page-columns {
-  grid-template-columns:
-    [screen-start] 1.5em [screen-start-inset] 5fr
-    [page-start page-start-inset body-start-outset body-start] 1.5em
-    [body-content-start] minmax(500px, calc(1000px - 3em)) [body-content-end] 1.5em
-    [body-end body-end-outset page-end-inset] 1.5em
-    [page-end] 5fr [screen-end-inset] 1.5em [screen-end] !important;
+/* Scoped to >=992px on purpose. Below that Quarto's own responsive grid
+ * already collapses the sidebar track and sizes the body column to the
+ * viewport, and it does it correctly -- an unscoped override here (which
+ * this was) forced a `minmax(500px, ...)` floor onto phone viewports too,
+ * so a 390px screen laid out a 500px column and scrolled sideways:
+ * document.scrollWidth measured 551px against a 390px viewport, clipping
+ * the title, byline and every input. The floor is minmax(0, ...) now as
+ * well, so the column can always shrink to whatever space actually
+ * exists. */
+@media (min-width: 992px) {
+  body.floating .page-columns {
+    grid-template-columns:
+      [screen-start] 1.5em [screen-start-inset] 5fr
+      [page-start page-start-inset body-start-outset body-start] 1.5em
+      [body-content-start] minmax(0, calc(1000px - 3em)) [body-content-end] 1.5em
+      [body-end body-end-outset page-end-inset] 1.5em
+      [page-end] 5fr [screen-end-inset] 1.5em [screen-end] !important;
+  }
 }
 
 /* 66px matches #quarto-header's measured rendered height -- the sidebar's
@@ -507,6 +518,175 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1rem;
+}
+
+/* ── Plotly modebar ──────────────────────────────────────────────── */
+/* Plotly ships its modebar as a bare row of gray icon buttons with no
+ * container chrome -- stock #999 icons on a transparent strip, which reads
+ * as a foreign toolbar dropped onto the page (and as a light-gray bar on
+ * the dark theme). Plotly already fades it in on hover by itself, via the
+ * .modebar--hover class it sets; these rules only change how it looks, not
+ * when it appears. The icon colors themselves come from layout.modebar in
+ * js/plotting/chart-theme.js -- only Plotly can set those, since it paints
+ * the SVG fills inline. Everything here is the surrounding chrome, matching
+ * .ojs-legend-overlay / .ojs-step-overlay so all three float in the same
+ * visual language. */
+
+.js-plotly-plot .modebar {
+  display: flex;
+  align-items: center;
+  padding: 0.15rem 0.2rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
+}
+
+/* Plotly's own .modebar--hover fades the BUTTONS in on hover but leaves the
+ * bar itself always present -- which, once the bar has chrome of its own,
+ * shows as an empty floating pill over the chart at rest. Fade the whole
+ * pill on the same trigger and timing instead, so at rest there is nothing
+ * but the chart. */
+.js-plotly-plot .modebar--hover {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.js-plotly-plot:hover .modebar--hover,
+.js-plotly-plot .modebar--hover:focus-within {
+  opacity: 1;
+}
+
+/* Plotly splits the buttons into four .modebar-group blocks (see the
+ * modeBarButtons list in js/plotting/plotly-fullscreen-button.js) and
+ * spaces each group out; collapse that into one continuous bar so the pill
+ * reads as a single control rather than four floating clusters. */
+.js-plotly-plot .modebar-group {
+  display: flex;
+  align-items: center;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: none !important;
+}
+
+.js-plotly-plot .modebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: var(--vm-radius-sm);
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.js-plotly-plot .modebar-btn:hover {
+  background: var(--vm-surface-hover);
+}
+
+.js-plotly-plot .modebar-btn:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: -2px;
+}
+
+/* ── Range sliders ───────────────────────────────────────────────── */
+/* Every other control in a panel is fully styled (border, radius, focus
+ * ring); the sliders were the one holdout, left at browser-default geometry
+ * with only accent-color set. --sx is the filled fraction of the track,
+ * written by js/ui/range-progress.js on every input event -- WebKit has no
+ * native equivalent of Firefox's ::-moz-range-progress, so the fill has to
+ * be painted as a gradient on the track itself. */
+
+.ojs-panel input[type="range"],
+.ojs-step-overlay input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.ojs-panel input[type="range"]::-webkit-slider-runnable-track,
+.ojs-step-overlay input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.3rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--vm-accent), var(--vm-accent)) 0 / var(--sx, 0%) 100% no-repeat,
+    var(--vm-border);
+}
+
+.ojs-panel input[type="range"]::-webkit-slider-thumb,
+.ojs-step-overlay input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  /* centers the thumb on a 0.3rem track: (track - thumb) / 2 */
+  margin-top: -0.325rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--vm-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-bg) 70%, transparent);
+  transition: transform 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ojs-panel input[type="range"]:active::-webkit-slider-thumb,
+.ojs-step-overlay input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* Firefox paints the filled portion itself via ::-moz-range-progress, so it
+ * needs no --sx and gets a plain track underneath. */
+.ojs-panel input[type="range"]::-moz-range-track,
+.ojs-step-overlay input[type="range"]::-moz-range-track {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--vm-border);
+}
+
+.ojs-panel input[type="range"]::-moz-range-progress,
+.ojs-step-overlay input[type="range"]::-moz-range-progress {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--vm-accent);
+}
+
+.ojs-panel input[type="range"]::-moz-range-thumb,
+.ojs-step-overlay input[type="range"]::-moz-range-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--vm-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-bg) 70%, transparent);
+}
+
+.ojs-panel input[type="range"]:focus-visible,
+.ojs-step-overlay input[type="range"]:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 2px;
+}
+
+/* ── Invalid input ───────────────────────────────────────────────── */
+/* Promoted from the page-local .bt-invalid in
+ * differential-equations/butcher-tableau/index.qmd, which was the only
+ * error affordance anywhere on the site. Pairs with the in-chart empty
+ * state (VM.plotting.emptyState) so a formula that won't parse is flagged
+ * both at the field and on the chart. */
+
+.ojs-panel input.vm-invalid,
+input.vm-invalid {
+  border-color: var(--vm-alt, #dc2626) !important;
+  background: color-mix(in srgb, var(--vm-alt, #dc2626) 7%, transparent);
+}
+
+.ojs-panel input.vm-invalid:focus,
+input.vm-invalid:focus {
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-alt, #dc2626) 25%, transparent);
 }
 
 /* ── Listing cards ───────────────────────────────────────────────── */

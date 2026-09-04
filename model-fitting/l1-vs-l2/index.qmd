@@ -42,7 +42,16 @@ fitOptions = ["L2 fit (least squares)", "L1 fit (least absolute deviations)", "P
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key. #f97316 (orange) has no
 // VM.plotting.colors() token -- left as a literal.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 fitColors = new Map([
   ["L2 fit (least squares)", chartColors.alt],
@@ -279,17 +288,15 @@ mainPlot = {
       data.push({x: lineXs, y: l1LineYs, type: "scatter", mode: "lines", name: "L1 fit (least absolute deviations)", showlegend: false, line: {color: chartColors.fn, width: 2.5}})
     }
     if (showPoints) {
-      data.push({x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", showlegend: false, marker: {color: chartColors.ink, size: 8, line: {color: "white", width: 1}}})
+      data.push({x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", showlegend: false, marker: {color: chartColors.ink, size: 8, line: {color: chartColors.halo, width: 1}}})
     }
     if (showOutliers) {
-      data.push({x: outlierXs, y: outlierYs, type: "scatter", mode: "markers", name: "Outliers", showlegend: false, marker: {color: "#f97316", size: 13, symbol: "diamond", line: {color: "white", width: 1.5}}})
+      data.push({x: outlierXs, y: outlierYs, type: "scatter", mode: "markers", name: "Outliers", showlegend: false, marker: {color: "#f97316", size: 13, symbol: "diamond", line: {color: chartColors.halo, width: 1.5}}})
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "y", range: [yRange.lo, yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",
       autosize: true
@@ -302,7 +309,7 @@ mainPlot = {
       Plotly.newPlot(_plotDiv, data, layout, config)
       // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
       // A ResizeObserver catches the real size once it's inserted and laid out.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

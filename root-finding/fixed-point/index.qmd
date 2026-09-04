@@ -34,7 +34,16 @@ traceOptions = ["g(x)", "y = x", "Cobweb path", "Iterates"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 traceColors = new Map([
   ["g(x)", chartColors.fn],
@@ -361,16 +370,14 @@ mainPlot = {
           type: "scatter", mode: "markers+text", name: "Iterates", showlegend: false,
           text: iterateLabels,
           textposition: "top center",
-          marker: {color: chartColors.ok, size: 9, symbol: "circle", line: {color: "white", width: 1}}
+          marker: {color: chartColors.ok, size: 9, symbol: "circle", line: {color: chartColors.halo, width: 1}}
         })
       }
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [range.lo, range.hi], zeroline: true},
       yaxis: {title: "y", range: [range.lo, range.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -382,7 +389,7 @@ mainPlot = {
       _plotDiv = document.createElement("div")
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, data, layout, config)
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

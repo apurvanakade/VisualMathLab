@@ -31,7 +31,16 @@ traceOptions = ["f(x)", "Secant line", "Secant points", "Secant x-intercepts"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 traceColors = new Map([
   ["f(x)", chartColors.fn],
@@ -446,7 +455,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Secant points",
         text: labels, textposition: "top center", showlegend: false,
-        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}}
       })
     }
 
@@ -460,21 +469,19 @@ mainPlot = {
       for (const r of intercepts) {
         xs.push(r.x)
         ys.push(0)
-        labels.push(`x_${r.i}`)
+        labels.push(`x${VM.plotting.subscript(r.i)}`)
       }
       data.push({
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Secant x-intercepts",
         text: labels, textposition: "bottom center", showlegend: false,
-        marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}}
       })
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -489,7 +496,7 @@ mainPlot = {
       // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
       // A ResizeObserver catches the real size once it's inserted and laid out,
       // and keeps correcting it on any later layout/viewport change.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

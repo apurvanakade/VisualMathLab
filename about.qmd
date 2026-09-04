@@ -500,7 +500,16 @@ plotterTraceOptions = ["Curve", "Point at t"]
 
 // Matches the colors plotterMainPlot draws each trace in, so the overlay
 // legend's swatches double as a color key.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 plotterTraceColors = new Map([
   ["Curve", chartColors.fn],
@@ -718,13 +727,12 @@ plotterMainPlot = {
     if (showCursor && i !== null && i >= 0 && i < xs.length && xs[i] !== null) {
       data.push({
         x: [xs[i]], y: [ys[i]], type: "scatter", mode: "markers", name: "Point at t", showlegend: false,
-        marker: {color: chartColors.alt, size: 12, line: {color: "white", width: 2}},
+        marker: {color: chartColors.alt, size: 12, line: {color: chartColors.halo, width: 2}},
         customdata: [ts[i]],
         hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
       })
     }
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", zeroline: true, range: [xRange.lo, xRange.hi], constrain: "domain"},
       // scaleanchor keeps one unit of y the same length on screen as one
       // unit of x -- without it a circle plots as an ellipse, which ruins
@@ -750,7 +758,7 @@ plotterMainPlot = {
       _plotDiv = document.createElement("div")
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, data, layout, config)
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

@@ -31,7 +31,16 @@ methodOptions = ["Reference solution", "Adaptive RK45"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 methodColors = new Map([
   ["Reference solution", chartColors.fn],
@@ -439,15 +448,13 @@ mainPlot = {
     if (showAdaptive && data.ts.length > 0) {
       traces.push({
         x: data.ts, y: data.ys, type: "scatter", mode: "lines+markers", name: "Adaptive RK45", showlegend: false,
-        line: {color: chartColors.alt, width: 2}, marker: {color: chartColors.alt, size: data.pointSizes, line: {color: "white", width: 1}}
+        line: {color: chartColors.alt, width: 2}, marker: {color: chartColors.alt, size: data.pointSizes, line: {color: chartColors.halo, width: 1}}
       })
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "t", range: [data.tRange.lo, data.tRange.hi], zeroline: true},
       yaxis: {title: "y", range: [data.yRange.lo, data.yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -462,7 +469,7 @@ mainPlot = {
       // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
       // A ResizeObserver catches the real size once it's inserted and laid out,
       // and keeps correcting it on any later layout/viewport change.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, traces, layout, config)
     }

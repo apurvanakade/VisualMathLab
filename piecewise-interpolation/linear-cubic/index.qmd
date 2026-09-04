@@ -57,7 +57,16 @@ interpolantOptions = ["Original curve", "Linear interpolant", "Cubic spline inte
 
 // Matches the line colors mainPlot uses for each trace, so the overlay
 // legend's swatches double as a color key.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 interpolantColors = new Map([
   ["Original curve", chartColors.fn],
@@ -526,14 +535,12 @@ mainPlot = {
       traces.push({x: data.cubicX, y: data.cubicY, type: "scatter", mode: "lines", name: "Cubic spline interpolant", showlegend: false, line: {color: chartColors.ok, width: 2.5}})
     }
     if (showNodes && data.nodesX.length > 0) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: chartColors.ink, size: 8, symbol: "circle", line: {color: "white", width: 1}}})
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: chartColors.ink, size: 8, symbol: "circle", line: {color: chartColors.halo, width: 1}}})
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [data.xRange.lo, data.xRange.hi], zeroline: true},
       yaxis: {title: "y", range: [data.yRange.lo, data.yRange.hi], zeroline: true},
-      legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
@@ -548,7 +555,7 @@ mainPlot = {
       // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
       // A ResizeObserver catches the real size once it's inserted and laid out,
       // and keeps correcting it on any later layout/viewport change.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, traces, layout, config)
     }

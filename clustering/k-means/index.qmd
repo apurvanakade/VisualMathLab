@@ -546,7 +546,16 @@ setup = {
 // VM.plotting.colors() tokens; the rest (cyan/pink/olive) have no token in
 // that shared palette and stay literal, same as other beyond-the-core
 // accents elsewhere on the site.
-chartColors = VM.plotting.colors()
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
 
 clusterColors = [chartColors.fn, chartColors.alt, chartColors.ok, chartColors.accent2, chartColors.warn, "#0891b2", "#db2777", "#65a30d"]
 ```
@@ -583,14 +592,14 @@ mainPlot = {
         data.push({
           x: unseenXs, y: unseenYs, type: "scatter", mode: "markers",
           name: "Not yet seen", showlegend: true,
-          marker: {color: "#cbd5e1", size: 7, line: {color: "white", width: 0.5}}
+          marker: {color: "#cbd5e1", size: 7, line: {color: chartColors.halo, width: 0.5}}
         })
       }
       for (let c = 0; c < byCluster.length; c++) {
         data.push({
           x: byCluster[c].xs, y: byCluster[c].ys, type: "scatter", mode: "markers",
           name: `Cluster ${c + 1}`, showlegend: true,
-          marker: {color: clusterColors[c % clusterColors.length], size: 8, line: {color: "white", width: 0.5}}
+          marker: {color: clusterColors[c % clusterColors.length], size: 8, line: {color: chartColors.halo, width: 0.5}}
         })
       }
 
@@ -607,7 +616,6 @@ mainPlot = {
     }
 
     const layout = {
-      margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       // scaleanchor/scaleratio lock the y-axis to the same scale as x, so
       // clusters that are geometrically round don't render as skewed
@@ -627,7 +635,7 @@ mainPlot = {
       // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
       // A ResizeObserver catches the real size once it's inserted and laid out,
       // and keeps correcting it on any later layout/viewport change.
-      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+      VM.plotting.autoResize(_plotDiv)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

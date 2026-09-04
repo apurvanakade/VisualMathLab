@@ -181,6 +181,12 @@
       }
     }
 
+    // <body>'s class list is not the theme's alone -- the sidebar rail writes
+    // .vm-sidebar-open to it on every hover-to-preview and .vm-sidebar-pinned
+    // on every pin (_includes/sidebar-rail.html). Without this check, opening
+    // the sidebar relayouted every chart on the page for nothing.
+    let lastTheme = globalThis.VM?.plotting?.themeName?.()
+
     const themeObserver = new MutationObserver(() => {
       // Deferred by two frames, not run inline. Quarto's toggle flips the
       // body class and swaps the light/dark stylesheet as separate steps,
@@ -188,8 +194,15 @@
       // returns the *outgoing* theme's tokens (measured: colorway, which
       // comes from classList, flipped correctly while hoverlabel.bgcolor,
       // which comes from getComputedStyle, stayed on the light surface).
-      // One frame for the stylesheet to apply, one for style recalc.
-      requestAnimationFrame(() => requestAnimationFrame(repaint))
+      // One frame for the stylesheet to apply, one for style recalc. The
+      // theme comparison goes inside that wait, not around it, so a real
+      // toggle still gets both frames before anything reads a token.
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const theme = globalThis.VM?.plotting?.themeName?.()
+        if (theme === lastTheme) return
+        lastTheme = theme
+        repaint()
+      }))
     })
     themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
   }

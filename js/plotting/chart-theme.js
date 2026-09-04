@@ -69,12 +69,29 @@
   // outgoing theme's value. Measured: the rebuilt traces came back with the
   // correct new palette (that comes from the class) but a stale light
   // hover-label background (that comes from getComputedStyle).
+  //
+  // The `last` check is what keeps this from firing on class changes that
+  // have nothing to do with the theme. <body>'s class list is shared: the
+  // sidebar rail toggles .vm-sidebar-open on it on every hover-to-preview
+  // and .vm-sidebar-pinned on every pin (_includes/sidebar-rail.html), and
+  // without this guard each of those notified every consumer -- which, on a
+  // page whose chartColors cell depends on this, re-ran mainPlot, the legend
+  // and both sub-charts, rebuilding the whole chart just because the pointer
+  // touched the left edge of the screen. The comparison has to live INSIDE
+  // the deferred callback, not around the requestAnimationFrame pair, so the
+  // two-frame wait above still happens on a real toggle.
   const onThemeChange = (callback) => {
-    callback(themeName())
+    let last = themeName()
+    callback(last)
     if (typeof document === "undefined" || !document.body) return () => {}
     if (typeof MutationObserver === "undefined") return () => {}
     const observer = new MutationObserver(() => {
-      requestAnimationFrame(() => requestAnimationFrame(() => callback(themeName())))
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const next = themeName()
+        if (next === last) return
+        last = next
+        callback(next)
+      }))
     })
     observer.observe(document.body, { attributes: true, attributeFilter: ["class"] })
     return () => observer.disconnect()

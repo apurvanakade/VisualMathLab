@@ -978,6 +978,35 @@ input.vm-invalid:focus {
   .ojs-grid { grid-template-columns: 1fr; }
 }
 
+/* A wide formula (a long inline fraction, a multi-term display equation)
+ * doesn't wrap the way text does -- left unconstrained, it forces its
+ * containing line wider than the viewport, which on a narrow phone
+ * expands the whole page's layout viewport rather than just that one
+ * line (the same failure mode the "Page grid" section's minmax(0, ...)
+ * comment already describes for a different cause: content wider than
+ * the viewport with nothing willing to shrink). mjx-container renders
+ * inline-block for inline math and block for display math either way,
+ * so capping it to the space actually available and letting it scroll
+ * internally contains the overflow to the formula itself. Not gated to
+ * a breakpoint -- a wide formula can outgrow a narrow *content column*
+ * even on a wide screen (e.g. next to a TOC). */
+mjx-container {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* max-width/overflow only apply to a block or inline-block box, not a
+ * plain inline one -- MathJax renders inline math (no display="true"
+ * attribute) as display:inline, which silently ignores both properties
+ * above and was still overflowing the viewport with them set. Display
+ * equations already render as their own block box, so this is scoped to
+ * inline math only -- forcing inline-block there doesn't change how it
+ * sits in the surrounding line of text. */
+mjx-container:not([display="true"]) {
+  display: inline-block;
+}
+
 /* ── Homepage hero / topic grid ──────────────────────────────────── */
 
 .vm-hero {

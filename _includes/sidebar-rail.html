@@ -24,6 +24,21 @@ close.
     var PIN_KEY = "vml-sidebar-pinned"
     var body = document.body
 
+    // Below 992px Quarto renders its own .quarto-secondary-nav bar (mobile
+    // breadcrumbs) between the navbar and the sidebar/rail -- its height
+    // varies with breadcrumb depth/length and can wrap on a narrow phone,
+    // so it's measured here rather than hardcoded, and exposed as a CSS
+    // variable the top-offset media query in styles.css reads.
+    var secondaryNav = document.querySelector(".quarto-secondary-nav")
+    function updateSecondaryNavHeight() {
+      var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
+      document.documentElement.style.setProperty("--vm-secondary-nav-height", h + "px")
+    }
+    if (secondaryNav) {
+      updateSecondaryNavHeight()
+      window.addEventListener("resize", updateSecondaryNavHeight)
+    }
+
     var rail = document.createElement("div")
     rail.id = "vm-sidebar-rail"
     rail.innerHTML =

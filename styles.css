@@ -105,6 +105,37 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
   display: none !important;
 }
 
+/* Below 992px Quarto renders its own .quarto-secondary-nav bar (native
+ * hamburger + mobile breadcrumbs) beneath the navbar. #vm-sidebar-rail
+ * already replaces the hamburger at every width -- Quarto's own button
+ * (and the full-bleed invisible link beside it, both data-bs-toggle=
+ * "collapse") still fire Bootstrap's collapse JS on tap, which does
+ * nothing here since #quarto-sidebar's visibility is driven by
+ * body.vm-sidebar-open, never Bootstrap's .show. Left alone, mobile
+ * visitors saw two hamburger-like controls, one of them dead. Keep the
+ * breadcrumbs, which live in the same bar. No media query needed --
+ * .quarto-secondary-nav is already display:none above 992px. */
+.quarto-secondary-nav [data-bs-toggle="collapse"] {
+  display: none;
+}
+
+/* .quarto-secondary-nav's height varies with breadcrumb depth/length (and
+ * can wrap on a narrow phone), so it's measured live by sidebar-rail.html
+ * rather than guessed as a constant -- it sets --vm-secondary-nav-height
+ * on <html>. Below 992px that bar sits between the navbar and where the
+ * sidebar/rail's own top:66px would otherwise place them, so both need to
+ * shift down by its height or they overlap it. */
+@media (max-width: 991.98px) {
+  #quarto-sidebar.sidebar-navigation,
+  #vm-sidebar-rail {
+    top: calc(66px + var(--vm-secondary-nav-height, 0px)) !important;
+  }
+
+  #quarto-sidebar.sidebar-navigation {
+    height: calc(100vh - 66px - var(--vm-secondary-nav-height, 0px)) !important;
+  }
+}
+
 /* The always-visible rail: a slim strip at the left edge with a hamburger
  * toggle, present regardless of sidebar state so there's always something
  * to hover or click to bring the sidebar back. */
@@ -524,6 +555,19 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: var(--vm-shadow);
+}
+
+/* On a phone these floating panels have nowhere to go but on top of the
+ * chart they annotate. Hide them below the same breakpoint the sidebar
+ * uses, except when the chart is actually fullscreened -- the Fullscreen
+ * API applies straight to .ojs-plot-overlay (see plotly-fullscreen-
+ * button.js), so :fullscreen needs no JS-toggled class here, and there's
+ * room for them once it is. */
+@media (max-width: 991.98px) {
+  .ojs-plot-overlay:not(:fullscreen) .ojs-legend-overlay,
+  .ojs-plot-overlay:not(:fullscreen) .ojs-step-overlay {
+    display: none;
+  }
 }
 
 /* Observable Inputs sizes every range input to a fixed ~180px track of its

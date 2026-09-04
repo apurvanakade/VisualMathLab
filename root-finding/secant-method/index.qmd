@@ -31,11 +31,13 @@ traceOptions = ["f(x)", "Secant line", "Secant points", "Secant x-intercepts"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 traceColors = new Map([
-  ["f(x)", "#2563eb"],
-  ["Secant line", "#dc2626"],
-  ["Secant points", "#dc2626"],
-  ["Secant x-intercepts", "#16a34a"]
+  ["f(x)", chartColors.fn],
+  ["Secant line", chartColors.alt],
+  ["Secant points", chartColors.alt],
+  ["Secant x-intercepts", chartColors.ok]
 ])
 ```
 
@@ -374,7 +376,7 @@ mainPlot = {
 
     if (showFCurve) {
       // The function curve
-      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     // Every point used so far: x_0 (from the first visible row's xPrev)
@@ -393,7 +395,7 @@ mainPlot = {
     // Dotted vertical lines from the x-axis up to each secant point
     if (showSecantPoints) {
       for (const p of secantPoints) {
-        data.push({x: [p.x, p.x], y: [0, p.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+        data.push({x: [p.x, p.x], y: [0, p.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}})
       }
     }
 
@@ -427,7 +429,7 @@ mainPlot = {
         data.push({
           x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
           type: "scatter", mode: "lines", name: "Secant line", showlegend: false,
-          line: {color: "#dc2626", width: 2.5}
+          line: {color: chartColors.alt, width: 2.5}
         })
       }
     }
@@ -444,7 +446,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Secant points",
         text: labels, textposition: "top center", showlegend: false,
-        marker: {color: "#dc2626", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
 
@@ -464,7 +466,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Secant x-intercepts",
         text: labels, textposition: "bottom center", showlegend: false,
-        marker: {color: "#16a34a", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
 
@@ -563,8 +565,8 @@ iteratesPlot = {
     x: {label: "n"},
     y: {label: "xₙ"},
     marks: [
-      Plot.lineY(pointRows, {x: "i", y: "x", stroke: "#2563eb"}),
-      Plot.dot(pointRows, {x: "i", y: "x", fill: "#2563eb", r: 4})
+      Plot.lineY(pointRows, {x: "i", y: "x", stroke: chartColors.fn}),
+      Plot.dot(pointRows, {x: "i", y: "x", fill: chartColors.fn, r: 4})
     ]
   })
 }
@@ -590,7 +592,7 @@ convergencePlot = {
 
   const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
   const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
-  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+  const colorDomain = [pointsName], colorRange = [chartColors.alt]
   // legendDomain/legendRange hold only the regression line(s) — the legend
   // shown below the chart displays just the fitted order, not the raw
   // point series, to keep it uncluttered.
@@ -604,9 +606,9 @@ convergencePlot = {
       {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
     ))
     colorDomain.push(lineName)
-    colorRange.push("#9333ea")
+    colorRange.push(chartColors.accent2)
     legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+    legendRange.push(chartColors.accent2)
   }
 
   const chart = Plot.plot({

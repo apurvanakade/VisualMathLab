@@ -28,20 +28,26 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// This page draws on a plain <canvas>, not Plotly/Observable Plot, so it
+// doesn't get the automatic dark-mode relayout the fullscreen-button patch
+// gives every .js-plotly-plot -- like every other page's chartColors, this
+// reads the palette once at load and matches whichever theme was active
+// then, not live on a later toggle.
+chartColors = VM.plotting.colors()
+
 config = ({
   colors: {
-    infected: "#dc2626",
-    healthy: "#111827",
-    outline: "#111827",
+    infected: chartColors.alt,
+    healthy: chartColors.ink,
+    outline: chartColors.ink,
     background: "rgba(0, 0, 0, 0.45)",
     // zoomStep1/zoomStep2: mark the "positive test" box in one canvas and
     // the border of the *next* canvas in the same color, so it's visually
     // obvious that canvas is exactly that box, zoomed in — canvas 1 boxes
     // in zoomStep1 (canvas 2's border), canvas 2 boxes in zoomStep2
-    // (canvas 3's border). Reuses this site's existing accent colors
-    // (blue from styles.css, orange from model-fitting/l1-vs-l2) rather
-    // than inventing new ones.
-    zoomStep1: "#2563eb",
+    // (canvas 3's border). #f97316 (orange) has no VM.plotting.colors()
+    // token -- left as a literal, same as elsewhere on the site.
+    zoomStep1: chartColors.fn,
     zoomStep2: "#f97316"
   },
   canvas: {

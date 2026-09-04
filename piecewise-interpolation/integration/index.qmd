@@ -86,14 +86,17 @@ methodLabelToSlug = new Map([
 ])
 
 // Matches the fill/line colors mainPlot uses for each method's trace, so
-// the overlay legend's swatches double as a color key.
+// the overlay legend's swatches double as a color key. #8b5cf6 (violet) has
+// no VM.plotting.colors() token -- left as a literal.
+chartColors = VM.plotting.colors()
+
 methodColors = new Map([
-  ["f(x)", "#2563eb"],
+  ["f(x)", chartColors.fn],
   ["Left Riemann sum", "#8b5cf6"],
-  ["Midpoint Riemann sum", "#f59e0b"],
-  ["Trapezoidal rule", "#dc2626"],
-  ["Simpson's rule", "#16a34a"],
-  ["Interpolation nodes", "#111827"]
+  ["Midpoint Riemann sum", chartColors.warn],
+  ["Trapezoidal rule", chartColors.alt],
+  ["Simpson's rule", chartColors.ok],
+  ["Interpolation nodes", chartColors.ink]
 ])
 
 initialMethods = {
@@ -553,7 +556,7 @@ mainPlot = {
     const traces = []
 
     if (showFCurve) {
-      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     if (showLeftRiemann && data.midX.length > 0) {
@@ -566,26 +569,26 @@ mainPlot = {
     if (showMidpoint && data.midX.length > 0) {
       traces.push({
         x: data.midX, y: data.midY, width: data.widths, type: "bar", name: "Midpoint Riemann sum", showlegend: false,
-        marker: {color: "rgba(245, 158, 11, 0.25)", line: {color: "#f59e0b", width: 1.5}}
+        marker: {color: "rgba(245, 158, 11, 0.25)", line: {color: chartColors.warn, width: 1.5}}
       })
     }
 
     if (showTrapezoidal && data.nodesX.length > 0) {
       traces.push({
         x: data.nodesX, y: data.nodesY, type: "scatter", mode: "lines", name: "Trapezoidal rule", showlegend: false,
-        fill: "tozeroy", fillcolor: "rgba(220, 38, 38, 0.2)", line: {color: "#dc2626", width: 2.5}
+        fill: "tozeroy", fillcolor: "rgba(220, 38, 38, 0.2)", line: {color: chartColors.alt, width: 2.5}
       })
     }
 
     if (showSimpson && data.simpsonX.length > 0) {
       traces.push({
         x: data.simpsonX, y: data.simpsonY, type: "scatter", mode: "lines", name: "Simpson's rule", showlegend: false,
-        fill: "tozeroy", fillcolor: "rgba(22, 163, 74, 0.2)", line: {color: "#16a34a", width: 2.5}
+        fill: "tozeroy", fillcolor: "rgba(22, 163, 74, 0.2)", line: {color: chartColors.ok, width: 2.5}
       })
     }
 
     if (showNodes && data.nodesX.length > 0) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: "#111827", size: 7, symbol: "circle", line: {color: "white", width: 1}}})
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: chartColors.ink, size: 7, symbol: "circle", line: {color: "white", width: 1}}})
     }
 
     const layout = {
@@ -718,7 +721,7 @@ iteratesPlot = {
   }
 
   const colorDomain = [leftName, midpointName, trapezoidalName, simpsonName, trueName]
-  const colorRange = ["#8b5cf6", "#f59e0b", "#dc2626", "#16a34a", "#111827"]
+  const colorRange = ["#8b5cf6", chartColors.warn, chartColors.alt, chartColors.ok, chartColors.ink]
 
   const chart = Plot.plot({
     width: 340, height: 300, marginLeft: 46,
@@ -777,19 +780,19 @@ convergencePlot = {
   if (showMidpoint) {
     marks.push(Plot.dot(midpointPts, {x: "x", y: "y", fill: () => midpointName, r: 4}))
     colorDomain.push(midpointName)
-    colorRange.push("#f59e0b")
+    colorRange.push(chartColors.warn)
   }
 
   if (showTrapezoidal) {
     marks.push(Plot.dot(trapezoidalPts, {x: "x", y: "y", fill: () => trapezoidalName, r: 4}))
     colorDomain.push(trapezoidalName)
-    colorRange.push("#dc2626")
+    colorRange.push(chartColors.alt)
   }
 
   if (showSimpson) {
     marks.push(Plot.dot(simpsonPts, {x: "x", y: "y", fill: () => simpsonName, r: 4}))
     colorDomain.push(simpsonName)
-    colorRange.push("#16a34a")
+    colorRange.push(chartColors.ok)
   }
 
   // legendDomain/legendRange hold only the regression lines — the legend

@@ -76,13 +76,16 @@ methodLabelToSlug = new Map([
 ])
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key.
+// overlay legend's swatches double as a color key. #9ca3af (gray) has no
+// VM.plotting.colors() token -- left as a literal.
+chartColors = VM.plotting.colors()
+
 methodColors = new Map([
-  ["True Signal", "#2563eb"],
+  ["True Signal", chartColors.fn],
   ["Noisy measurements", "#9ca3af"],
-  ["Simple Moving Average", "#f59e0b"],
-  ["Exponential Moving Average", "#16a34a"],
-  ["Kalman Filter", "#dc2626"]
+  ["Simple Moving Average", chartColors.warn],
+  ["Exponential Moving Average", chartColors.ok],
+  ["Kalman Filter", chartColors.alt]
 ])
 
 initialMethods = {
@@ -507,7 +510,7 @@ mainPlot = {
   return (rows, data, showTrueSignal, showNoisy, showSMA, showEMA, showKalman) => {
     const traces = []
     if (showTrueSignal) {
-      traces.push({x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     const xs = []
@@ -523,17 +526,17 @@ mainPlot = {
     if (showSMA && rows.length > 0) {
       const ys = []
       for (const row of rows) ys.push(row.smaVal)
-      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Simple Moving Average", showlegend: false, line: {color: "#f59e0b", width: 2.5}})
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Simple Moving Average", showlegend: false, line: {color: chartColors.warn, width: 2.5}})
     }
     if (showEMA && rows.length > 0) {
       const ys = []
       for (const row of rows) ys.push(row.emaVal)
-      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Exponential Moving Average", showlegend: false, line: {color: "#16a34a", width: 2.5}})
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Exponential Moving Average", showlegend: false, line: {color: chartColors.ok, width: 2.5}})
     }
     if (showKalman && rows.length > 0) {
       const ys = []
       for (const row of rows) ys.push(row.kalmanVal)
-      traces.push({x: xs, y: ys, type: "scatter", mode: "lines+markers", name: "Kalman Filter", showlegend: false, line: {color: "#dc2626", width: 2.5}, marker: {color: "#dc2626", size: 5}})
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines+markers", name: "Kalman Filter", showlegend: false, line: {color: chartColors.alt, width: 2.5}, marker: {color: chartColors.alt, size: 5}})
     }
 
     const layout = {
@@ -644,19 +647,19 @@ iteratesPlot = {
     for (const row of result.rows) pts.push({x: row.i, y: row.kalmanGain})
     marks.push(Plot.lineY(pts, {x: "x", y: "y", stroke: () => kalmanName}))
     colorDomain.push(kalmanName)
-    colorRange.push("#dc2626")
+    colorRange.push(chartColors.alt)
   }
 
   if (showEMA) {
     marks.push(Plot.ruleY([1 - alpha], {stroke: () => emaName, strokeDasharray: "4,3"}))
     colorDomain.push(emaName)
-    colorRange.push("#16a34a")
+    colorRange.push(chartColors.ok)
   }
 
   if (showSMA) {
     marks.push(Plot.ruleY([1 / windowK], {stroke: () => smaName, strokeDasharray: "4,3"}))
     colorDomain.push(smaName)
-    colorRange.push("#f59e0b")
+    colorRange.push(chartColors.warn)
   }
 
   const chart = Plot.plot({
@@ -701,17 +704,17 @@ convergencePlot = {
   if (showSMA) {
     marks.push(Plot.lineY(runningRmse("smaErr"), {x: "x", y: "y", stroke: () => smaName}))
     colorDomain.push(smaName)
-    colorRange.push("#f59e0b")
+    colorRange.push(chartColors.warn)
   }
   if (showEMA) {
     marks.push(Plot.lineY(runningRmse("emaErr"), {x: "x", y: "y", stroke: () => emaName}))
     colorDomain.push(emaName)
-    colorRange.push("#16a34a")
+    colorRange.push(chartColors.ok)
   }
   if (showKalman) {
     marks.push(Plot.lineY(runningRmse("kalmanErr"), {x: "x", y: "y", stroke: () => kalmanName}))
     colorDomain.push(kalmanName)
-    colorRange.push("#dc2626")
+    colorRange.push(chartColors.alt)
   }
 
   const chart = Plot.plot({

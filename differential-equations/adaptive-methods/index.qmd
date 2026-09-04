@@ -31,9 +31,11 @@ methodOptions = ["Reference solution", "Adaptive RK45"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 methodColors = new Map([
-  ["Reference solution", "#2563eb"],
-  ["Adaptive RK45", "#dc2626"]
+  ["Reference solution", chartColors.fn],
+  ["Adaptive RK45", chartColors.alt]
 ])
 ```
 
@@ -431,13 +433,13 @@ mainPlot = {
     const traces = []
 
     if (showRefSolution) {
-      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     if (showAdaptive && data.ts.length > 0) {
       traces.push({
         x: data.ts, y: data.ys, type: "scatter", mode: "lines+markers", name: "Adaptive RK45", showlegend: false,
-        line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: data.pointSizes, line: {color: "white", width: 1}}
+        line: {color: chartColors.alt, width: 2}, marker: {color: chartColors.alt, size: data.pointSizes, line: {color: "white", width: 1}}
       })
     }
 
@@ -614,7 +616,7 @@ incrementsPlot = {
   const derivTooltipOf = d => `t=${d.t.toPrecision(6)}  y′(t)=${d.trueY.toExponential(3)}`
 
   const colorDomain = [derivName, incrementName]
-  const colorRange = ["#2563eb", "#dc2626"]
+  const colorRange = [chartColors.fn, chartColors.alt]
 
   const chart = Plot.plot({
     width,
@@ -627,7 +629,7 @@ incrementsPlot = {
     marks: [
       Plot.areaY(derivPoints, {x: "t", y: "y", fill: () => derivName, fillOpacity: 0.12, title: derivTooltipOf}),
       Plot.lineY(derivPoints, {x: "t", y: "y", stroke: () => derivName, strokeOpacity: 0.3, strokeWidth: 1.5, title: derivTooltipOf}),
-      Plot.ruleY([0], {stroke: "#94a3b8", strokeWidth: 1}),
+      Plot.ruleY([0], {stroke: chartColors.muted, strokeWidth: 1}),
       Plot.ruleY(result.steps, {
         x1: "t0", x2: "t1", y: "dy",
         stroke: () => incrementName,

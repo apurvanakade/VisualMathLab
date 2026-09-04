@@ -31,10 +31,12 @@ methodOptions = ["Reference solution", "Euler's method", "Implicit Euler"]
 
 // Matches the line/marker colors mainPlot uses for each method's trace, so
 // the overlay legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 methodColors = new Map([
-  ["Reference solution", "#2563eb"],
-  ["Euler's method", "#dc2626"],
-  ["Implicit Euler", "#16a34a"]
+  ["Reference solution", chartColors.fn],
+  ["Euler's method", chartColors.alt],
+  ["Implicit Euler", chartColors.ok]
 ])
 ```
 
@@ -393,19 +395,19 @@ mainPlot = {
     const traces = []
 
     if (showRefSolution) {
-      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     if (showEuler && data.eulerTs.length > 0) {
       traces.push({
         x: data.eulerTs, y: data.eulerYs, type: "scatter", mode: "lines+markers", name: "Euler's method", showlegend: false,
-        line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 6}
+        line: {color: chartColors.alt, width: 2}, marker: {color: chartColors.alt, size: 6}
       })
     }
     if (showImplicitEuler && data.implicitEulerTs.length > 0) {
       traces.push({
         x: data.implicitEulerTs, y: data.implicitEulerYs, type: "scatter", mode: "lines+markers", name: "Implicit Euler", showlegend: false,
-        line: {color: "#16a34a", width: 2}, marker: {color: "#16a34a", size: 6}
+        line: {color: chartColors.ok, width: 2}, marker: {color: chartColors.ok, size: 6}
       })
     }
 
@@ -506,7 +508,7 @@ iteratesPlot = {
     Plot.dot(result.rows, {x: "n", y: "implicitEulerValue", fill: () => implicitEulerName, r: 3})
   ]
   const colorDomain = [eulerName, implicitEulerName, trueName]
-  const colorRange = ["#dc2626", "#16a34a", "#111827"]
+  const colorRange = [chartColors.alt, chartColors.ok, chartColors.ink]
 
   const chart = Plot.plot({
     width: 340, height: 300, marginLeft: 46,
@@ -548,7 +550,7 @@ convergencePlot = {
     Plot.dot(implicitEulerPts, {x: "x", y: "y", fill: () => implicitEulerName, r: 4})
   ]
   const colorDomain = [eulerName, implicitEulerName]
-  const colorRange = ["#dc2626", "#16a34a"]
+  const colorRange = [chartColors.alt, chartColors.ok]
   // legendDomain/legendRange hold only the regression lines — the legend
   // shown below the chart displays just the fitted orders, not the raw
   // point series, to keep it uncluttered.

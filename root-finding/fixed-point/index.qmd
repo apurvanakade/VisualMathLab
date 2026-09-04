@@ -34,11 +34,13 @@ traceOptions = ["g(x)", "y = x", "Cobweb path", "Iterates"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 traceColors = new Map([
-  ["g(x)", "#2563eb"],
-  ["y = x", "#111827"],
-  ["Cobweb path", "#dc2626"],
-  ["Iterates", "#16a34a"]
+  ["g(x)", chartColors.fn],
+  ["y = x", chartColors.ink],
+  ["Cobweb path", chartColors.alt],
+  ["Iterates", chartColors.ok]
 ])
 ```
 
@@ -315,15 +317,15 @@ mainPlot = {
 
     if (showGCurve) {
       // The iteration function g(x)
-      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "g(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "g(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
     if (showDiagonal) {
       // The diagonal y = x — fixed points lie where g(x) crosses this line.
       // Spans the buffer so it's still visible when the user pans/zooms out.
-      data.push({x: [bufferRange.lo, bufferRange.hi], y: [bufferRange.lo, bufferRange.hi], type: "scatter", mode: "lines", name: "y = x", showlegend: false, line: {color: "#111827", width: 2, dash: "dash"}})
+      data.push({x: [bufferRange.lo, bufferRange.hi], y: [bufferRange.lo, bufferRange.hi], type: "scatter", mode: "lines", name: "y = x", showlegend: false, line: {color: chartColors.ink, width: 2, dash: "dash"}})
     }
     // The x-axis reference
-    data.push({x: [bufferRange.lo, bufferRange.hi], y: [0, 0], type: "scatter", mode: "lines", showlegend: false, line: {color: "#94a3b8", width: 1}})
+    data.push({x: [bufferRange.lo, bufferRange.hi], y: [0, 0], type: "scatter", mode: "lines", showlegend: false, line: {color: chartColors.muted, width: 1}})
 
     if (visibleRows.length > 0) {
       // Build the cobweb staircase path.
@@ -350,7 +352,7 @@ mainPlot = {
       if (showCobweb) {
         // The staircase path
         data.push({x: cobwebX, y: cobwebY, type: "scatter", mode: "lines+markers", name: "Cobweb path", showlegend: false,
-          line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 7}})
+          line: {color: chartColors.alt, width: 2}, marker: {color: chartColors.alt, size: 7}})
       }
       if (showIterates) {
         data.push({
@@ -359,7 +361,7 @@ mainPlot = {
           type: "scatter", mode: "markers+text", name: "Iterates", showlegend: false,
           text: iterateLabels,
           textposition: "top center",
-          marker: {color: "#16a34a", size: 9, symbol: "circle", line: {color: "white", width: 1}}
+          marker: {color: chartColors.ok, size: 9, symbol: "circle", line: {color: "white", width: 1}}
         })
       }
     }
@@ -367,7 +369,7 @@ mainPlot = {
     const layout = {
       margin: {l: 0, r: 0, t: 0, b: 0},
       xaxis: {title: "x", range: [range.lo, range.hi], zeroline: true},
-      yaxis: {title: "y", range: [range.lo, range.hi], zeroline: true, zerolinecolor: "#94a3b8", gridcolor: "#e2e8f0", linecolor: "#cbd5e1"},
+      yaxis: {title: "y", range: [range.lo, range.hi], zeroline: true},
       legend: {orientation: "h", y: -0.08},
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
@@ -454,8 +456,8 @@ iteratesPlot = {
     x: {label: "n"},
     y: {label: "xₙ"},
     marks: [
-      Plot.lineY(result.rows, {x: "i", y: xAccessor, stroke: "#2563eb"}),
-      Plot.dot(result.rows, {x: "i", y: xAccessor, fill: "#2563eb", r: 4})
+      Plot.lineY(result.rows, {x: "i", y: xAccessor, stroke: chartColors.fn}),
+      Plot.dot(result.rows, {x: "i", y: xAccessor, fill: chartColors.fn, r: 4})
     ]
   })
 }
@@ -475,7 +477,7 @@ convergencePlot = {
 
   const pointsName = "log₁₀|xₙ − g(xₙ)|"
   const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
-  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+  const colorDomain = [pointsName], colorRange = [chartColors.alt]
   // legendDomain/legendRange hold only the regression line(s) — the legend
   // shown below the chart displays just the fitted slope, not the raw
   // point series, to keep it uncluttered.
@@ -491,9 +493,9 @@ convergencePlot = {
       {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
     ))
     colorDomain.push(lineName)
-    colorRange.push("#9333ea")
+    colorRange.push(chartColors.accent2)
     legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+    legendRange.push(chartColors.accent2)
   }
 
   const chart = Plot.plot({

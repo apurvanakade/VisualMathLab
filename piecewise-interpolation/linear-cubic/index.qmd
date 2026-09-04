@@ -57,11 +57,13 @@ interpolantOptions = ["Original curve", "Linear interpolant", "Cubic spline inte
 
 // Matches the line colors mainPlot uses for each trace, so the overlay
 // legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 interpolantColors = new Map([
-  ["Original curve", "#2563eb"],
-  ["Linear interpolant", "#dc2626"],
-  ["Cubic spline interpolant", "#16a34a"],
-  ["Interpolation nodes", "#111827"]
+  ["Original curve", chartColors.fn],
+  ["Linear interpolant", chartColors.alt],
+  ["Cubic spline interpolant", chartColors.ok],
+  ["Interpolation nodes", chartColors.ink]
 ])
 
 initialInterpolants = {
@@ -515,16 +517,16 @@ mainPlot = {
     const traces = []
 
     if (showOriginal) {
-      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
     if (showLinear && data.linearX.length > 0) {
-      traces.push({x: data.linearX, y: data.linearY, type: "scatter", mode: "lines", name: "Linear interpolant", showlegend: false, line: {color: "#dc2626", width: 2.5}})
+      traces.push({x: data.linearX, y: data.linearY, type: "scatter", mode: "lines", name: "Linear interpolant", showlegend: false, line: {color: chartColors.alt, width: 2.5}})
     }
     if (showCubic && data.cubicX.length > 0) {
-      traces.push({x: data.cubicX, y: data.cubicY, type: "scatter", mode: "lines", name: "Cubic spline interpolant", showlegend: false, line: {color: "#16a34a", width: 2.5}})
+      traces.push({x: data.cubicX, y: data.cubicY, type: "scatter", mode: "lines", name: "Cubic spline interpolant", showlegend: false, line: {color: chartColors.ok, width: 2.5}})
     }
     if (showNodes && data.nodesX.length > 0) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: "#111827", size: 8, symbol: "circle", line: {color: "white", width: 1}}})
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Interpolation nodes", showlegend: false, marker: {color: chartColors.ink, size: 8, symbol: "circle", line: {color: "white", width: 1}}})
     }
 
     const layout = {
@@ -628,7 +630,7 @@ iteratesPlot = {
     Plot.dot(result.rows, {x: "n", y: "cubicLength", fill: () => cubicName, r: 3})
   ]
   const colorDomain = [linearName, cubicName, trueName]
-  const colorRange = ["#dc2626", "#16a34a", "#111827"]
+  const colorRange = [chartColors.alt, chartColors.ok, chartColors.ink]
 
   const chart = Plot.plot({
     width: 340, height: 300, marginLeft: 46,
@@ -687,7 +689,7 @@ convergencePlot = {
     Plot.dot(cubicPts, {x: "x", y: "y", fill: () => cubicName, r: 4})
   ]
   const colorDomain = [linearName, cubicName]
-  const colorRange = ["#dc2626", "#16a34a"]
+  const colorRange = [chartColors.alt, chartColors.ok]
   // legendDomain/legendRange hold only the regression lines — the legend
   // shown below the chart displays just the fitted orders, not the raw
   // point series, to keep it uncluttered.

@@ -41,11 +41,13 @@ methodOptions = ["Reference solution", "Euler's method", "Improved Euler", "RK4"
 
 // Matches the line/marker colors mainPlot uses for each method's trace, so
 // the overlay legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 methodColors = new Map([
-  ["Reference solution", "#2563eb"],
-  ["Euler's method", "#dc2626"],
-  ["Improved Euler", "#f59e0b"],
-  ["RK4", "#16a34a"]
+  ["Reference solution", chartColors.fn],
+  ["Euler's method", chartColors.alt],
+  ["Improved Euler", chartColors.warn],
+  ["RK4", chartColors.ok]
 ])
 
 methodSlugToLabel = new Map([
@@ -467,25 +469,25 @@ mainPlot = {
     const traces = []
 
     if (showRefSolution) {
-      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.refTs, y: data.refYs, type: "scatter", mode: "lines", name: "Reference solution", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     if (showEuler && data.eulerTs.length > 0) {
       traces.push({
         x: data.eulerTs, y: data.eulerYs, type: "scatter", mode: "lines+markers", name: "Euler's method", showlegend: false,
-        line: {color: "#dc2626", width: 2}, marker: {color: "#dc2626", size: 6}
+        line: {color: chartColors.alt, width: 2}, marker: {color: chartColors.alt, size: 6}
       })
     }
     if (showImprovedEuler && data.improvedEulerTs.length > 0) {
       traces.push({
         x: data.improvedEulerTs, y: data.improvedEulerYs, type: "scatter", mode: "lines+markers", name: "Improved Euler", showlegend: false,
-        line: {color: "#f59e0b", width: 2}, marker: {color: "#f59e0b", size: 6}
+        line: {color: chartColors.warn, width: 2}, marker: {color: chartColors.warn, size: 6}
       })
     }
     if (showRK4 && data.rk4Ts.length > 0) {
       traces.push({
         x: data.rk4Ts, y: data.rk4Ys, type: "scatter", mode: "lines+markers", name: "RK4", showlegend: false,
-        line: {color: "#16a34a", width: 2}, marker: {color: "#16a34a", size: 6}
+        line: {color: chartColors.ok, width: 2}, marker: {color: chartColors.ok, size: 6}
       })
     }
 
@@ -593,7 +595,7 @@ iteratesPlot = {
     Plot.dot(result.rows, {x: "n", y: "rk4Value", fill: () => rk4Name, r: 3})
   ]
   const colorDomain = [eulerName, improvedEulerName, rk4Name, trueName]
-  const colorRange = ["#dc2626", "#f59e0b", "#16a34a", "#111827"]
+  const colorRange = [chartColors.alt, chartColors.warn, chartColors.ok, chartColors.ink]
 
   const chart = Plot.plot({
     width: 340, height: 300, marginLeft: 46,
@@ -641,7 +643,7 @@ convergencePlot = {
     Plot.dot(rk4Pts, {x: "x", y: "y", fill: () => rk4Name, r: 4})
   ]
   const colorDomain = [eulerName, improvedEulerName, rk4Name]
-  const colorRange = ["#dc2626", "#f59e0b", "#16a34a"]
+  const colorRange = [chartColors.alt, chartColors.warn, chartColors.ok]
   // legendDomain/legendRange hold only the regression lines — the legend
   // shown below the chart displays just the fitted orders, not the raw
   // point series, to keep it uncluttered.

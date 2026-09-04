@@ -40,11 +40,14 @@ severityMax = 15
 fitOptions = ["L2 fit (least squares)", "L1 fit (least absolute deviations)", "Points", "Outliers"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key.
+// overlay legend's swatches double as a color key. #f97316 (orange) has no
+// VM.plotting.colors() token -- left as a literal.
+chartColors = VM.plotting.colors()
+
 fitColors = new Map([
-  ["L2 fit (least squares)", "#dc2626"],
-  ["L1 fit (least absolute deviations)", "#2563eb"],
-  ["Points", "#111827"],
+  ["L2 fit (least squares)", chartColors.alt],
+  ["L1 fit (least absolute deviations)", chartColors.fn],
+  ["Points", chartColors.ink],
   ["Outliers", "#f97316"]
 ])
 ```
@@ -270,13 +273,13 @@ mainPlot = {
 
     const data = []
     if (showL2) {
-      data.push({x: lineXs, y: l2LineYs, type: "scatter", mode: "lines", name: "L2 fit (least squares)", showlegend: false, line: {color: "#dc2626", width: 2.5}})
+      data.push({x: lineXs, y: l2LineYs, type: "scatter", mode: "lines", name: "L2 fit (least squares)", showlegend: false, line: {color: chartColors.alt, width: 2.5}})
     }
     if (showL1) {
-      data.push({x: lineXs, y: l1LineYs, type: "scatter", mode: "lines", name: "L1 fit (least absolute deviations)", showlegend: false, line: {color: "#2563eb", width: 2.5}})
+      data.push({x: lineXs, y: l1LineYs, type: "scatter", mode: "lines", name: "L1 fit (least absolute deviations)", showlegend: false, line: {color: chartColors.fn, width: 2.5}})
     }
     if (showPoints) {
-      data.push({x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", showlegend: false, marker: {color: "#111827", size: 8, line: {color: "white", width: 1}}})
+      data.push({x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", showlegend: false, marker: {color: chartColors.ink, size: 8, line: {color: "white", width: 1}}})
     }
     if (showOutliers) {
       data.push({x: outlierXs, y: outlierYs, type: "scatter", mode: "markers", name: "Outliers", showlegend: false, marker: {color: "#f97316", size: 13, symbol: "diamond", line: {color: "white", width: 1.5}}})

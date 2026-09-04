@@ -31,10 +31,12 @@ traceOptions = ["f(x)", "Adaptive Simpson panels", "Partition points"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
+chartColors = VM.plotting.colors()
+
 traceColors = new Map([
-  ["f(x)", "#2563eb"],
-  ["Adaptive Simpson panels", "#16a34a"],
-  ["Partition points", "#111827"]
+  ["f(x)", chartColors.fn],
+  ["Adaptive Simpson panels", chartColors.ok],
+  ["Partition points", chartColors.ink]
 ])
 ```
 
@@ -429,7 +431,7 @@ mainPlot = {
 
     if (showFCurve) {
       // The function curve
-      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     if (showPanels) {
@@ -441,13 +443,13 @@ mainPlot = {
 
         traces.push({
           x: panel.xs, y: panel.ys, type: "scatter", mode: "lines", name: "Adaptive Simpson panels", showlegend: false,
-          fill: "tozeroy", fillcolor: `rgba(22, 163, 74, ${fillAlpha})`, line: {color: "#16a34a", width: 1}
+          fill: "tozeroy", fillcolor: `rgba(22, 163, 74, ${fillAlpha})`, line: {color: chartColors.ok, width: 1}
         })
       }
     }
 
     if (showPartitionPoints && data.nodesX.length > 0) {
-      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Partition points", showlegend: false, marker: {color: "#111827", size: 6, symbol: "circle", line: {color: "white", width: 1}}})
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Partition points", showlegend: false, marker: {color: chartColors.ink, size: 6, symbol: "circle", line: {color: "white", width: 1}}})
     }
 
     // Vertical dividers at interior partition points, spanning the full
@@ -631,7 +633,7 @@ decisionTreePlot = {
   }
 
   const colorDomain = [splitName, acceptedName]
-  const colorRange = ["#d3d7dc9e", "#16a34a"]
+  const colorRange = ["#d3d7dc9e", chartColors.ok]
 
   const chart = Plot.plot({
     width,

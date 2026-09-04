@@ -33,13 +33,18 @@ VM = window.VM
 traceOptions = ["f(x)", "Previous midpoints", "Endpoints", "Midpoint", "Exact root found"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key.
+// overlay legend's swatches double as a color key. #f97316 (orange) has no
+// VM.plotting.colors() token -- left as a literal, same as other
+// beyond-the-core-palette accents elsewhere on the site (e.g. k-means'
+// extra cluster hues).
+chartColors = VM.plotting.colors()
+
 traceColors = new Map([
-  ["f(x)", "#2563eb"],
+  ["f(x)", chartColors.fn],
   ["Previous midpoints", "#f97316"],
-  ["Endpoints", "#2563eb"],
-  ["Midpoint", "#dc2626"],
-  ["Exact root found", "#16a34a"]
+  ["Endpoints", chartColors.fn],
+  ["Midpoint", chartColors.alt],
+  ["Exact root found", chartColors.ok]
 ])
 ```
 
@@ -367,7 +372,7 @@ mainPlot = {
 
     if (showFCurve) {
       // The function curve
-      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     // Previous midpoints — all steps before the current one
@@ -397,10 +402,10 @@ mainPlot = {
           // Endpoints a and b
           {x: [row.a, row.b], y: [row.fa, row.fb], type: "scatter", mode: "markers+text", name: "Endpoints",
             text: ["a", "b"], textposition: "top center", showlegend: false,
-            marker: {color: "#2563eb", size: 11, symbol: "circle", line: {color: "white", width: 1}}},
+            marker: {color: chartColors.fn, size: 11, symbol: "circle", line: {color: "white", width: 1}}},
           // Dotted verticals from x-axis to the endpoint markers
-          {x: [row.a, row.a], y: [0, row.fa], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}},
-          {x: [row.b, row.b], y: [0, row.fb], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}}
+          {x: [row.a, row.a], y: [0, row.fa], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}},
+          {x: [row.b, row.b], y: [0, row.fb], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}}
         )
       }
       if (showMidpoint) {
@@ -408,9 +413,9 @@ mainPlot = {
           // Current midpoint m
           {x: [row.m], y: [row.fm], type: "scatter", mode: "markers+text", name: "Midpoint",
             text: [`m${row.n}`], textposition: "top center", showlegend: false,
-            marker: {color: "#dc2626", size: 13, symbol: "circle", line: {color: "white", width: 1}}},
+            marker: {color: chartColors.alt, size: 13, symbol: "circle", line: {color: "white", width: 1}}},
           // Dotted vertical from x-axis to the midpoint marker
-          {x: [row.m, row.m], y: [0, row.fm], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#dc2626", width: 1.5, dash: "dot"}}
+          {x: [row.m, row.m], y: [0, row.fm], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.alt, width: 1.5, dash: "dot"}}
         )
       }
       // If the current midpoint is exactly a root, add a prominent success marker.
@@ -425,7 +430,7 @@ mainPlot = {
           textposition: "bottom center",
           showlegend: false,
           marker: {
-            color: "#16a34a",
+            color: chartColors.ok,
             size: 16,
             symbol: "star",
             line: {color: "white", width: 1.5}
@@ -535,8 +540,8 @@ iteratesPlot = {
     x: {label: "n"},
     y: {label: "mₙ"},
     marks: [
-      Plot.lineY(result.rows, {x: "n", y: midpointAccessor, stroke: "#2563eb"}),
-      Plot.dot(result.rows, {x: "n", y: midpointAccessor, fill: "#2563eb", r: 4})
+      Plot.lineY(result.rows, {x: "n", y: midpointAccessor, stroke: chartColors.fn}),
+      Plot.dot(result.rows, {x: "n", y: midpointAccessor, fill: chartColors.fn, r: 4})
     ]
   })
 }
@@ -581,15 +586,15 @@ convergencePlot = {
     Plot.dot(finiteLogRows, {x: "n", y: "y", fill: () => pointsName, r: 4})
   ]
 
-  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+  const colorDomain = [pointsName], colorRange = [chartColors.alt]
 
   if (zeroRows.length > 0) {
     marks.push(
       Plot.dot(zeroRows, {x: "n", y: "y", fill: () => exactName, r: 6, symbol: "star"}),
-      Plot.text(zeroRows, {x: "n", y: "y", text: "label", dy: -10, fill: "#16a34a"})
+      Plot.text(zeroRows, {x: "n", y: "y", text: "label", dy: -10, fill: chartColors.ok})
     )
     colorDomain.push(exactName)
-    colorRange.push("#16a34a")
+    colorRange.push(chartColors.ok)
   }
 
   // legendDomain/legendRange hold only the regression line(s) — the legend
@@ -608,9 +613,9 @@ convergencePlot = {
       {x: "n", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
     ))
     colorDomain.push(lineName)
-    colorRange.push("#9333ea")
+    colorRange.push(chartColors.accent2)
     legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+    legendRange.push(chartColors.accent2)
   }
 
   const chart = Plot.plot({

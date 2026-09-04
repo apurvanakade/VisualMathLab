@@ -47,14 +47,17 @@ initialNoise = {
 degreeOptions = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5", "Data points"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key.
+// overlay legend's swatches double as a color key. #0891b2 (cyan) has no
+// VM.plotting.colors() token -- left as a literal.
+chartColors = VM.plotting.colors()
+
 degreeColors = new Map([
-  ["Degree 1", "#2563eb"],
-  ["Degree 2", "#16a34a"],
-  ["Degree 3", "#9333ea"],
+  ["Degree 1", chartColors.fn],
+  ["Degree 2", chartColors.ok],
+  ["Degree 3", chartColors.accent2],
   ["Degree 4", "#0891b2"],
-  ["Degree 5", "#dc2626"],
-  ["Data points", "#111827"]
+  ["Degree 5", chartColors.alt],
+  ["Data points", chartColors.ink]
 ])
 
 initialShownDegrees = {
@@ -406,11 +409,11 @@ mainPlot = {
     // One entry per degree, in draw order (highest degree first, so the
     // more oscillatory curves don't hide behind the flatter ones).
     const curveSpecs = [
-      {degree: 5, show: showDegree5, color: "#dc2626", label: "Degree 5 (overfit)"},
+      {degree: 5, show: showDegree5, color: chartColors.alt, label: "Degree 5 (overfit)"},
       {degree: 4, show: showDegree4, color: "#0891b2", label: "Degree 4"},
-      {degree: 3, show: showDegree3, color: "#9333ea", label: "Degree 3"},
-      {degree: 2, show: showDegree2, color: "#16a34a", label: "Degree 2"},
-      {degree: 1, show: showDegree1, color: "#2563eb", label: "Degree 1 (underfit)"}
+      {degree: 3, show: showDegree3, color: chartColors.accent2, label: "Degree 3"},
+      {degree: 2, show: showDegree2, color: chartColors.ok, label: "Degree 2"},
+      {degree: 1, show: showDegree1, color: chartColors.fn, label: "Degree 1 (underfit)"}
     ]
 
     const data = []
@@ -419,7 +422,7 @@ mainPlot = {
       data.push({x: sampleXs, y: curves[spec.degree], type: "scatter", mode: "lines", name: spec.label, showlegend: false, line: {color: spec.color, width: 2.5}})
     }
     if (showDataPoints) {
-      data.push({x: pointXs, y: pointYs, type: "scatter", mode: "markers", name: "Data points", showlegend: false, marker: {color: "#111827", size: 9, line: {color: "white", width: 1}}})
+      data.push({x: pointXs, y: pointYs, type: "scatter", mode: "markers", name: "Data points", showlegend: false, marker: {color: chartColors.ink, size: 9, line: {color: "white", width: 1}}})
     }
 
     const layout = {
@@ -534,8 +537,8 @@ errorPlot = {
     x: {label: "Polynomial degree", domain: [1, 5], ticks: [1, 2, 3, 4, 5]},
     y: {label: "Total squared error (training data)"},
     marks: [
-      Plot.line(rows, {x: "degree", y: "error", stroke: "#9333ea"}),
-      Plot.dot(rows, {x: "degree", y: "error", fill: "#9333ea", r: 5})
+      Plot.line(rows, {x: "degree", y: "error", stroke: chartColors.accent2}),
+      Plot.dot(rows, {x: "degree", y: "error", fill: chartColors.accent2, r: 5})
     ]
   })
 }

@@ -559,6 +559,42 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   gap: 0.25rem 1rem;
 }
 
+/* Observable Inputs hardcodes every <label> to width: 120px; flex-shrink: 0
+ * (see the .ojs-panel rule above for the full explanation). A step-overlay
+ * slider's label is normally short enough ("Step", "n", "α") that this never
+ * shows -- but "Tolerance exponent e (ε = 10⁻ᵉ)" (adaptive-methods,
+ * adaptive-integration) wraps to 3 lines at 120px, making that field 93px
+ * tall against its "Max steps" neighbor's 37px and centering the slider
+ * roughly mid-label instead of level with it.
+ *
+ * Unlike the .ojs-panel fix, this does NOT also switch to flex-direction:
+ * column -- .ojs-panel has room to spare and stacking there is the established
+ * look, but the overlay bar is deliberately compact with the label beside the
+ * control (see every other page's Step/Max), and column-stacking here would
+ * grow that bar's height on every page, not just this one. Letting the label
+ * size to its content on a single line is enough: short labels were already
+ * narrower than 120px so this is a no-op for them, and the long one no longer
+ * wraps.
+ *
+ * :not([class$="-checkbox"]) excludes Inputs.radio()/checkbox() groups (e.g.
+ * k-means' "Algorithm" picker), which already get their own row-wrap
+ * treatment immediately above and would otherwise also match
+ * `form[class^="oi-"]`.
+ *
+ * No `white-space: nowrap` here (an earlier version of this rule had it,
+ * to force the long label onto one line): at 390px this bar has nowhere
+ * near enough room for an un-wrapping ~280px label, and since a flex item's
+ * default min-width is its content's min-content size, nowrap text can't
+ * shrink to fit -- it just overflows the viewport instead of wrapping,
+ * scrollWidth measured 360px past the viewport. Left free to wrap, the label
+ * shrinks back to multiple lines exactly like it did before this rule, but
+ * `.ojs-row`'s own `flex-wrap: wrap` has already dropped this field onto its
+ * own line below "Max steps" by the width this matters at, so the two no
+ * longer need to share a row's height in the first place. */
+.ojs-step-overlay form[class^="oi-"]:not([class$="-checkbox"]) label {
+  width: auto;
+}
+
 /* ── Draggable overlay panels ────────────────────────────────────── */
 /* Both floating panels above are pinned to a corner by default, which is
  * sometimes exactly where the interesting part of the curve is. A grip fades

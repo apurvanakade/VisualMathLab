@@ -1,5 +1,6 @@
 ---
 title: "Newton's Method"
+description: "Finds roots by repeatedly following the tangent line to its x-intercept, converging quadratically near a simple root."
 author:
   - Dhruv Azad
   - Apurva Nakade
@@ -32,12 +33,19 @@ VM = window.VM
 traceOptions = ["f(x)", "Tangent line", "Newton points", "Tangent x-intercepts"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key.
+// overlay legend's swatches double as a color key. Reads the theme once at
+// page load (js/plotting/chart-theme.js) -- like every trace color on this
+// page, it doesn't reactively repaint on a dark-mode toggle mid-session,
+// only on next load; the chart's background/axes/gridlines do repaint
+// live, via the shared Plotly.newPlot/react patch in
+// plotly-fullscreen-button.js.
+chartColors = VM.plotting.colors()
+
 traceColors = new Map([
-  ["f(x)", "#2563eb"],
-  ["Tangent line", "#dc2626"],
-  ["Newton points", "#dc2626"],
-  ["Tangent x-intercepts", "#16a34a"]
+  ["f(x)", chartColors.fn],
+  ["Tangent line", chartColors.alt],
+  ["Newton points", chartColors.alt],
+  ["Tangent x-intercepts", chartColors.ok]
 ])
 ```
 
@@ -337,7 +345,7 @@ mainPlot = {
     const data = []
 
     if (showFCurve) {
-      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: "#2563eb", width: 3}})
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
     // Dotted vertical lines from the x-axis up to each Newton point
@@ -347,7 +355,7 @@ mainPlot = {
     }
     if (showNewtonPoints) {
       for (const r of newtonPoints) {
-        data.push({x: [r.x, r.x], y: [0, r.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: "#94a3b8", width: 1.5, dash: "dot"}})
+        data.push({x: [r.x, r.x], y: [0, r.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}})
       }
     }
 
@@ -379,7 +387,7 @@ mainPlot = {
         data.push({
           x: [tlo, thi], y: [row.fx + row.dfx * (tlo - row.x), row.fx + row.dfx * (thi - row.x)],
           type: "scatter", mode: "lines", name: "Tangent line", showlegend: false,
-          line: {color: "#dc2626", width: 2.5}
+          line: {color: chartColors.alt, width: 2.5}
         })
       }
     }
@@ -396,7 +404,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Newton points",
         text: labels, textposition: "top center", showlegend: false,
-        marker: {color: "#dc2626", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
 
@@ -416,7 +424,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Tangent x-intercepts",
         text: labels, textposition: "bottom center", showlegend: false,
-        marker: {color: "#16a34a", size: 10, symbol: "circle", line: {color: "white", width: 1}}
+        marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: "white", width: 1}}
       })
     }
 
@@ -430,7 +438,7 @@ mainPlot = {
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true
     }
-    const config = {responsive: true, displaylogo: false}
+    const config = VM.plotting.config()
 
     // First render: create the div. Later renders: update in place (preserves zoom).
     if (!_plotDiv) {
@@ -514,8 +522,8 @@ iteratesPlot = {
     x: {label: "n"},
     y: {label: "xₙ"},
     marks: [
-      Plot.lineY(result.rows, {x: "i", y: xAccessor, stroke: "#2563eb"}),
-      Plot.dot(result.rows, {x: "i", y: xAccessor, fill: "#2563eb", r: 4})
+      Plot.lineY(result.rows, {x: "i", y: xAccessor, stroke: chartColors.fn}),
+      Plot.dot(result.rows, {x: "i", y: xAccessor, fill: chartColors.fn, r: 4})
     ]
   })
 }
@@ -544,7 +552,7 @@ convergencePlot = {
 
   const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
   const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
-  const colorDomain = [pointsName], colorRange = ["#dc2626"]
+  const colorDomain = [pointsName], colorRange = [chartColors.alt]
   // legendDomain/legendRange hold only the regression line(s) — the legend
   // shown below the chart displays just the fitted order, not the raw
   // point series, to keep it uncluttered.
@@ -558,9 +566,9 @@ convergencePlot = {
       {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
     ))
     colorDomain.push(lineName)
-    colorRange.push("#9333ea")
+    colorRange.push(chartColors.accent2)
     legendDomain.push(lineName)
-    legendRange.push("#9333ea")
+    legendRange.push(chartColors.accent2)
   }
 
   const chart = Plot.plot({

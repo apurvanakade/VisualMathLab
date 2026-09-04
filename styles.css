@@ -4,6 +4,146 @@
  * Authors: Apurva Nakade
  */
 
+/* Design tokens (--vm-*) are defined in _theme/vml-light.scss and
+ * _theme/vml-dark.scss, which also feed Bootstrap's own $variables so
+ * Quarto's built-in components (navbar, cards, callouts, tables) inherit
+ * the same palette. Everything in this file consumes --vm-* — no --bs-*
+ * fallback chains, no hardcoded hex — so a single edit to the two theme
+ * files re-themes both this stylesheet and Quarto's own chrome together. */
+
+/* ── Page grid / collapsible sidebar ─────────────────────────────── */
+/* Quarto only makes #quarto-sidebar an off-canvas overlay below 992px
+ * (Bootstrap's .collapse.collapse-horizontal); above that it switches to
+ * `position: sticky` and reserves its own page-columns grid track. These
+ * rules force the off-canvas treatment at every width instead, driven by
+ * our own .vm-sidebar-open/.vm-sidebar-pinned classes on <body> (see
+ * _includes/sidebar-rail.html) rather than Bootstrap's .collapse/.show —
+ * bypassing Bootstrap's own JS entirely is what lets the rail's
+ * hover-to-preview interaction work without fighting it. */
+
+body.floating .page-columns {
+  grid-template-columns:
+    [screen-start] 1.5em [screen-start-inset] 5fr
+    [page-start page-start-inset body-start-outset body-start] 1.5em
+    [body-content-start] minmax(500px, calc(1000px - 3em)) [body-content-end] 1.5em
+    [body-end body-end-outset page-end-inset] 1.5em
+    [page-end] 5fr [screen-end-inset] 1.5em [screen-end] !important;
+}
+
+/* 66px matches #quarto-header's measured rendered height -- the sidebar's
+ * own box starts below the navbar rather than under it (padding-top alone
+ * would still paint the sidebar's background/shadow over the navbar's
+ * brand text, since both are position: fixed and the sidebar's z-index
+ * has to be above the navbar's for the off-canvas panel to show at all). */
+#quarto-sidebar.sidebar-navigation {
+  position: fixed !important;
+  top: 66px !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: min(280px, 85vw) !important;
+  max-width: min(280px, 85vw) !important;
+  height: calc(100vh - 66px) !important;
+  z-index: 1055;
+  display: flex !important;
+  flex-direction: column;
+  background: var(--vm-bg);
+  border-right: 1px solid var(--vm-border);
+  box-shadow: var(--vm-shadow);
+  transform: translateX(-100%);
+  transition: transform 0.22s ease;
+  overflow-y: auto;
+}
+
+body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
+  transform: translateX(0);
+}
+
+/* Quarto's own backdrop is Bootstrap-collapse-driven and unused here —
+ * sidebar-rail.html's own mouseleave/click-outside/Escape handling
+ * replaces it. */
+#quarto-sidebar-glass {
+  display: none !important;
+}
+
+/* The always-visible rail: a slim strip at the left edge with a hamburger
+ * toggle, present regardless of sidebar state so there's always something
+ * to hover or click to bring the sidebar back. */
+#vm-sidebar-rail {
+  position: fixed;
+  top: 66px;
+  left: 0;
+  bottom: 0;
+  width: 2.75rem;
+  z-index: 1056;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding-top: 0.6rem;
+  transition: left 0.22s ease;
+}
+
+/* Once open, the sidebar's own box occupies x:0-280px at the same z-index
+ * band the rail sits in -- move the rail to the sidebar's right edge
+ * instead of leaving it stacked on top of the sidebar's nav tree text. */
+body.vm-sidebar-open #vm-sidebar-rail {
+  left: min(280px, 85vw);
+}
+
+#vm-sidebar-rail button {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: var(--vm-radius-sm, 6px);
+  background: transparent;
+  color: var(--vm-text-soft);
+  cursor: pointer;
+}
+
+#vm-sidebar-rail button:hover,
+body.vm-sidebar-open #vm-sidebar-rail button[data-vm-toggle] {
+  background: var(--vm-surface);
+  border-color: var(--vm-border);
+  color: var(--vm-text);
+}
+
+body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
+  color: var(--vm-accent);
+  border-color: var(--vm-border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #quarto-sidebar.sidebar-navigation {
+    transition: none;
+  }
+}
+
+/* ── Navbar / footer ─────────────────────────────────────────────── */
+
+#quarto-header .navbar {
+  background: color-mix(in srgb, var(--vm-bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--vm-border);
+}
+
+.footer {
+  border-top: 1px solid var(--vm-border);
+  color: var(--vm-text-soft);
+  background: var(--vm-bg);
+}
+
+.footer a {
+  color: var(--vm-text-soft);
+}
+
+.footer a:hover {
+  color: var(--vm-accent);
+}
+
 /* ── Parameter controls panel ────────────────────────────────────── */
 /* Composable primitives: .ojs-panel is chrome only, .ojs-row/.ojs-grid are
  * layout only. Combine them (e.g. class="ojs-panel ojs-row") for a
@@ -14,9 +154,9 @@
 .ojs-panel {
   padding: 0.5rem 0.75rem;
   margin-bottom: 0.5rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--bs-border-radius, 0.375rem);
-  background: var(--bs-light, #f8f9fa);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
 }
 
 .ojs-row {
@@ -41,11 +181,12 @@
 
 /* Skin every native input inside a panel to match its chrome */
 .ojs-panel input {
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
   padding: 0.25rem 0.5rem;
   font-size: 0.9rem;
-  background: white;
+  background: var(--vm-bg);
+  color: var(--vm-text);
 }
 
 /* !important overrides Observable Inputs' own flex-shrink on the number spinner */
@@ -68,15 +209,15 @@
 
 .ojs-panel input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.2);
+  border-color: var(--vm-accent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
 }
 
 .ojs-panel input[type="range"] {
   border: none;
   padding: 0;
   background: none;
-  accent-color: #2563eb;
+  accent-color: var(--vm-accent);
   width: 100%;
 }
 
@@ -87,22 +228,26 @@
  * quarto-ojs.css) so this doesn't also catch Quarto's own per-cell
  * "Copy to Clipboard" button, which lives in the same panel. */
 .ojs-panel form[class^="oi-"] button {
-  border: 1px solid #2563eb;
-  border-radius: var(--bs-border-radius-sm, 0.25rem);
+  border: 1px solid var(--vm-accent);
+  border-radius: var(--vm-radius-sm);
   padding: 0.25rem 0.75rem;
   font-size: 0.9rem;
+  font-weight: 500;
   color: #fff;
-  background: #2563eb;
+  background: var(--vm-accent);
+  box-shadow: rgba(27, 31, 36, 0.1) 0 1px 0 0 inset;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
   cursor: pointer;
 }
 
 .ojs-panel form[class^="oi-"] button:hover {
-  background: #1d4ed8;
+  background: var(--vm-accent-hover);
+  border-color: var(--vm-accent-hover);
 }
 
 .ojs-panel form[class^="oi-"] button:focus {
   outline: none;
-  box-shadow: 0 0 0 0.15rem rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 35%, transparent);
 }
 
 /* Observable Inputs lays out every control as <form class="oi-...">
@@ -222,7 +367,7 @@
  * Plotly.Plots.resize whenever this box resizes, so Plotly's own redraw
  * picks up the letterboxed size with no extra JS here. */
 .ojs-plot-overlay:fullscreen {
-  background: var(--bs-body-bg, #fff);
+  background: var(--vm-bg);
 }
 
 /* Quarto/Observable sits several plain wrapper divs between .ojs-plot-overlay
@@ -267,11 +412,12 @@
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.5rem 0.65rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--bs-border-radius, 0.375rem);
-  background: var(--bs-body-bg, #fff);
-  opacity: 0.92;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
   font-size: 0.85rem;
   max-width: min(220px, 45vw);
 }
@@ -282,11 +428,11 @@
   gap: 0.4rem;
   cursor: pointer;
   user-select: none;
-  color: var(--bs-body-color, #212529);
+  color: var(--vm-text);
 }
 
 .ojs-legend-overlay .ojs-legend-item:focus-visible {
-  outline: 2px solid #2563eb;
+  outline: 2px solid var(--vm-accent);
   outline-offset: 2px;
 }
 
@@ -298,11 +444,11 @@
 }
 
 .ojs-legend-overlay .ojs-legend-item[aria-checked="false"] {
-  color: var(--bs-secondary-color, #6c757d);
+  color: var(--vm-text-soft);
 }
 
 .ojs-legend-overlay .ojs-legend-item[aria-checked="false"] .ojs-legend-swatch {
-  background: var(--bs-secondary-bg, #e9ecef) !important;
+  background: var(--vm-border) !important;
 }
 
 .ojs-legend-overlay .ojs-legend-item[aria-checked="false"] span:last-child {
@@ -322,11 +468,12 @@
   right: 0.75rem;
   z-index: 5;
   padding: 0.4rem 0.75rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: var(--bs-border-radius, 0.375rem);
-  background: var(--bs-body-bg, #fff);
-  opacity: 0.92;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
 }
 
 /* Observable Inputs sizes every range input to a fixed ~180px track of its
@@ -335,7 +482,7 @@
  * instead of growing with the bar. The .ojs-panel rule above already gives
  * panel sliders a fluid track; overlay bars need the same. */
 .ojs-step-overlay input[type="range"] {
-  accent-color: #2563eb;
+  accent-color: var(--vm-accent);
   width: 100%;
 }
 
@@ -363,21 +510,26 @@
 }
 
 /* ── Listing cards ───────────────────────────────────────────────── */
+/* No shadow-lift on hover -- a bordered tile that tints its own background
+ * instead, matching visualpde.com's card treatment rather than a
+ * skeuomorphic elevation change. */
 
 .quarto-grid-item {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.10), 0 1px 2px rgba(0, 0, 0, 0.07);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  border: 1px solid var(--vm-border) !important;
+  border-radius: var(--vm-radius);
   cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
 }
 
 .quarto-grid-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.13), 0 2px 4px rgba(0, 0, 0, 0.08);
+  background-color: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
 }
 
-.quarto-grid-item:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+.quarto-grid-item .card-img,
+.quarto-grid-item .thumbnail-image {
+  height: 160px !important;
+  object-fit: cover;
 }
 
 /* ── Iteration table ─────────────────────────────────────────────── */
@@ -402,8 +554,8 @@
   z-index: 1050;
   padding: 0.3rem 0.6rem;
   border: none;
-  border-radius: var(--bs-border-radius-sm, 0.25rem);
-  background: #2563eb;
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-accent);
   color: #fff;
   font-size: 0.8rem;
   line-height: 1.2;
@@ -412,74 +564,132 @@
 }
 
 .vm-report-bug-popup:hover {
-  background: #1d4ed8;
+  background: var(--vm-accent-hover);
+}
+
+/* ── Callouts ─────────────────────────────────────────────────────── */
+/* Quarto's default callout-note is a Bootstrap-alert-style colored bar
+ * (blue left border + tinted background); this site uses "Convergence
+ * plots" / "Iteration table" callouts as plain content containers (38
+ * uses site-wide), not as attention-grabbing notes, so it's restyled to
+ * match .ojs-panel's quiet bordered chrome instead. */
+
+.callout.callout-style-default {
+  border: 1px solid var(--vm-border);
+  border-left: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-bg);
+}
+
+.callout.callout-style-default .callout-header {
+  background: var(--vm-surface);
 }
 
 /* ── Responsive ──────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  .page-layout-full main.content { padding-inline: 0.75rem; }
   .plotly-box-large { height: 65vh; min-height: 400px; }
   .ojs-grid { grid-template-columns: 1fr 1fr; }
+  #quarto-sidebar.sidebar-navigation { width: min(85vw, 320px) !important; max-width: min(85vw, 320px) !important; }
+  body.vm-sidebar-open #vm-sidebar-rail { left: min(85vw, 320px); }
 }
 
 @media (max-width: 480px) {
   .ojs-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Example preset cards ─────────────────────────────────────────── */
-/* Colors reuse the same --bs-* tokens as the panel chrome above (light
- * theme: cosmo, dark theme: cyborg) so the cards stay legible in both;
- * #2563eb is the site's fixed accent blue, same as the panel's button/
- * focus color and Plotly's reference-line color, and doesn't flip with
- * the theme. */
+/* ── Homepage hero / topic grid ──────────────────────────────────── */
 
-.example-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+.vm-hero {
+  position: relative;
+  height: min(52vh, 420px);
+  min-height: 280px;
+  margin: 0.5rem 0 2rem;
+  border-radius: var(--vm-radius);
+  overflow: hidden;
+  background: #14162a;
+  border: 1px solid var(--vm-border);
+}
+
+.vm-hero-plot-wrap {
+  position: absolute;
+  inset: 0;
+}
+
+.vm-hero-plot {
+  width: 100%;
+  height: 100%;
+}
+
+.vm-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
   gap: 1rem;
-  margin: 1.25rem 0 2rem 0;
+  padding: 2rem 1.5rem 2.25rem;
+  text-align: center;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(20, 22, 42, 0) 0%, rgba(20, 22, 42, 0.55) 70%, rgba(20, 22, 42, 0.85) 100%);
 }
 
-.example-card {
-  display: block;
-  padding: 1rem 1.1rem;
-  border-radius: 18px;
-  background: var(--bs-light, #f8f9fa);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
-  color: inherit;
+.vm-hero-kicker {
+  margin: 0;
+  color: #dfe3f5;
+  font-size: 1.05rem;
+  font-weight: 300;
+  max-width: 32rem;
+}
+
+.vm-hero-cta {
+  pointer-events: all;
+  display: inline-block;
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--vm-radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: color-mix(in srgb, var(--vm-accent) 90%, transparent);
+  color: #fff;
+  font-weight: 500;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: rgba(27, 31, 36, 0.1) 0 1px 0 0 inset;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
-.example-card:hover,
-.example-card:focus-visible {
-  transform: translateY(-2px);
-  border-color: #2563eb;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+.vm-hero-cta:hover {
+  background: var(--vm-accent-hover);
+  text-decoration: none;
+  color: #fff;
 }
 
-.example-card:focus-visible {
-  outline: 2px solid #2563eb;
-  outline-offset: 2px;
+.vm-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2.5rem;
 }
 
-.example-card-title {
-  font-weight: 700;
-  font-size: 1rem;
-  margin-bottom: 0.35rem;
-}
-
-.example-card-formula {
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #2563eb;
-  margin-bottom: 0.45rem;
-}
-
-.example-card-text {
-  font-size: 0.9rem;
+.vm-topic-tile {
+  display: block;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  color: var(--vm-text);
+  text-decoration: none !important;
   line-height: 1.45;
-  color: var(--bs-secondary-color, #475569);
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.vm-topic-tile:hover {
+  background: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
+}
+
+.vm-topic-tile strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--vm-accent);
+  font-weight: 600;
 }

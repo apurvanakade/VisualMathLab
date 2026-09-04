@@ -1,0 +1,83 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/*-- scss:defaults --*/
+
+// See vml-light.scss for why these values are duplicated into runtime
+// --vm-* custom properties in scss:rules below instead of only living as
+// Sass variables.
+
+$vm-bg:            #171b29;
+$vm-surface:       #1e2436;
+$vm-surface-hover: #2a3145;
+$vm-text:          #c9cedb;
+$vm-text-soft:     #8b93a7;
+$vm-border:        rgba(224, 234, 247, 0.15);
+$vm-accent:        #8ab4ff;
+$vm-accent-hover:  #a9c7ff;
+$vm-grid:          rgba(201, 206, 219, 0.10);
+
+$font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+$font-family-monospace:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+$body-bg:      $vm-bg;
+$body-color:   $vm-text;
+$link-color:   $vm-accent;
+$primary:      $vm-accent;
+$border-color: $vm-border;
+$border-radius:    8px;
+$border-radius-sm: 6px;
+
+$font-size-base: 1rem;
+$line-height-base: 1.65;
+$headings-font-weight: 600;
+$h1-font-size: 2.25rem;
+
+$card-border-color: $vm-border;
+$card-cap-bg:        $vm-surface;
+$card-bg:             $vm-bg;
+
+$navbar-bg:  $vm-bg;
+$navbar-fg:  $vm-text;
+$navbar-hl:  $vm-accent;
+
+$code-color: $vm-text-soft;
+$code-bg:    $vm-surface;
+
+/*-- scss:rules --*/
+
+// Quarto swaps in this stylesheet by toggling `quarto-dark`/`quarto-light`
+// on <body> (confirmed from the rendered <body class="... quarto-light">
+// and the quartoToggleColorScheme() inline script that calls
+// toggleBodyColorMode()/toggleBodyColorPrimary() on it) -- so redeclare the
+// tokens under body.quarto-dark rather than :root, exactly like every other
+// dark-mode-aware selector in this file.
+body.quarto-dark {
+  --vm-bg: #{$vm-bg};
+  --vm-surface: #{$vm-surface};
+  --vm-surface-hover: #{$vm-surface-hover};
+  --vm-text: #{$vm-text};
+  --vm-text-soft: #{$vm-text-soft};
+  --vm-border: #{$vm-border};
+  --vm-accent: #{$vm-accent};
+  --vm-accent-hover: #{$vm-accent-hover};
+  --vm-grid: #{$vm-grid};
+  --vm-radius: 8px;
+  --vm-radius-sm: 6px;
+  --vm-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --vm-font-weight-body: 400;
+  --vm-font-weight-display: 300;
+}
+
+body.quarto-dark {
+  h1, h1.title {
+    font-weight: var(--vm-font-weight-display);
+    letter-spacing: -0.02em;
+  }
+
+  h2 { font-size: 1.5rem; font-weight: 600; }
+  h3 { font-size: 1.2rem; font-weight: 600; }
+}

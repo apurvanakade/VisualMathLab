@@ -1,0 +1,78 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/*-- scss:defaults --*/
+
+// Visual Math Lab light theme. Token values are duplicated (not computed
+// from Sass variables) into the --vm-* custom properties in scss:rules
+// below, because those tokens also have to exist as *runtime* CSS custom
+// properties that JS (js/plotting/chart-theme.js) reads via
+// getComputedStyle to theme Plotly/Observable Plot charts -- Sass
+// variables are compile-time only and don't survive into the page.
+
+$vm-bg:            #fdfdfd;
+$vm-surface:       #f6f7f9;
+$vm-surface-hover: #ececec;
+$vm-text:          #14161a;
+$vm-text-soft:     #5f6672;
+$vm-border:        rgba(27, 31, 36, 0.15);
+$vm-accent:        #2563eb;
+$vm-accent-hover:  #1d4ed8;
+$vm-grid:          rgba(20, 22, 26, 0.08);
+
+$font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+$font-family-monospace:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+$body-bg:      $vm-bg;
+$body-color:   $vm-text;
+$link-color:   $vm-accent;
+$primary:      $vm-accent;
+$border-color: $vm-border;
+$border-radius:    8px;
+$border-radius-sm: 6px;
+
+$font-size-base: 1rem;
+$line-height-base: 1.65;
+$headings-font-weight: 600;
+$h1-font-size: 2.25rem;
+
+$card-border-color: $vm-border;
+$card-cap-bg:        $vm-surface;
+$card-bg:             $vm-bg;
+
+$navbar-bg:  $vm-bg;
+$navbar-fg:  $vm-text;
+$navbar-hl:  $vm-accent;
+
+$code-color: $vm-text-soft;
+$code-bg:    $vm-surface;
+
+/*-- scss:rules --*/
+
+:root {
+  --vm-bg: #{$vm-bg};
+  --vm-surface: #{$vm-surface};
+  --vm-surface-hover: #{$vm-surface-hover};
+  --vm-text: #{$vm-text};
+  --vm-text-soft: #{$vm-text-soft};
+  --vm-border: #{$vm-border};
+  --vm-accent: #{$vm-accent};
+  --vm-accent-hover: #{$vm-accent-hover};
+  --vm-grid: #{$vm-grid};
+  --vm-radius: 8px;
+  --vm-radius-sm: 6px;
+  --vm-shadow: 0 1px 2px rgba(27, 31, 36, 0.08);
+  --vm-font-weight-body: 400;
+  --vm-font-weight-display: 300;
+}
+
+h1, h1.title {
+  font-weight: var(--vm-font-weight-display);
+  letter-spacing: -0.02em;
+}
+
+h2 { font-size: 1.5rem; font-weight: 600; }
+h3 { font-size: 1.2rem; font-weight: 600; }

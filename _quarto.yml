@@ -16,27 +16,40 @@ execute:
 format:
   html:
     theme:
-      light: cosmo
-      dark: cyborg
+      light: [_theme/vml-light.scss]
+      dark: [_theme/vml-dark.scss]
     css: styles.css
     toc: true
     html-math-method: mathjax
+    title-block-categories: false
     include-in-header:
       - _includes/head-scripts.html
     # Order matters: consent.html looks for the gated <script> that
     # analytics.html emits, so analytics.html has to be in the DOM first.
+    # sidebar-rail.html reads/reacts to the sidebar's own DOM, so it belongs
+    # after both.
     include-after-body:
       - _includes/analytics.html
       - _includes/consent.html
+      - _includes/sidebar-rail.html
+    # Sidebar columns collapse to 0 above 992px too (styles.css), so the
+    # remaining body column can run wider than Quarto's ~750px default -- a
+    # 78vh chart needs the room. See styles.css's "Page grid" section.
+    grid:
+      body-width: 1000px
+      sidebar-width: 260px
+      margin-width: 200px
 
 website:
   title: "Visual Math Lab"
   site-url: https://www.visualmathlab.com
+  favicon: favicon.png
+  open-graph: true
+  twitter-card: true
   page-navigation: true
   bread-crumbs: true
 
   navbar:
-    background: light
     left:
       - text: "About"
         href: about.qmd

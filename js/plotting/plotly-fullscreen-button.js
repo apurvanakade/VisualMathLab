@@ -121,9 +121,38 @@
     if (layout && layout.dragmode !== undefined) return layout
     return {...layout, dragmode: "pan"}
   }
+  // Layers the shared theme (js/plotting/chart-theme.js) UNDER whatever
+  // layout a page passes, so every existing mainPlot cell picks up
+  // themed axes/fonts/background with no page-level edit -- a page's own
+  // layout keys (margin, xaxis.range, ...) still win where they overlap,
+  // since VM.plotting.layout deep-merges the page's object on top of its
+  // own defaults.
+  const withTheme = (layout) => {
+    if (!globalThis.VM?.plotting?.layout) return layout
+    return globalThis.VM.plotting.layout(layout)
+  }
   for (const name of ["newPlot", "react"]) {
     const original = globalThis.Plotly[name]
-    globalThis.Plotly[name] = (gd, data, layout, config) => original(gd, data, withDefaultDragmode(layout), addButton(config))
+    globalThis.Plotly[name] = (gd, data, layout, config) =>
+      original(gd, data, withDefaultDragmode(withTheme(layout)), addButton(globalThis.VM?.plotting?.config ? globalThis.VM.plotting.config(config) : config))
+  }
+
+  // A page's chart is normally re-themed the next time it reactively
+  // rebuilds (Plotly.react runs VM.plotting.layout() fresh every call, per
+  // withTheme above) -- but toggling dark mode alone doesn't touch any
+  // OJS input, so nothing would otherwise trigger that rebuild. Watch
+  // <body>'s class for the quarto-dark/quarto-light flip
+  // (toggleBodyColorMode in Quarto's own inline script is what sets it,
+  // see docs/**/*.html) and relayout every live chart on the page
+  // immediately, without needing a per-page listener.
+  if (typeof document !== "undefined" && document.body && typeof MutationObserver !== "undefined") {
+    const themeObserver = new MutationObserver(() => {
+      if (!globalThis.Plotly?.relayout || !globalThis.VM?.plotting?.themePatch) return
+      for (const gd of document.querySelectorAll(".js-plotly-plot")) {
+        globalThis.Plotly.relayout(gd, globalThis.VM.plotting.themePatch())
+      }
+    })
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] })
   }
 
   globalThis.VM = {...globalThis.VM, plotting: {...globalThis.VM?.plotting, fullscreenButton}}

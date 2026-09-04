@@ -1,8 +1,6 @@
 ---
 title: "Visual Math Lab"
 subtitle: "Interactive, browser-based visualizations of numerical methods."
-author: Apurva Nakade
-date: 2026-06-25
 listing:
   contents:
     - "/*/*/index.qmd"
@@ -11,8 +9,9 @@ listing:
     - "!/probability/recursive-filters/index.qmd"
   type: grid
   sort: "date desc"
-  fields: [image, title, description, categories]
-  categories: true
+  fields: [image, title, description]
+  image-height: "160px"
+  id: latest-listing
 toc: false
 ---
 
@@ -22,4 +21,124 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-Visual Math Lab collects interactive, browser-based visualizations for exploring computational math, probability theory, data science, and discrete mathematics.
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This hero uses VM.plotting.config.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// A fixed, non-editable decorative curve -- unlike every method page's
+// plotter, nothing here is user input, so this skips the expression
+// parser and math.js entirely and just samples plain JS closures. A
+// Lissajous figure traces out a closed loop that's visually busy enough to
+// read as "a live simulation" at a glance, and cheap enough to resample
+// every frame with no caching.
+// A closure over _plotDiv, called (not referenced bare) from the display
+// cell below as heroPlot() -- matching every other page's mainPlot(setup)
+// convention. A bare `heroPlot` reference, without the call, renders as
+// Observable's generic object inspector instead of embedding the DOM node
+// (verified the hard way: it dumped the div's internal Plotly properties
+// as inspectable object keys instead of showing the chart).
+heroPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  const SAMPLES = 720
+  const ts = []
+  const xs = []
+  const ys = []
+  for (let i = 0; i <= SAMPLES; i++) {
+    const t = (i / SAMPLES) * 2 * Math.PI
+    ts.push(t)
+    xs.push(Math.sin(3 * t))
+    ys.push(Math.sin(4 * t))
+  }
+
+  const layout = {
+    margin: {l: 0, r: 0, t: 0, b: 0},
+    xaxis: {visible: false, range: [-1.2, 1.2], fixedrange: true},
+    yaxis: {visible: false, range: [-1.2, 1.2], scaleanchor: "x", scaleratio: 1, fixedrange: true},
+    showlegend: false,
+    paper_bgcolor: "rgba(0,0,0,0)",
+    plot_bgcolor: "rgba(0,0,0,0)",
+    hovermode: false
+  }
+  const config = VM.plotting.config({staticPlot: true, displayModeBar: false})
+
+  return () => {
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "vm-hero-plot"
+      Plotly.newPlot(_plotDiv, [
+        {x: xs, y: ys, type: "scatter", mode: "lines", line: {color: "#8ab4ff", width: 2.5, shape: "spline"}, opacity: 0.85},
+        {x: [xs[0]], y: [ys[0]], type: "scatter", mode: "markers", marker: {color: "#f87171", size: 11, line: {color: "#171b29", width: 2}}}
+      ], layout, config)
+
+      // _plotDiv is created detached (document.createElement, not yet in
+      // the page), so it measures 0x0 at the moment newPlot runs --
+      // Plotly's autosize falls back to its hardcoded 700x450 default
+      // instead of the real (947-ish px wide) container, which left the
+      // curve sitting left-aligned instead of centered/filling the hero
+      // panel. Every mainPlot cell on the site works around exactly this
+      // with the same ResizeObserver once the div is actually attached and
+      // has a real size.
+      new ResizeObserver(() => Plotly.Plots.resize(_plotDiv)).observe(_plotDiv)
+
+      // Advances the marker one sample per tick and keeps it running for
+      // the life of the page -- this cell has no reactive inputs, so it
+      // only ever runs once, and the interval is what keeps the curve
+      // moving after that.
+      let frame = 0
+      setInterval(() => {
+        frame = (frame + 1) % (SAMPLES + 1)
+        Plotly.restyle(_plotDiv, {x: [[xs[frame]]], y: [[ys[frame]]]}, [1])
+      }, 30)
+    }
+    return _plotDiv
+  }
+}
+```
+
+::: {.vm-hero}
+<div class="vm-hero-plot-wrap">
+```{ojs}
+heroPlot()
+```
+</div>
+<div class="vm-hero-overlay">
+<p class="vm-hero-kicker">Every chart on this site is live — drag, zoom, and edit the math yourself.</p>
+<a class="vm-hero-cta" href="#browse-topics">Start exploring ↓</a>
+</div>
+:::
+
+## Browse by topic {#browse-topics}
+
+::: {.vm-topic-grid}
+[**Root Finding**\
+Newton, bisection, secant, and fixed-point iteration for solving $f(x) = 0$.](root-finding/index.qmd){.vm-topic-tile}
+
+[**Piecewise Interpolation**\
+Numerical integration and interpolation by linear and cubic splines.](piecewise-interpolation/index.qmd){.vm-topic-tile}
+
+[**Differential Equations**\
+Explicit, implicit, and adaptive solvers for ODEs, and the Butcher tableau behind them.](differential-equations/index.qmd){.vm-topic-tile}
+
+[**Sperner's Lemma**\
+A combinatorial fixed-point theorem, built up from barycentric coordinates to two independent proofs.](sperners-lemma/index.qmd){.vm-topic-tile}
+
+[**Model Fitting**\
+Least-squares vs. robust regression, and polynomial fits at increasing degree.](model-fitting/index.qmd){.vm-topic-tile}
+
+[**Clustering**\
+Partitioning points into clusters with Lloyd's algorithm.](clustering/index.qmd){.vm-topic-tile}
+
+[**Bayes' Theorem**\
+Updating a belief in light of new evidence, from base rates to positive predictive value.](probability/bayes/index.qmd){.vm-topic-tile}
+
+[**Recursive Filters**\
+Smoothing a noisy signal one measurement at a time.](probability/recursive-filters/index.qmd){.vm-topic-tile}
+:::
+
+## Latest

@@ -102,6 +102,21 @@
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches
   }
 
+  // js/ui/slider-play.js publishes how long it has, in ms, between one slider
+  // value and the next while a sweep is running (0 when idle). The default
+  // 300ms transition below assumes a human dragging the slider, one step at a
+  // time -- during an animated sweep that is often longer than the gap
+  // between values, so every tween gets cut off by the next one and the chart
+  // reads as lagging rather than animating. Reading it fresh here, rather
+  // than slider-play.js reaching into Plotly directly, keeps the two files
+  // independent: this one doesn't need to know playback exists at all when
+  // nothing is playing.
+  const playbackTweenMs = () => {
+    const value = globalThis.VM?.ui?.playbackTweenMs
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null
+    return value
+  }
+
   // Named after what each color means on the chart (the function itself,
   // an alternate/reference trace, a "good"/converged marker, ...), not the
   // hex value -- so a page reads `colors.fn` / `colors.alt` rather than
@@ -229,7 +244,10 @@
       // Tween between steps instead of snapping, so an iteration slider
       // reads as the method advancing rather than as a flicker. Honors the
       // OS reduced-motion setting.
-      transition: { duration: prefersReducedMotion() ? 0 : 300, easing: "cubic-in-out" },
+      transition: {
+        duration: prefersReducedMotion() ? 0 : (playbackTweenMs() ?? 300),
+        easing: "cubic-in-out"
+      },
       // Small but non-zero: automargin adds whatever the tick labels and
       // axis titles actually need on top of this, but with a flat 0 the
       // rotated y-title ends up flush against the container's edge.

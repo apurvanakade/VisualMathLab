@@ -147,6 +147,7 @@ Authors: Apurva Nakade
 <script src="../js/filters/kalman-1d-filter.js"></script>
 <script src="../js/ui/render-table.js"></script>
 <script src="../js/ui/range-progress.js"></script>
+<script src="../js/ui/slider-play.js"></script>
 <script src="../js/ui/apply-example.js"></script>
 <script src="../js/ui/legend-overlay.js"></script>
 <script src="../js/ui/draggable-overlay.js"></script>
@@ -706,7 +707,7 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1788531745476" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
+<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1788576618922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
 <a href="../model-fitting/l1-vs-l2/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -722,7 +723,7 @@ L1 vs.&nbsp;L2 Regression
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1788531745476" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
+<div class="g-col-1" data-index="1" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1788576618922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
 <a href="../model-fitting/polynomial-fit/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1102,12 +1103,16 @@ Authors: Apurva Nakade
 <!--
 One-time "this site is built for larger screens" notice, shown on a phone
 only. Charts on this site float draggable legend/step controls over the
-plot (see styles.css's ".ojs-legend-overlay"/".ojs-step-overlay" media
-query, hidden below the same 991.98px breakpoint this uses except in
-fullscreen) since there isn't room for them alongside the chart on a phone
-screen. This banner explains that once, remembered in localStorage so it
-never shows again -- same shape as _includes/consent.html's banner, just a
-single acknowledgement instead of a granted/denied choice.
+plot; below the 991.98px breakpoint this uses, styles.css hides the trace
+legend (".ojs-legend-overlay") since there isn't room for it alongside the
+chart on a phone screen. The slider bar (".ojs-step-overlay") is NOT hidden
+-- it unpins and reflows to a plain block under the chart, so scrubbing and
+the play button still work on a phone; only the legend needs fullscreen.
+Keep this copy in step with that media query: it is a factual claim about
+what a phone visitor can and cannot do. This banner explains it once,
+remembered in localStorage so it never shows again -- same shape as
+_includes/consent.html's banner, just a single acknowledgement instead of a
+granted/denied choice.
 -->
 
 <style>
@@ -1177,9 +1182,10 @@ single acknowledgement instead of a granted/denied choice.
   <div class="vml-mobile-warning-inner">
     <h2 id="vml-mobile-warning-title" class="vml-mobile-warning-title">Built for a bigger screen</h2>
     <p class="vml-mobile-warning-text">
-      Visual Math Lab's charts use draggable controls that need more room than a phone screen offers, so
-      they're hidden here. Tap a chart's fullscreen button to bring them back, or visit from a tablet or
-      computer for the full experience.
+      Visual Math Lab's charts are built for a wider screen. Sliders still work here — they sit just below
+      each chart, and the play button animates them — but the trace legend needs more room than a phone
+      offers. Tap a chart's fullscreen button to bring it back, or visit from a tablet or computer for the
+      full experience.
     </p>
     <div class="vml-mobile-warning-buttons">
       <button type="button" class="vml-mobile-warning-btn" data-mobile-warning-dismiss="">Got it</button>

@@ -64,15 +64,15 @@ test('clampOverlayOffset treats a flush panel as having no room to move', () => 
 
 test('overlayStorageKey is stable and distinguishes the two panels on a page', () => {
   assert.equal(
-    overlayStorageKey('/root-finding/newton-method/', 'legend', 0),
-    'vml-overlay-pos:/root-finding/newton-method/:legend:0'
+    overlayStorageKey('/apps/newton-method/', 'legend', 0),
+    'vml-overlay-pos:/apps/newton-method/:legend:0'
   )
   assert.notEqual(
-    overlayStorageKey('/root-finding/newton-method/', 'legend', 0),
-    overlayStorageKey('/root-finding/newton-method/', 'controls', 0)
+    overlayStorageKey('/apps/newton-method/', 'legend', 0),
+    overlayStorageKey('/apps/newton-method/', 'controls', 0)
   )
   assert.notEqual(
-    overlayStorageKey('/root-finding/newton-method/', 'legend', 0),
-    overlayStorageKey('/root-finding/secant-method/', 'legend', 0)
+    overlayStorageKey('/apps/newton-method/', 'legend', 0),
+    overlayStorageKey('/apps/secant-method/', 'legend', 0)
   )
 })

@@ -1,0 +1,439 @@
+---
+title: Sperner's Lemma - Geometric Proof
+topic: "Sperner's Lemma"
+description: "Proves Sperner's Lemma with a discrete degree argument that counts oriented RGB triangles."
+author: Apurva Nakade
+date: 2025-05-25
+order: 4
+image: sperners-lemma-geometric-proof.png
+categories: [Discrete Math, Triangles, Coloring, Determinant, Volume]
+---
+
+<!--
+Copyright (c) 2025 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
+VM = window.VM
+```
+
+This is my new favorite proof of [Sperner's lemma](../sperners-lemma-statement/index.qmd).
+In the following app the vertices are slowly morphed to the "cardinal" `R`, `G`, `B` vertices with time while preserving the adjacency relations. Only the rainbow (`RGB`) triangles are shaded — everything else is left unfilled. Both orientations use the same indigo, distinguished by shading: <span style="background-color:rgba(75, 0, 130, 0.25)">light, ⟋-hatched</span> triangles are oriented counter-clockwise and <span style="background-color:rgba(75, 0, 130, 0.6)">dark, ⟍-hatched</span> triangles are oriented clockwise. Can you come up with the proof yourself without peeking below? You can try reducing the number of subdivisions to get a sense of what's going on.
+
+```{ojs}
+vertices = [
+  {x: 1, y: 0},
+  {x: 0.5, y: Math.sqrt(3) / 2},
+  {x: 0, y: 0},
+];
+```
+
+```{ojs}
+// Colors every vertex red/green/blue at t=0, moves each vertex linearly
+// toward its own color's "cardinal" vertex as t goes from 0 to 1, and
+// re-derives the (possibly degenerate) sub-triangles at each t.
+function createTriangleMorpher(N, vertices, assignColor) {
+  const baryCoords = VM.discreteMath.barycentricTriples(N)
+
+  const buildColorMap = () => {
+    const map = new Map()
+    for (const [a, b, c] of baryCoords) {
+      map.set(`${a},${b},${c}`, assignColor(a, b, c))
+    }
+    return map
+  }
+
+  const interpolatePoints = (t, colorMap) => {
+    const [A, B, C] = vertices
+    const vertexMap = { red: C, green: A, blue: B }
+
+    const morphedPoints = baryCoords.map(([a, b, c]) => {
+      const sum = a + b + c
+      const x0 = (a * A.x + b * B.x + c * C.x) / sum
+      const y0 = (a * A.y + b * B.y + c * C.y) / sum
+
+      const color = colorMap.get(`${a},${b},${c}`)
+      const target = vertexMap[color]
+
+      return {
+        x: (1 - t) * x0 + t * target.x,
+        y: (1 - t) * y0 + t * target.y,
+        color,
+        barycentricTriple: [a, b, c]
+      }
+    })
+
+    const morphedMap = new Map(morphedPoints.map(p => [p.barycentricTriple.join(','), p]))
+    return { morphedPoints, morphedMap }
+  }
+
+  const generateSubTriangles = morphedMap => {
+    return VM.discreteMath.subTriangleTriples(N).map(coordinates => {
+      const vertex_colors = coordinates.map(c => morphedMap.get(c.join(',')).color)
+      return { coordinates, vertex_colors }
+    })
+  }
+
+  return {
+    baryCoords,
+    buildColorMap,
+    interpolatePoints,
+    generateSubTriangles
+  }
+}
+```
+
+```{ojs}
+// simplerAssignColor deliberately violates Sperner's condition: only the
+// three outer vertices get a fixed color, every other point (including
+// boundary points) is fully random -- used as a "what goes wrong" foil for
+// the correctly-colored triangulation (VM.discreteMath.spernerColor) below.
+simplerAssignColor = (a, b, c) => {
+  if (a === 0 && b === 0) return 'red'
+  if (b === 0 && c === 0) return 'green'
+  if (c === 0 && a === 0) return 'blue'
+  return VM.discreteMath.randomColor()
+}
+```
+
+```{ojs}
+fillColorGroups = {
+  const group1 = new Set(['RGB', 'GBR', 'BRG'])
+  const group2 = new Set(['RBG', 'BGR', 'GRB'])
+  return { group1, group2 }
+}
+
+// Whether an RGB triangle's vertices, read in their own (counterclockwise)
+// order, visit the colors in the same cyclic order as the outer triangle
+// ('ccw') or the reverse ('cw'). Returns null for a non-rainbow triangle.
+triangleOrientation = vertexColors => {
+  const map = { red: 'R', green: 'G', blue: 'B' }
+  const key = vertexColors.map(c => map[c.toLowerCase()] || '').join('')
+
+  if (fillColorGroups.group1.has(key)) return 'ccw'
+  if (fillColorGroups.group2.has(key)) return 'cw'
+  return null
+}
+```
+
+```{ojs}
+// One color (the same vivid indigo used for rainbow triangles on every
+// Sperner's lemma page) for both orientations -- distinguished by shading,
+// not hue: counter-clockwise is a light diagonal hatch sloped one way,
+// clockwise is a darker, denser hatch sloped the other way. IDs are unique
+// per call since this page renders several plots (teaser + two comparison
+// panels) in the same document, and SVG pattern references are resolved
+// by document-wide id.
+function makeOrientationDefs(ccwId, cwId) {
+  const svgNS = "http://www.w3.org/2000/svg";
+  const defs = document.createElementNS(svgNS, "defs");
+  const color = "rgb(75, 0, 130)";
+
+  function hatch(id, angleDegrees, shadeOpacity) {
+    const pattern = document.createElementNS(svgNS, "pattern");
+    pattern.setAttribute("id", id);
+    pattern.setAttribute("width", "8");
+    pattern.setAttribute("height", "8");
+    pattern.setAttribute("patternUnits", "userSpaceOnUse");
+    pattern.setAttribute("patternTransform", `rotate(${angleDegrees})`);
+
+    const background = document.createElementNS(svgNS, "rect");
+    background.setAttribute("width", "8");
+    background.setAttribute("height", "8");
+    background.setAttribute("fill", color);
+    background.setAttribute("fill-opacity", String(shadeOpacity));
+    pattern.appendChild(background);
+
+    const stripe = document.createElementNS(svgNS, "line");
+    stripe.setAttribute("x1", "0");
+    stripe.setAttribute("y1", "0");
+    stripe.setAttribute("x2", "0");
+    stripe.setAttribute("y2", "8");
+    stripe.setAttribute("stroke", color);
+    stripe.setAttribute("stroke-width", "3");
+    stripe.setAttribute("stroke-opacity", String(Math.min(1, shadeOpacity + 0.35)));
+    pattern.appendChild(stripe);
+
+    defs.appendChild(pattern);
+  }
+
+  hatch(ccwId, 45, 0.25);   // light shade, ⟋
+  hatch(cwId, -45, 0.6);    // dark shade, ⟍
+
+  return defs;
+}
+```
+
+```{ojs}
+function plotTriangles(triangles, morphedPoints, N) {
+  // Edges between differently-colored (morphed) vertices, in the same
+  // shared gold/teal/orchid palette used elsewhere for mixed edges.
+  const mixedEdges = [];
+  for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
+    const pa = morphedPoints.morphedMap.get(a.join(','));
+    const pb = morphedPoints.morphedMap.get(b.join(','));
+    const color = VM.discreteMath.pairColor(pa.color, pb.color);
+    if (!color) continue;
+    mixedEdges.push({ x1: pa.x, y1: pa.y, x2: pb.x, y2: pb.y, color });
+  }
+
+  const uid = Math.random().toString(36).slice(2);
+  const ccwId = `hatch-ccw-${uid}`;
+  const cwId = `hatch-cw-${uid}`;
+
+  const fillFor = tri => {
+    const orientation = triangleOrientation(tri.vertex_colors);
+    if (orientation === 'ccw') return `url(#${ccwId})`;
+    if (orientation === 'cw') return `url(#${cwId})`;
+    // Not a rainbow triangle: no fill, so the rainbow triangles stay the focus.
+    return VM.discreteMath.triangleFillColor(tri.vertex_colors);
+  };
+
+  const plot = Plot.plot({
+    width: 800,
+    height: 800,
+    margin: 40,
+    x: {domain: [0, 1], axis: null},
+    y: {domain: [0, Math.sqrt(3) / 2], axis: null},
+    marks: [
+      Plot.geo({
+        type: "FeatureCollection",
+        features: triangles.map(tri => ({
+          type: "Feature",
+          geometry: {
+            type: "Polygon",
+            coordinates: [[
+              ...tri.coordinates.map(c => {
+                const p = morphedPoints.morphedMap.get(c.join(','))
+                return [p.x, p.y]
+              }),
+              (() => {
+                const p = morphedPoints.morphedMap.get(tri.coordinates[0].join(','))
+                return [p.x, p.y]
+              })()
+            ]]
+          },
+          properties: {
+            fillColor: fillFor(tri)
+          }
+        }))
+      }, {
+        fill: d => d.properties.fillColor,
+        stroke: "black",
+        strokeWidth: 1
+      }),
+      Plot.link(mixedEdges, {
+        x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+        stroke: "color",
+        strokeWidth: 3
+      }),
+      Plot.dot(morphedPoints.morphedPoints, {
+        x: "x", y: "y", fill: "color", r: 4
+      })
+    ]
+  });
+
+  const svgRoot = plot.tagName === 'svg' ? plot : plot.querySelector('svg');
+  if (svgRoot) svgRoot.prepend(makeOrientationDefs(ccwId, cwId));
+
+  return plot;
+}
+```
+
+
+<div class="ojs-panel">
+
+<div class="ojs-row">
+
+```{ojs}
+viewof N = {
+  const slider = Inputs.range([2, 15], {step: 1, value: 10, label: "Number of subdivisions"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+```{ojs}
+viewof t = {
+  const slider = Inputs.range([0, 1], {step: 0.01, value: 0.15, label: "Time"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+```{ojs}
+// Referenced (but otherwise unused) inside colorMapValid/colorMapInvalid
+// below so that clicking the button re-runs both panels' random color
+// assignment together, without moving either slider.
+viewof comparisonRegenerate = {
+  const button = Inputs.button("Regenerate colors", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+</div>
+
+```{ojs}
+morpherValid = createTriangleMorpher(N, vertices, VM.discreteMath.spernerColor)
+
+colorMapValid = {
+  comparisonRegenerate;
+  return morpherValid.buildColorMap();
+}
+
+morphedValid = morpherValid.interpolatePoints(t, colorMapValid)
+trianglesValid = morpherValid.generateSubTriangles(morphedValid.morphedMap)
+plotValid = plotTriangles(trianglesValid, morphedValid, N)
+```
+
+```{ojs}
+morpherInvalid = createTriangleMorpher(N, vertices, simplerAssignColor)
+
+colorMapInvalid = {
+  comparisonRegenerate;
+  return morpherInvalid.buildColorMap();
+}
+
+morphedInvalid = morpherInvalid.interpolatePoints(t, colorMapInvalid)
+trianglesInvalid = morpherInvalid.generateSubTriangles(morphedInvalid.morphedMap)
+plotInvalid = plotTriangles(trianglesInvalid, morphedInvalid, N)
+
+html`<div style="display: flex; gap: 1rem;">
+  <div><p><b>Sperner's condition satisfied</b></p>${plotValid}</div>
+  <div><p><b>Sperner's condition violated</b></p>${plotInvalid}</div>
+</div>`
+```
+
+
+Let $v^R$, $v^G$, and $v^B$ be the vertices of the original triangle, colored
+<span style="background-color:red">red</span>,
+<span style="background-color:green">green</span>, and
+<span style="background-color:blue">blue</span>, respectively.
+
+Consider a triangulation $\Delta$ of the triangle $(v^R, v^G, v^B)$.   We’ll use the variable $\delta$ to refer to the smaller triangles within this triangulation $\Delta$. Assume each $\delta$ is oriented counterclockwise, consistent with the orientation of $(v^R, v^G, v^B)$. This orientation will be important when we define [signed areas](#signed-areas).
+
+## Time
+
+We'll now describe how this triangulation evolves over time.
+
+Let $t$ be a real number in $[0, 1]$. Let $v$ be a vertex in the subdivision, and let $c(v)$ denote the color of $v$. Define:
+\begin{align*}
+v_t = (1 - t) \cdot v + t \cdot v^{c(v)}
+\end{align*}
+so that $v_0 = v$ and $v_1 = v^{c(v)}$. For each triangle $\delta = (v^1, v^2, v^3) \in \Delta$, define:
+\begin{align*}
+\delta_t = (v^1_t, v^2_t, v^3_t)
+\end{align*}
+and let:
+\begin{align*}
+\Delta_t = \{ \delta_t : \delta \in \Delta \}.
+\end{align*}
+Note that $\Delta_0 = \Delta$. However, $\Delta_t$ is simply a collection of triangles — it is not necessarily a triangulation of any shape. In fact, the triangles may overlap, and the union of $\Delta_t$ may not form a proper region. (The "Time" slider above is exactly this $t$ — moving it slowly from $0$ shows you $\Delta_t$ for small $t$, which is the regime the [theorem below](#sperner-local-theorem) is about.)
+
+Our goal is to understand how $\Delta_t$ behaves as $t$ changes.
+
+## (Signed) Areas
+
+A key observation: if a triangle $\delta$ is **not** an `RGB` triangle, then $\delta_1$ becomes degenerate — it has zero area. Assume, for simplicity, that the area of the original triangle $(v^R, v^G, v^B)$ is **1**. This allows us to use area as a tool to identify `RGB` triangles.
+
+::: {#area-theorem .callout-note title="Theorem: RGB triangles via area"}
+A triangle $\delta$ is `RGB` if and only if $\text{area}(\delta_1) = 1$.
+:::
+
+We can rephrase Sperner's Lemma in terms of area:
+
+::: {#sperner-area-conjecture .callout-note title="Conjecture: Sperner's lemma, restated in terms of area"}
+\begin{align*}
+\text{area}(\Delta_1) > 0,
+\end{align*}
+where
+\begin{align*}
+\text{area}(\Delta_t) = \sum_{\delta \in \Delta} \text{area}(\delta_t).
+\end{align*}
+:::
+
+In fact, we will prove the following stronger statement:
+
+::: {#signed-area-conjecture .callout-note title="Conjecture: Signed area at $t = 1$"}
+\begin{align*}
+|\Delta_1| = 1,
+\end{align*}
+where
+\begin{align*}
+|\Delta_t| = \sum_{\delta \in \Delta} |\delta_t|,
+\end{align*}
+and $|\delta_t|$ denotes the **signed** area of the triangle $\delta_t$.
+:::
+
+One way to define the signed area of a counterclockwise-oriented triangle $\delta = (v^1, v^2, v^3)$ is as:
+\begin{align*}
+|\delta| = \det \begin{bmatrix} v^2 - v^1 & v^3 - v^1 \end{bmatrix}
+\end{align*}
+This is the determinant of a $2 \times 2$ matrix, and therefore the signed area of $\delta_t$ is a **quadratic** function of $t$.
+
+::: {#quadratic-theorem .callout-note title="Theorem: Signed area is quadratic in $t$"}
+The signed area $|\Delta_t|$ is a quadratic function of $t$.
+:::
+
+## Sperner's Condition
+
+At time $t = 0$, $\Delta_0$ is a triangulation of $(v^R, v^G, v^B)$, so:
+\begin{align*}
+|\Delta_0| = 1.
+\end{align*}
+
+If the triangulation satisfies **Sperner’s condition**, then for small values of $t > 0$, $\Delta_t$ continues to form a triangulation of the original triangle. This is the only step in the proof where we use Sperner’s condition!
+
+::: {#sperner-local-theorem .callout-note title="Theorem: The triangulation persists for small $t$"}
+If the coloring satisfies Sperner's condition, then there exists $\varepsilon > 0$ such that
+\begin{align*}
+|\Delta_t| = 1 \quad \text{for all } t \in [0, \varepsilon].
+\end{align*}
+:::
+
+But since $|\Delta_t|$ is a quadratic function and is constant on an interval, it must be constant everywhere.
+This gives us the full strength of Sperner’s Lemma:
+
+::: {#sperner-constant-theorem .callout-note title="Theorem: Signed area is constant in $t$"}
+If the coloring satisfies Sperner’s condition, then $|\Delta_t|$ is constant in $t$.
+In particular,
+\begin{align*}
+|\Delta_1| = |\Delta_0| = 1.
+\end{align*}
+:::
+
+By the [theorem above](#area-theorem), every non-`RGB` triangle contributes $0$ to $|\Delta_1| = \sum_\delta |\delta_1|$, so only `RGB` triangles matter. For an `RGB` triangle $\delta$, the vertices of $\delta_1$ are exactly $v^R, v^G, v^B$ in some order, so $|\delta_1| = \pm 1$: the sign is $+1$ if $\delta$'s vertices, read in its own (counterclockwise) order, visit the colors in the cyclic order $R \to G \to B$ — the same cyclic order as $(v^R, v^G, v^B)$ itself — and $-1$ if they visit them in the reverse cyclic order $R \to B \to G$. (This is exactly the light-vs-dark hatching in the app above: light ⟋-hatched triangles are the $+1$'s, dark ⟍-hatched triangles are the $-1$'s.) Summing over all triangles,
+\begin{align*}
+|\Delta_1| = |\{\text{counterclockwise `RGB`}\}| - |\{\text{clockwise `RGB`}\}|.
+\end{align*}
+Combined with $|\Delta_1| = 1$ from the [theorem above](#sperner-constant-theorem), this gives us the following strengthening:
+
+::: {#sperner-corollary .callout-note title="Corollary: Sperner's lemma, strong form"}
+If the coloring satisfies Sperner’s condition, then
+\begin{align*}
+|\{ \text{counterclockwise oriented RGB triangles} \}|
+=
+|\{ \text{clockwise oriented RGB triangles} \}| + 1.
+\end{align*}
+:::
+
+Sperner’s condition is crucial in asserting that $|\Delta_t|$ is constant. If the condition is violated, $\Delta_t$ is no longer a triangulation of the original triangle — even for small $t > 0$ — and thus we cannot conclude that $|\Delta_t|$ remains constant. 
+
+## Questions
+
+The combinatorial proof of Sperner's lemma does not require the full Sperner's condition. All it needs is that **the number of boundary `RG` edges is odd**. This condition is guaranteed by Sperner's condition but is weaker than it. Is there a way to extend the above proofs for this alternate hypothesis?
+
+## References
+
+McLennan, Andrew, and Rabee Tourky. “Using Volume to Prove Sperner’s Lemma.” Economic Theory 35, no. 3 (2008): 593–97. [http://www.jstor.org/stable/40282878](http://www.jstor.org/stable/40282878).
+
+[https://mathpages.blogspot.com/2010/05/sperners-lemma.html](https://mathpages.blogspot.com/2010/05/sperners-lemma.html)
+
+Kannai, Y. Using oriented volume to prove Sperner’s lemma. Econ Theory Bull 1, 11–19 (2013). [https://doi.org/10.1007/s40505-013-0013-5](https://doi.org/10.1007/s40505-013-0013-5)

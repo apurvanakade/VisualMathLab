@@ -10,7 +10,7 @@
 // stale screenshot. Scoped to pages whose main visual is a Plotly chart
 // (`.plotly-box-large`, the class every mainPlot cell gives its graph div)
 // -- the handful of pages built on a custom SVG/DOM visual instead
-// (differential-equations/butcher-tableau, and the four sperners-lemma
+// (apps/butcher-tableau, and the four sperners-lemma
 // pages) aren't touched by the chart theme at all, so their thumbnails
 // don't go stale from this and are left alone; regenerate those by hand if
 // their own visuals change.
@@ -20,7 +20,7 @@
 // actually changed gets re-rendered on a warm docs/.
 //
 // Usage: node scripts/shoot-thumbnails.mjs (or: npm run thumbs)
-//        node scripts/shoot-thumbnails.mjs root-finding/newton-method/index.qmd [...]
+//        node scripts/shoot-thumbnails.mjs apps/newton-method/index.qmd [...]
 
 import fs from 'node:fs'
 import path from 'node:path'

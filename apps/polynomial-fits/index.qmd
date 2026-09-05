@@ -1,0 +1,569 @@
+---
+title: "Polynomial Fits"
+topic: "Model Fitting"
+description: "Fits polynomials of increasing degree to noisy data and shows the resulting overfitting."
+author: Apurva Nakade
+date: 2026-07-17
+order: 1
+image: polynomial-fits.png
+categories:
+  - Data Science
+  - Overfitting
+  - Underfitting
+  - Bias-Variance Tradeoff
+  - Polynomial Regression
+  - Model Complexity
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.polynomialFit, VM.plotting.paddedRange, VM.ui.renderTable.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL params make the current settings shareable/reproducible.
+//
+// Supported parameters:
+//   noise=0.7
+//   degrees=1,5
+urlParams = new URLSearchParams(window.location.search)
+
+maxNoise = 2
+
+initialNoise = {
+  const param = urlParams.get("noise")
+  if (param === null) return 0.5
+  const raw = Number(param)
+  return Number.isFinite(raw) ? Math.max(0, Math.min(maxNoise, raw)) : 0.5
+}
+
+degreeOptions = ["Degree 1", "Degree 2", "Degree 3", "Degree 4", "Degree 5", "Data points"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key. #0891b2 (cyan) has no
+// VM.plotting.colors() token -- left as a literal.
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+degreeColors = new Map([
+  ["Degree 1", chartColors.fn],
+  ["Degree 2", chartColors.ok],
+  ["Degree 3", chartColors.accent2],
+  ["Degree 4", "#0891b2"],
+  ["Degree 5", chartColors.alt],
+  ["Data points", chartColors.ink]
+])
+
+initialShownDegrees = {
+  const raw = urlParams.get("degrees")
+  // "Data points" was always shown unconditionally before this checkbox
+  // existed, and has no URL param of its own -- always include it here so
+  // that behavior is unchanged regardless of what "degrees" says.
+  if (!raw) return ["Degree 1", "Degree 5", "Data points"]
+
+  const labels = []
+  const seen = new Set()
+
+  for (const part of raw.split(",")) {
+    const degree = Number(part.trim())
+    if (Number.isInteger(degree) && degree >= 1 && degree <= 5 && !seen.has(degree)) {
+      labels.push(`Degree ${degree}`)
+      seen.add(degree)
+    }
+  }
+
+  if (labels.length === 0) return ["Degree 1", "Degree 5", "Data points"]
+  labels.push("Data points")
+  return labels
+}
+```
+
+```{ojs}
+//| output: false
+// basePoints redraws whenever regenerateTrigger changes (initial load
+// counts as one draw). All noise comes from `offsets`, scaled by the noise
+// slider in `points` below — so the points are exactly colinear at noise
+// level 0, on whatever line this draw picked.
+// Kept outside the ojs-row div below: an output:false cell still renders
+// an empty .cell div, and if it sat inside the row it would become the
+// row's first child, stealing the `flex: 1 1 200px` fill rule meant for
+// the slider.
+basePoints = {
+  regenerateTrigger
+
+  // Seeded PRNG (mulberry32), seeded from the actual clock so each draw is
+  // unpredictable but still cheap and dependency-free.
+  let state = (Date.now() ^ (regenerateTrigger * 1000003)) | 0
+  const rand = () => {
+    state = (state + 0x6D2B79F5) | 0
+    let t = Math.imul(state ^ (state >>> 15), 1 | state)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+
+  // Box-Muller transform: turns two uniform samples into one standard-normal sample.
+  const gaussian = () => {
+    const u1 = Math.max(rand(), 1e-12)
+    const u2 = rand()
+    return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+  }
+
+  // slope/intercept are redrawn on every "Regenerate" click too, not just
+  // the offsets, so the line itself looks different each time.
+  const slope = -3 + 6 * rand()
+  const intercept = -5 + 10 * rand()
+  const linePoints = []
+  const offsets = []
+  for (let i = 0; i < 6; i++) {
+    const x = i
+    linePoints.push({x, y: slope * x + intercept})
+    offsets.push(gaussian())
+  }
+  return {linePoints, offsets}
+}
+```
+
+```{ojs}
+//| output: false
+// baseFits: one-time (per basePoints draw) polynomial fits that let `result`
+// below skip the matrix solve on every noise-slider tick. Least-squares
+// coefficients are a linear function of the target y-values, and
+// points[i].y = linePoints[i].y + noiseLevel * offsets[i] — so the
+// degree-`d` fit's coefficients at any noiseLevel are exactly
+// lineFit.coeffs + noiseLevel * offsetFit.coeffs, where lineFit fits the
+// exact line and offsetFit fits the raw offsets (both against the same
+// fixed x's). No approximation: this is the same coefficients the direct
+// solve would produce, just computed once instead of on every tick.
+baseFits = {
+  const math = window.math
+  const offsetPoints = []
+  for (let i = 0; i < basePoints.linePoints.length; i++) {
+    offsetPoints.push({x: basePoints.linePoints[i].x, y: basePoints.offsets[i]})
+  }
+
+  const fits = {}
+  for (let degree = 1; degree <= 5; degree++) {
+    fits[degree] = {
+      lineFit: VM.numerical.polynomialFit(math, basePoints.linePoints, degree),
+      offsetFit: VM.numerical.polynomialFit(math, offsetPoints, degree)
+    }
+  }
+  return fits
+}
+```
+
+```{ojs}
+//| output: false
+// noiseYRange: the y-values every point can reach as the noise slider
+// sweeps its full [0, maxNoise] range — at noise 0 a point sits exactly on
+// the line, at noise maxNoise it sits at line + maxNoise * offset. setup
+// below uses these extremes (not the current noiseLevel) to fix the plot's
+// y-axis, so dragging the slider never rescales the chart out from under
+// you.
+noiseYRange = {
+  const ys = []
+  for (const p of basePoints.linePoints) ys.push(p.y)
+  for (let i = 0; i < basePoints.linePoints.length; i++) {
+    ys.push(basePoints.linePoints[i].y + maxNoise * basePoints.offsets[i])
+  }
+  return ys
+}
+```
+
+```{ojs}
+//| output: false
+// axisSetup: axis ranges and sample x-positions — all independent of
+// noiseLevel, so this only recomputes when basePoints changes (regenerate
+// or initial load), not on every slider tick.
+axisSetup = {
+  const xs = []
+  for (const p of basePoints.linePoints) xs.push(p.x)
+  // viewXRange is the initial visible window; the curves are sampled over
+  // the much wider bufferXRange instead, so panning or zooming out reveals
+  // a high-degree curve's rapid growth/decay well beyond the fitted points
+  // rather than running into blank space.
+  const viewXRange = VM.plotting.paddedRange(xs, {emptyRange: [-1, 6], relativePadding: 0.25, minPadding: 0.3})
+  const bufferXRange = VM.plotting.paddedRange(xs, {emptyRange: [-1, 6], relativePadding: 2, minPadding: 5})
+
+  // A fixed y-range, set once from the full [0, maxNoise] reach of the
+  // noise slider — not the current noiseLevel — so the axis never rescales
+  // as the slider moves. A rescaling axis makes the slider's effect look
+  // bigger or smaller than it really is at every step, which is exactly
+  // what's confusing; a fixed axis instead lets a high-degree curve
+  // visibly swing far outside it, or a noisy point run off the top/bottom,
+  // rather than the whole chart chasing them.
+  const yRange = VM.plotting.paddedRange(noiseYRange, {emptyRange: [-5, 20], relativePadding: 0.15, minPadding: 2})
+
+  const sampleCount = 400
+  const sampleXs = []
+  for (let i = 0; i < sampleCount; i++) {
+    sampleXs.push(bufferXRange.lo + (bufferXRange.hi - bufferXRange.lo) * i / (sampleCount - 1))
+  }
+
+  return {viewXRange, yRange, sampleXs}
+}
+```
+
+```{ojs}
+//| output: false
+// bufferCurves: per-degree sampled curves for the pure line fit and the
+// pure offset fit (see baseFits) — computed once per basePoints draw.
+// setup below combines these into the curve at the current noiseLevel via
+// plain addition (curveLine + noiseLevel * curveOffset), instead of
+// re-evaluating each polynomial from scratch on every slider tick.
+bufferCurves = {
+  const sampleOne = fit => {
+    const ys = []
+    for (const x of axisSetup.sampleXs) ys.push(fit ? fit.evaluate(x) : null)
+    return ys
+  }
+
+  const curves = {}
+  for (let degree = 1; degree <= 5; degree++) {
+    const {lineFit, offsetFit} = baseFits[degree]
+    curves[degree] = {line: sampleOne(lineFit), offset: sampleOne(offsetFit)}
+  }
+  return curves
+}
+```
+
+<div class="ojs-panel">
+
+```{ojs}
+// regenerateTrigger: clicking "Regenerate points" bumps this, which is the
+// only thing basePoints depends on below — that's what makes a fresh draw
+// happen on click instead of only once at page load.
+viewof regenerateTrigger = {
+  const button = Inputs.button("Regenerate points", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Keep the current settings in the URL so the page is shareable.
+// This updates the URL without reloading the page.
+{
+  const params = new URLSearchParams(window.location.search)
+
+  params.set("noise", String(noiseLevel))
+  params.set(
+    "degrees",
+    shownDegrees
+      .filter(label => label !== "Data points")
+      .map(label => label.replace("Degree ", ""))
+      .join(",")
+  )
+
+  const query = params.toString()
+  const newUrl = `${window.location.pathname}${query ? "?" + query : ""}${window.location.hash}`
+  window.history.replaceState({}, "", newUrl)
+}
+```
+
+```{ojs}
+//| output: false
+showDegree1 = shownDegrees.includes("Degree 1")
+```
+
+```{ojs}
+//| output: false
+showDegree2 = shownDegrees.includes("Degree 2")
+```
+
+```{ojs}
+//| output: false
+showDegree3 = shownDegrees.includes("Degree 3")
+```
+
+```{ojs}
+//| output: false
+showDegree4 = shownDegrees.includes("Degree 4")
+```
+
+```{ojs}
+//| output: false
+showDegree5 = shownDegrees.includes("Degree 5")
+```
+
+```{ojs}
+//| output: false
+showDataPoints = shownDegrees.includes("Data points")
+```
+
+```{ojs}
+//| output: false
+// points: each point sits on the line plus its fixed random offset scaled
+// by the noise slider — all colinear at noiseLevel 0, drifting further
+// from the line together as noiseLevel increases.
+points = {
+  const pts = []
+  for (let i = 0; i < basePoints.linePoints.length; i++) {
+    const {x, y} = basePoints.linePoints[i]
+    pts.push({x, y: y + noiseLevel * basePoints.offsets[i]})
+  }
+  return pts
+}
+```
+
+```{ojs}
+//| output: false
+// result: combines baseFits into the degree 1 through 5 fits for the
+// current noiseLevel (see baseFits for why coeffs = lineFit.coeffs +
+// noiseLevel * offsetFit.coeffs is exact) — cheap arithmetic on every
+// slider tick, no matrix solve.
+//   fits[1] — a line (2 parameters): high bias, low variance
+//   fits[2] — a parabola (3 parameters): a middle ground
+//   fits[5] — a degree-5 polynomial (6 parameters, one per point): this
+//     exactly interpolates all 6 points, so its training error is always
+//     essentially zero — but watch how much the curve itself swings as the
+//     slider moves.
+result = {
+  const fits = {}
+  for (let degree = 1; degree <= 5; degree++) {
+    const {lineFit, offsetFit} = baseFits[degree]
+    if (!lineFit || !offsetFit) {
+      fits[degree] = null
+      continue
+    }
+
+    const coeffs = []
+    for (let k = 0; k < lineFit.coeffs.length; k++) {
+      coeffs.push(lineFit.coeffs[k] + noiseLevel * offsetFit.coeffs[k])
+    }
+
+    const evaluate = x => {
+      let y = 0, power = 1
+      for (let k = 0; k < coeffs.length; k++) {
+        y += coeffs[k] * power
+        power *= x
+      }
+      return y
+    }
+
+    let totalSquaredError = 0
+    for (const p of points) {
+      const residual = evaluate(p.x) - p.y
+      totalSquaredError += residual * residual
+    }
+
+    fits[degree] = {coeffs, evaluate, totalSquaredError}
+  }
+  return {points, fits}
+}
+```
+
+```{ojs}
+//| output: false
+// setup: combines bufferCurves into the curve at the current noiseLevel —
+// plain addition per sample point, no polynomial evaluation or matrix
+// solve, so this stays cheap on every slider tick.
+setup = {
+  const curves = {}
+  for (let degree = 1; degree <= 5; degree++) {
+    const {line, offset} = bufferCurves[degree]
+    const ys = []
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === null || offset[i] === null) {
+        ys.push(null)
+        continue
+      }
+      const y = line[i] + noiseLevel * offset[i]
+      ys.push(Number.isFinite(y) && Math.abs(y) < 1e6 ? y : null)
+    }
+    curves[degree] = ys
+  }
+
+  return {points: result.points, xRange: axisSetup.viewXRange, yRange: axisSetup.yRange, sampleXs: axisSetup.sampleXs, curves}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws the data points and, depending on the checkboxes, each
+// fitted curve.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the slider or
+// checkboxes change.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({points, xRange, yRange, sampleXs, curves}, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints) => {
+    const pointXs = [], pointYs = []
+    for (const p of points) {
+      pointXs.push(p.x)
+      pointYs.push(p.y)
+    }
+
+    // One entry per degree, in draw order (highest degree first, so the
+    // more oscillatory curves don't hide behind the flatter ones).
+    const curveSpecs = [
+      {degree: 5, show: showDegree5, color: chartColors.alt, label: "Degree 5 (overfit)"},
+      {degree: 4, show: showDegree4, color: "#0891b2", label: "Degree 4"},
+      {degree: 3, show: showDegree3, color: chartColors.accent2, label: "Degree 3"},
+      {degree: 2, show: showDegree2, color: chartColors.ok, label: "Degree 2"},
+      {degree: 1, show: showDegree1, color: chartColors.fn, label: "Degree 1 (underfit)"}
+    ]
+
+    const data = []
+    for (const spec of curveSpecs) {
+      if (!spec.show) continue
+      data.push({x: sampleXs, y: curves[spec.degree], type: "scatter", mode: "lines", name: spec.label, showlegend: false, line: {color: spec.color, width: 2.5}})
+    }
+    if (showDataPoints) {
+      data.push({x: pointXs, y: pointYs, type: "scatter", mode: "markers", name: "Data points", showlegend: false, marker: {color: chartColors.ink, size: 9, line: {color: chartColors.halo, width: 1}}})
+    }
+
+    const layout = {
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "y", range: [yRange.lo, yRange.hi], zeroline: true},
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out.
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+mainPlot(setup, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints)
+```
+
+```{ojs}
+viewof shownDegrees = {
+  const items = []
+  for (const label of degreeOptions) items.push({label, color: degreeColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: initialShownDegrees})
+}
+```
+
+<div class="ojs-step-overlay">
+
+```{ojs}
+viewof noiseLevel = {
+  const input = Inputs.range([0, maxNoise], {step: 0.01, value: initialNoise, label: "Noise level"})
+  input.classList.add("ojs-fill")
+  return input
+}
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="true" title="Model comparison"}
+
+```{ojs}
+// errorTable reports each model's parameter count and total squared error
+// over the 6 data points, updating live as the slider moves — for all 5
+// degrees, regardless of which curves the checkboxes currently show. The
+// degree-5 row stays near zero regardless of the slider — it has exactly
+// as many parameters as points, so it can always interpolate them exactly.
+errorTable = {
+  const labels = {
+    1: "Degree 1 (line)",
+    2: "Degree 2 (parabola)",
+    3: "Degree 3",
+    4: "Degree 4",
+    5: "Degree 5 (interpolates all 6 points)"
+  }
+
+  const rows = []
+  for (let degree = 1; degree <= 5; degree++) {
+    const fit = result.fits[degree]
+    if (!fit) {
+      rows.push([labels[degree], "—", "—"])
+      continue
+    }
+    rows.push([labels[degree], fit.coeffs.length, fit.totalSquaredError.toExponential(3)])
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers: ["Model", "Parameters", "Total squared error"],
+    csvHeaders: ["Model", "Parameters", "Total squared error"],
+    filename: "polynomial-fit-errors.csv",
+    rows
+  })
+}
+```
+
+::::
+
+:::: {.callout-note collapse="true" title="Error vs. degree"}
+
+```{ojs}
+// errorPlot: total squared error as a function of degree, for the current
+// points. Training error decreases monotonically with degree — more
+// parameters can only help fit the training data — which is exactly why
+// training error alone can't tell you when a model is overfitting.
+errorPlot = {
+  const rows = []
+  for (let degree = 1; degree <= 5; degree++) {
+    const fit = result.fits[degree]
+    if (fit) rows.push({degree, error: fit.totalSquaredError})
+  }
+
+  return Plot.plot({
+    width: 500, height: 300, marginLeft: 46,
+    x: {label: "Polynomial degree", domain: [1, 5], ticks: [1, 2, 3, 4, 5]},
+    y: {label: "Total squared error (training data)"},
+    marks: [
+      Plot.line(rows, {x: "degree", y: "error", stroke: chartColors.accent2}),
+      Plot.dot(rows, {x: "degree", y: "error", fill: chartColors.accent2, r: 5})
+    ]
+  })
+}
+```
+
+::::
+
+A degree-$d$ least-squares fit chooses coefficients $\beta_0,\dots,\beta_d$ minimizing the sum of squared residuals over the $n$ data points:
+
+$$
+\hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
+$$
+
+A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider above to push 6 points off a line and compare how degree 1–5 fits respond; click "Regenerate points" for a new line and noise pattern.
+
+
+
+A low-degree fit can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree fit can match the training data almost perfectly but swings wildly as the data changes — low bias, high variance, **overfitting**. The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — training error stays near zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degree 1 and 2 barely react to the noise at all, at the cost of never capturing real curvature either.
+
+Training error alone can't reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a **held-out validation or test set** — why train/validation/test splits and cross-validation are standard practice.

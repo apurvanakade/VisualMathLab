@@ -135,7 +135,7 @@ async function main() {
       instrument(page, hits, errors)
       // Query string exercises the "dl drops the query string" local patch,
       // using a page whose "?s=" genuinely means something other than search.
-      await page.goto(`${base}/differential-equations/butcher-tableau/index.html?s=4`, { waitUntil: 'networkidle' })
+      await page.goto(`${base}/apps/butcher-tableau/index.html?s=4`, { waitUntil: 'networkidle' })
       check('GA requests before allowing', hits.length, 0)
       await page.click('[data-consent-choice="granted"]')
       await page.waitForTimeout(500)
@@ -144,7 +144,7 @@ async function main() {
       const q = new URLSearchParams(new URL(hits[0]).search)
       check('tid', q.get('tid'), measurementId)
       check('event', q.get('en'), 'page_view')
-      check('dl has no query string', q.get('dl'), `${base}/differential-equations/butcher-tableau/index.html`)
+      check('dl has no query string', q.get('dl'), `${base}/apps/butcher-tableau/index.html`)
       check('search_term not sent', q.get('ep.search_term'), 'null')
       check('cookies set', (await ctx.cookies()).length, 0)
       check('console errors', errors.length, 0)

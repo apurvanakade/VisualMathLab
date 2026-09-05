@@ -5,6 +5,12 @@
 project:
   type: website
   output-dir: docs
+  # An explicit allowlist, not the default "render everything renderable" --
+  # without it Quarto compiles the repo's own docs (CLAUDE.md,
+  # CONTRIBUTING.md, README.md) into site pages too.
+  render:
+    - "*.qmd"
+    - "**/*.qmd"
   resources:
     - CNAME
 
@@ -48,7 +54,10 @@ website:
   open-graph: true
   twitter-card: true
   page-navigation: true
-  bread-crumbs: true
+  # Off deliberately: with a one-level-deep site there is nothing to trace,
+  # and Quarto gives an href-less `section:` the href of its first child, so
+  # any grouping label in the sidebar would render as a crumb that mislinks.
+  bread-crumbs: false
 
   navbar:
     left:
@@ -70,28 +79,41 @@ website:
   page-footer:
     center: "Copyright © 2025-2026 Apurva Nakade. Released under the [Apache 2.0 license](https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE). [Privacy](/privacy.qmd) · [Analytics preferences](#analytics-preferences)."
 
+  # One level of topic sections, in reading order. Every app is listed by its
+  # full apps/<slug>/index.qmd path rather than a glob: apps/ is flat, so
+  # `apps/*/index.qmd` can't be split by topic, and this explicit order is
+  # also what drives page-navigation prev/next.
   sidebar:
     - style: floating
       contents:
-        - section: "Computational Math"
+        - section: topics/root-finding/index.qmd
           contents:
-          - section: root-finding/index.qmd
-            contents: "root-finding/*/index.qmd"
-          - section: piecewise-interpolation/index.qmd
-            contents: "piecewise-interpolation/*/index.qmd"
-          - section: differential-equations/index.qmd
-            contents: "differential-equations/*/index.qmd"
-        - section: "Discrete Math"
+            - apps/bisection-method/index.qmd
+            - apps/fixed-point-iteration/index.qmd
+            - apps/newton-method/index.qmd
+            - apps/secant-method/index.qmd
+        - section: topics/piecewise-interpolation/index.qmd
           contents:
-          - section: sperners-lemma/index.qmd
-            contents: "sperners-lemma/*/index.qmd"
-        - section: "Data Science"
+            - apps/polynomial-interpolation/index.qmd
+            - apps/numerical-integration/index.qmd
+            - apps/adaptive-integration/index.qmd
+        - section: topics/differential-equations/index.qmd
           contents:
-          - section: model-fitting/index.qmd
-            contents: "model-fitting/*/index.qmd"
-        - section: probability/index.qmd
+            - apps/explicit-ode-methods/index.qmd
+            - apps/implicit-ode-methods/index.qmd
+            - apps/adaptive-ode-methods/index.qmd
+            - apps/butcher-tableau/index.qmd
+        - section: topics/sperners-lemma/index.qmd
           contents:
-          - section: probability/bayes/index.qmd
-            contents: "probability/bayes/*/index.qmd"
-          - section: probability/recursive-filters/index.qmd
-            contents: "probability/recursive-filters/*/index.qmd"
+            - apps/barycentric-coordinates/index.qmd
+            - apps/sperners-lemma-statement/index.qmd
+            - apps/sperners-lemma-combinatorial-proof/index.qmd
+            - apps/sperners-lemma-geometric-proof/index.qmd
+        - section: topics/model-fitting/index.qmd
+          contents:
+            - apps/polynomial-fits/index.qmd
+            - apps/l1-vs-l2-regression/index.qmd
+        - section: topics/probability/index.qmd
+          contents:
+            - apps/positive-predictive-value/index.qmd
+            - apps/recursive-filters-1d/index.qmd

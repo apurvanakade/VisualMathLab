@@ -63,7 +63,7 @@ test('analytics.html: tid is this site\'s GA4 measurement ID', () => {
 
 test('analytics.html: searchKeys is empty', () => {
   // Upstream's default searchKeys (["q","s","search","query","keyword"])
-  // would misreport differential-equations/butcher-tableau's "?s=" (a stage
+  // would misreport apps/butcher-tableau's "?s=" (a stage
   // count, not a search) as a view_search_results event -- see CLAUDE.md.
   assert.match(analyticsHtml, /searchKeys:\[\]/)
 })
@@ -123,7 +123,7 @@ function runSnippet(hostname, { search = '', privacySignal = null } = {}) {
   const location = {
     hostname,
     origin: 'https://' + hostname,
-    pathname: '/differential-equations/butcher-tableau/',
+    pathname: '/apps/butcher-tableau/',
     search,
   }
   const document = {
@@ -176,7 +176,7 @@ test('analytics snippet: sends exactly one page_view on a real page, with correc
   const params = url.searchParams
   assert.equal(params.get('tid'), 'G-76ZBFD9S9B')
   assert.equal(params.get('en'), 'page_view')
-  assert.equal(params.get('dl'), 'https://www.visualmathlab.com/differential-equations/butcher-tableau/')
+  assert.equal(params.get('dl'), 'https://www.visualmathlab.com/apps/butcher-tableau/')
   assert.equal(params.get('ep.search_term'), null, 'the "s" query param is a stage count here, not a search')
   assert.ok(store.get('cid_v4'), 'expected a client id to be generated and persisted')
 })

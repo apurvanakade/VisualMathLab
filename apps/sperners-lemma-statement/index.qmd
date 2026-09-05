@@ -1,0 +1,211 @@
+---
+title: Sperner's Lemma - Statement
+topic: "Sperner's Lemma"
+description: "States Sperner's Lemma on a triangulated triangle and lets you color vertices to test the condition interactively."
+author: Apurva Nakade
+date: 2025-05-14
+order: 2
+image: sperners-lemma-statement.png
+categories: [Discrete Math, Combinatorics, Triangles, Coloring]
+toc: false
+---
+
+<!--
+Copyright (c) 2025 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+Consider a triangulation of a triangle. (Below, we show a regular triangulation of an equilateral triangle, but the theorem applies to *any* triangulation of a triangle.) We color the vertices of the triangle with three colors—say, <span style="color:white; background-color:red">red</span>, <span style="color:white; background-color:green">green</span>, and <span style="color:white; background-color:blue">blue</span>—with the following conditions:
+
+1. The vertices of the triangle are colored with the three colors: <span style="color:white; background-color:red">red</span>, <span style="color:white; background-color:green">green</span>, and <span style="color:white; background-color:blue">blue</span>.
+2. The vertices that lie on the edges of the triangle are colored with one of the colors of the endpoints of that edge—*this is crucial*.
+3. The vertices that lie in the interior of the triangle may be colored with any of the three colors.
+
+Conditions 1 and 2 are often referred to as the **Sperner condition**.
+
+::: {#sperner-lemma .callout-note title="Theorem: Sperner's lemma"}
+Any triangulation of a triangle satisfying Sperner's condition has at least one "rainbow" triangle whose vertices are colored with all three colors: <span style="color:white; background-color:red">red</span>, <span style="color:white; background-color:green">green</span>, and <span style="color:white; background-color:blue">blue</span>.
+:::
+
+In fact, you always have an odd number of such triangles.
+
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
+VM = window.VM
+```
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof N = {
+  const slider = Inputs.range([2, 20], {step: 1, value: 15, label: "Number of subdivisions"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+```{ojs}
+// Referenced (but otherwise unused) inside coloredPoints below so that
+// clicking the button re-runs the random color assignment without moving
+// the slider.
+viewof regenerate = {
+  const button = Inputs.button("Regenerate colors", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+vertices = [
+  {x: 1, y: 0},
+  {x: 0.5, y: Math.sqrt(3) / 2},
+  {x: 0, y: 0},
+]
+```
+
+```{ojs}
+class ColoredPoint {
+  constructor(triple, vertices, N) {
+    this.barycentricTriple = triple;
+    const [A, B, C] = vertices;
+
+    this.x = (triple[0] * A.x + triple[1] * B.x + triple[2] * C.x) / N;
+    this.y = (triple[0] * A.y + triple[1] * B.y + triple[2] * C.y) / N;
+
+    const [a, b, c] = triple;
+    this.color = VM.discreteMath.spernerColor(a, b, c);
+  }
+
+  getCoords() {
+    return { x: this.x, y: this.y };
+  }
+
+  getColor() {
+    return this.color;
+  }
+}
+```
+
+```{ojs}
+colored = {
+  regenerate;
+  const points = VM.discreteMath.barycentricTriples(N).map(triple => new ColoredPoint(triple, vertices, N));
+
+  const byKey = new Map();
+  for (const p of points) {
+    byKey.set(p.barycentricTriple.join(','), p);
+  }
+
+  return { points, byKey };
+}
+```
+
+```{ojs}
+subTriangles = {
+  const triangles = [];
+  for (const coordinates of VM.discreteMath.subTriangleTriples(N)) {
+    const vertex_colors = new Set(coordinates.map(coord => colored.byKey.get(coord.join(',')).getColor()));
+    triangles.push({ coordinates, vertex_colors });
+  }
+  return triangles;
+}
+```
+
+```{ojs}
+// Edges between differently-colored vertices, in the same shared palette
+// as VM.discreteMath.triangleFillColor's two-color case (gold/teal/orchid). Same-color
+// edges are skipped entirely to avoid clutter.
+mixedEdges = {
+  const edges = [];
+  for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
+    const pa = colored.byKey.get(a.join(','));
+    const pb = colored.byKey.get(b.join(','));
+    const color = VM.discreteMath.pairColor(pa.getColor(), pb.getColor());
+    if (!color) continue;
+    const ca = pa.getCoords();
+    const cb = pb.getCoords();
+    edges.push({ x1: ca.x, y1: ca.y, x2: cb.x, y2: cb.y, color });
+  }
+  return edges;
+}
+```
+
+```{ojs}
+viewof mainPlot = Plot.plot({
+  width: 800,
+  height: 800,
+  x: {
+    label: "x",
+    domain: [0, 1]
+  },
+  y: {
+    label: "y",
+    domain: [0, Math.sqrt(3) / 2]
+  },
+  marks: [
+    Plot.line([...vertices, vertices[0]], {
+      x: "x",
+      y: "y",
+      stroke: "black",
+      strokeWidth: 1
+    }),
+    Plot.geo(
+      {
+        type: "FeatureCollection",
+        features: subTriangles.map(triangle => {
+          let coords = triangle.coordinates.map(coord => colored.byKey.get(coord.join(',')).getCoords());
+          return {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [coords[0], coords[1], coords[2], coords[0]].map(c => [c.x, c.y])
+              ]
+            },
+            properties: {
+              fillColor: VM.discreteMath.triangleFillColor(triangle.vertex_colors)
+            }
+          };
+        })
+      },
+      {
+        fill: d => d.properties.fillColor,
+        stroke: "black",
+        strokeWidth: 1
+      }
+    ),
+    Plot.link(mixedEdges, {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "color",
+      strokeWidth: 3
+    }),
+    Plot.dot(
+      colored.points,
+      {
+        x: "x",
+        y: "y",
+        fill: d => d.color,
+        r: 4
+      }
+    )
+  ]
+});
+```
+
+```{ojs}
+// print the number of RGB triangles as a html element
+numRGBTriangles = subTriangles.filter(triangle => triangle.vertex_colors.size === 3).length;
+html`<b>Number of RGB triangles: ${numRGBTriangles}</b>`
+```
+
+
+## Questions
+
+- What is the expected number of such triangles? What about the other colored triangles? Click **Regenerate colors** a few times at a fixed subdivision count and watch the count above — does it move around a lot, or does it seem to settle near a typical value?
+
+- How to generate a truly random triangulation of a triangle? What is the space of all triangulations of a triangle? How to sample uniformly from this space? How does the number of RGB triangles vary with different triangulations?

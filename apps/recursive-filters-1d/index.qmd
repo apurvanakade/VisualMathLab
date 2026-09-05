@@ -1,0 +1,815 @@
+---
+title: "1D Recursive Filters"
+topic: "Probability"
+description: "Compares a moving average, an exponential moving average, and a Kalman filter for smoothing a noisy 1D signal."
+author: Apurva Nakade
+date: 2026-08-07
+order: 2
+image: recursive-filters-1d.png
+# The page's one heading is `## References`, so a TOC here would be an "On
+# this page" panel holding a single link. Every other interactive page has no
+# headings and renders no TOC at all; apps/sperners-lemma-statement/index.qmd sets
+# this for the same reason.
+toc: false
+categories:
+  - Probability
+  - Kalman Filter
+  - Moving Average
+  - Exponential Moving Average
+  - Recursive Filters
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.expressions.makeFunction, VM.expressions.makeNumber, VM.sampling.seededRandom, VM.sampling.gaussianRandom, VM.filters.movingAverageFilter, VM.filters.emaFilter, VM.filters.kalman1DFilter, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// URL preset helpers for examples.
+// Supported query parameters:
+//   f       true signal, a function of x
+//   sigma   measurement noise standard deviation
+//   b       right endpoint; samples are drawn at x = 0..b
+//   seed    RNG seed for the noisy measurements (reproducible draws)
+//   max     total number of samples generated
+//   alpha   EMA smoothing parameter (weight kept on the old estimate)
+//   k       SMA window size (number of trailing samples averaged)
+//   R       Kalman filter's assumed measurement-noise variance
+//   Q       Kalman filter's assumed process-noise variance
+//   show    comma-separated methods: true, sma, ema, kalman
+urlParams = new URLSearchParams(window.location.search)
+
+methodOptions = ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
+
+methodSlugToLabel = new Map([
+  ["true", "True Signal"],
+  ["true-signal", "True Signal"],
+  ["true_signal", "True Signal"],
+
+  ["noisy", "Noisy measurements"],
+  ["noisy-measurements", "Noisy measurements"],
+  ["noisy_measurements", "Noisy measurements"],
+  ["measurements", "Noisy measurements"],
+
+  ["sma", "Simple Moving Average"],
+  ["moving-average", "Simple Moving Average"],
+  ["moving_average", "Simple Moving Average"],
+
+  ["ema", "Exponential Moving Average"],
+  ["low-pass", "Exponential Moving Average"],
+  ["lowpass", "Exponential Moving Average"],
+  ["exponential-moving-average", "Exponential Moving Average"],
+
+  ["kalman", "Kalman Filter"],
+  ["kalman-filter", "Kalman Filter"],
+  ["kalman_filter", "Kalman Filter"]
+])
+
+methodLabelToSlug = new Map([
+  ["True Signal", "true"],
+  ["Noisy measurements", "noisy"],
+  ["Simple Moving Average", "sma"],
+  ["Exponential Moving Average", "ema"],
+  ["Kalman Filter", "kalman"]
+])
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key. #9ca3af (gray) has no
+// VM.plotting.colors() token -- left as a literal.
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+methodColors = new Map([
+  ["True Signal", chartColors.fn],
+  ["Noisy measurements", "#9ca3af"],
+  ["Simple Moving Average", chartColors.warn],
+  ["Exponential Moving Average", chartColors.ok],
+  ["Kalman Filter", chartColors.alt]
+])
+
+initialMethods = {
+  const raw = urlParams.get("show")
+  if (raw === null || raw.trim() === "") return methodOptions
+
+  const selected = raw
+    .split(",")
+    .map(s => s.trim().toLowerCase())
+    .map(s => methodSlugToLabel.get(s))
+    .filter(Boolean)
+
+  return selected.length > 0 ? Array.from(new Set(selected)) : methodOptions
+}
+
+initialMax = urlParams.get("max") ?? "60"
+
+initialAlpha = {
+  const raw = Number.parseFloat(urlParams.get("alpha"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 0.99) : 0.9
+}
+
+initialK = {
+  const raw = Number.parseInt(urlParams.get("k"), 10)
+  return Number.isFinite(raw) ? Math.max(1, raw) : 5
+}
+
+initialR = {
+  const raw = Number.parseFloat(urlParams.get("R"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.001), 2) : 0.16
+}
+
+initialQ = {
+  const raw = Number.parseFloat(urlParams.get("Q"))
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 1) : 0.05
+}
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+//
+// Each params object lists "max" before "k" — windowK's range depends
+// reactively on maxN, so its view gets recreated when max changes;
+// VM.ui.applyExampleParams applies params in this order with a yield
+// between each, so the freshly-recreated slider is what "k" ends up
+// applied to. "show" holds the actual checkbox option labels (matching
+// what Inputs.checkbox's view expects), not the URL's comma-separated
+// slugs.
+examples = [
+  {
+    title: "Noisy sine wave",
+    params: {f: "sin(x)", sigma: "0.4", b: "20", seed: "1", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+  },
+  {
+    title: "Estimating a hidden constant",
+    params: {f: "5", sigma: "1", b: "20", seed: "3", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+  },
+  {
+    title: "Sudden regime change",
+    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", seed: "2", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+  },
+  {
+    title: "Fast oscillation exposes lag",
+    params: {f: "sin(3*x)", sigma: "0.3", b: "10", seed: "4", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+  },
+  {
+    title: "Heavy noise, gentle signal",
+    params: {f: "cos(x/2)", sigma: "0.8", b: "25", seed: "5", max: "80", alpha: 0.95, k: 12, R: 0.64, Q: 0.02, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+  },
+  {
+    title: "Tracking a steady drift",
+    params: {f: "0.3*x", sigma: "1", b: "15", seed: "6", max: "60", alpha: 0.85, k: 6, R: 1, Q: 0.1, show: ["True Signal", "Noisy measurements", "Exponential Moving Average", "Kalman Filter"]}
+  },
+  {
+    title: "Overconfident sensor model",
+    params: {f: "sin(x)", sigma: "0.6", b: "20", seed: "7", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Noisy measurements", "Kalman Filter"]}
+  },
+  {
+    title: "Zero process noise stops tracking",
+    params: {f: "sin(x)", sigma: "0.3", b: "20", seed: "8", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+  }
+]
+```
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof fText = {
+  const params = new URLSearchParams(window.location.search)
+  const fTextInput = Inputs.text({label: "True signal f(x)", value: params.get("f") ?? "sin(x)", placeholder: "Example: sin(x), 5, x > 10 ? 6 : 0"})
+  fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
+  return fTextInput
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof sigmaText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Gaussian Noise σ", value: params.get("sigma") ?? "0.4", placeholder: "Example: 0.4, 1/2"})
+  input.dataset.exampleField = "sigma"
+  return input
+}
+```
+
+```{ojs}
+viewof bText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "20", placeholder: "Example: 20, 4*pi"})
+  input.dataset.exampleField = "b"
+  return input
+}
+```
+
+```{ojs}
+viewof maxNInput = {
+  const input = Inputs.text({value: initialMax, label: "Total samples", placeholder: "Example: 60, 20*3"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
+
+```{ojs}
+viewof seedText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "1", placeholder: "Example: 1, 42"})
+  input.dataset.exampleField = "seed"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why (windowK's view is reactively
+// recreated whenever maxN changes, so referencing it by name here would
+// make this cell -- and therefore applyExampleFromSelect -- reactive on
+// it, forming a feedback loop with the fact that applying an example is
+// what changes maxN in the first place).
+exampleFieldSelectors = ({
+  f: '[data-example-field="f"]',
+  sigma: '[data-example-field="sigma"]',
+  b: '[data-example-field="b"]',
+  seed: '[data-example-field="seed"]',
+  max: '[data-example-field="max"]',
+  alpha: '[data-example-field="alpha"]',
+  k: '[data-example-field="k"]',
+  R: '[data-example-field="R"]',
+  Q: '[data-example-field="Q"]',
+  show: '[data-example-field="show"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above (including the
+// filter parameter sliders overlaid on the chart below) and clicks Plot, in
+// place -- no page reload, so no scroll jump either. A plain "change"
+// listener attached once to the stable native <select> (rather than an OJS
+// cell reactive on exampleSelect's value) -- a <select> fires both "input"
+// and "change" per selection, and a reactive cell would run once per event,
+// with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+// Plot commits the current signal/noise/endpoint/seed fields — edits
+// above don't take effect until this is clicked, so result/mainPlot don't
+// recompute (and the noisy draw doesn't reshuffle) on every keystroke. The
+// total-samples field, and the method legend and filter parameters
+// overlaid on the chart, are unaffected and stay reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto", "ojs-end")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// maxN parses the "Total samples" field's expression, falling back to 60
+// for invalid input.
+maxN = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxNInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 60
+  return Math.max(2, Math.round(parsed))
+}
+```
+
+```{ojs}
+//| output: false
+showTrueSignal = methods.includes("True Signal")
+```
+
+```{ojs}
+//| output: false
+showNoisy = methods.includes("Noisy measurements")
+```
+
+```{ojs}
+//| output: false
+showSMA = methods.includes("Simple Moving Average")
+```
+
+```{ojs}
+//| output: false
+showEMA = methods.includes("Exponential Moving Average")
+```
+
+```{ojs}
+//| output: false
+showKalman = methods.includes("Kalman Filter")
+```
+
+```{ojs}
+//| output: false
+// Pressing Enter in the signal/noise/endpoint/seed fields clicks Plot
+// instead of submitting the field's own (invisible) form. Depends only on
+// the stable views, so this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof fText, viewof sigmaText, viewof bText, viewof seedText]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// Keeps the total sample count, filter parameters, and method choices
+// shareable as these reactive controls change (independent of the Plot
+// button).
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("max", maxNInput)
+  params.set("alpha", String(alpha))
+  params.set("k", String(windowK))
+  params.set("R", String(R))
+  params.set("Q", String(Q))
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots fText/sigmaText/bText/seedText only when Plot is
+// clicked, and writes everything back into the URL so the address bar
+// stays a shareable link. It reads `viewof fText`/etc. (the stable DOM
+// views) rather than `fText`/etc. (the reactive values), so it does NOT
+// rerun on every keystroke — only when `plotTrigger` changes. It still
+// runs once on initial page load, so the first render uses the
+// URL-provided (or default) values with no click.
+committed = {
+  plotTrigger
+  const math = window.math
+  const fVal = (viewof fText).value
+  const sigmaVal = (viewof sigmaText).value
+  const bVal = (viewof bText).value
+  const seedVal = (viewof seedText).value
+
+  const sigmaNum = VM.expressions.makeNumber(math, sigmaVal)
+  const bNum = VM.expressions.makeNumber(math, bVal)
+  const seedNum = VM.expressions.makeNumber(math, seedVal)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("f", fVal)
+  params.set("sigma", sigmaVal)
+  params.set("b", bVal)
+  params.set("seed", seedVal)
+  params.set("max", maxNInput)
+  params.set("alpha", String(alpha))
+  params.set("k", String(windowK))
+  params.set("R", String(R))
+  params.set("Q", String(Q))
+  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {fText: fVal, sigma: sigmaNum, bEnd: bNum, seed: seedNum}
+}
+```
+
+```{ojs}
+//| output: false
+// result: for the current committed signal/noise/endpoint/seed and the
+// live filter parameters (alpha, windowK, R, Q), draws maxN noisy
+// measurements of f and runs all three filters over the entire stream.
+//   rows — array of { i, x, trueVal, noisyVal, smaVal, emaVal, kalmanVal,
+//     kalmanGain, smaErr, emaErr, kalmanErr }, one entry per sample
+//     i = 0..maxN-1, x = i*b/(maxN-1).
+//   f — parsed true signal, reused for the smooth reference curve in setup
+result = {
+  const math = window.math
+
+  const f = VM.expressions.makeFunction(math, committed.fText)
+  const fallback = x => NaN
+
+  if (!f) return {rows: [], f: fallback}
+
+  const sigma = committed.sigma
+  const b = committed.bEnd
+  const seed = committed.seed
+  if (!Number.isFinite(sigma) || sigma < 0 || !Number.isFinite(b) || b <= 0 || !Number.isFinite(seed)) {
+    return {rows: [], f}
+  }
+
+  const rng = VM.sampling.seededRandom(seed)
+  const gaussian = VM.sampling.gaussianRandom(rng)
+
+  const xs = []
+  const trueVals = []
+  const noisyVals = []
+  for (let i = 0; i < maxN; i++) {
+    const x = i * b / (maxN - 1)
+    const trueVal = f(x)
+    const noisyVal = trueVal + sigma * gaussian()
+    xs.push(x)
+    trueVals.push(trueVal)
+    noisyVals.push(noisyVal)
+  }
+
+  const smaVals = VM.filters.movingAverageFilter(noisyVals, windowK)
+  const emaVals = VM.filters.emaFilter(noisyVals, alpha)
+  const kalman = VM.filters.kalman1DFilter(noisyVals, {R, Q})
+
+  const rows = []
+  for (let i = 0; i < maxN; i++) {
+    rows.push({
+      i, x: xs[i], trueVal: trueVals[i], noisyVal: noisyVals[i],
+      smaVal: smaVals[i], emaVal: emaVals[i], kalmanVal: kalman.xs[i], kalmanGain: kalman.Ks[i],
+      smaErr: Math.abs(smaVals[i] - trueVals[i]),
+      emaErr: Math.abs(emaVals[i] - trueVals[i]),
+      kalmanErr: Math.abs(kalman.xs[i] - trueVals[i])
+    })
+  }
+
+  return {rows, f}
+}
+```
+
+```{ojs}
+//| output: false
+// setup computes the data needed by the main chart: a dense reference
+// curve of the true signal over the entire committed domain, and axis
+// ranges covering every sample.
+setup = {
+  if (result.rows.length === 0) {
+    const empty = {lo: -3, hi: 3}
+    return {refXs: [], refYs: [], xRange: empty, yRange: {lo: -1, hi: 1}}
+  }
+
+  const b = committed.bEnd
+  const xRange = VM.plotting.paddedRange([0, b], {emptyRange: [-3, 3], relativePadding: 0.08, minPadding: 0.25})
+
+  const sampleCount = 400
+  const refXs = []
+  const refYs = []
+  for (let i = 0; i < sampleCount; i++) {
+    const x = b * i / (sampleCount - 1)
+    refXs.push(x)
+    refYs.push(result.f(x))
+  }
+
+  const yValues = []
+  for (const y of refYs) if (Number.isFinite(y)) yValues.push(y)
+  for (const row of result.rows) {
+    if (Number.isFinite(row.noisyVal)) yValues.push(row.noisyVal)
+    if (Number.isFinite(row.smaVal)) yValues.push(row.smaVal)
+    if (Number.isFinite(row.emaVal)) yValues.push(row.emaVal)
+    if (Number.isFinite(row.kalmanVal)) yValues.push(row.kalmanVal)
+  }
+  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.15, minPadding: 0.5})
+
+  return {refXs, refYs, xRange, yRange}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws the true signal (over the full domain, as a fixed
+// reference, toggleable via showTrueSignal), every noisy measurement, and
+// each enabled filter's estimate.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when a parameter or
+// checkbox changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (rows, data, showTrueSignal, showNoisy, showSMA, showEMA, showKalman) => {
+    const traces = []
+    if (showTrueSignal) {
+      traces.push({x: data.refXs, y: data.refYs, type: "scatter", mode: "lines", name: "True signal", showlegend: false, line: {color: chartColors.fn, width: 3}})
+    }
+
+    const xs = []
+    const noisyYs = []
+    for (const row of rows) {
+      xs.push(row.x)
+      noisyYs.push(row.noisyVal)
+    }
+    if (showNoisy) {
+      traces.push({x: xs, y: noisyYs, type: "scatter", mode: "markers", name: "Noisy measurements", showlegend: false, marker: {color: "#9ca3af", size: 6, line: {color: chartColors.halo, width: 0.5}}})
+    }
+
+    if (showSMA && rows.length > 0) {
+      const ys = []
+      for (const row of rows) ys.push(row.smaVal)
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Simple Moving Average", showlegend: false, line: {color: chartColors.warn, width: 2.5}})
+    }
+    if (showEMA && rows.length > 0) {
+      const ys = []
+      for (const row of rows) ys.push(row.emaVal)
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines", name: "Exponential Moving Average", showlegend: false, line: {color: chartColors.ok, width: 2.5}})
+    }
+    if (showKalman && rows.length > 0) {
+      const ys = []
+      for (const row of rows) ys.push(row.kalmanVal)
+      traces.push({x: xs, y: ys, type: "scatter", mode: "lines+markers", name: "Kalman Filter", showlegend: false, line: {color: chartColors.alt, width: 2.5}, marker: {color: chartColors.alt, size: 5}})
+    }
+
+    const layout = {
+      xaxis: {title: "x", range: [data.xRange.lo, data.xRange.hi], zeroline: true},
+      yaxis: {title: "value", range: [data.yRange.lo, data.yRange.hi], zeroline: true},
+      hovermode: "closest",
+      uirevision: "static",  // keeps zoom/pan state across reactive updates
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    // First render: create the div. Later renders: update in place (preserves zoom).
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, traces, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, traces, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+mainPlot(result.rows, setup, showTrueSignal, showNoisy, showSMA, showEMA, showKalman)
+```
+
+```{ojs}
+viewof methods = {
+  const items = []
+  for (const label of methodOptions) items.push({label, color: methodColors.get(label)})
+  const legend = VM.ui.legendOverlay(items, {value: initialMethods})
+  legend.dataset.exampleField = "show"
+  return legend
+}
+```
+
+<div class="ojs-step-overlay ojs-grid">
+
+```{ojs}
+viewof alpha = {
+  const input = Inputs.range([0, 0.99], {step: 0.01, value: initialAlpha, label: "EMA smoothing α"})
+  input.dataset.exampleField = "alpha"
+  return input
+}
+```
+
+```{ojs}
+viewof windowK = {
+  const upper = Math.max(1, Math.min(50, maxN))
+  const input = Inputs.range([1, upper], {step: 1, value: Math.min(initialK, upper), label: "SMA window k"})
+  input.dataset.exampleField = "k"
+  return input
+}
+```
+
+```{ojs}
+viewof R = {
+  const input = Inputs.range([0.001, 2], {step: 0.001, value: initialR, label: "Kalman R"})
+  input.dataset.exampleField = "R"
+  return input
+}
+```
+
+```{ojs}
+viewof Q = {
+  const input = Inputs.range([0, 1], {step: 0.001, value: initialQ, label: "Kalman Q"})
+  input.dataset.exampleField = "Q"
+  return input
+}
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot compares each filter's "weight on the newest sample" —
+// the fraction of the new estimate that comes directly from the latest
+// measurement rather than the filter's own history. For EMA this weight
+// is the fixed constant 1-α; for SMA it's the fixed constant 1/k; for
+// Kalman it's the gain K_i, which the filter adapts on its own every
+// step.
+iteratesPlot = {
+  const kalmanName = "Kalman gain (adaptive)"
+  const emaName = "EMA weight 1-α (fixed)"
+  const smaName = "SMA weight 1/k (fixed)"
+
+  const marks = []
+  const colorDomain = []
+  const colorRange = []
+
+  if (showKalman) {
+    const pts = []
+    for (const row of result.rows) pts.push({x: row.i, y: row.kalmanGain})
+    marks.push(Plot.lineY(pts, {x: "x", y: "y", stroke: () => kalmanName}))
+    colorDomain.push(kalmanName)
+    colorRange.push(chartColors.alt)
+  }
+
+  if (showEMA) {
+    marks.push(Plot.ruleY([1 - alpha], {stroke: () => emaName, strokeDasharray: "4,3"}))
+    colorDomain.push(emaName)
+    colorRange.push(chartColors.ok)
+  }
+
+  if (showSMA) {
+    marks.push(Plot.ruleY([1 / windowK], {stroke: () => smaName, strokeDasharray: "4,3"}))
+    colorDomain.push(smaName)
+    colorRange.push(chartColors.warn)
+  }
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "sample index"},
+    y: {label: "weight on newest sample", domain: [0, 1]},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+```{ojs}
+// convergencePlot draws each enabled filter's running RMSE (root-mean-
+// square error against the true signal, accumulated from sample 0 up to
+// sample i) vs sample index, for the entire run.
+convergencePlot = {
+  const smaName = "SMA running RMSE"
+  const emaName = "EMA running RMSE"
+  const kalmanName = "Kalman running RMSE"
+
+  const runningRmse = (errKey) => {
+    const pts = []
+    let sumSquares = 0
+    for (let i = 0; i < result.rows.length; i++) {
+      const err = result.rows[i][errKey]
+      sumSquares += err * err
+      pts.push({x: result.rows[i].i, y: Math.sqrt(sumSquares / (i + 1))})
+    }
+    return pts
+  }
+
+  const marks = []
+  const colorDomain = []
+  const colorRange = []
+
+  if (showSMA) {
+    marks.push(Plot.lineY(runningRmse("smaErr"), {x: "x", y: "y", stroke: () => smaName}))
+    colorDomain.push(smaName)
+    colorRange.push(chartColors.warn)
+  }
+  if (showEMA) {
+    marks.push(Plot.lineY(runningRmse("emaErr"), {x: "x", y: "y", stroke: () => emaName}))
+    colorDomain.push(emaName)
+    colorRange.push(chartColors.ok)
+  }
+  if (showKalman) {
+    marks.push(Plot.lineY(runningRmse("kalmanErr"), {x: "x", y: "y", stroke: () => kalmanName}))
+    colorDomain.push(kalmanName)
+    colorRange.push(chartColors.alt)
+  }
+
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "sample index"},
+    y: {label: "running RMSE"},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Sample table"}
+
+```{ojs}
+// Sample table — shows every sample in the run, with every filter's
+// estimate, the Kalman gain, and each method's error against the true
+// signal.
+sampleTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (const row of result.rows) {
+    formattedRows.push([
+      row.i,
+      row.x.toFixed(3),
+      row.trueVal.toPrecision(6),
+      row.noisyVal.toPrecision(6),
+      row.smaVal.toPrecision(6),
+      row.emaVal.toPrecision(6),
+      row.kalmanVal.toPrecision(6),
+      row.kalmanGain.toFixed(4),
+      row.smaErr.toExponential(3),
+      row.emaErr.toExponential(3),
+      row.kalmanErr.toExponential(3)
+    ])
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers: ["i", "x", tex`f(x)`, tex`z_i`, "SMA", "EMA", "Kalman", tex`K_i`, "|SMA err|", "|EMA err|", "|Kalman err|"],
+    csvHeaders: ["i", "x", "true f(x)", "noisy z_i", "SMA", "EMA", "Kalman", "Kalman gain K_i", "SMA abs error", "EMA abs error", "Kalman abs error"],
+    filename: "1d-recursive-filters-samples.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+Each of these filters updates a running estimate from only the previous estimate and the newest measurement $z_i$ — no stored history of the stream — which is what makes them run in **O(1) memory and O(1) compute per sample**. The **simple moving average** and **exponential moving average** (a.k.a. a first-order low-pass filter) both trade responsiveness for smoothness through a hand-picked constant ($k$ or $\alpha$) that never changes:
+
+$$
+\text{SMA: } \hat x_i = \frac{1}{k}\sum_{j=i-k+1}^{i} z_j,
+\qquad
+\text{EMA: } \hat x_i = \alpha\, \hat x_{i-1} + (1-\alpha)\, z_i.
+$$
+
+The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $R$, the assumed measurement-noise (sensor) variance, and $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples):
+
+$$
+P_i^- = P_{i-1} + Q,\qquad
+K_i = \frac{P_i^-}{P_i^- + R},\qquad
+\hat x_i = \hat x_{i-1} + K_i\,(z_i - \hat x_{i-1}),\qquad
+P_i = (1-K_i)\,P_i^-,
+$$
+
+with no $\alpha$ or $k$ to tune by hand — open the convergence plots on the constant-signal example below to watch $K_i$ shrink automatically as the filter grows more confident.
+
+## References
+
+Staszewski, Kuba. "Recursive Filters." Blog post. [https://www.staszewski.xyz/blog/recursive-filters/](https://www.staszewski.xyz/blog/recursive-filters/)

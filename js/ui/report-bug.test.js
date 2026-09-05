@@ -12,11 +12,11 @@ const VM = loadVM()
 const { qmdSourcePath, buildReportBugUrl } = VM.ui
 
 test('qmdSourcePath maps a directory-style pathname to its index.qmd source', () => {
-  assert.equal(qmdSourcePath('/root-finding/newton-method/'), 'root-finding/newton-method/index.qmd')
+  assert.equal(qmdSourcePath('/apps/newton-method/'), 'apps/newton-method/index.qmd')
 })
 
 test('qmdSourcePath maps an explicit index.html pathname to its .qmd source', () => {
-  assert.equal(qmdSourcePath('/root-finding/newton-method/index.html'), 'root-finding/newton-method/index.qmd')
+  assert.equal(qmdSourcePath('/apps/newton-method/index.html'), 'apps/newton-method/index.qmd')
 })
 
 test('qmdSourcePath maps the site root to the homepage source', () => {
@@ -29,16 +29,16 @@ test('qmdSourcePath returns null for a pathname that is not a page', () => {
 
 test('buildReportBugUrl includes the page, source link, and quoted selection', () => {
   const url = buildReportBugUrl({
-    pageUrl: 'https://www.visualmathlab.com/root-finding/newton-method/',
+    pageUrl: 'https://www.visualmathlab.com/apps/newton-method/',
     pageTitle: 'Newton’s Method',
-    sourcePath: 'root-finding/newton-method/index.qmd',
+    sourcePath: 'apps/newton-method/index.qmd',
     selectedText: 'the derivative is evaluated at x0'
   })
   const parsed = new URL(url)
   assert.equal(parsed.origin + parsed.pathname, 'https://github.com/apurvanakade/VisualMathLab/issues/new')
   const body = parsed.searchParams.get('body')
-  assert.match(body, /\*\*Page:\*\* https:\/\/www\.visualmathlab\.com\/root-finding\/newton-method\/\n/)
-  assert.match(body, /\*\*Source:\*\* https:\/\/github\.com\/apurvanakade\/VisualMathLab\/blob\/main\/root-finding\/newton-method\/index\.qmd\n/)
+  assert.match(body, /\*\*Page:\*\* https:\/\/www\.visualmathlab\.com\/apps\/newton-method\/\n/)
+  assert.match(body, /\*\*Source:\*\* https:\/\/github\.com\/apurvanakade\/VisualMathLab\/blob\/main\/apps\/newton-method\/index\.qmd\n/)
   assert.match(body, /> the derivative is evaluated at x0/)
   assert.equal(parsed.searchParams.get('labels'), 'bug')
 })

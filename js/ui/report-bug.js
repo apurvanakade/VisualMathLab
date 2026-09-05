@@ -7,9 +7,9 @@
 (function attachVM(globalThis) {
   const REPO = "apurvanakade/VisualMathLab"
 
-  // Maps a rendered page's pathname (e.g. "/root-finding/newton-method/",
+  // Maps a rendered page's pathname (e.g. "/apps/newton-method/",
   // ".../index.html", or "/") back to its .qmd source path in the repo
-  // (e.g. "root-finding/newton-method/index.qmd"). This works because the
+  // (e.g. "apps/newton-method/index.qmd"). This works because the
   // site is served from a custom domain at the repo root (site-url in
   // _quarto.yml), so a rendered page's pathname already matches its source
   // file's path one-for-one, just with index.html swapped for index.qmd.

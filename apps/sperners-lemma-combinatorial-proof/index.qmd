@@ -1,0 +1,570 @@
+---
+title: Sperner's Lemma - Combinatorial Proof
+topic: "Sperner's Lemma"
+description: "Proves Sperner's Lemma with the 'doors' argument: a path that must exit through an odd number of bicolored edges."
+author: Apurva Nakade
+date: 2025-05-16
+order: 3
+image: sperners-lemma-combinatorial-proof.png
+categories: [Discrete Math, Combinatorics, Triangles, Coloring, Combinatorial Proof]
+toc: false
+---
+
+<!--
+Copyright (c) 2025 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+This picture is a combinatorial proof of [Sperner's Lemma](../sperners-lemma-statement/index.qmd).
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
+VM = window.VM
+```
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof N = {
+  const slider = Inputs.range([2, 25], {step: 1, value: 15, label: "Number of subdivisions"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+```{ojs}
+// Referenced (but otherwise unused) inside coloredPoints below so that
+// clicking the button re-runs the random color assignment without moving
+// the slider.
+viewof regenerate = {
+  const button = Inputs.button("Regenerate colors", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+// === Geometry Utilities ===
+centroid = (p1, p2, p3) => ({
+  x: (p1.x + p2.x + p3.x) / 3,
+  y: (p1.y + p2.y + p3.y) / 3
+})
+
+midpoint = (a, b) => {
+  const c1 = a.getCoords();
+  const c2 = b.getCoords();
+  return {
+    x: (c1.x + c2.x) / 2,
+    y: (c1.y + c2.y) / 2
+  };
+}
+
+isEdgeBoundary = (a, b) => {
+  for (let i = 0; i < 3; i++) {
+    if (a.barycentricTriple[i] === 0 && b.barycentricTriple[i] === 0) return true;
+  }
+  return false;
+}
+```
+
+```{ojs}
+// === Color Assignment Class ===
+class ColoredPoint {
+  constructor(triple, vertices, N) {
+    this.barycentricTriple = triple;
+    const [A, B, C] = vertices;
+    const [a, b, c] = triple;
+
+    this.x = (a * A.x + b * B.x + c * C.x) / N;
+    this.y = (a * A.y + b * B.y + c * C.y) / N;
+
+    this.color = VM.discreteMath.spernerColor(a, b, c);
+  }
+
+  getCoords() {
+    return { x: this.x, y: this.y };
+  }
+
+  getColor() {
+    return this.color;
+  }
+}
+```
+
+```{ojs}
+// === Triangle Classification Functions ===
+classifyTriangle = (vertexColors) => {
+  const set = new Set(vertexColors);
+  return {
+    isRG: set.has('red') && set.has('green') && !set.has('blue'),
+    isRGB: set.has('red') && set.has('green') && set.has('blue'),
+    vertexColors: set
+  }
+}
+
+getTriangleEdges = (points, classification) => {
+  const edges = [];
+
+  if (classification.isRG) {
+    for (let k = 0; k < 3; k++) {
+      const a = points[k], b = points[(k + 1) % 3];
+      if (a.getColor() !== b.getColor()) {
+        edges.push({ point: midpoint(a, b), source: [a, b] });
+      }
+    }
+  }
+
+  if (classification.isRGB) {
+    for (let k = 0; k < 3; k++) {
+      const pairs = [[k, (k + 1) % 3], [k, (k + 2) % 3]];
+      for (const [i, j] of pairs) {
+        if (points[i].getColor() === 'red' && points[j].getColor() === 'green') {
+          edges.push({ point: midpoint(points[i], points[j]), source: [points[i], points[j]] });
+        }
+      }
+    }
+    edges.push({ point: centroid(points[0].getCoords(), points[1].getCoords(), points[2].getCoords()), source: null });
+  }
+
+  return edges;
+}
+
+getSpecialPoints = (edges, classification) => {
+  const specials = [];
+
+  for (const edge of edges) {
+    if (!edge.source) continue;
+    const [a, b] = edge.source;
+    if (isEdgeBoundary(a, b)) specials.push(edge.point);
+  }
+
+  if (classification.isRGB) {
+    for (const edge of edges) {
+      if (edge.source === null) {
+        specials.push(edge.point);
+        break;
+      }
+    }
+  }
+
+  return specials;
+}
+
+generateTriangleData = (coordinates, cpMap) => {
+  const points = [];
+  for (const coord of coordinates) points.push(cpMap.get(coord.join(',')));
+
+  const colors = [];
+  for (const p of points) colors.push(p.getColor());
+  const vertex_colors = new Set(colors);
+
+  const classification = classifyTriangle(vertex_colors);
+  const edgesWithSource = getTriangleEdges(points, classification);
+  const special_points = getSpecialPoints(edgesWithSource, classification);
+
+  const edges = [];
+  for (const e of edgesWithSource) edges.push(e.point);
+
+  return { coordinates, vertex_colors, classification, edges, special_points };
+}
+```
+
+```{ojs}
+// === Plotting Utilities ===
+// RGB (rainbow) triangles get the shared vivid indigo, chosen to contrast
+// clearly with gold. RG triangles get a
+// faint gold -- just enough to spot the "hallway" rooms the door argument
+// below relies on, without competing with the rainbow triangles for
+// attention. Everything else (GB, RB, monochromatic) is left unfilled.
+triangleFillColor = tri => {
+  if (tri.classification.isRGB) return VM.discreteMath.triangleFillColor(tri.vertex_colors);
+  if (tri.classification.isRG) return 'rgba(255, 215, 0, 0.3)';
+  return 'none';
+}
+
+triangleFeatures = (triangles, cpMap) => {
+  const features = [];
+  for (const tri of triangles) {
+    const pts = [];
+    for (const c of tri.coordinates) pts.push(cpMap.get(c.join(',')).getCoords());
+
+    const ring = [];
+    for (const p of pts) ring.push([p.x, p.y]);
+    ring.push(ring[0]);
+
+    features.push({
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [ring] },
+      properties: { fillColor: triangleFillColor(tri) }
+    });
+  }
+  return features;
+}
+
+// Edges between differently-colored vertices, in the same shared
+// gold/teal/orchid palette as the two-color triangle fills. Distinct from
+// the black "door" path below -- this is a general structural layer, not
+// specific to RG doors.
+mixedEdgeFeatures = (N, cpMap) => {
+  const edges = [];
+  for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
+    const pa = cpMap.get(a.join(','));
+    const pb = cpMap.get(b.join(','));
+    const color = VM.discreteMath.pairColor(pa.getColor(), pb.getColor());
+    if (!color) continue;
+    const ca = pa.getCoords();
+    const cb = pb.getCoords();
+    edges.push({ x1: ca.x, y1: ca.y, x2: cb.x, y2: cb.y, color });
+  }
+  return edges;
+}
+
+makeEdgeLines = (triangles) => {
+  const lines = [];
+  for (const tri of triangles) {
+    for (let i = 0; i < tri.edges.length; i++) {
+      const pt = tri.edges[i];
+      const next = tri.edges[(i + 1) % tri.edges.length];
+      lines.push(Plot.line([pt, next], { x: "x", y: "y", stroke: "black", strokeWidth: 5 }));
+    }
+  }
+  return lines;
+}
+
+makeSpecialPoints = (triangles) => {
+  const dots = [];
+  for (const tri of triangles) {
+    for (const pt of tri.special_points) {
+      if (pt && pt.x !== undefined && pt.y !== undefined) {
+        dots.push(Plot.dot([pt], { x: "x", y: "y", fill: "white", stroke: "black", r: 4 }));
+      }
+    }
+  }
+  return dots;
+}
+```
+
+```{ojs}
+// === Define Base Triangle Vertices ===
+vertices = [
+  {x: 1, y: 0},
+  {x: 0.5, y: Math.sqrt(3) / 2},
+  {x: 0, y: 0},
+]
+```
+
+```{ojs}
+// === Generate Colored Points ===
+coloredPoints = {
+  regenerate;
+  return VM.discreteMath.barycentricTriples(N).map(triple => new ColoredPoint(triple, vertices, N));
+}
+
+cpMap = new Map(coloredPoints.map(p => [p.barycentricTriple.join(','), p]));
+
+coloredPointsWithTitle = {
+  const arr = [];
+  for (const d of coloredPoints) {
+    arr.push({ ...d, title: `(${d.barycentricTriple.join(", ")})` });
+  }
+  return arr;
+}
+```
+
+```{ojs}
+// === Generate and Classify All Triangles ===
+generateAllTriangles = (N, cpMap) => {
+  const all = [], rg = [], rgb = [];
+
+  for (const coordinates of VM.discreteMath.subTriangleTriples(N)) {
+    const data = generateTriangleData(coordinates, cpMap);
+    all.push(data);
+    if (data.vertex_colors.has('red') && data.vertex_colors.has('green')) {
+      if (data.vertex_colors.has('blue')) {
+        rgb.push(data);
+      } else {
+        rg.push(data);
+      }
+    }
+  }
+
+  return { all, rg, rgb };
+}
+
+triangles = generateAllTriangles(N, cpMap);
+```
+
+```{ojs}
+// === Main Plot ===
+viewof mainPlot = Plot.plot({
+  width: 800,
+  height: 800,
+  x: { label: "x", domain: [0, 1] },
+  y: { label: "y", domain: [0, Math.sqrt(3) / 2] },
+  marks: [
+    Plot.geo(
+      { type: "FeatureCollection", features: triangleFeatures(triangles.all, cpMap) },
+      { fill: d => d.properties.fillColor, stroke: "black", strokeWidth: 1 }
+    ),
+    Plot.link(mixedEdgeFeatures(N, cpMap), {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "color",
+      strokeWidth: 3
+    }),
+    ...makeEdgeLines(triangles.rg),
+    ...makeEdgeLines(triangles.rgb),
+    Plot.dot(
+      coloredPointsWithTitle,
+      {
+        x: "x",
+        y: "y",
+        fill: "color",
+        r: 4,
+        title: "title"
+      }
+    ),
+    ...makeSpecialPoints(triangles.rg),
+    ...makeSpecialPoints(triangles.rgb)
+  ]
+});
+```
+
+Imagine each small triangle as a **room with three walls**. Treat each `RG` edge as a **door**. Here's what we observe:
+
+1. <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles have **exactly one** door.
+2. <span style="background-color:rgba(255, 215, 0, 1)">**RRG**</span> and <span style="background-color:rgba(255, 215, 0, 1)">**RGG**</span> triangles have **two** doors.
+3. All other triangles have **no** doors.
+
+(In the plot above, `RRG`/`RGG` triangles are shaded a much fainter gold than in the diagram below, so the rainbow triangles stay the visual focus; every other non-rainbow triangle is left unfilled. Mixed-color edges still get a colored line, the same convention used on the other Sperner's lemma pages.)
+
+```{ojs}
+doorExamples = [
+  {
+    label: "RGB",
+    fill: "rgba(75, 0, 130, 0.55)",
+    vertices: [
+      {x: 50, y: 150, color: "red"},
+      {x: 100, y: 50, color: "green"},
+      {x: 150, y: 150, color: "blue"}
+    ]
+  },
+  {
+    label: "RRG",
+    fill: "rgba(255, 215, 0, 1)",
+    vertices: [
+      {x: 250, y: 150, color: "red"},
+      {x: 300, y: 50, color: "red"},
+      {x: 350, y: 150, color: "green"}
+    ]
+  },
+  {
+    label: "RGG",
+    fill: "rgba(255, 215, 0, 1)",
+    vertices: [
+      {x: 450, y: 150, color: "red"},
+      {x: 500, y: 50, color: "green"},
+      {x: 550, y: 150, color: "green"}
+    ]
+  }
+]
+```
+
+```{ojs}
+// Builds the marks for the RGB/RRG/RGG example diagram: one filled polygon
+// per example triangle, a bold dashed line on each RG ("door") edge, a
+// colored dot per vertex, and a label above each triangle.
+doorExampleMarks = {
+  const fills = [];
+  const doors = [];
+  const dots = [];
+  const labels = [];
+
+  for (const tri of doorExamples) {
+    const { vertices, fill, label } = tri;
+
+    const ring = [];
+    for (const v of vertices) ring.push([v.x, v.y]);
+    ring.push(ring[0]);
+    fills.push({
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [ring] },
+      properties: { fill }
+    });
+
+    for (let i = 0; i < 3; i++) {
+      const a = vertices[i], b = vertices[(i + 1) % 3];
+      const isRG = (a.color === "red" && b.color === "green") || (a.color === "green" && b.color === "red");
+      if (isRG) doors.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+    }
+
+    for (const v of vertices) dots.push(v);
+
+    const top = vertices[1];
+    labels.push({ x: top.x, y: top.y, text: label });
+  }
+
+  return { fills, doors, dots, labels };
+}
+```
+
+```{ojs}
+viewof doorExamplePlot = Plot.plot({
+  width: 600,
+  height: 200,
+  margin: 10,
+  x: { domain: [0, 600], axis: null },
+  y: { domain: [200, 0], axis: null },
+  marks: [
+    Plot.geo(
+      { type: "FeatureCollection", features: doorExampleMarks.fills },
+      { fill: d => d.properties.fill, stroke: "black", strokeWidth: 1 }
+    ),
+    Plot.link(doorExampleMarks.doors, {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "black", strokeWidth: 4, strokeDasharray: "8,4"
+    }),
+    Plot.dot(doorExampleMarks.dots, { x: "x", y: "y", fill: "color", stroke: "black", r: 4 }),
+    Plot.text(doorExampleMarks.labels, { x: "x", y: "y", text: "text", dy: -10, fontSize: 12 })
+  ]
+})
+```
+
+In other words, we can identify <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles as the rooms with an **odd** number of doors. Sperner's Lemma, then, can be restated in a more visual way: **If Sperner's condition holds, there is at least one room with an odd number of doors.** We'll prove a related version of this statement.
+
+## Following the Doors
+
+Picture all the possible paths that can be formed by stepping through these `RG` doors — the black lines in the diagram represent all of these paths.
+
+- The <span style="background-color:rgba(255, 215, 0, 1)">yellow</span> triangles have paths that **enter through one door and exit through another** — like hallways.
+- The <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles have **only one door**, so they are endpoints — there's no way to pass through.
+
+Using simple logic, we can deduce the following:
+
+1. No two paths intersect.
+2. Some paths form **closed loops**.
+3. Paths that do not form loops must have **two endpoints**, so the **total number of endpoints is even**.
+4. The **only possible endpoints** are:
+   a. An `RG` door on the outer boundary of the big triangle
+   b. An <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangle.
+
+Putting this all together gives us a key result:
+
+::: {#even-theorem .callout-note title="Theorem: Doors plus RGB triangles is even"}
+The sum of the number of `RG` boundary edges, and the number of <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles must be **even**.
+:::
+
+From this, we immediately get:
+
+::: {#same-parity-theorem .callout-note title="Theorem: RGB triangles share parity with the boundary"}
+The number of <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles is **odd** if and only if the number of `RG` edges on the boundary is **odd**.
+:::
+
+So to conclude the proof, all that remains is to show:
+
+::: {#boundary-odd-conjecture .callout-note title="Conjecture: Odd number of RG boundary edges"}
+The number of `RG` boundary edges is odd.
+:::
+
+**Sperner's condition** implies that the only `RG` boundary edges must appear on the bottom edge (the edge running from the red vertex to the green vertex — the blue vertex can't be an endpoint of an `RG` edge), which reduces the problem to the following.
+
+::: {#bottom-conjecture .callout-note title="Conjecture: Odd number of RG edges on the bottom"}
+The number of `RG` boundary edges on the bottom edge is odd.
+:::
+
+This has a short, elegant proof — but it's also easy to *think* you've proven it when you haven't, so rather than writing it out, here it is as a genuine exercise. Try each step before opening the next.
+
+::: {.callout-tip title="Exercise"}
+Prove the [conjecture above](#bottom-conjecture): the bottom edge is a sequence of points colored red or green, starting red and ending green (by Sperner's condition, no blue is possible there). Call the sequence of colors $x_0, x_1, \dots, x_M$, read left to right.
+
+1. Encode each color as a number: $x_i = 0$ if the $i$-th point is red, $x_i = 1$ if it's green. What are $x_0$ and $x_M$?
+2. An `RG` edge is an index $i$ with $x_i \neq x_{i+1}$. Write the total number of `RG` edges as a sum involving the $x_i$ — without an absolute value or a case split. (Consider working modulo 2.)
+3. Combine steps 1 and 2 to conclude the number of `RG` edges is odd.
+:::
+
+Try it below: click **Regenerate colors** a few times and check that the count is always odd, no matter how the interior points are colored.
+
+<div class="ojs-panel ojs-row">
+
+```{ojs}
+viewof M = {
+  const slider = Inputs.range([1, 25], {step: 1, value: 5, label: "Number of subdivisions"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+```{ojs}
+// Referenced (but otherwise unused) inside boundaryColors below so that
+// clicking the button re-randomizes the interior colors without moving
+// the slider.
+viewof boundaryRegenerate = {
+  const button = Inputs.button("Regenerate colors", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+boundaryColors = {
+  boundaryRegenerate;
+  const colors = [];
+  for (let i = 0; i <= M; i++) {
+    if (i === 0) {
+      colors.push('red');
+    } else if (i === M) {
+      colors.push('green');
+    } else {
+      colors.push(Math.random() < 0.5 ? 'red' : 'green');
+    }
+  }
+  return colors;
+}
+
+boundaryEdges = {
+  const points = [];
+  for (let i = 0; i <= M; i++) points.push({ x: i, color: boundaryColors[i] });
+
+  const segments = [];
+  let boldCount = 0;
+  for (let i = 0; i < M; i++) {
+    const bold = boundaryColors[i] !== boundaryColors[i + 1];
+    if (bold) boldCount++;
+    segments.push({ x1: i, x2: i + 1, bold });
+  }
+
+  return { points, segments, boldCount };
+}
+```
+
+```{ojs}
+viewof boundaryPlot = Plot.plot({
+  width: 600,
+  height: 100,
+  margin: 20,
+  x: { domain: [0, M], axis: null },
+  y: { domain: [0, 1], axis: null },
+  marks: [
+    Plot.link(boundaryEdges.segments, {
+      x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
+      stroke: "black", strokeWidth: d => d.bold ? 6 : 1
+    }),
+    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: "color", stroke: "black", r: 5 }),
+    Plot.text([{ x: M / 2, y: 0.9, text: `Number of RG edges: ${boundaryEdges.boldCount}` }], {
+      x: "x", y: "y", text: "text", fontSize: 16
+    })
+  ]
+})
+```
+
+## Questions
+
+- Design an app for visualizing this proof for any triangulation of a triangle, not just uniform subdivisions. How would you generate random triangulations? How would you efficiently loop through all the triangles?
+
+- This proof generalizes to an $n$-simplex for any $n$. For $n=1$, we recover the case of a line segment. For $n=2$, we have Sperner's lemma. What is the statement for $n=3$? How would you visualize it?
+  - For $n=2$, the case of a line segment can be thought of as an intermediate value theorem: if a continuous function $f$ has $f(a) < 0$ and $f(b) > 0$, then there is a point $c \in (a, b)$ with $f(c) = 0$. Do you see it? What is the analogous statement for $n=3$? 

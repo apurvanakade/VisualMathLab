@@ -1,0 +1,721 @@
+---
+title: "Adaptive Integration"
+topic: "Piecewise Interpolation"
+description: "Refines a numerical integral by subdividing only the sub-intervals where the estimate is still inaccurate."
+author: Apurva Nakade
+date: 2026-07-13
+order: 3
+image: adaptive-integration.png
+categories:
+  - Computational Math
+  - Integration
+  - Adaptive Quadrature
+  - Simpson's Rule
+  - Error Estimation
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.lagrangeQuadratic, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.simpsonEstimate, VM.ui.applyExampleParams.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+traceOptions = ["f(x)", "Adaptive Simpson panels", "Partition points"]
+
+// Matches the line/marker colors mainPlot uses for each trace, so the
+// overlay legend's swatches double as a color key.
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+traceColors = new Map([
+  ["f(x)", chartColors.fn],
+  ["Adaptive Simpson panels", chartColors.ok],
+  ["Partition points", chartColors.ink]
+])
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls.
+examples = [
+  {
+    title: "Smooth sine area",
+    params: {f: "sin(x)", a: "0", b: "pi"}
+  },
+  {
+    title: "Oscillation near an endpoint",
+    params: {f: "sin(1 / (x + 0.3))", a: "0", b: "pi"}
+  },
+  {
+    title: "Rational peak",
+    params: {f: "1/(1 + 100*(x - 0.2)^2)", a: "-1", b: "1"}
+  },
+  {
+    title: "Gaussian bump",
+    params: {f: "exp(-25*x^2)", a: "-2", b: "2"}
+  },
+  {
+    title: "Nonsmooth corner",
+    params: {f: "abs(x)", a: "-2", b: "2"}
+  },
+  {
+    title: "Highly oscillatory integral",
+    params: {f: "sin(20*x)", a: "0", b: "2*pi"}
+  },
+  {
+    title: "Steep transition",
+    params: {f: "tanh(20*(x - 0.2))", a: "-1", b: "1"}
+  },
+  {
+    title: "Endpoint behavior",
+    params: {f: "sqrt(x)", a: "0", b: "1"}
+  },
+  {
+    title: "Narrow spike",
+    params: {f: "1/(0.01 + x^2)", a: "-1", b: "1"}
+  },
+  {
+    title: "Challenging oscillations",
+    params: {f: "sin(1/x)", a: "0.05", b: "1"}
+  }
+]
+```
+
+<div class="ojs-panel">
+
+```{ojs}
+viewof fText = {
+  const params = new URLSearchParams(window.location.search)
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "sin(1 / (x + 0.3))", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
+  fTextInput.classList.add("ojs-fill")
+  fTextInput.dataset.exampleField = "f"
+  return fTextInput
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof a0 = {
+  const params = new URLSearchParams(window.location.search)
+  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0", placeholder: "Example: 0, -pi"})
+  a0Input.dataset.exampleField = "a"
+  return a0Input
+}
+```
+
+```{ojs}
+viewof b0 = {
+  const params = new URLSearchParams(window.location.search)
+  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "pi", placeholder: "Example: pi, 3.14"})
+  b0Input.dataset.exampleField = "b"
+  return b0Input
+}
+```
+
+</div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({
+  f: '[data-example-field="f"]',
+  a: '[data-example-field="a"]',
+  b: '[data-example-field="b"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place — no page reload, so no scroll jump either. A plain
+// "change" listener attached once to the stable native <select> (rather
+// than an OJS cell reactive on exampleSelect's value) — a <select> fires
+// both "input" and "change" per selection, and a reactive cell would run
+// once per event, with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+// Plot commits the current function/endpoint fields — edits above don't
+// take effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The tolerance slider and max depth field overlaid on the
+// chart are unaffected and stay reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto", "ojs-end")
+  return plotButton
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+// Its own group, below the commit-gated fields and the Plot button: these
+// are always-live and describe how the slider sweeps rather than what gets
+// computed. They live here rather than in the chart overlay so that bar
+// holds nothing but the slider itself.
+viewof maxDepthInput = Inputs.text({value: "15", label: "Max depth", placeholder: "Example: 15, 5*3"})
+```
+
+</div>
+
+</div>
+
+```{ojs}
+//| output: false
+tolerance = Math.pow(10, -tolExponent)
+```
+
+```{ojs}
+//| output: false
+// Pressing Enter in the function/endpoint fields clicks Plot instead of
+// submitting the field's own (invisible) form. Depends only on the stable
+// views, so this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof fText, viewof a0, viewof b0]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots fText/a0/b0 only when Plot is clicked, and writes them
+// back into the URL so the address bar stays a shareable link. It reads
+// `viewof fText`/`viewof a0`/`viewof b0` (the stable DOM views) rather than
+// `fText`/`a0`/`b0` (the reactive values), so it does NOT rerun on every
+// keystroke — only when `plotTrigger` changes. It still runs once on
+// initial page load, so the first render uses the URL-provided (or
+// default) values with no click.
+committed = {
+  plotTrigger
+  const math = window.math
+  const fVal = (viewof fText).value
+  const aText = (viewof a0).value
+  const bText = (viewof b0).value
+  const aVal = VM.expressions.makeNumber(math, aText)
+  const bVal = VM.expressions.makeNumber(math, bText)
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("f", fVal)
+  params.set("a", aText)
+  params.set("b", bText)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  return {fText: fVal, a0: aVal, b0: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+showFCurve = traces.includes("f(x)")
+```
+
+```{ojs}
+//| output: false
+showPanels = traces.includes("Adaptive Simpson panels")
+```
+
+```{ojs}
+//| output: false
+showPartitionPoints = traces.includes("Partition points")
+```
+
+```{ojs}
+//| output: false
+// result: runs adaptive Simpson quadrature on [a, b] at the current
+// tolerance ε (recursing until each leaf's local error estimate is within
+// its share of ε, or maxDepth is reached).
+//   leaves — array of { a, b, mid, fa, fmid, fb, estimate, errorEstimate,
+//     depth, width }, one entry per accepted subinterval, left to right
+//   calls — array of { id, parentId, a, b, mid, depth, accepted }, one entry
+//     per interval the recursion ever considered (both accepted leaves and
+//     intervals that were split further) — the decision tree behind `leaves`
+//   f — parsed function, reused for curve sampling in setup
+//   totalEstimate — sum of leaf estimates (the adaptive quadrature's answer)
+//   totalErrorEstimate — sum of leaf Richardson error estimates
+//   trueIntegral — reference integral via a very fine composite Simpson's rule
+//   actualError — |totalEstimate - trueIntegral|
+result = {
+  const math = window.math
+
+  const f = VM.expressions.makeFunction(math, committed.fText)
+  const fallback = x => NaN
+
+  if (!f) return {leaves: [], calls: [], f: fallback, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+
+  const a = committed.a0
+  const b = committed.b0
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {leaves: [], calls: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+
+  const lo = Math.min(a, b)
+  const hi = Math.max(a, b)
+
+  const fa = f(lo)
+  const fb = f(hi)
+  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {leaves: [], calls: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+
+  const depthLimit = maxDepth
+  // Safety valve: caps total leaves so a pathological (e.g. non-converging
+  // or discontinuous) function can't hang the browser with an exponential
+  // blow-up of subdivisions.
+  const maxLeaves = 4000
+
+  // Simpson's rule on [x0, x1], reusing the already-evaluated endpoint
+  // values y0, y1 and computing only the new midpoint value.
+  const simpsonPiece = (x0, x1, y0, y1) => {
+    const mid = (x0 + x1) / 2
+    const ymid = f(mid)
+    const value = (x1 - x0) / 6 * (y0 + 4 * ymid + y1)
+    return {mid, ymid, value}
+  }
+
+  const leaves = []
+  const calls = []
+  let nextId = 0
+
+  const recurse = (a0, b0, fa0, fmid0, fb0, whole, tol, depth, parentId) => {
+    const id = nextId
+    nextId += 1
+    const c = (a0 + b0) / 2
+
+    if (leaves.length >= maxLeaves) {
+      leaves.push({a: a0, b: b0, mid: c, fa: fa0, fmid: fmid0, fb: fb0, estimate: whole, errorEstimate: 0, depth, width: b0 - a0})
+      calls.push({id, parentId, a: a0, b: b0, mid: c, depth, accepted: true})
+      return
+    }
+
+    const left = simpsonPiece(a0, c, fa0, fmid0)
+    const right = simpsonPiece(c, b0, fmid0, fb0)
+    const combined = left.value + right.value
+    const errorEst = (combined - whole) / 15
+
+    if (!Number.isFinite(combined) || depth >= depthLimit || Math.abs(combined - whole) <= 15 * tol) {
+      leaves.push({a: a0, b: b0, mid: c, fa: fa0, fmid: fmid0, fb: fb0, estimate: combined + errorEst, errorEstimate: Math.abs(errorEst), depth, width: b0 - a0})
+      calls.push({id, parentId, a: a0, b: b0, mid: c, depth, accepted: true})
+      return
+    }
+
+    calls.push({id, parentId, a: a0, b: b0, mid: c, depth, accepted: false})
+    recurse(a0, c, fa0, left.ymid, fmid0, left.value, tol / 2, depth + 1, id)
+    recurse(c, b0, fmid0, right.ymid, fb0, right.value, tol / 2, depth + 1, id)
+  }
+
+  const whole0 = simpsonPiece(lo, hi, fa, fb)
+  recurse(lo, hi, fa, whole0.ymid, fb, whole0.value, tolerance, 0, -1)
+
+  let totalEstimate = 0
+  let totalErrorEstimate = 0
+  for (const leaf of leaves) {
+    totalEstimate += leaf.estimate
+    totalErrorEstimate += leaf.errorEstimate
+  }
+
+  const trueIntegral = VM.numerical.simpsonEstimate(f, lo, hi, 4000)
+  const actualError = Math.abs(totalEstimate - trueIntegral)
+
+  return {leaves, calls, f, totalEstimate, totalErrorEstimate, trueIntegral, actualError}
+}
+```
+
+```{ojs}
+//| output: false
+// setup computes the data needed by the main chart: a dense quadratic
+// (Simpson) sample per leaf for shading, the partition boundary points, and
+// the axis ranges / smooth f(x) curve.
+setup = {
+  if (result.leaves.length === 0) {
+    const empty = {lo: -3, hi: 3}
+    return {panels: [], nodesX: [], nodesY: [], boundaries: [], maxDepthUsed: 0, sampleXs: [], sampleYs: [], xRange: empty, xBuffer: empty, yRange: {lo: -1, hi: 1}}
+  }
+
+  let maxDepthUsed = 0
+  for (const leaf of result.leaves) {
+    if (leaf.depth > maxDepthUsed) maxDepthUsed = leaf.depth
+  }
+
+  // Dense parabola samples per leaf, via the Lagrange quadratic through its
+  // (a, fa), (mid, fmid), (b, fb) — the same curve Simpson's rule integrates
+  // exactly on that leaf.
+  const samplesPerLeaf = 16
+  const panels = []
+  for (const leaf of result.leaves) {
+    const sample = VM.numerical.lagrangeQuadratic(leaf.a, leaf.fa, leaf.mid, leaf.fmid, leaf.b, leaf.fb, samplesPerLeaf)
+    panels.push({xs: sample.xs, ys: sample.ys, depth: leaf.depth})
+  }
+
+  // Partition boundary points — every leaf's left edge, plus the final
+  // right edge — used for the node markers and the vertical divider lines.
+  const nodesX = [result.leaves[0].a]
+  const nodesY = [result.leaves[0].fa]
+  for (const leaf of result.leaves) {
+    nodesX.push(leaf.b)
+    nodesY.push(leaf.fb)
+  }
+  const boundaries = nodesX.slice(1, -1)
+
+  const lo = result.leaves[0].a
+  const hi = result.leaves[result.leaves.length - 1].b
+  const xRange = VM.plotting.paddedRange([lo, hi], {emptyRange: [-3, 3], relativePadding: 0.1, minPadding: 0.25})
+
+  // A wider domain (double the padding of xRange) so the curve is already
+  // sampled beyond the initial view — panning/zooming out reveals more of
+  // the curve instead of blank canvas. The initial view stays xRange.
+  const xBuffer = VM.plotting.paddedRange([lo, hi], {emptyRange: [-6, 6], relativePadding: 0.25, minPadding: 0.5})
+
+  // Sample f across the buffer range for the smooth curve trace.
+  const sampleCount = 700
+  const sampleXs = Array.from({length: sampleCount}, (_, i) => xBuffer.lo + (xBuffer.hi - xBuffer.lo) * i / (sampleCount - 1))
+  const sampleYs = []
+  for (const x of sampleXs) {
+    const y = result.f(x)
+    if (Number.isFinite(y) && Math.abs(y) < 1e8) {
+      sampleYs.push(y)
+    } else {
+      sampleYs.push(null)
+    }
+  }
+
+  // y-range from f over [lo, hi] plus node and panel values.
+  const yValues = [0]
+  for (let i = 0; i < sampleXs.length; i++) {
+    const x = sampleXs[i]
+    if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
+  }
+  for (const y of nodesY) if (Number.isFinite(y)) yValues.push(y)
+  for (const panel of panels) {
+    for (const y of panel.ys) if (Number.isFinite(y)) yValues.push(y)
+  }
+  const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
+
+  return {panels, nodesX, nodesY, boundaries, maxDepthUsed, sampleXs, sampleYs, xRange, xBuffer, yRange}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws f(x) and, for each leaf of the adaptive partition, the
+// quadratic panel Simpson's rule integrates exactly there — shaded more
+// darkly the deeper that leaf was subdivided, so heavily refined regions
+// (where f is hardest to approximate) stand out. Vertical dividers and dot
+// markers show the partition points themselves.
+//
+// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
+// reactive updates — this preserves zoom and pan when the tolerance or max
+// depth changes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (data, showFCurve, showPanels, showPartitionPoints) => {
+    const traces = []
+
+    if (showFCurve) {
+      // The function curve
+      traces.push({x: data.sampleXs, y: data.sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
+    }
+
+    if (showPanels) {
+      for (let i = 0; i < data.panels.length; i++) {
+        const panel = data.panels[i]
+        let depthRatio = 0
+        if (data.maxDepthUsed > 0) depthRatio = panel.depth / data.maxDepthUsed
+        const fillAlpha = 0.10 + 0.45 * depthRatio
+
+        traces.push({
+          x: panel.xs, y: panel.ys, type: "scatter", mode: "lines", name: "Adaptive Simpson panels", showlegend: false,
+          fill: "tozeroy", fillcolor: VM.plotting.alpha("ok", fillAlpha), line: {color: chartColors.ok, width: 1}
+        })
+      }
+    }
+
+    if (showPartitionPoints && data.nodesX.length > 0) {
+      traces.push({x: data.nodesX, y: data.nodesY, type: "scatter", mode: "markers", name: "Partition points", showlegend: false, marker: {color: chartColors.ink, size: 6, symbol: "circle", line: {color: chartColors.halo, width: 1}}})
+    }
+
+    // Vertical dividers at interior partition points, spanning the full
+    // plot height, so unevenly sized panels are easy to see. Tied to the
+    // Partition points toggle, matching how newton-method tied its dotted
+    // guide lines to showNewtonPoints.
+    const shapes = []
+    if (showPartitionPoints) {
+      for (const x of data.boundaries) {
+        shapes.push({type: "line", xref: "x", yref: "paper", x0: x, x1: x, y0: 0, y1: 1, line: {color: "rgba(17, 24, 39, 0.25)", width: 1, dash: "dot"}})
+      }
+    }
+
+    const layout = {
+      xaxis: {title: "x", range: [data.xRange.lo, data.xRange.hi], zeroline: true},
+      yaxis: {title: "y", range: [data.yRange.lo, data.yRange.hi], zeroline: true},
+      shapes,
+      hovermode: "closest",
+      uirevision: "static",  // keeps zoom/pan state across reactive updates
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    // First render: create the div. Later renders: update in place (preserves zoom).
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, traces, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, traces, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+// summary reports the headline numbers for the current tolerance: how many
+// leaves the adaptive partition needed, the resulting estimate, its
+// self-reported (Richardson) error bound, and the actual error against a
+// fine reference integral.
+//
+// Defined (and displayed) right here, rather than as a hidden cell invoked
+// from elsewhere: it already returns the final displayable node, and a
+// `//| output: false` cell still attaches its returned node to its own
+// (hidden) output slot — a later bare reference to it would then find the
+// node already parented elsewhere and fall back to showing an inspector
+// summary instead of the node itself.
+summary = {
+  const container = document.createElement("p")
+
+  if (result.leaves.length === 0) {
+    container.textContent = "Enter a valid function and interval, then click Plot."
+    return container
+  }
+
+  const stats = [
+    ["Tolerance ε", tolerance.toExponential(2)],
+    ["Subintervals used", String(result.leaves.length)],
+    ["Estimate", result.totalEstimate.toPrecision(8)],
+    ["Estimated error", result.totalErrorEstimate.toExponential(3)],
+    ["Actual error", result.actualError.toExponential(3)]
+  ]
+
+  for (let i = 0; i < stats.length; i++) {
+    const [label, value] = stats[i]
+    if (i > 0) container.append(document.createTextNode("  ·  "))
+    const strong = document.createElement("strong")
+    strong.textContent = `${label}: `
+    container.append(strong, document.createTextNode(value))
+  }
+
+  return container
+}
+```
+
+```{ojs}
+//| output: false
+// maxDepth parses the Max depth field's expression, falling back to 15 for
+// invalid input so the recursion always gets a usable depth limit.
+maxDepth = {
+  const math = window.math
+  const parsed = VM.expressions.makeNumber(math, maxDepthInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 15
+  return Math.max(1, Math.round(parsed))
+}
+```
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+mainPlot(setup, showFCurve, showPanels, showPartitionPoints)
+```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+<div class="ojs-step-overlay">
+
+```{ojs}
+viewof tolExponent = {
+  const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
+  tolSlider.classList.add("ojs-fill")
+  return tolSlider
+}
+```
+
+</div>
+
+</div>
+
+<!-- The recursion tree below traces every interval the algorithm considered while building the partition above — gray segments were split further, green segments were accepted as a leaf. It shares the same x-axis as the main chart, so you can line up a cluster of low, refined segments with the region of $f$ that caused it. -->
+
+```{ojs}
+// decisionTreePlot draws that recursion tree: one horizontal segment per
+// interval the algorithm ever considered, positioned at its actual [a, b]
+// range on the x-axis (shared with the main chart above) and stacked by
+// recursion depth on the y-axis. Gray segments were split further; green
+// segments were accepted as a leaf of the final partition. Connector lines
+// link each interval to the two children it was split into.
+//
+// Defined (and displayed) right here for the same reason as `summary`
+// above — it already returns the final displayable node.
+decisionTreePlot = {
+  if (result.calls.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const byId = new Map()
+  for (const call of result.calls) byId.set(call.id, call)
+
+  const links = []
+  for (const call of result.calls) {
+    if (call.parentId === -1) continue
+    const parent = byId.get(call.parentId)
+    links.push({x1: parent.mid, y1: parent.depth, x2: call.mid, y2: call.depth})
+  }
+
+  let maxDepthUsed = 0
+  for (const call of result.calls) {
+    if (call.depth > maxDepthUsed) maxDepthUsed = call.depth
+  }
+
+  const acceptedName = "Accepted (leaf)"
+  const splitName = "Split further"
+
+  const statusOf = call => {
+    if (call.accepted) return acceptedName
+    return splitName
+  }
+
+  const tooltipOf = call => {
+    let label = `[${call.a.toPrecision(6)}, ${call.b.toPrecision(6)}]  depth ${call.depth}`
+    if (call.accepted) {
+      label += "  accepted"
+    } else {
+      label += "  split further"
+    }
+    return label
+  }
+
+  const colorDomain = [splitName, acceptedName]
+  const colorRange = ["#d3d7dc9e", chartColors.ok]
+
+  const chart = Plot.plot({
+    width,
+    height: Math.min(520, 90 + 26 * (maxDepthUsed + 1)),
+    marginLeft: 46,
+    marginBottom: 30,
+    x: {label: "x"},
+    y: {label: "recursion depth", domain: [0, maxDepthUsed], reverse: true, tickFormat: "d"},
+    color: {domain: colorDomain, range: colorRange},
+    marks: [
+      Plot.link(links, {x1: "x1", y1: "y1", x2: "x2", y2: "y2", stroke: "#cbd5e1"}),
+      Plot.ruleY(result.calls, {
+        x1: "a", x2: "b", y: "depth",
+        stroke: statusOf,
+        strokeWidth: 6,
+        strokeLinecap: "round",
+        title: tooltipOf
+      })
+    ]
+  })
+  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
+
+  const container = document.createElement("div")
+  container.append(chart, legend)
+  return container
+}
+```
+
+:::: {.callout-note collapse="true" title="Partition table"}
+
+```{ojs}
+// Partition table — one row per leaf of the accepted adaptive partition,
+// left to right.
+iterationTable = {
+  if (result.leaves.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (let i = 0; i < result.leaves.length; i++) {
+    const leaf = result.leaves[i]
+    formattedRows.push([
+      i,
+      leaf.a.toPrecision(10),
+      leaf.b.toPrecision(10),
+      leaf.width.toExponential(4),
+      leaf.depth,
+      leaf.estimate.toPrecision(10),
+      leaf.errorEstimate.toExponential(4)
+    ])
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers: ["i", tex`a_i`, tex`b_i`, "width", "depth", tex`S_i`, tex`|E_i|`],
+    csvHeaders: ["i", "a_i", "b_i", "width", "depth", "S_i (leaf estimate)", "|E_i| (leaf error estimate)"],
+    filename: "adaptive-integration-partition.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+**Adaptive quadrature** refines the partition of $[a,b]$ only where it's needed, instead of the fixed grid used in [Numerical Integration](../numerical-integration/index.qmd). Simpson's rule on an interval $[p,q]$ with midpoint $m=(p+q)/2$,
+
+$$
+S[p,q] = \frac{q-p}{6}\Big(f(p)+4f(m)+f(q)\Big),
+$$
+
+is compared against the sum of Simpson's rule on each half, $S[a,m]+S[m,b]$; since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of 16, giving the Richardson error estimate $\big(S[a,m]+S[m,b]-S[a,b]\big)/15$. Whenever $\left|S[a,m]+S[m,b]-S[a,b]\right|$ exceeds $15\varepsilon$ for the current tolerance $\varepsilon$, the interval is bisected and each half is refined recursively (with $\varepsilon$ halved at each level, so the total error stays bounded by the original tolerance).

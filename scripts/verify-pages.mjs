@@ -28,7 +28,7 @@
 // only the requested pages get a browser pass.
 //
 // Usage: node scripts/verify-pages.mjs (or: npm run verify)
-//        node scripts/verify-pages.mjs root-finding/newton-method/index.qmd [...]
+//        node scripts/verify-pages.mjs apps/newton-method/index.qmd [...]
 
 import fs from 'node:fs'
 import path from 'node:path'
@@ -122,7 +122,7 @@ async function checkSliderControls(page, errors) {
     // Both thresholds are derived from a measurement of all 24 sliders on the
     // site at this viewport, not picked by feel:
     //   narrowest legitimate track: 147px, at 49% of its form
-    //     (probability/bayes/ppv, three sliders sharing a panel grid row)
+    //     (apps/positive-predictive-value, three sliders sharing a panel grid row)
     //   widest: 706px at 80% (the root-finding step sliders)
     //   the regressions being guarded against measured 0px, and 35px in a
     //     ~250px form -- i.e. 14% of it

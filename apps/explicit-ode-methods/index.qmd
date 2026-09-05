@@ -107,10 +107,10 @@ initialMethods = {
 
 initialN = {
   const raw = Number.parseInt(urlParams.get("n"), 10)
-  return Number.isFinite(raw) ? Math.max(1, raw) : 4
+  return Number.isFinite(raw) ? Math.max(1, raw) : 6
 }
 
-initialMax = urlParams.get("max") ?? "20"
+initialMax = urlParams.get("max") ?? "80"
 ```
 
 ```{ojs}
@@ -124,44 +124,28 @@ initialMax = urlParams.get("max") ?? "20"
 // applied to.
 examples = [
   {
-    title: "Textbook nonlinear forcing",
-    params: {f: "y - t^2 + 1", y0: "0.5", b: "2", max: "20", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
+    title: "Stiff-looking decay",
+    params: {f: "-15*y", y0: "1", b: "1", max: "80", n: "6", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
-    title: "Relaxation toward a trend",
-    params: {f: "t - y", y0: "1", b: "5", max: "40", n: "6", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
+    title: "Fast attraction to cos(t)",
+    params: {f: "-10*(y - cos(t)) - sin(t)", y0: "0", b: "3", max: "80", n: "12", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
+  },
+  {
+    title: "Oscillatory forcing with growth",
+    params: {f: "y + sin(5*t)", y0: "0", b: "3", max: "80", n: "10", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
     title: "Logistic growth",
     params: {f: "y*(1 - y)", y0: "0.1", b: "8", max: "60", n: "8", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
-    title: "Exponential decay",
-    params: {f: "-2*y", y0: "3", b: "4", max: "40", n: "5", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
-  },
-  {
-    title: "Exponential growth",
-    params: {f: "2*y", y0: "0.25", b: "2", max: "40", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
-  },
-  {
-    title: "Damped sinusoidal forcing",
-    params: {f: "sin(t) - 0.5*y", y0: "0", b: "10", max: "80", n: "12", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
-  },
-  {
     title: "Nonlinear Riccati-type equation",
     params: {f: "y^2 - t", y0: "0", b: "2", max: "50", n: "8", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   },
   {
-    title: "Fast attraction to cos(t)",
-    params: {f: "-10*(y - cos(t)) - sin(t)", y0: "1", b: "3", max: "80", n: "6", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
-  },
-  {
-    title: "Stiff-looking decay",
-    params: {f: "-15*y", y0: "1", b: "1", max: "80", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
-  },
-  {
-    title: "Oscillatory forcing with growth",
-    params: {f: "y + sin(5*t)", y0: "0", b: "3", max: "80", n: "10", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
+    title: "Textbook nonlinear forcing",
+    params: {f: "y - t^2 + 1", y0: "0.5", b: "2", max: "20", n: "4", show: ["Reference solution", "Euler's method", "Improved Euler", "RK4"]}
   }
 ]
 ```
@@ -171,7 +155,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "y - t^2 + 1", placeholder: "Example: y - t^2 + 1, t - y, y * (1 - y)"})
+  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "-15*y", placeholder: "Example: y - t^2 + 1, t - y, y * (1 - y)"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -183,7 +167,7 @@ viewof fText = {
 ```{ojs}
 viewof y0 = {
   const params = new URLSearchParams(window.location.search)
-  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "0.5", placeholder: "Example: 0.5, 1/2"})
+  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "1", placeholder: "Example: 0.5, 1/2"})
   y0Input.dataset.exampleField = "y0"
   return y0Input
 }
@@ -192,7 +176,7 @@ viewof y0 = {
 ```{ojs}
 viewof bEnd = {
   const params = new URLSearchParams(window.location.search)
-  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
+  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "1", placeholder: "Example: 2, pi"})
   bEndInput.dataset.exampleField = "b"
   return bEndInput
 }

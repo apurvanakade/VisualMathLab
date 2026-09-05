@@ -54,44 +54,28 @@ methodColors = new Map([
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
-    title: "Textbook nonlinear forcing",
-    params: {f: "y - t^2 + 1", y0: "0.5", b: "2"}
-  },
-  {
-    title: "Relaxation toward a trend",
-    params: {f: "t - y", y0: "1", b: "5"}
-  },
-  {
-    title: "Logistic growth",
-    params: {f: "y * (1 - y)", y0: "0.1", b: "8"}
-  },
-  {
-    title: "Exponential decay",
-    params: {f: "-2 * y", y0: "3", b: "4"}
-  },
-  {
-    title: "Exponential growth",
-    params: {f: "2 * y", y0: "0.25", b: "2"}
-  },
-  {
-    title: "Damped sinusoidal forcing",
-    params: {f: "sin(t) - 0.5 * y", y0: "0", b: "10"}
-  },
-  {
-    title: "Nonlinear Riccati-type equation",
-    params: {f: "y^2 - t", y0: "0", b: "2"}
-  },
-  {
     title: "Fast attraction to cos(t)",
-    params: {f: "-10 * (y - cos(t)) - sin(t)", y0: "1", b: "3"}
+    params: {f: "-10 * (y - cos(t)) - sin(t)", y0: "0", b: "3"}
   },
   {
     title: "Stiff-looking decay",
     params: {f: "-15 * y", y0: "1", b: "1"}
   },
   {
+    title: "Nonlinear Riccati-type equation",
+    params: {f: "y^2 - t", y0: "0", b: "2"}
+  },
+  {
     title: "Oscillatory forcing with growth",
     params: {f: "y + sin(5 * t)", y0: "0", b: "3"}
+  },
+  {
+    title: "Damped sinusoidal forcing",
+    params: {f: "sin(t) - 0.5 * y", y0: "0", b: "10"}
+  },
+  {
+    title: "Logistic growth",
+    params: {f: "y * (1 - y)", y0: "0.1", b: "8"}
   }
 ]
 ```
@@ -101,7 +85,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "y - t^2 + 1", placeholder: "Example: y - t^2 + 1, t - y, y * (1 - y)"})
+  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "-10 * (y - cos(t)) - sin(t)", placeholder: "Example: y - t^2 + 1, t - y, y * (1 - y)"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -113,7 +97,7 @@ viewof fText = {
 ```{ojs}
 viewof y0 = {
   const params = new URLSearchParams(window.location.search)
-  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "0.5", placeholder: "Example: 0.5, 1/2"})
+  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "0", placeholder: "Example: 0.5, 1/2"})
   y0Input.dataset.exampleField = "y0"
   return y0Input
 }
@@ -122,7 +106,7 @@ viewof y0 = {
 ```{ojs}
 viewof bEnd = {
   const params = new URLSearchParams(window.location.search)
-  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
+  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "3", placeholder: "Example: 2, pi"})
   bEndInput.dataset.exampleField = "b"
   return bEndInput
 }

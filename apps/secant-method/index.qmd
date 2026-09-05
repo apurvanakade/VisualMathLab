@@ -56,28 +56,20 @@ traceColors = new Map([
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
-    title: "Standard superlinear convergence",
-    params: {f: "x^3 - x - 2", x0: "1", x1: "2"}
-  },
-  {
-    title: "Fixed-point root problem",
-    params: {f: "cos(x) - x", x0: "0", x1: "1"}
-  },
-  {
-    title: "Square root of 2",
-    params: {f: "x^2 - 2", x0: "1", x1: "2"}
-  },
-  {
-    title: "Sensitive starting pair",
-    params: {f: "x^3 - 2*x + 2", x0: "-2", x1: "0"}
+    title: "Nearly horizontal secant",
+    params: {f: "x^3 - 2*x + 2", x0: "0.7", x1: "0.9"}
   },
   {
     title: "Problematic secant pair",
     params: {f: "x^3 - 2*x + 2", x0: "0", x1: "1"}
   },
   {
-    title: "Nearly horizontal secant",
-    params: {f: "x^3 - 2*x + 2", x0: "0.7", x1: "0.9"}
+    title: "Sensitive starting pair",
+    params: {f: "x^3 - 2*x + 2", x0: "-2", x1: "0"}
+  },
+  {
+    title: "Standard superlinear convergence",
+    params: {f: "x^3 - x - 2", x0: "1", x1: "2"}
   },
   {
     title: "Large jumps from shallow slopes",
@@ -86,14 +78,6 @@ examples = [
   {
     title: "Multiple root behavior",
     params: {f: "x^3", x0: "-0.5", x1: "0.8"}
-  },
-  {
-    title: "Higher-degree polynomial",
-    params: {f: "x^5 - x - 1", x0: "0", x1: "2"}
-  },
-  {
-    title: "Exponential equation",
-    params: {f: "exp(-x) - x", x0: "0", x1: "1"}
   }
 ]
 ```
@@ -103,7 +87,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "atan(x)", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -462,7 +446,7 @@ mainPlot = {
       for (const p of secantPoints) {
         xs.push(p.x)
         ys.push(p.fx)
-        labels.push(`x_${p.i}`)
+        labels.push(`x${VM.plotting.subscript(p.i)}`)
       }
       data.push({
         x: xs, y: ys,

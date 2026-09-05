@@ -116,7 +116,7 @@ initialMethods = {
   return selected.length > 0 ? Array.from(new Set(selected)) : methodOptions
 }
 
-initialMax = urlParams.get("max") ?? "60"
+initialMax = urlParams.get("max") ?? "80"
 
 initialAlpha = {
   const raw = Number.parseFloat(urlParams.get("alpha"))
@@ -125,12 +125,12 @@ initialAlpha = {
 
 initialK = {
   const raw = Number.parseInt(urlParams.get("k"), 10)
-  return Number.isFinite(raw) ? Math.max(1, raw) : 5
+  return Number.isFinite(raw) ? Math.max(1, raw) : 8
 }
 
 initialR = {
   const raw = Number.parseFloat(urlParams.get("R"))
-  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.001), 2) : 0.16
+  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.001), 2) : 0.25
 }
 
 initialQ = {
@@ -152,14 +152,6 @@ initialQ = {
 // slugs.
 examples = [
   {
-    title: "Noisy sine wave",
-    params: {f: "sin(x)", sigma: "0.4", b: "20", seed: "1", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
-  },
-  {
-    title: "Estimating a hidden constant",
-    params: {f: "5", sigma: "1", b: "20", seed: "3", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
-  },
-  {
     title: "Sudden regime change",
     params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", seed: "2", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
@@ -168,20 +160,20 @@ examples = [
     params: {f: "sin(3*x)", sigma: "0.3", b: "10", seed: "4", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
-    title: "Heavy noise, gentle signal",
-    params: {f: "cos(x/2)", sigma: "0.8", b: "25", seed: "5", max: "80", alpha: 0.95, k: 12, R: 0.64, Q: 0.02, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
-  },
-  {
-    title: "Tracking a steady drift",
-    params: {f: "0.3*x", sigma: "1", b: "15", seed: "6", max: "60", alpha: 0.85, k: 6, R: 1, Q: 0.1, show: ["True Signal", "Noisy measurements", "Exponential Moving Average", "Kalman Filter"]}
+    title: "Zero process noise stops tracking",
+    params: {f: "sin(x)", sigma: "0.3", b: "20", seed: "8", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
   },
   {
     title: "Overconfident sensor model",
     params: {f: "sin(x)", sigma: "0.6", b: "20", seed: "7", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Noisy measurements", "Kalman Filter"]}
   },
   {
-    title: "Zero process noise stops tracking",
-    params: {f: "sin(x)", sigma: "0.3", b: "20", seed: "8", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+    title: "Estimating a hidden constant",
+    params: {f: "5", sigma: "1", b: "20", seed: "3", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+  },
+  {
+    title: "Noisy sine wave",
+    params: {f: "sin(x)", sigma: "0.4", b: "20", seed: "1", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   }
 ]
 ```
@@ -191,7 +183,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "True signal f(x)", value: params.get("f") ?? "sin(x)", placeholder: "Example: sin(x), 5, x > 10 ? 6 : 0"})
+  const fTextInput = Inputs.text({label: "True signal f(x)", value: params.get("f") ?? "x > 10 ? 6 : 0", placeholder: "Example: sin(x), 5, cos(x/2)"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -203,7 +195,7 @@ viewof fText = {
 ```{ojs}
 viewof sigmaText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Gaussian Noise σ", value: params.get("sigma") ?? "0.4", placeholder: "Example: 0.4, 1/2"})
+  const input = Inputs.text({label: "Gaussian Noise σ", value: params.get("sigma") ?? "0.5", placeholder: "Example: 0.4, 1/2"})
   input.dataset.exampleField = "sigma"
   return input
 }
@@ -229,7 +221,7 @@ viewof maxNInput = {
 ```{ojs}
 viewof seedText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "1", placeholder: "Example: 1, 42"})
+  const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "2", placeholder: "Example: 1, 42"})
   input.dataset.exampleField = "seed"
   return input
 }

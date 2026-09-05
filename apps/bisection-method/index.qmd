@@ -63,40 +63,16 @@ traceColors = new Map([
 // examples backs the "Try an example" dropdown near the top controls.
 examples = [
   {
-    title: "Standard guaranteed convergence",
-    params: {f: "x^3 - x - 2", a: "1", b: "2"}
-  },
-  {
-    title: "Square root of 2",
-    params: {f: "x^2 - 2", a: "1", b: "2"}
-  },
-  {
-    title: "Transcendental equation",
-    params: {f: "cos(x) - x", a: "0", b: "1"}
-  },
-  {
-    title: "Bracket around a negative root",
-    params: {f: "x^3 - 2*x + 2", a: "-2", b: "-1"}
-  },
-  {
     title: "Choosing one root among many",
-    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "0.5", b: "1.5"}
+    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "0.3", b: "3.4"}
   },
   {
     title: "Same function, different bracket",
-    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "2.5", b: "3.5"}
+    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "2.4", b: "3.5"}
   },
   {
-    title: "Endpoint is already a root",
-    params: {f: "x - 1", a: "1", b: "3"}
-  },
-  {
-    title: "Invalid bracket: no real root",
-    params: {f: "x^2 + 1", a: "-1", b: "1"}
-  },
-  {
-    title: "Even-multiplicity root is missed",
-    params: {f: "x^2", a: "-1", b: "1"}
+    title: "Standard guaranteed convergence",
+    params: {f: "x^3 - x - 2", a: "1", b: "2"}
   },
   {
     title: "Sign change without a valid root",
@@ -110,7 +86,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "(x - 1)*(x - 2)*(x - 3)", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -122,7 +98,7 @@ viewof fText = {
 ```{ojs}
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
-  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "1", placeholder: "Example: 1, -pi/2"})
+  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0.3", placeholder: "Example: 1, -pi/2"})
   a0Input.dataset.exampleField = "a"
   return a0Input
 }
@@ -131,7 +107,7 @@ viewof a0 = {
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
-  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: 2, pi"})
+  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "3.4", placeholder: "Example: 2, pi"})
   b0Input.dataset.exampleField = "b"
   return b0Input
 }

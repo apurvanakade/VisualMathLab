@@ -59,40 +59,24 @@ methodColors = new Map([
 // by any example), so there's no cross-field ordering to worry about here.
 examples = [
   {
-    title: "Fast exponential decay",
-    params: {f: "-5 * y", y0: "1", b: "2"}
+    title: "Fast attraction to cos(t)",
+    params: {f: "-5 * (y - cos(t)) - sin(t)", y0: "0", b: "2"}
+  },
+  {
+    title: "Strong damping with forcing",
+    params: {f: "-4 * y + 4 * sin(t)", y0: "0", b: "3"}
   },
   {
     title: "Stiff-looking decay",
     params: {f: "-15 * y", y0: "1", b: "1"}
   },
   {
-    title: "Fast attraction to cos(t)",
-    params: {f: "-30 * (y - cos(t)) - sin(t)", y0: "1", b: "2"}
-  },
-  {
-    title: "Relaxation toward a trend",
-    params: {f: "t - y", y0: "1", b: "5"}
-  },
-  {
     title: "Damped sinusoidal forcing",
-    params: {f: "sin(t) - 2 * y", y0: "0", b: "8"}
-  },
-  {
-    title: "Textbook nonlinear forcing",
-    params: {f: "y - t^2 + 1", y0: "0.5", b: "2"}
+    params: {f: "sin(t) - 2 * y", y0: "0", b: "4"}
   },
   {
     title: "Logistic growth",
     params: {f: "y * (1 - y)", y0: "0.1", b: "8"}
-  },
-  {
-    title: "Decay with exponential forcing",
-    params: {f: "-2 * y + exp(-t)", y0: "2", b: "4"}
-  },
-  {
-    title: "Strong damping with forcing",
-    params: {f: "-20 * y + 20 * sin(t)", y0: "0", b: "3"}
   },
   {
     title: "Nonlinear Riccati-type equation",
@@ -106,7 +90,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "-5 * y", placeholder: "Example: -5 * y, y - t^2 + 1, y * (1 - y)"})
+  const fTextInput = Inputs.text({label: "y' = f(t, y)", value: params.get("f") ?? "-5 * (y - cos(t)) - sin(t)", placeholder: "Example: -5 * y, y - t^2 + 1, y * (1 - y)"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -118,7 +102,7 @@ viewof fText = {
 ```{ojs}
 viewof y0 = {
   const params = new URLSearchParams(window.location.search)
-  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "1", placeholder: "Example: 1, 1/2"})
+  const y0Input = Inputs.text({label: "Initial condition y(0)", value: params.get("y0") ?? "0", placeholder: "Example: 1, 1/2"})
   y0Input.dataset.exampleField = "y0"
   return y0Input
 }

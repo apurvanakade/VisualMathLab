@@ -36,22 +36,22 @@ VM = window.VM
 // URL presets make the example cards shareable/reproducible.
 //
 // Supported parameters:
-//   f=sin(x)
-//   a=0
-//   b=2*pi
-//   n=4
-//   max=20
+//   f=1/(1+x^2)
+//   a=-5
+//   b=5
+//   n=5
+//   max=40
 //   show=original,linear,cubic
 urlParams = new URLSearchParams(window.location.search)
 
-initialFText = urlParams.get("f") ?? "sin(x)"
-initialA0 = urlParams.get("a") ?? "0"
-initialB0 = urlParams.get("b") ?? "2*pi"
-initialMaxNText = urlParams.get("max") ?? "20"
+initialFText = urlParams.get("f") ?? "1/(1+x^2)"
+initialA0 = urlParams.get("a") ?? "-5"
+initialB0 = urlParams.get("b") ?? "5"
+initialMaxNText = urlParams.get("max") ?? "40"
 
 initialN = {
   const raw = Number(urlParams.get("n"))
-  return Number.isInteger(raw) && raw >= 1 ? raw : 4
+  return Number.isInteger(raw) && raw >= 1 ? raw : 5
 }
 
 interpolantOptions = ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]
@@ -116,28 +116,20 @@ initialInterpolants = {
 // applied to.
 examples = [
   {
-    title: "Sine on one full period",
-    params: {f: "sin(x)", a: "0", b: "2*pi", max: "20", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
-  },
-  {
-    title: "Cosine on half a period",
-    params: {f: "cos(x)", a: "0", b: "pi", max: "24", n: "3", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
-  },
-  {
-    title: "Cubic polynomial",
-    params: {f: "x^3-x", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
-  },
-  {
     title: "Rational peak",
-    params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "6", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
-  },
-  {
-    title: "Gaussian bump",
-    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "35", n: "5", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
+    params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "5", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   },
   {
     title: "Nonsmooth corner",
     params: {f: "abs(x)", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
+  },
+  {
+    title: "Sine on one full period",
+    params: {f: "sin(x)", a: "0", b: "2*pi", max: "20", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
+  },
+  {
+    title: "Cubic polynomial",
+    params: {f: "x^3-x", a: "-2", b: "2", max: "30", n: "4", show: ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]}
   }
 ]
 ```

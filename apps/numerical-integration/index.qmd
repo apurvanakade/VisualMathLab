@@ -124,10 +124,10 @@ initialMethods = {
 
 initialN = {
   const raw = Number.parseInt(urlParams.get("n"), 10)
-  return Number.isFinite(raw) ? Math.max(1, raw) : 4
+  return Number.isFinite(raw) ? Math.max(1, raw) : 6
 }
 
-initialMax = urlParams.get("max") ?? "20"
+initialMax = urlParams.get("max") ?? "40"
 ```
 
 ```{ojs}
@@ -141,40 +141,24 @@ initialMax = urlParams.get("max") ?? "20"
 // applied to.
 examples = [
   {
-    title: "Sine area on one half-period",
-    params: {f: "sin(x)", a: "0", b: "pi", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
-  },
-  {
-    title: "Symmetric cosine arch",
-    params: {f: "cos(x)", a: "-pi/2", b: "pi/2", max: "40", n: "8", show: ["f(x)", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
-  },
-  {
     title: "Signed area cancellation",
     params: {f: "x^3 - x", a: "-2", b: "2", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
-    title: "Quadratic test case",
-    params: {f: "x^2", a: "0", b: "1", max: "30", n: "5", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
-  },
-  {
-    title: "Polynomial with changing curvature",
-    params: {f: "x^3 - 2*x + 1", a: "-1", b: "2", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
-  },
-  {
-    title: "Rational peak",
-    params: {f: "1/(1 + x^2)", a: "-5", b: "5", max: "60", n: "10", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
-  },
-  {
-    title: "Gaussian bump",
-    params: {f: "exp(-x^2)", a: "-3", b: "3", max: "60", n: "10", show: ["f(x)", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
+    title: "Oscillatory integral",
+    params: {f: "sin(5*x)", a: "0", b: "2*pi", max: "80", n: "12", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Nonsmooth corner",
     params: {f: "abs(x)", a: "-2", b: "2", max: "50", n: "8", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
-    title: "Oscillatory integral",
-    params: {f: "sin(5*x)", a: "0", b: "2*pi", max: "80", n: "12", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
+    title: "Rational peak",
+    params: {f: "1/(1 + x^2)", a: "-5", b: "5", max: "60", n: "10", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
+  },
+  {
+    title: "Sine area on one half-period",
+    params: {f: "sin(x)", a: "0", b: "pi", max: "40", n: "6", show: ["f(x)", "Left Riemann sum", "Midpoint Riemann sum", "Trapezoidal rule", "Simpson's rule", "Interpolation nodes"]}
   },
   {
     title: "Simpson's rule needs even n",
@@ -188,7 +172,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "sin(x)", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -200,7 +184,7 @@ viewof fText = {
 ```{ojs}
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
-  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0", placeholder: "Example: 0, -pi"})
+  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "-2", placeholder: "Example: 0, -pi"})
   a0Input.dataset.exampleField = "a"
   return a0Input
 }
@@ -209,7 +193,7 @@ viewof a0 = {
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
-  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "pi", placeholder: "Example: pi, 3.14"})
+  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "2", placeholder: "Example: pi, 3.14"})
   b0Input.dataset.exampleField = "b"
   return b0Input
 }

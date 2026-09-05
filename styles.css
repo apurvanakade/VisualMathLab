@@ -1233,27 +1233,30 @@ mjx-container[display="true"] {
   overflow-y: hidden;
 }
 
-/* Inline math can't be capped the same way: giving mjx-container itself
- * a non-'visible' overflow (needed for max-width to do anything on an
- * inline-block box) makes the browser compute *its* baseline as its own
- * bottom margin edge instead of the baseline of its actual content (CSS
- * 2.1 10.8.1) -- which is a different, lower point once the formula has
- * any descender (a fraction bar, a subscript). The result was every
- * inline formula on the site sitting off the text baseline it sits in,
- * not just wide ones (confirmed by reproducing this against real
- * MathJax output, isolating overflow as the cause rather than
- * inline-block itself). Pandoc already wraps each inline formula in
- * <span class="math inline">...</span> around the mjx-container --
- * constraining *that* wrapper instead leaves mjx-container's own
- * overflow at its default 'visible', so its baseline is computed
- * correctly, while the wrapper still clips/scrolls a formula wider than
- * the line it sits in. */
-span.math.inline {
-  display: inline-block;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
+/* Inline math is deliberately left alone -- don't add a max-width /
+ * overflow rule here, on mjx-container or on the <span class="math
+ * inline"> wrapper around it. Two separate attempts at that both broke
+ * every formula on the site:
+ *
+ *   1. max-width only does anything on an inline-block box, and giving
+ *      such a box a non-'visible' overflow makes the browser compute its
+ *      baseline as its own bottom margin edge rather than the baseline
+ *      of its content (CSS 2.1 10.8.1) -- a lower point for anything
+ *      with a descender, so every formula sat off its text line.
+ *   2. Moving the same constraint to the wrapper span hits a subtler
+ *      version: MathJax's CHTML output paints outside its container's
+ *      advance width on purpose (italic correction, relative-positioned
+ *      internals), so it *relies* on overflow staying 'visible'. As a
+ *      scroll container that intentional spill reads as content to
+ *      scroll -- measured at +1px to +26px on ordinary short formulas --
+ *      so Chrome painted a scrollbar under most of them, and the
+ *      scrollbar's height pushed the bottom margin edge (i.e. the
+ *      baseline again) down. Firefox reported no overflow at all, which
+ *      is why this only showed up in some browsers.
+ *
+ * A formula wide enough to overflow a phone belongs in a display
+ * equation ($$...$$), which is a block box and is capped above without
+ * any of this. */
 
 /* ── Homepage hero / topic grid ──────────────────────────────────── */
 

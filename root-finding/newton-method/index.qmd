@@ -174,17 +174,6 @@ viewof plotTrigger = {
 viewof maxIterationsInput = Inputs.text({value: "20", label: "Max n", placeholder: "Example: 20, 5*4"})
 ```
 
-```{ojs}
-// How many steps each tick of the slider's play button advances -- read by
-// js/ui/slider-play.js via the data-vm-play-step tag, so raising it speeds
-// the sweep up.
-viewof playStep = {
-  const input = Inputs.text({value: "1", label: "n step size", placeholder: "Example: 1, 2*2"})
-  input.dataset.vmPlayStep = ""
-  return input
-}
-```
-
 </div>
 
 </div>
@@ -533,8 +522,6 @@ viewof traces = {
 viewof stepControl = {
   const stepSlider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "n"})
   stepSlider.classList.add("ojs-fill")
-  // Opts this slider into the play/pause button (js/ui/slider-play.js).
-  stepSlider.dataset.vmPlay = ""
   return stepSlider
 }
 ```

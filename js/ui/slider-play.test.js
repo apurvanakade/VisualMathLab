@@ -9,64 +9,122 @@ import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
 
 const VM = loadVM()
-const { playbackNextValue } = VM.ui
+const { playbackDuration, playbackFrame } = VM.ui
 
-test('playbackNextValue advances one step by default', () => {
-  const next = playbackNextValue({value: 3, min: 0, max: 19, step: 1, stepSize: 1})
-  assert.equal(next, 4)
+test('playbackDuration scales with the number of slider stops', () => {
+  const duration = playbackDuration({min: 0, max: 19, step: 1, speed: 1})
+  assert.equal(duration, 19 * 350)
 })
 
-test('playbackNextValue advances by the step size, in slider steps', () => {
-  const next = playbackNextValue({value: 3, min: 0, max: 19, step: 1, stepSize: 4})
-  assert.equal(next, 7)
+test('playbackDuration divides by speed', () => {
+  const base = playbackDuration({min: 0, max: 19, step: 1, speed: 1})
+  const doubled = playbackDuration({min: 0, max: 19, step: 1, speed: 2})
+  assert.equal(doubled, base / 2)
 })
 
-test('playbackNextValue scales the step size by the slider own step', () => {
-  const next = playbackNextValue({value: 0.5, min: 0, max: 1, step: 0.01, stepSize: 5})
-  assert.equal(next, 0.55)
+test('playbackDuration clamps a short sweep up to a minimum', () => {
+  const duration = playbackDuration({min: 0, max: 1, step: 1, speed: 1})
+  assert.equal(duration, 2000)
 })
 
-test('playbackNextValue stays on the step grid instead of accumulating float drift', () => {
-  let value = 0
-  for (let i = 0; i < 3; i++) {
-    value = playbackNextValue({value, min: 0, max: 1, step: 0.1, stepSize: 1})
-  }
-  assert.equal(value, 0.3)
+test('playbackDuration clamps a long sweep down to a maximum', () => {
+  const duration = playbackDuration({min: 0, max: 1000, step: 1, speed: 1})
+  assert.equal(duration, 10000)
 })
 
-test('playbackNextValue clamps the last step to the maximum', () => {
-  const next = playbackNextValue({value: 18, min: 0, max: 19, step: 1, stepSize: 5})
-  assert.equal(next, 19)
+test('playbackDuration returns 0 for a degenerate range', () => {
+  const duration = playbackDuration({min: 5, max: 5, step: 1, speed: 1})
+  assert.equal(duration, 0)
 })
 
-test('playbackNextValue returns null once the sweep reaches the maximum', () => {
-  const next = playbackNextValue({value: 19, min: 0, max: 19, step: 1, stepSize: 1})
-  assert.equal(next, null)
+test('playbackDuration falls back to speed 1 for an unusable speed', () => {
+  const base = playbackDuration({min: 0, max: 19, step: 1, speed: 1})
+  assert.equal(playbackDuration({min: 0, max: 19, step: 1, speed: 0}), base)
+  assert.equal(playbackDuration({min: 0, max: 19, step: 1, speed: NaN}), base)
+  assert.equal(playbackDuration({min: 0, max: 19, step: 1, speed: -2}), base)
 })
 
-test('playbackNextValue returns null for a degenerate range', () => {
-  const next = playbackNextValue({value: 0, min: 0, max: 0, step: 1, stepSize: 1})
-  assert.equal(next, null)
+test('playbackDuration treats a stepless slider as ~100 stops', () => {
+  // A slider with no usable step (e.g. step="any") has no grid of its own;
+  // 100 stops is smooth enough to read as continuous at any sweep length,
+  // and is what the clamp above caps at 10s regardless.
+  const duration = playbackDuration({min: 0, max: 50, step: NaN, speed: 1})
+  assert.equal(duration, 10000)
 })
 
-test('playbackNextValue falls back to one step for an unusable step size', () => {
-  assert.equal(playbackNextValue({value: 3, min: 0, max: 19, step: 1, stepSize: 0}), 4)
-  assert.equal(playbackNextValue({value: 3, min: 0, max: 19, step: 1, stepSize: NaN}), 4)
-  assert.equal(playbackNextValue({value: 3, min: 0, max: 19, step: 1, stepSize: -2}), 4)
+test('playbackFrame advances proportionally through a "once" sweep', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 500, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 10)
+  assert.equal(frame.done, false)
 })
 
-test('playbackNextValue falls back to a step of one when the slider has none', () => {
-  const next = playbackNextValue({value: 3, min: 0, max: 19, step: NaN, stepSize: 2})
-  assert.equal(next, 5)
+test('playbackFrame finishes a "once" sweep at the maximum', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 1000, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 19)
+  assert.equal(frame.done, true)
 })
 
-test('playbackNextValue counts steps from the minimum, not from zero', () => {
-  const next = playbackNextValue({value: 2.5, min: 2, max: 5, step: 0.5, stepSize: 2})
-  assert.equal(next, 3.5)
+test('playbackFrame clamps a "once" sweep past its end instead of overshooting', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 5000, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 19)
+  assert.equal(frame.done, true)
 })
 
-test('playbackNextValue returns null for unreadable bounds', () => {
-  assert.equal(playbackNextValue({value: NaN, min: 0, max: 19, step: 1, stepSize: 1}), null)
-  assert.equal(playbackNextValue({value: 0, min: NaN, max: 19, step: 1, stepSize: 1}), null)
-  assert.equal(playbackNextValue({value: 0, min: 0, max: NaN, step: 1, stepSize: 1}), null)
+test('playbackFrame wraps a "loop" sweep back to the minimum, never done', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 1500, duration: 1000, mode: 'loop', start: 0})
+  assert.equal(frame.value, 10)
+  assert.equal(frame.done, false)
+})
+
+test('playbackFrame reverses direction on a "bounce" sweep past the far end', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 1500, duration: 1000, mode: 'bounce', start: 0})
+  assert.equal(frame.value, 10)
+  assert.equal(frame.direction, -1)
+  assert.equal(frame.done, false)
+})
+
+test('playbackFrame keeps bouncing indefinitely, never done', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 3500, duration: 1000, mode: 'bounce', start: 0})
+  assert.equal(frame.done, false)
+})
+
+test('playbackFrame counts steps from the minimum, not from zero', () => {
+  const frame = playbackFrame({min: 2, max: 5, step: 0.5, elapsed: 500, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 3.5)
+})
+
+test('playbackFrame stays on the step grid instead of showing float noise', () => {
+  // 3 * 0.1 lands on 0.30000000000000004 in floating point, which the
+  // readout would show in full without the toPrecision trim.
+  const frame = playbackFrame({min: 0, max: 1, step: 0.1, elapsed: 300, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 0.3)
+})
+
+test('playbackFrame resumes from a mid-track start fraction', () => {
+  // A speed change mid-sweep re-bases the sweep to start from wherever the
+  // thumb already is, rather than jumping back to the minimum.
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 0, duration: 1000, mode: 'once', start: 0.5})
+  assert.equal(frame.value, 10)
+})
+
+test('playbackFrame returns the minimum, done, for a degenerate range', () => {
+  const frame = playbackFrame({min: 5, max: 5, step: 1, elapsed: 100, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 5)
+  assert.equal(frame.done, true)
+})
+
+test('playbackFrame returns the minimum, done, for a non-positive duration', () => {
+  const frame = playbackFrame({min: 0, max: 19, step: 1, elapsed: 100, duration: 0, mode: 'once', start: 0})
+  assert.equal(frame.value, 0)
+  assert.equal(frame.done, true)
+})
+
+test('playbackFrame returns done for unreadable bounds', () => {
+  assert.equal(playbackFrame({min: NaN, max: 19, step: 1, elapsed: 0, duration: 1000, mode: 'once', start: 0}).done, true)
+  assert.equal(playbackFrame({min: 0, max: NaN, step: 1, elapsed: 0, duration: 1000, mode: 'once', start: 0}).done, true)
+})
+
+test('playbackFrame falls back to a synthesized step when the slider has none', () => {
+  const frame = playbackFrame({min: 0, max: 50, step: NaN, elapsed: 500, duration: 1000, mode: 'once', start: 0})
+  assert.equal(frame.value, 25)
 })

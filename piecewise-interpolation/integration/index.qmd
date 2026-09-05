@@ -289,17 +289,6 @@ viewof maxNInput = {
 }
 ```
 
-```{ojs}
-// How many steps each tick of the slider's play button advances -- read by
-// js/ui/slider-play.js via the data-vm-play-step tag, so raising it speeds
-// the sweep up.
-viewof playStep = {
-  const input = Inputs.text({value: "1", label: "n step size", placeholder: "Example: 1, 2*2"})
-  input.dataset.vmPlayStep = ""
-  return input
-}
-```
-
 </div>
 
 </div>
@@ -689,8 +678,6 @@ viewof nControl = {
   const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
   nSlider.dataset.exampleField = "n"
-  // Opts this slider into the play/pause button (js/ui/slider-play.js).
-  nSlider.dataset.vmPlay = ""
   return nSlider
 }
 ```

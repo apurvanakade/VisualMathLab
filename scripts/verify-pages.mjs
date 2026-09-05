@@ -98,6 +98,94 @@ function stopPreview(proc) {
   }
 }
 
+// Two whole classes of bug on this site are invisible to an error-console
+// check, because nothing throws -- the page just renders wrong:
+//
+//   1. A floating panel gets clipped by an ancestor. Quarto gives
+//      `.cell-output-display` (the wrapper around every OJS cell output)
+//      `overflow: auto`, which makes it a scroll container that clips
+//      anything escaping its box. The playback popover is only visible
+//      because it is a top-layer [popover]; nest it, or reintroduce a clip
+//      via overflow/transform/filter/contain on any wrapper, and it silently
+//      disappears.
+//   2. A control gets squeezed to nothing by a cascade fight. Observable
+//      Inputs injects its own `.oi-<hash>` rules into <head> at RUNTIME, so
+//      they land after this project's stylesheet and beat any rule of equal
+//      specificity -- which once left slider tracks about 35px wide, and in
+//      one arrangement 0px.
+//
+// Both are caught here by asserting the rendered outcome rather than the CSS
+// that is supposed to produce it, so this keeps working whatever the cause
+// (an Observable Inputs upgrade, a new wrapper, a refactor of styles.css).
+async function checkSliderControls(page, errors) {
+  const trackProblems = await page.evaluate(() => {
+    // Both thresholds are derived from a measurement of all 24 sliders on the
+    // site at this viewport, not picked by feel:
+    //   narrowest legitimate track: 147px, at 49% of its form
+    //     (probability/bayes/ppv, three sliders sharing a panel grid row)
+    //   widest: 706px at 80% (the root-finding step sliders)
+    //   the regressions being guarded against measured 0px, and 35px in a
+    //     ~250px form -- i.e. 14% of it
+    // So each floor sits roughly a third below the narrowest real value and
+    // far above both failures. Re-measure rather than lower a threshold if a
+    // legitimately narrower control is ever added.
+    //
+    // The ratio matters as much as the pixel count: it is what catches a
+    // track squeezed by a label or readout that took the row, and unlike an
+    // absolute width it does not move when the viewport does.
+    const MIN_TRACK_PX = 100
+    const MIN_TRACK_RATIO = 0.35
+    const bad = []
+    for (const input of document.querySelectorAll('.ojs-panel input[type="range"], .ojs-step-overlay input[type="range"]')) {
+      const form = input.closest('form') || input
+      // Skip anything not actually laid out: a collapsed callout, or a panel
+      // hidden at this viewport. offsetParent is null for display:none
+      // subtrees, which is exactly those cases.
+      if (form.offsetParent === null) continue
+      if (form.getBoundingClientRect().width === 0) continue
+      const formWidth = form.getBoundingClientRect().width
+      const width = Math.round(input.getBoundingClientRect().width)
+      const ratio = width / formWidth
+      const label = (form.querySelector('label')?.textContent || '?').trim()
+      if (width < MIN_TRACK_PX) {
+        bad.push(`slider "${label}" track is ${width}px wide (expected >= ${MIN_TRACK_PX}px)`)
+      } else if (ratio < MIN_TRACK_RATIO) {
+        bad.push(`slider "${label}" track is only ${Math.round(ratio * 100)}% of its control ` +
+                 `(${width}px of ${Math.round(formWidth)}px, expected >= ${Math.round(MIN_TRACK_RATIO * 100)}%)`)
+      }
+    }
+    return bad
+  })
+  for (const problem of trackProblems) errors.push(`layout: ${problem}`)
+
+  // Open each playback popover and assert it actually paints where it says
+  // it does -- getBoundingClientRect alone would not notice, since a clipped
+  // element still reports a full-size box.
+  const carets = page.locator('.vm-play-more')
+  const caretCount = await carets.count()
+  for (let i = 0; i < caretCount; i++) {
+    const caret = carets.nth(i)
+    if (!(await caret.isVisible())) continue
+    await caret.click({ timeout: 2000 }).catch(() => {})
+    await page.waitForTimeout(150)
+    const problem = await page.evaluate(() => {
+      const panel = document.querySelector('.vm-play-panel:popover-open')
+      if (!panel) return 'playback popover did not open'
+      const r = panel.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return 'playback popover opened with a zero-size box'
+      // Sample the panel's own top-left region: that is the part that ends up
+      // outside an ancestor's box first, so it is where clipping shows up.
+      const hit = document.elementFromPoint(r.left + Math.min(20, r.width / 2), r.top + 6)
+      if (hit && (hit === panel || panel.contains(hit))) return null
+      const what = hit ? (hit.id || (hit.className || '').toString().trim().split(/\s+/)[0] || hit.tagName) : 'nothing'
+      return `playback popover is not visible at its own coordinates (covered/clipped by: ${what})`
+    })
+    if (problem) errors.push(`layout: ${problem}`)
+    await page.keyboard.press('Escape').catch(() => {})
+    await page.waitForTimeout(100)
+  }
+}
+
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
   const errors = []
@@ -111,6 +199,11 @@ async function checkPage(browser, base, relPath) {
 
   await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
   await page.waitForTimeout(1500)
+
+  // Layout assertions run before the generic button-mashing below, so they
+  // see each page's initial render rather than whatever state clicking
+  // everything leaves behind.
+  await checkSliderControls(page, errors)
 
   const buttons = page.locator('button')
   const buttonCount = await buttons.count()

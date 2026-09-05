@@ -260,9 +260,6 @@ viewof N = {
 viewof t = {
   const slider = Inputs.range([0, 1], {step: 0.01, value: 0.15, label: "Time"})
   slider.classList.add("ojs-fill")
-  // Opts this slider into the play/pause button (js/ui/slider-play.js), so
-  // the homotopy can be watched running rather than scrubbed by hand.
-  slider.dataset.vmPlay = ""
   return slider
 }
 ```
@@ -275,22 +272,6 @@ viewof comparisonRegenerate = {
   const button = Inputs.button("Regenerate colors", {value: 0, reduce: v => v + 1})
   button.classList.add("ojs-auto")
   return button
-}
-```
-
-</div>
-
-<div class="ojs-grid">
-
-```{ojs}
-// Its own row below the sliders, so no group here mixes a slider with a
-// text box. How many steps each tick of the Time slider's play button
-// advances -- read by js/ui/slider-play.js via the data-vm-play-step tag,
-// so raising it speeds the homotopy up.
-viewof playStep = {
-  const input = Inputs.text({value: "2", label: "t step size", placeholder: "Example: 2, 2*2"})
-  input.dataset.vmPlayStep = ""
-  return input
 }
 ```
 

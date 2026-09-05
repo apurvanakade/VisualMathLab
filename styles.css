@@ -1225,27 +1225,34 @@ input.vm-invalid:focus {
  * expands the whole page's layout viewport rather than just that one
  * line (the same failure mode the "Page grid" section's minmax(0, ...)
  * comment already describes for a different cause: content wider than
- * the viewport with nothing willing to shrink). mjx-container renders
- * inline-block for inline math and block for display math either way,
- * so capping it to the space actually available and letting it scroll
- * internally contains the overflow to the formula itself. Not gated to
- * a breakpoint -- a wide formula can outgrow a narrow *content column*
- * even on a wide screen (e.g. next to a TOC). */
-mjx-container {
+ * the viewport with nothing willing to shrink). Display equations are
+ * already their own block box, so capping them directly is safe. */
+mjx-container[display="true"] {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
 }
 
-/* max-width/overflow only apply to a block or inline-block box, not a
- * plain inline one -- MathJax renders inline math (no display="true"
- * attribute) as display:inline, which silently ignores both properties
- * above and was still overflowing the viewport with them set. Display
- * equations already render as their own block box, so this is scoped to
- * inline math only -- forcing inline-block there doesn't change how it
- * sits in the surrounding line of text. */
-mjx-container:not([display="true"]) {
+/* Inline math can't be capped the same way: giving mjx-container itself
+ * a non-'visible' overflow (needed for max-width to do anything on an
+ * inline-block box) makes the browser compute *its* baseline as its own
+ * bottom margin edge instead of the baseline of its actual content (CSS
+ * 2.1 10.8.1) -- which is a different, lower point once the formula has
+ * any descender (a fraction bar, a subscript). The result was every
+ * inline formula on the site sitting off the text baseline it sits in,
+ * not just wide ones (confirmed by reproducing this against real
+ * MathJax output, isolating overflow as the cause rather than
+ * inline-block itself). Pandoc already wraps each inline formula in
+ * <span class="math inline">...</span> around the mjx-container --
+ * constraining *that* wrapper instead leaves mjx-container's own
+ * overflow at its default 'visible', so its baseline is computed
+ * correctly, while the wrapper still clips/scrolls a formula wider than
+ * the line it sits in. */
+span.math.inline {
   display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* ── Homepage hero / topic grid ──────────────────────────────────── */

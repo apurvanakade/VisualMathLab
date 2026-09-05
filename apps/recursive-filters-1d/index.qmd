@@ -38,7 +38,6 @@ VM = window.VM
 //   f       true signal, a function of x
 //   sigma   measurement noise standard deviation
 //   b       right endpoint; samples are drawn at x = 0..b
-//   seed    RNG seed for the noisy measurements (reproducible draws)
 //   max     total number of samples generated
 //   alpha   EMA smoothing parameter (weight kept on the old estimate)
 //   k       SMA window size (number of trailing samples averaged)
@@ -153,27 +152,27 @@ initialQ = {
 examples = [
   {
     title: "Sudden regime change",
-    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", seed: "2", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Fast oscillation exposes lag",
-    params: {f: "sin(3*x)", sigma: "0.3", b: "10", seed: "4", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "sin(3*x)", sigma: "0.3", b: "10", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Zero process noise stops tracking",
-    params: {f: "sin(x)", sigma: "0.3", b: "20", seed: "8", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+    params: {f: "sin(x)", sigma: "0.3", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
   },
   {
     title: "Overconfident sensor model",
-    params: {f: "sin(x)", sigma: "0.6", b: "20", seed: "7", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Noisy measurements", "Kalman Filter"]}
+    params: {f: "sin(x)", sigma: "0.6", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Noisy measurements", "Kalman Filter"]}
   },
   {
     title: "Estimating a hidden constant",
-    params: {f: "5", sigma: "1", b: "20", seed: "3", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+    params: {f: "5", sigma: "1", b: "20", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
   },
   {
     title: "Noisy sine wave",
-    params: {f: "sin(x)", sigma: "0.4", b: "20", seed: "1", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "sin(x)", sigma: "0.4", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
   }
 ]
 ```
@@ -218,15 +217,6 @@ viewof maxNInput = {
 }
 ```
 
-```{ojs}
-viewof seedText = {
-  const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "2", placeholder: "Example: 1, 42"})
-  input.dataset.exampleField = "seed"
-  return input
-}
-```
-
 </div>
 
 ```{ojs}
@@ -250,7 +240,6 @@ exampleFieldSelectors = ({
   f: '[data-example-field="f"]',
   sigma: '[data-example-field="sigma"]',
   b: '[data-example-field="b"]',
-  seed: '[data-example-field="seed"]',
   max: '[data-example-field="max"]',
   alpha: '[data-example-field="alpha"]',
   k: '[data-example-field="k"]',
@@ -281,11 +270,12 @@ applyExampleFromSelect = {
 ```
 
 ```{ojs}
-// Plot commits the current signal/noise/endpoint/seed fields — edits
-// above don't take effect until this is clicked, so result/mainPlot don't
-// recompute (and the noisy draw doesn't reshuffle) on every keystroke. The
-// total-samples field, and the method legend and filter parameters
-// overlaid on the chart, are unaffected and stay reactive.
+// Plot commits the current signal/noise/endpoint fields and redraws the
+// noisy measurements with a fresh seed — edits above don't take effect
+// until this is clicked, so result/mainPlot don't recompute (and the
+// noisy draw doesn't reshuffle) on every keystroke. The total-samples
+// field, and the method legend and filter parameters overlaid on the
+// chart, are unaffected and stay reactive.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto", "ojs-end")
@@ -334,11 +324,11 @@ showKalman = methods.includes("Kalman Filter")
 
 ```{ojs}
 //| output: false
-// Pressing Enter in the signal/noise/endpoint/seed fields clicks Plot
-// instead of submitting the field's own (invisible) form. Depends only on
-// the stable views, so this wiring runs once and is never re-attached.
+// Pressing Enter in the signal/noise/endpoint fields clicks Plot instead
+// of submitting the field's own (invisible) form. Depends only on the
+// stable views, so this wiring runs once and is never re-attached.
 enterToPlot = {
-  for (const view of [viewof fText, viewof sigmaText, viewof bText, viewof seedText]) {
+  for (const view of [viewof fText, viewof sigmaText, viewof bText]) {
     const input = view.querySelector("input")
     if (!input) continue
     input.addEventListener("keydown", (e) => {
@@ -370,30 +360,33 @@ urlSyncControls = {
 
 ```{ojs}
 //| output: false
-// committed snapshots fText/sigmaText/bText/seedText only when Plot is
-// clicked, and writes everything back into the URL so the address bar
-// stays a shareable link. It reads `viewof fText`/etc. (the stable DOM
-// views) rather than `fText`/etc. (the reactive values), so it does NOT
-// rerun on every keystroke — only when `plotTrigger` changes. It still
-// runs once on initial page load, so the first render uses the
-// URL-provided (or default) values with no click.
+// committed snapshots fText/sigmaText/bText only when Plot is clicked, and
+// writes everything back into the URL so the address bar stays a
+// shareable link. It reads `viewof fText`/etc. (the stable DOM views)
+// rather than `fText`/etc. (the reactive values), so it does NOT rerun on
+// every keystroke — only when `plotTrigger` changes. It still runs once
+// on initial page load, so the first render uses the URL-provided (or
+// default) values with no click.
+//
+// The noisy draw's seed isn't a field the reader sets — it's derived from
+// the clock (xored with plotTrigger's click count so two clicks in the
+// same millisecond still differ), so every Plot click redraws fresh noise
+// without exposing a seed control or cluttering the URL. Same pattern as
+// apps/polynomial-fits/index.qmd's basePoints cell.
 committed = {
-  plotTrigger
   const math = window.math
   const fVal = (viewof fText).value
   const sigmaVal = (viewof sigmaText).value
   const bVal = (viewof bText).value
-  const seedVal = (viewof seedText).value
 
   const sigmaNum = VM.expressions.makeNumber(math, sigmaVal)
   const bNum = VM.expressions.makeNumber(math, bVal)
-  const seedNum = VM.expressions.makeNumber(math, seedVal)
+  const seedNum = Date.now() ^ (plotTrigger * 1000003)
 
   const params = new URLSearchParams(window.location.search)
   params.set("f", fVal)
   params.set("sigma", sigmaVal)
   params.set("b", bVal)
-  params.set("seed", seedVal)
   params.set("max", maxNInput)
   params.set("alpha", String(alpha))
   params.set("k", String(windowK))

@@ -1,0 +1,2193 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Apurva Nakade">
+<meta name="dcterms.date" content="2026-07-22">
+<meta name="description" content="Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers.">
+
+<title>L1 vs.&nbsp;L2 Regression – Visual Math Lab</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../topics/probability/index.html" rel="next">
+<link href="../../apps/polynomial-fits/index.html" rel="prev">
+<link href="../../favicon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-b72d44010710761ef2be279569eaa82e.css" rel="stylesheet" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-849ea11a8c853c8a723331ce1ebdb403.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-74786022625516ebed391b5f3f7b7272.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-849ea11a8c853c8a723331ce1ebdb403.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="../../js/expressions/make-function.js"></script>
+<script src="../../js/expressions/make-derivative.js"></script>
+<script src="../../js/expressions/make-number.js"></script>
+<script src="../../js/expressions/make-rational.js"></script>
+<script src="../../js/expressions/make-ode-function.js"></script>
+<script src="../../js/expressions/make-function-of-t.js"></script>
+<script src="../../js/plotting/padded-range.js"></script>
+<script src="../../js/plotting/chart-theme.js"></script>
+<script src="../../js/plotting/plotly-fullscreen-button.js"></script>
+<script src="../../js/numerical/linear-regression.js"></script>
+<script src="../../js/numerical/l1-regression.js"></script>
+<script src="../../js/numerical/polynomial-fit.js"></script>
+<script src="../../js/numerical/euler-solve.js"></script>
+<script src="../../js/numerical/rk4-solve.js"></script>
+<script src="../../js/numerical/simpson-estimate.js"></script>
+<script src="../../js/numerical/lagrange-quadratic.js"></script>
+<script src="../../js/sampling/seeded-random.js"></script>
+<script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/filters/moving-average-filter.js"></script>
+<script src="../../js/filters/ema-filter.js"></script>
+<script src="../../js/filters/kalman-1d-filter.js"></script>
+<script src="../../js/ui/render-table.js"></script>
+<script src="../../js/ui/range-progress.js"></script>
+<script src="../../js/ui/slider-play.js"></script>
+<script src="../../js/ui/apply-example.js"></script>
+<script src="../../js/ui/legend-overlay.js"></script>
+<script src="../../js/ui/draggable-overlay.js"></script>
+<script src="../../js/ui/report-bug.js"></script>
+<script src="../../js/discrete-math/barycentric-triples.js"></script>
+<script src="../../js/discrete-math/sub-triangles.js"></script>
+<script src="../../js/discrete-math/triangulation-edges.js"></script>
+<script src="../../js/discrete-math/sperner-color.js"></script>
+<script src="../../js/discrete-math/random-color.js"></script>
+<script src="../../js/discrete-math/mixed-pair-color.js"></script>
+<script src="../../js/discrete-math/triangle-fill-color.js"></script>
+<script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
+<link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<link rel="stylesheet" href="../../styles.css">
+<meta property="og:title" content="L1 vs.&nbsp;L2 Regression – Visual Math Lab">
+<meta property="og:description" content="Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers.">
+<meta property="og:image" content="https://www.visualmathlab.com/apps/l1-vs-l2-regression/l1-vs-l2-regression.png">
+<meta property="og:site_name" content="Visual Math Lab">
+<meta property="og:image:height" content="1250">
+<meta property="og:image:width" content="1746">
+<meta name="twitter:title" content="L1 vs.&nbsp;L2 Regression – Visual Math Lab">
+<meta name="twitter:description" content="Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers.">
+<meta name="twitter:image" content="https://www.visualmathlab.com/apps/l1-vs-l2-regression/l1-vs-l2-regression.png">
+<meta name="twitter:image-height" content="1250">
+<meta name="twitter:image-width" content="1746">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light"><script id="quarto-html-before-body" type="application/javascript">
+    const toggleBodyColorMode = (bsSheetEl) => {
+      const mode = bsSheetEl.getAttribute("data-mode");
+      const bodyEl = window.document.querySelector("body");
+      if (mode === "dark") {
+        bodyEl.classList.add("quarto-dark");
+        bodyEl.classList.remove("quarto-light");
+      } else {
+        bodyEl.classList.add("quarto-light");
+        bodyEl.classList.remove("quarto-dark");
+      }
+    }
+    const toggleBodyColorPrimary = () => {
+      const bsSheetEl = window.document.querySelector("link#quarto-bootstrap:not([rel=disabled-stylesheet])");
+      if (bsSheetEl) {
+        toggleBodyColorMode(bsSheetEl);
+      }
+    }
+    const setColorSchemeToggle = (alternate) => {
+      const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+      for (let i=0; i < toggles.length; i++) {
+        const toggle = toggles[i];
+        if (toggle) {
+          if (alternate) {
+            toggle.classList.add("alternate");
+          } else {
+            toggle.classList.remove("alternate");
+          }
+        }
+      }
+    };
+    const toggleColorMode = (alternate) => {
+      // Switch the stylesheets
+      const primaryStylesheets = window.document.querySelectorAll('link.quarto-color-scheme:not(.quarto-color-alternate)');
+      const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+      manageTransitions('#quarto-margin-sidebar .nav-link', false);
+      if (alternate) {
+        // note: dark is layered on light, we don't disable primary!
+        enableStylesheet(alternateStylesheets);
+        for (const sheetNode of alternateStylesheets) {
+          if (sheetNode.id === "quarto-bootstrap") {
+            toggleBodyColorMode(sheetNode);
+          }
+        }
+      } else {
+        disableStylesheet(alternateStylesheets);
+        enableStylesheet(primaryStylesheets)
+        toggleBodyColorPrimary();
+      }
+      manageTransitions('#quarto-margin-sidebar .nav-link', true);
+      // Switch the toggles
+      setColorSchemeToggle(alternate)
+      // Hack to workaround the fact that safari doesn't
+      // properly recolor the scrollbar when toggling (#1455)
+      if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+        manageTransitions("body", false);
+        window.scrollTo(0, 1);
+        setTimeout(() => {
+          window.scrollTo(0, 0);
+          manageTransitions("body", true);
+        }, 40);
+      }
+    }
+    const disableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        stylesheet.rel = 'disabled-stylesheet';
+      }
+    }
+    const enableStylesheet = (stylesheets) => {
+      for (let i=0; i < stylesheets.length; i++) {
+        const stylesheet = stylesheets[i];
+        if(stylesheet.rel !== 'stylesheet') { // for Chrome, which will still FOUC without this check
+          stylesheet.rel = 'stylesheet';
+        }
+      }
+    }
+    const manageTransitions = (selector, allowTransitions) => {
+      const els = window.document.querySelectorAll(selector);
+      for (let i=0; i < els.length; i++) {
+        const el = els[i];
+        if (allowTransitions) {
+          el.classList.remove('notransition');
+        } else {
+          el.classList.add('notransition');
+        }
+      }
+    }
+    const isFileUrl = () => {
+      return window.location.protocol === 'file:';
+    }
+    const hasAlternateSentinel = () => {
+      let styleSentinel = getColorSchemeSentinel();
+      if (styleSentinel !== null) {
+        return styleSentinel === "alternate";
+      } else {
+        return false;
+      }
+    }
+    const setStyleSentinel = (alternate) => {
+      const value = alternate ? "alternate" : "default";
+      if (!isFileUrl()) {
+        window.localStorage.setItem("quarto-color-scheme", value);
+      } else {
+        localAlternateSentinel = value;
+      }
+    }
+    const getColorSchemeSentinel = () => {
+      if (!isFileUrl()) {
+        const storageValue = window.localStorage.getItem("quarto-color-scheme");
+        return storageValue != null ? storageValue : localAlternateSentinel;
+      } else {
+        return localAlternateSentinel;
+      }
+    }
+    const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+      const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+      const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+      let newTheme = '';
+      if(authorPrefersDark) {
+        newTheme = isAlternate ? baseTheme : alternateTheme;
+      } else {
+        newTheme = isAlternate ? alternateTheme : baseTheme;
+      }
+      const changeGiscusTheme = () => {
+        // From: https://github.com/giscus/giscus/issues/336
+        const sendMessage = (message) => {
+          const iframe = document.querySelector('iframe.giscus-frame');
+          if (!iframe) return;
+          iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+        }
+        sendMessage({
+          setConfig: {
+            theme: newTheme
+          }
+        });
+      }
+      const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+      if (isGiscussLoaded) {
+        changeGiscusTheme();
+      }
+    };
+    const authorPrefersDark = false;
+    const darkModeDefault = authorPrefersDark;
+      document.querySelector('link#quarto-text-highlighting-styles.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+      document.querySelector('link#quarto-bootstrap.quarto-color-scheme-extra').rel = 'disabled-stylesheet';
+    let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+    // Dark / light mode switch
+    window.quartoToggleColorScheme = () => {
+      // Read the current dark / light value
+      let toAlternate = !hasAlternateSentinel();
+      toggleColorMode(toAlternate);
+      setStyleSentinel(toAlternate);
+      toggleGiscusIfUsed(toAlternate, darkModeDefault);
+      window.dispatchEvent(new Event('resize'));
+    };
+    // Switch to dark mode if need be
+    if (hasAlternateSentinel()) {
+      toggleColorMode(true);
+    } else {
+      toggleColorMode(false);
+    }
+  </script>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Visual Math Lab</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html"> 
+<span class="menu-text">About</span></a>
+  </li>  
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/apurvanakade/VisualMathLab/issues"> <i class="bi bi-github" role="img" aria-label="Report a bug on GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <a class="flex-grow-1 no-decor" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+          <h1 class="quarto-secondary-nav-title">L1 vs.&nbsp;L2 Regression</h1>
+        </a>     
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../topics/root-finding/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Root Finding</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/bisection-method/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Bisection Method</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/fixed-point-iteration/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Fixed Point Iteration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/newton-method/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Newton’s Method</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/secant-method/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Secant Method</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../topics/piecewise-interpolation/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Piecewise Interpolation</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/polynomial-interpolation/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Polynomial Interpolation</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/numerical-integration/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Numerical Integration</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/adaptive-integration/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Adaptive Integration</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../topics/differential-equations/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Differential Equations</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/explicit-ode-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Explicit Methods for ODEs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/implicit-ode-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Implicit Methods for ODEs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/adaptive-ode-methods/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Adaptive Methods for ODEs</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/butcher-tableau/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Butcher Tableau Explorer</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../topics/sperners-lemma/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sperner's Lemma</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/barycentric-coordinates/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Barycentric Coordinates</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/sperners-lemma-statement/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sperner’s Lemma - Statement</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/sperners-lemma-combinatorial-proof/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sperner’s Lemma - Combinatorial Proof</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/sperners-lemma-geometric-proof/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sperner’s Lemma - Geometric Proof</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../topics/model-fitting/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Model Fitting</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/polynomial-fits/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Polynomial Fits</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/l1-vs-l2-regression/index.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">L1 vs.&nbsp;L2 Regression</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a href="../../topics/probability/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Probability</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-6" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-6" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/positive-predictive-value/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Positive Predictive Value</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/recursive-filters-1d/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">1D Recursive Filters</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block">L1 vs.&nbsp;L2 Regression</h1>
+  </div>
+
+<div>
+  <div class="description">
+    Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Apurva Nakade </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">July 22, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="25" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 24;"><span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="co">// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.numerical.linearRegression (L2), VM.numerical.l1Regression (L1), VM.plotting.paddedRange, VM.ui.renderTable.</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>VM <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">VM</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb2" data-startfrom="39" data-source-offset="-446"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 38;"><span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>severityMax <span class="op">=</span> <span class="dv">15</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>fitOptions <span class="op">=</span> [<span class="st">"L2 fit (least squares)"</span><span class="op">,</span> <span class="st">"L1 fit (least absolute deviations)"</span><span class="op">,</span> <span class="st">"Points"</span><span class="op">,</span> <span class="st">"Outliers"</span>]</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="co">// Matches the line/marker colors mainPlot uses for each trace, so the</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co">// overlay legend's swatches double as a color key. #f97316 (orange) has no</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="co">// VM.plotting.colors() token -- left as a literal.</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co">// vmTheme is what makes the colors below reactive. The chart's own chrome</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co">// (background, axes, gridlines) repaints on a dark-mode toggle by itself,</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co">// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co">// colors are values this page bakes into the traces it builds, so nothing</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co">// repaints them unless mainPlot re-runs. Depending on vmTheme is what</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co">// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="co">// frames after the toggle rather than inline.</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>vmTheme <span class="op">=</span> Generators<span class="op">.</span><span class="fu">observe</span>(notify <span class="kw">=&gt;</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">onThemeChange</span>(notify))</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>chartColors <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">colors</span>(vmTheme)</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>fitColors <span class="op">=</span> <span class="kw">new</span> <span class="bu">Map</span>([</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>  [<span class="st">"L2 fit (least squares)"</span><span class="op">,</span> chartColors<span class="op">.</span><span class="at">alt</span>]<span class="op">,</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>  [<span class="st">"L1 fit (least absolute deviations)"</span><span class="op">,</span> chartColors<span class="op">.</span><span class="at">fn</span>]<span class="op">,</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>  [<span class="st">"Points"</span><span class="op">,</span> chartColors<span class="op">.</span><span class="at">ink</span>]<span class="op">,</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>  [<span class="st">"Outliers"</span><span class="op">,</span> <span class="st">"#f97316"</span>]</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div>
+<div id="ojs-cell-2-1" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display hidden">
+<div>
+<div id="ojs-cell-2-2" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display hidden">
+<div>
+<div id="ojs-cell-2-3" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display hidden">
+<div>
+<div id="ojs-cell-2-4" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell-output cell-output-display hidden">
+<div>
+<div id="ojs-cell-2-5" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb3" data-startfrom="66" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 65;"><span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a><span class="co">// basePoints redraws whenever regenerateTrigger changes (initial load</span></span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a><span class="co">// counts as one draw), seeded from the current timestamp so each draw is a</span></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="co">// fresh, non-repeating set of points and outlier locations. Points carry</span></span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a><span class="co">// their pre-outlier (noisy, on-the-line) y-value; outlierSeverity is</span></span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="co">// applied on top of this in `points`, below, so dragging the slider never</span></span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a><span class="co">// needs to re-draw the noise.</span></span>
+<span id="cb3-72"><a href="#cb3-72" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
+<span id="cb3-73"><a href="#cb3-73" aria-hidden="true" tabindex="-1"></a><span class="co">// Kept outside the ojs-row div below: an output:false cell still renders</span></span>
+<span id="cb3-74"><a href="#cb3-74" aria-hidden="true" tabindex="-1"></a><span class="co">// an empty .cell div, and if it sat inside the row it would become the</span></span>
+<span id="cb3-75"><a href="#cb3-75" aria-hidden="true" tabindex="-1"></a><span class="co">// row's first child, stealing the `flex: 1 1 200px` fill rule meant for</span></span>
+<span id="cb3-76"><a href="#cb3-76" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider.</span></span>
+<span id="cb3-77"><a href="#cb3-77" aria-hidden="true" tabindex="-1"></a>basePoints <span class="op">=</span> {</span>
+<span id="cb3-78"><a href="#cb3-78" aria-hidden="true" tabindex="-1"></a>  regenerateTrigger</span>
+<span id="cb3-79"><a href="#cb3-79" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Seeded PRNG (mulberry32), seeded from the current time so each</span></span>
+<span id="cb3-80"><a href="#cb3-80" aria-hidden="true" tabindex="-1"></a>  <span class="co">// "Regenerate" click produces a different draw.</span></span>
+<span id="cb3-81"><a href="#cb3-81" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> state <span class="op">=</span> <span class="bu">Date</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb3-82"><a href="#cb3-82" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rand <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-83"><a href="#cb3-83" aria-hidden="true" tabindex="-1"></a>    state <span class="op">=</span> (state <span class="op">+</span> <span class="bn">0x6D2B79F5</span>) <span class="op">|</span> <span class="dv">0</span></span>
+<span id="cb3-84"><a href="#cb3-84" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> t <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(state <span class="op">^</span> (state <span class="op">&gt;&gt;&gt;</span> <span class="dv">15</span>)<span class="op">,</span> <span class="dv">1</span> <span class="op">|</span> state)</span>
+<span id="cb3-85"><a href="#cb3-85" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> (t <span class="op">+</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">imul</span>(t <span class="op">^</span> (t <span class="op">&gt;&gt;&gt;</span> <span class="dv">7</span>)<span class="op">,</span> <span class="dv">61</span> <span class="op">|</span> t)) <span class="op">^</span> t</span>
+<span id="cb3-86"><a href="#cb3-86" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> ((t <span class="op">^</span> (t <span class="op">&gt;&gt;&gt;</span> <span class="dv">14</span>)) <span class="op">&gt;&gt;&gt;</span> <span class="dv">0</span>) <span class="op">/</span> <span class="dv">4294967296</span></span>
+<span id="cb3-87"><a href="#cb3-87" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-88"><a href="#cb3-88" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Box-Muller transform: turns two uniform samples into one standard-normal sample.</span></span>
+<span id="cb3-89"><a href="#cb3-89" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> gaussian <span class="op">=</span> () <span class="kw">=&gt;</span> {</span>
+<span id="cb3-90"><a href="#cb3-90" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u1 <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="fu">rand</span>()<span class="op">,</span> <span class="fl">1e-12</span>)</span>
+<span id="cb3-91"><a href="#cb3-91" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> u2 <span class="op">=</span> <span class="fu">rand</span>()</span>
+<span id="cb3-92"><a href="#cb3-92" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="op">-</span><span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log</span>(u1)) <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">cos</span>(<span class="dv">2</span> <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="cn">PI</span> <span class="op">*</span> u2)</span>
+<span id="cb3-93"><a href="#cb3-93" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-94"><a href="#cb3-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-95"><a href="#cb3-95" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> totalPoints <span class="op">=</span> <span class="dv">24</span></span>
+<span id="cb3-96"><a href="#cb3-96" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> outlierCount <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb3-97"><a href="#cb3-97" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Slope and intercept are redrawn on every regenerate too (not just the</span></span>
+<span id="cb3-98"><a href="#cb3-98" aria-hidden="true" tabindex="-1"></a>  <span class="co">// noise), so the underlying line itself is different each time, not just</span></span>
+<span id="cb3-99"><a href="#cb3-99" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the scatter around it. The sign is randomized too, so the line slants</span></span>
+<span id="cb3-100"><a href="#cb3-100" aria-hidden="true" tabindex="-1"></a>  <span class="co">// down as often as it slants up.</span></span>
+<span id="cb3-101"><a href="#cb3-101" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slope <span class="op">=</span> (<span class="fu">rand</span>() <span class="op">&lt;</span> <span class="fl">0.5</span> <span class="op">?</span> <span class="op">-</span><span class="dv">1</span> <span class="op">:</span> <span class="dv">1</span>) <span class="op">*</span> (<span class="fl">0.5</span> <span class="op">+</span> <span class="fu">rand</span>() <span class="op">*</span> <span class="dv">2</span>)</span>
+<span id="cb3-102"><a href="#cb3-102" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> intercept <span class="op">=</span> <span class="fu">rand</span>() <span class="op">*</span> <span class="dv">5</span></span>
+<span id="cb3-103"><a href="#cb3-103" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> noiseStd <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb3-104"><a href="#cb3-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-105"><a href="#cb3-105" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pts <span class="op">=</span> []</span>
+<span id="cb3-106"><a href="#cb3-106" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> totalPoints<span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb3-107"><a href="#cb3-107" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> x <span class="op">=</span> i <span class="op">*</span> <span class="dv">10</span> <span class="op">/</span> (totalPoints <span class="op">-</span> <span class="dv">1</span>)</span>
+<span id="cb3-108"><a href="#cb3-108" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> y <span class="op">=</span> slope <span class="op">*</span> x <span class="op">+</span> intercept <span class="op">+</span> noiseStd <span class="op">*</span> <span class="fu">gaussian</span>()</span>
+<span id="cb3-109"><a href="#cb3-109" aria-hidden="true" tabindex="-1"></a>    pts<span class="op">.</span><span class="fu">push</span>({x<span class="op">,</span> y})</span>
+<span id="cb3-110"><a href="#cb3-110" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-111"><a href="#cb3-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-112"><a href="#cb3-112" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Pick outlierCount distinct indices, away from the very ends so the</span></span>
+<span id="cb3-113"><a href="#cb3-113" aria-hidden="true" tabindex="-1"></a>  <span class="co">// outliers sit inside the visible span of the line rather than right at</span></span>
+<span id="cb3-114"><a href="#cb3-114" aria-hidden="true" tabindex="-1"></a>  <span class="co">// its edge.</span></span>
+<span id="cb3-115"><a href="#cb3-115" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> outlierIndices <span class="op">=</span> []</span>
+<span id="cb3-116"><a href="#cb3-116" aria-hidden="true" tabindex="-1"></a>  <span class="cf">while</span> (outlierIndices<span class="op">.</span><span class="at">length</span> <span class="op">&lt;</span> outlierCount) {</span>
+<span id="cb3-117"><a href="#cb3-117" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> i <span class="op">=</span> <span class="dv">2</span> <span class="op">+</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">floor</span>(<span class="fu">rand</span>() <span class="op">*</span> (totalPoints <span class="op">-</span> <span class="dv">4</span>))</span>
+<span id="cb3-118"><a href="#cb3-118" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>outlierIndices<span class="op">.</span><span class="fu">includes</span>(i)) outlierIndices<span class="op">.</span><span class="fu">push</span>(i)</span>
+<span id="cb3-119"><a href="#cb3-119" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb3-120"><a href="#cb3-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-121"><a href="#cb3-121" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {<span class="dt">points</span><span class="op">:</span> pts<span class="op">,</span> outlierIndices<span class="op">,</span> slope<span class="op">,</span> intercept}</span>
+<span id="cb3-122"><a href="#cb3-122" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-3" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="ojs-panel">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="128" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 127;"><span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a><span class="co">// regenerateTrigger: clicking "Regenerate points" bumps this, which is the</span></span>
+<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a><span class="co">// only thing basePoints depends on below — that's what makes a fresh draw</span></span>
+<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a><span class="co">// happen on click instead of only once at page load.</span></span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a>viewof regenerateTrigger <span class="op">=</span> {</span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate points"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-4" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="142" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 141;"><span id="cb5-142"><a href="#cb5-142" aria-hidden="true" tabindex="-1"></a><span class="co">// points: applies the current outlier severity on top of basePoints. Only</span></span>
+<span id="cb5-143"><a href="#cb5-143" aria-hidden="true" tabindex="-1"></a><span class="co">// the outlier indices' y-values change with the slider — each keeps its</span></span>
+<span id="cb5-144"><a href="#cb5-144" aria-hidden="true" tabindex="-1"></a><span class="co">// own noisy y-value from basePoints and is shifted by exactly</span></span>
+<span id="cb5-145"><a href="#cb5-145" aria-hidden="true" tabindex="-1"></a><span class="co">// `outlierSeverity` on top of it (positive pushes it up, negative pushes</span></span>
+<span id="cb5-146"><a href="#cb5-146" aria-hidden="true" tabindex="-1"></a><span class="co">// it down), so severity 0 means "not actually an outlier yet" (identical</span></span>
+<span id="cb5-147"><a href="#cb5-147" aria-hidden="true" tabindex="-1"></a><span class="co">// to its original noisy position) and larger magnitude means "further</span></span>
+<span id="cb5-148"><a href="#cb5-148" aria-hidden="true" tabindex="-1"></a><span class="co">// from where it should be." Shifting each point's own noisy y — rather</span></span>
+<span id="cb5-149"><a href="#cb5-149" aria-hidden="true" tabindex="-1"></a><span class="co">// than recomputing it from the line equation — is what keeps the 4</span></span>
+<span id="cb5-150"><a href="#cb5-150" aria-hidden="true" tabindex="-1"></a><span class="co">// outliers from landing exactly on a second, perfectly straight line as</span></span>
+<span id="cb5-151"><a href="#cb5-151" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider moves. Every other point stays fixed as the slider moves.</span></span>
+<span id="cb5-152"><a href="#cb5-152" aria-hidden="true" tabindex="-1"></a>points <span class="op">=</span> {</span>
+<span id="cb5-153"><a href="#cb5-153" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pts <span class="op">=</span> []</span>
+<span id="cb5-154"><a href="#cb5-154" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">points</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb5-155"><a href="#cb5-155" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> p <span class="op">=</span> basePoints<span class="op">.</span><span class="at">points</span>[i]</span>
+<span id="cb5-156"><a href="#cb5-156" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">.</span><span class="fu">includes</span>(i)) {</span>
+<span id="cb5-157"><a href="#cb5-157" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> p<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> p<span class="op">.</span><span class="at">y</span> <span class="op">+</span> outlierSeverity})</span>
+<span id="cb5-158"><a href="#cb5-158" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb5-159"><a href="#cb5-159" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>(p)</span>
+<span id="cb5-160"><a href="#cb5-160" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-161"><a href="#cb5-161" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-162"><a href="#cb5-162" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> pts</span>
+<span id="cb5-163"><a href="#cb5-163" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-5" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="168" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 167;"><span id="cb6-168"><a href="#cb6-168" aria-hidden="true" tabindex="-1"></a><span class="co">// result: fits both an L2 (ordinary least-squares) and an L1 (least</span></span>
+<span id="cb6-169"><a href="#cb6-169" aria-hidden="true" tabindex="-1"></a><span class="co">// absolute deviations) line to the current points, plus each fit's total</span></span>
+<span id="cb6-170"><a href="#cb6-170" aria-hidden="true" tabindex="-1"></a><span class="co">// squared/absolute residual and how long it took to compute. A single fit</span></span>
+<span id="cb6-171"><a href="#cb6-171" aria-hidden="true" tabindex="-1"></a><span class="co">// is sub-millisecond and too noisy to time meaningfully, so each fit runs</span></span>
+<span id="cb6-172"><a href="#cb6-172" aria-hidden="true" tabindex="-1"></a><span class="co">// `reps` times and we report the average — this is also what makes the</span></span>
+<span id="cb6-173"><a href="#cb6-173" aria-hidden="true" tabindex="-1"></a><span class="co">// timing comparison fair between the two methods (L2 is a closed-form</span></span>
+<span id="cb6-174"><a href="#cb6-174" aria-hidden="true" tabindex="-1"></a><span class="co">// formula; L1 is iterative and does more work per call).</span></span>
+<span id="cb6-175"><a href="#cb6-175" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> {</span>
+<span id="cb6-176"><a href="#cb6-176" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> reps <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb6-177"><a href="#cb6-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-178"><a href="#cb6-178" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t0 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb6-179"><a href="#cb6-179" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> l2</span>
+<span id="cb6-180"><a href="#cb6-180" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> reps<span class="op">;</span> i<span class="op">++</span>) l2 <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">linearRegression</span>(points)</span>
+<span id="cb6-181"><a href="#cb6-181" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t1 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb6-182"><a href="#cb6-182" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> l1</span>
+<span id="cb6-183"><a href="#cb6-183" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> reps<span class="op">;</span> i<span class="op">++</span>) l1 <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">l1Regression</span>(points)</span>
+<span id="cb6-184"><a href="#cb6-184" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t2 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb6-185"><a href="#cb6-185" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-186"><a href="#cb6-186" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> residualStats <span class="op">=</span> fit <span class="kw">=&gt;</span> {</span>
+<span id="cb6-187"><a href="#cb6-187" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> sumSquared <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> sumAbsolute <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb6-188"><a href="#cb6-188" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
+<span id="cb6-189"><a href="#cb6-189" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> residual <span class="op">=</span> p<span class="op">.</span><span class="at">y</span> <span class="op">-</span> (fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> p<span class="op">.</span><span class="at">x</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>)</span>
+<span id="cb6-190"><a href="#cb6-190" aria-hidden="true" tabindex="-1"></a>      sumSquared <span class="op">+=</span> residual <span class="op">*</span> residual</span>
+<span id="cb6-191"><a href="#cb6-191" aria-hidden="true" tabindex="-1"></a>      sumAbsolute <span class="op">+=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(residual)</span>
+<span id="cb6-192"><a href="#cb6-192" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-193"><a href="#cb6-193" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {sumSquared<span class="op">,</span> sumAbsolute}</span>
+<span id="cb6-194"><a href="#cb6-194" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-195"><a href="#cb6-195" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-196"><a href="#cb6-196" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb6-197"><a href="#cb6-197" aria-hidden="true" tabindex="-1"></a>    points<span class="op">,</span></span>
+<span id="cb6-198"><a href="#cb6-198" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l2</span><span class="op">:</span> {<span class="op">...</span>l2<span class="op">,</span> <span class="op">...</span><span class="fu">residualStats</span>(l2)<span class="op">,</span> <span class="dt">timeMs</span><span class="op">:</span> (t1 <span class="op">-</span> t0) <span class="op">/</span> reps}<span class="op">,</span></span>
+<span id="cb6-199"><a href="#cb6-199" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l1</span><span class="op">:</span> {<span class="op">...</span>l1<span class="op">,</span> <span class="op">...</span><span class="fu">residualStats</span>(l1)<span class="op">,</span> <span class="dt">timeMs</span><span class="op">:</span> (t2 <span class="op">-</span> t1) <span class="op">/</span> reps}</span>
+<span id="cb6-200"><a href="#cb6-200" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-201"><a href="#cb6-201" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-6" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="206" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 205;"><span id="cb7-206"><a href="#cb7-206" aria-hidden="true" tabindex="-1"></a>showL2 <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"L2 fit (least squares)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-7" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="211" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 210;"><span id="cb8-211"><a href="#cb8-211" aria-hidden="true" tabindex="-1"></a>showL1 <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"L1 fit (least absolute deviations)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-8" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="216" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 215;"><span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a>showPoints <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Points"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-9" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="221" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 220;"><span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a>showOutliers <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Outliers"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-10" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="226" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 225;"><span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a><span class="co">// setup: axis ranges and line endpoints shared by mainPlot.</span></span>
+<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>setup <span class="op">=</span> {</span>
+<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xs <span class="op">=</span> []</span>
+<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">points</span>) xs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">11</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.08</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="fl">0.5</span>})</span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Fixed y-range, sized from the slider's full [-severityMax, severityMax]</span></span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>  <span class="co">// reach — not the current outlierSeverity value — so the axis never</span></span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rescales as the slider moves (see the note on severityMax above).</span></span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ys <span class="op">=</span> []</span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">points</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> p <span class="op">=</span> basePoints<span class="op">.</span><span class="at">points</span>[i]</span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a>    ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">.</span><span class="fu">includes</span>(i)) {</span>
+<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span> <span class="op">+</span> severityMax)</span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span> <span class="op">-</span> severityMax)</span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> yRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(ys<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">2</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.12</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">1</span>})</span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> lineYs <span class="op">=</span> fit <span class="kw">=&gt;</span> [fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> xRange<span class="op">.</span><span class="at">lo</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span><span class="op">,</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> xRange<span class="op">.</span><span class="at">hi</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>]</span>
+<span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a>    <span class="dt">points</span><span class="op">:</span> result<span class="op">.</span><span class="at">points</span><span class="op">,</span></span>
+<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a>    <span class="dt">outlierIndices</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">,</span></span>
+<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a>    xRange<span class="op">,</span> yRange<span class="op">,</span></span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a>    <span class="dt">lineXs</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span></span>
+<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l2LineYs</span><span class="op">:</span> <span class="fu">lineYs</span>(result<span class="op">.</span><span class="at">l2</span>)<span class="op">,</span></span>
+<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l1LineYs</span><span class="op">:</span> <span class="fu">lineYs</span>(result<span class="op">.</span><span class="at">l1</span>)</span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-11" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell hidden">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="261" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 260;"><span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a><span class="co">// mainPlot draws the inlier points, the outlier points, and both fitted</span></span>
+<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a><span class="co">// lines.</span></span>
+<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
+<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a><span class="co">// _plotDiv is kept in a closure so Plotly reuses the same DOM node across</span></span>
+<span id="cb12-265"><a href="#cb12-265" aria-hidden="true" tabindex="-1"></a><span class="co">// reactive updates — this preserves zoom and pan when the slider or button</span></span>
+<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a><span class="co">// changes.</span></span>
+<span id="cb12-267"><a href="#cb12-267" aria-hidden="true" tabindex="-1"></a>mainPlot <span class="op">=</span> {</span>
+<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> Plotly <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">Plotly</span></span>
+<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> _plotDiv <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-271"><a href="#cb12-271" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ({points<span class="op">,</span> outlierIndices<span class="op">,</span> xRange<span class="op">,</span> yRange<span class="op">,</span> lineXs<span class="op">,</span> l2LineYs<span class="op">,</span> l1LineYs}<span class="op">,</span> showL2<span class="op">,</span> showL1<span class="op">,</span> showPoints<span class="op">,</span> showOutliers) <span class="kw">=&gt;</span> {</span>
+<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> inlierXs <span class="op">=</span> []<span class="op">,</span> inlierYs <span class="op">=</span> []<span class="op">,</span> outlierXs <span class="op">=</span> []<span class="op">,</span> outlierYs <span class="op">=</span> []</span>
+<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> points<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (outlierIndices<span class="op">.</span><span class="fu">includes</span>(i)) {</span>
+<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a>        outlierXs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a>        outlierYs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> {</span>
+<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a>        inlierXs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a>        inlierYs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> data <span class="op">=</span> []</span>
+<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showL2) {</span>
+<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> lineXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> l2LineYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"L2 fit (least squares)"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">alt</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
+<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showL1) {</span>
+<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> lineXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> l1LineYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"L1 fit (least absolute deviations)"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
+<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showPoints) {</span>
+<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> inlierXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> inlierYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Points"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">8</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">halo</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">1</span>}}})</span>
+<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showOutliers) {</span>
+<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> outlierXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> outlierYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Outliers"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#f97316"</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">13</span><span class="op">,</span> <span class="dt">symbol</span><span class="op">:</span> <span class="st">"diamond"</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">halo</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">1.5</span>}}})</span>
+<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> layout <span class="op">=</span> {</span>
+<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a>      <span class="dt">xaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a>      <span class="dt">yaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [yRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> yRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a>      <span class="dt">hovermode</span><span class="op">:</span> <span class="st">"closest"</span><span class="op">,</span></span>
+<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a>      <span class="dt">uirevision</span><span class="op">:</span> <span class="st">"static"</span><span class="op">,</span></span>
+<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>      <span class="dt">autosize</span><span class="op">:</span> <span class="kw">true</span></span>
+<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> config <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">config</span>()</span>
+<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-306"><a href="#cb12-306" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>_plotDiv) {</span>
+<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a>      _plotDiv <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a>      _plotDiv<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"plotly-box-large"</span></span>
+<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">newPlot</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb12-310"><a href="#cb12-310" aria-hidden="true" tabindex="-1"></a>      <span class="co">// newPlot fires before the div is in the DOM, so Plotly measures 0 width.</span></span>
+<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a>      <span class="co">// A ResizeObserver catches the real size once it's inserted and laid out.</span></span>
+<span id="cb12-312"><a href="#cb12-312" aria-hidden="true" tabindex="-1"></a>      VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">autoResize</span>(_plotDiv)</span>
+<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb12-314"><a href="#cb12-314" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">react</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-316"><a href="#cb12-316" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _plotDiv</span>
+<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display hidden">
+<div id="ojs-cell-12" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="ojs-plot-overlay">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="324" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 323;"><span id="cb13-324"><a href="#cb13-324" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showL2<span class="op">,</span> showL1<span class="op">,</span> showPoints<span class="op">,</span> showOutliers)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-13" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="328" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 327;"><span id="cb14-328"><a href="#cb14-328" aria-hidden="true" tabindex="-1"></a>viewof shownFits <span class="op">=</span> {</span>
+<span id="cb14-329"><a href="#cb14-329" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> items <span class="op">=</span> []</span>
+<span id="cb14-330"><a href="#cb14-330" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> label <span class="kw">of</span> fitOptions) items<span class="op">.</span><span class="fu">push</span>({label<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> fitColors<span class="op">.</span><span class="fu">get</span>(label)})</span>
+<span id="cb14-331"><a href="#cb14-331" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">legendOverlay</span>(items<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> fitOptions})</span>
+<span id="cb14-332"><a href="#cb14-332" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-14" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="ojs-step-overlay">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="338" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 337;"><span id="cb15-338"><a href="#cb15-338" aria-hidden="true" tabindex="-1"></a>viewof outlierSeverity <span class="op">=</span> {</span>
+<span id="cb15-339"><a href="#cb15-339" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="op">-</span>severityMax<span class="op">,</span> severityMax]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">5</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Outlier severity"</span>})</span>
+<span id="cb15-340"><a href="#cb15-340" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb15-341"><a href="#cb15-341" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
+<span id="cb15-342"><a href="#cb15-342" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-15" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled" title="Fit comparison">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Fit comparison
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="352" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 351;"><span id="cb16-352"><a href="#cb16-352" aria-hidden="true" tabindex="-1"></a><span class="co">// comparisonTable reports each fit's slope/intercept, its total squared</span></span>
+<span id="cb16-353"><a href="#cb16-353" aria-hidden="true" tabindex="-1"></a><span class="co">// and absolute residual over the current points, and the average time to</span></span>
+<span id="cb16-354"><a href="#cb16-354" aria-hidden="true" tabindex="-1"></a><span class="co">// compute it. L2 always has the smaller "sum of squared residuals" (it's</span></span>
+<span id="cb16-355"><a href="#cb16-355" aria-hidden="true" tabindex="-1"></a><span class="co">// exactly what it minimizes) and L1 always has the smaller "sum of</span></span>
+<span id="cb16-356"><a href="#cb16-356" aria-hidden="true" tabindex="-1"></a><span class="co">// absolute residuals" (same reason) — the column to watch as the slider</span></span>
+<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a><span class="co">// moves is slope and intercept: L2's drift noticeably further from the</span></span>
+<span id="cb16-358"><a href="#cb16-358" aria-hidden="true" tabindex="-1"></a><span class="co">// underlying (pre-outlier) line — shown in the note below the table —</span></span>
+<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a><span class="co">// than L1's does.</span></span>
+<span id="cb16-360"><a href="#cb16-360" aria-hidden="true" tabindex="-1"></a>comparisonTable <span class="op">=</span> {</span>
+<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> row <span class="op">=</span> (label<span class="op">,</span> fit) <span class="kw">=&gt;</span> [</span>
+<span id="cb16-362"><a href="#cb16-362" aria-hidden="true" tabindex="-1"></a>    label<span class="op">,</span></span>
+<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">intercept</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">sumSquared</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">sumAbsolute</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a>    (fit<span class="op">.</span><span class="at">timeMs</span> <span class="op">*</span> <span class="dv">1000</span>)<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)</span>
+<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb16-371"><a href="#cb16-371" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Fit"</span><span class="op">,</span> <span class="st">"Slope"</span><span class="op">,</span> <span class="st">"Intercept"</span><span class="op">,</span> <span class="st">"Sum of squared residuals"</span><span class="op">,</span> <span class="st">"Sum of absolute residuals"</span><span class="op">,</span> <span class="st">"Avg. fit time (μs)"</span>]<span class="op">,</span></span>
+<span id="cb16-373"><a href="#cb16-373" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Fit"</span><span class="op">,</span> <span class="st">"Slope"</span><span class="op">,</span> <span class="st">"Intercept"</span><span class="op">,</span> <span class="st">"Sum of squared residuals"</span><span class="op">,</span> <span class="st">"Sum of absolute residuals"</span><span class="op">,</span> <span class="st">"Avg fit time (microseconds)"</span>]<span class="op">,</span></span>
+<span id="cb16-374"><a href="#cb16-374" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"l1-vs-l2-comparison.csv"</span><span class="op">,</span></span>
+<span id="cb16-375"><a href="#cb16-375" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> [<span class="fu">row</span>(<span class="st">"L2 (least squares)"</span><span class="op">,</span> result<span class="op">.</span><span class="at">l2</span>)<span class="op">,</span> <span class="fu">row</span>(<span class="st">"L1 (least absolute deviations)"</span><span class="op">,</span> result<span class="op">.</span><span class="at">l1</span>)]</span>
+<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb16-377"><a href="#cb16-377" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-16" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb17" data-startfrom="381" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 380;"><span id="cb17-381"><a href="#cb17-381" aria-hidden="true" tabindex="-1"></a><span class="fu">md</span><span class="vs">`The underlying (pre-outlier) line has slope **</span><span class="sc">${</span>basePoints<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">** and intercept **</span><span class="sc">${</span>basePoints<span class="op">.</span><span class="at">intercept</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">** — compare each fit's slope/intercept above to that as you move the slider.</span></span>
+<span id="cb17-382"><a href="#cb17-382" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-383"><a href="#cb17-383" aria-hidden="true" tabindex="-1"></a><span class="vs">L1's fit took **</span><span class="sc">${</span>result<span class="op">.</span><span class="at">l1</span><span class="op">.</span><span class="at">iterations</span><span class="sc">}</span><span class="vs">** reweighting iterations to converge at the current severity, which is why it's consistently slower than L2's single closed-form solve, even on a dataset this small.`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-17" data-nodetype="expression">
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<p>Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes <span class="math inline">\(\sum_i (y_i - \hat y_i)^2\)</span>; L1 minimizes <span class="math inline">\(\sum_i |y_i - \hat y_i|\)</span>. Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier’s residual — that’s why it chases outliers. L1’s penalty grows only linearly with distance, so an outlier costs the fit proportionally and never dominates the way it does for L2, which is why L1 is called a <strong>robust</strong> estimator. The tradeoff is computational: L2 has a closed-form solution, while L1 has none and must be solved iteratively — this page uses <strong>iteratively reweighted least squares (IRLS)</strong>, which is why L1’s fit takes more iterations and more time than L2’s, as shown in the table above.</p>
+
+
+
+</main> <!-- /main -->
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+Minimal Google Analytics 4 snippet (v1.12.0), vendored verbatim from
+https://dariusz.wieckiewicz.org/en/minimal-google-analytics-4-snippet/
+by Dariusz Wieckiewicz. ~3kB instead of gtag.js's ~171kB; talks straight to
+the GA4 Measurement Protocol v2 endpoint. No ads/remarketing signals, no
+Google Signals, no cookies (client id lives in localStorage) - it only sends
+page_view, scroll, click, file_download, view_search_results and
+user_engagement events.
+
+Two local modifications to the upstream code, both marked "LOCAL:" below:
+  1. `tid` is this site's GA4 measurement ID (property 544270689).
+  2. An early return on localhost/127.0.0.1 so `quarto preview` sessions
+     don't pollute the property with development traffic.
+  3. The <script> tag is `type="text/plain" data-consent="analytics"`, which
+     is the consent gate: a browser will not execute a text/plain script, so
+     this code is inert until _includes/consent.html re-creates it as a real
+     script after the visitor allows analytics. Until then there are no
+     requests to Google and nothing is written to localStorage.
+  4. Do Not Track and Global Privacy Control are honoured, so a visitor
+     signalling either is not measured even if they accepted the banner.
+  5. `dl` (the reported page location) drops the query string. On this site a
+     query string is the visitor's own input - the function they typed, their
+     initial guess, their seed - which has no place in an analytics report,
+     and which would also fragment one page into hundreds of distinct
+     addresses. UTM campaign parameters are still read from the live URL, so
+     referral attribution is unaffected.
+  6. `searchKeys` is emptied, disabling site-search tracking. Quarto's navbar
+     search is entirely client-side and never puts a query in the URL, while
+     `?s=` here means something else entirely (the stage count on
+     apps/butcher-tableau) - with the upstream default
+     that page's shared links would report as `view_search_results`
+     instead of `page_view`.
+
+Loaded via `include-after-body` (not `include-in-header`) in _quarto.yml:
+the snippet reads document.body and document.title at call time, so it has
+to run once the DOM exists.
+-->
+
+<script type="text/plain" data-consent="analytics">
+(function(){
+/* LOCAL: don't report local preview traffic. */
+if(location.hostname==="localhost"||location.hostname==="127.0.0.1"||location.hostname==="[::1]")return;
+/* LOCAL: honour Do Not Track / Global Privacy Control, even after consent. */
+if(navigator.doNotTrack==="1"||window.doNotTrack==="1"||navigator.msDoNotTrack==="1"||navigator.globalPrivacyControl===!0)return;
+/* LOCAL: measurement ID of the web data stream on GA4 property 544270689. */
+const l={tid:"G-76ZBFD9S9B",timeout:18e5,ext:["pdf","xls","xlsx","doc","docx","txt","rtf","csv","exe","key","pps","ppt","pptx","7z","pkg","rar","gz","zip","avi","mov","mp4","mpe","mpeg","wmv","mid","midi","mp3","wav","wma"],searchKeys:[]},T=!1,D=Math.floor(Math.random()*1e9)+1,p=Date.now();let j=p,s=!1,a=!1,r=!1,n=!1,d=!1;const e=function(){try{return localStorage.setItem("t","t"),localStorage.removeItem("t"),localStorage}catch{return{getItem:()=>null,setItem:()=>null,removeItem:()=>null}}}(),t=document,h=document.documentElement,x=document.body,i=document.location,w=screen,c=navigator||{},A=()=>Math.floor(Math.random()*1e9)+1,b=()=>Math.floor(Date.now()/1e3),k=()=>A()+"."+b(),y=encodeURIComponent,E=()=>{let t=e.getItem("cid_v4");return t||(t=k(),e.setItem("cid_v4",t)),t},C=e=>{let t=[];for(let n in e)e.hasOwnProperty(n)&&e[n]!==0[0]&&t.push(y(n)+"="+y(e[n]));return t.join("&")},O=i.search,m=new URLSearchParams(O),u=e=>m.get("utm_"+e),_=[...m.keys()].find(e=>l.searchKeys.includes(e.toLowerCase())),f=_?m.get(_):0[0],v=!!f,S=()=>s?"scroll":a?"file_download":r?"user_engagement":n?"click":v?"view_search_results":"page_view",M=()=>s?"90":0[0],F=()=>!v||s||a||r||n?0[0]:f;function o(o,d,h,m){const A=Date.now()-j;j=Date.now();const L=e.getItem("cid_v4"),N=()=>L?0[0]:s||a||r||n?0[0]:"1",v=b(),z=e.getItem("_ga_last")||0;let f=e.getItem("_ga_sid"),g=e.getItem("_ga_sct")||0,y=!1;(!f||v-z>l.timeout/1e3)&&(y=!0,f=v,g=Number(g)+1,e.setItem("_ga_sid",f),e.setItem("_ga_sct",g),e.setItem("_ga_hits","0")),e.setItem("_ga_last",v);const _=Number(e.getItem("_ga_hits")||0)+1;e.setItem("_ga_hits",_);const x=u("source"),R=u("medium"),P=u("campaign");y&&(x?(e.setItem("_ga_utm_source",x),e.setItem("_ga_utm_medium",R||""),e.setItem("_ga_utm_campaign",P||"")):(e.removeItem("_ga_utm_source"),e.removeItem("_ga_utm_medium"),e.removeItem("_ga_utm_campaign")));const H="https://www.google-analytics.com/g/collect",I=C({v:"2",tid:l.tid,_p:D,sr:w.width+"x"+w.height,ul:c.language?c.language.toLowerCase():0[0],cid:E(),_fv:N(),dl:i.origin+i.pathname,dt:t.title||0[0],dr:t.referrer||0[0],seg:_>1||Date.now()-p>1e4?"1":0[0],"epn.percent_scrolled":M(),"ep.search_term":F(),"ep.file_extension":o||0[0],"ep.file_name":d||0[0],"ep.link_text":h||0[0],"ep.link_url":m||0[0],_s:_,sid:f,sct:g,_ss:y?"1":0[0],en:S(),_et:A,cs:e.getItem("_ga_utm_source")||0[0],cm:e.getItem("_ga_utm_medium")||0[0],cn:e.getItem("_ga_utm_campaign")||0[0],"ep.outbound":n?"true":0[0],_dbg:T?1:0[0]}),k=H+"?"+I;if(c.sendBeacon)c.sendBeacon(k);else{let e=new XMLHttpRequest;e.open("POST",k,!0),e.send()}}o();function z(){const e=(h.scrollHeight||x.scrollHeight)-h.clientHeight;return e>0?(h.scrollTop||x.scrollTop)/e*100:0}t.addEventListener("scroll",g,{passive:!0});function g(){if(d)return;d=!0,requestAnimationFrame(function(){d=!1;const e=z();e>=90&&(s=!0,o(),t.removeEventListener("scroll",g),s=!1)})}t.addEventListener("click",function(e){if(!(e.target instanceof Element))return;const t=e.target.closest("a");if(t&&t.getAttribute("href")){const r=t.getAttribute("href"),c=r.split(/[?#]/)[0],e=c.substring(c.lastIndexOf("/")+1),s=e.lastIndexOf("."),d=s!==-1?e.substring(s+1).toLowerCase():"",h=s!==-1?e.substring(0,s):e,u=t.textContent?t.textContent.trim().substring(0,100):"";t.hasAttribute("download")||l.ext.includes(d)?(a=!0,o(d||0[0],h||0[0],u,r.replace(i.origin,"")),a=!1):t.hostname&&t.hostname!==i.hostname&&(n=!0,o(0[0],0[0],u,r),n=!1)}},!0),t.addEventListener("visibilitychange",function(){t.visibilityState==="hidden"&&(r=!0,o(),r=!1)})})()
+</script>
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+Analytics consent banner.
+
+This replaces Quarto's built-in `cookie-consent:` support, which is not used
+on this site. That library's copy is baked into its bundle - the banner says
+the site shows "personalized content and targeted ads" and its preferences
+center lists a "Targeting and advertising cookies" category describing ad
+networks combining data across websites. None of that is true here, there is
+no supported way to change the strings, and its 34-language switcher would
+leave every other translation making the same false claim. It also weighs
+207kB to gate a 3kB analytics snippet.
+
+What this does instead: nothing is measured until the visitor says yes. The
+snippet in analytics.html ships as `type="text/plain"`, which a browser
+refuses to execute; allowing analytics re-creates it as a real script, which
+is the same mechanism the library used. The choice is remembered in
+localStorage, so this site sets no cookies at all.
+-->
+
+<style>
+  /* Colours come from Bootstrap's theme variables rather than literals, so
+     the banner follows the site's light (cosmo) and dark (cyborg) themes
+     without a second palette here. Kept inline rather than in styles.css
+     since this markup is the only thing that uses these classes. */
+  .vml-consent {
+    position: fixed;
+    z-index: 1080;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .vml-consent[hidden] {
+    display: none;
+  }
+
+  .vml-consent-inner {
+    pointer-events: auto;
+    max-width: 32rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 0.5rem;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  }
+
+  .vml-consent-title {
+    /* Quarto gives every h2 a bottom rule and generous spacing; neither suits a
+       small banner heading. */
+    margin: 0 0 0.4rem;
+    padding: 0;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .vml-consent-text {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .vml-consent-text + .vml-consent-text {
+    margin-top: 0.6rem;
+  }
+
+  .vml-consent-text-secondary {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color, #475569);
+  }
+
+  .vml-consent-status {
+    margin: 0.6rem 0 0;
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color, #475569);
+  }
+
+  .vml-consent-status[hidden] {
+    display: none;
+  }
+
+  .vml-consent-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+  }
+
+  .vml-consent-btn {
+    flex: 1 1 auto;
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 0.35rem;
+    background: transparent;
+    color: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .vml-consent-btn:hover {
+    border-color: var(--bs-primary, #2563eb);
+  }
+
+  .vml-consent-btn-primary {
+    border-color: var(--bs-primary, #2563eb);
+    background: var(--bs-primary, #2563eb);
+    color: #fff;
+  }
+
+  .vml-consent-btn-primary:hover {
+    filter: brightness(1.08);
+  }
+</style>
+
+<div id="vml-consent" class="vml-consent" role="dialog" aria-labelledby="vml-consent-title" hidden="">
+  <div class="vml-consent-inner">
+    <h2 id="vml-consent-title" class="vml-consent-title">Analytics</h2>
+    <p class="vml-consent-text">
+      Visual Math Lab would like to count page visits. It tells us which
+      topics are being read, so that effort goes where it is most useful.
+      No advertising, no personal information, and nothing shared with third
+      parties. The mathematics you enter never leaves your browser.
+      <a href="../../privacy.html">What is collected</a>.
+    </p>
+    <p class="vml-consent-text vml-consent-text-secondary">
+      No cookies are stored by this site, at any point, for any purpose. This
+      notice is shown because GDPR and the ePrivacy Directive require opt-in
+      consent before any tracking technology runs, cookies or not.
+    </p>
+    <p class="vml-consent-status" id="vml-consent-status" hidden=""></p>
+    <div class="vml-consent-buttons">
+      <button type="button" class="vml-consent-btn vml-consent-btn-primary" data-consent-choice="granted">Allow</button>
+      <button type="button" class="vml-consent-btn" data-consent-choice="denied">No thanks</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const KEY = "vml-analytics-consent";
+  const GATE = 'script[type="text/plain"][data-consent="analytics"]';
+  const banner = document.getElementById("vml-consent");
+  const status = document.getElementById("vml-consent-status");
+  if (!banner) return;
+
+  /* Global Privacy Control and Do Not Track are a standing answer to this
+     question, so don't ask it again. Treated as "no" until the visitor
+     overrides it through the footer link. */
+  function privacySignalSet() {
+    if (navigator.globalPrivacyControl === true) return true;
+    if (navigator.doNotTrack === "1") return true;
+    if (window.doNotTrack === "1") return true;
+    return false;
+  }
+
+  function readChoice() {
+    try {
+      return localStorage.getItem(KEY);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeChoice(value) {
+    try {
+      localStorage.setItem(KEY, value);
+    } catch (e) {
+      /* Private browsing with storage blocked: the choice just won't stick. */
+    }
+  }
+
+  /* A text/plain script is inert. Re-creating it as text/javascript is what
+     actually runs the analytics snippet - assigning to .type on the original
+     element would not, since a script only executes when it is inserted. */
+  function runGatedScripts() {
+    const gated = document.querySelectorAll(GATE);
+    for (let i = 0; i < gated.length; i++) {
+      const original = gated[i];
+      const live = document.createElement("script");
+      live.type = "text/javascript";
+      live.text = original.innerHTML;
+      original.parentNode.removeChild(original);
+      document.head.appendChild(live);
+    }
+  }
+
+  /* Everything the analytics snippet keeps, so that withdrawing consent
+     leaves nothing behind. */
+  function forgetAnalytics() {
+    try {
+      const doomed = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key === "cid_v4" || key.indexOf("_ga_") === 0) doomed.push(key);
+      }
+      for (let i = 0; i < doomed.length; i++) localStorage.removeItem(doomed[i]);
+    } catch (e) {
+      /* Nothing readable means nothing to clear. */
+    }
+  }
+
+  /* Withdrawing consent reloads the page, and the snippet is still live until
+     it does - its page-hide listener treats that reload as a departure and
+     fires one last event, which also re-creates the identifier being deleted.
+     Both of its transports are closed off first so it cannot get that parting
+     shot in. Breaking them for the few milliseconds before a reload costs
+     nothing. */
+  function silenceAnalytics() {
+    try {
+      navigator.sendBeacon = function () {
+        return false;
+      };
+      window.XMLHttpRequest = function () {
+        return { open: function () {}, send: function () {} };
+      };
+    } catch (e) {
+      /* Frozen globals: the worst case is one extra event. */
+    }
+  }
+
+  function show() {
+    const choice = readChoice();
+    if (choice === null) {
+      status.hidden = true;
+    } else {
+      status.hidden = false;
+      if (choice === "granted") status.textContent = "Analytics is currently allowed.";
+      else status.textContent = "Analytics is currently switched off.";
+    }
+    banner.hidden = false;
+  }
+
+  function choose(value) {
+    const previous = readChoice();
+    writeChoice(value);
+    banner.hidden = true;
+    if (value === "granted" && previous !== "granted") {
+      runGatedScripts();
+    } else if (value === "denied" && previous === "granted") {
+      /* The snippet has already run and attached its listeners. Reloading is
+         the only way to actually stop it, rather than merely promising to.
+         The clearing happens on the way back in, below - doing it here would
+         race the page-hide event this reload triggers. */
+      silenceAnalytics();
+      window.location.reload();
+    }
+  }
+
+  const buttons = banner.querySelectorAll("[data-consent-choice]");
+  for (let i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener("click", function () {
+      choose(this.getAttribute("data-consent-choice"));
+    });
+  }
+
+  /* The footer's "Analytics preferences" link, at whatever depth the page
+     sits, plus any in-page link using the same fragment. Deferred to
+     DOMContentLoaded because Quarto injects include-after-body content
+     *before* it renders the page footer, so these links do not exist yet
+     when this script runs. */
+  function wireReopeners() {
+    const reopeners = document.querySelectorAll('a[href$="#analytics-preferences"]');
+    for (let i = 0; i < reopeners.length; i++) {
+      reopeners[i].addEventListener("click", function (event) {
+        event.preventDefault();
+        show();
+      });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireReopeners);
+  } else {
+    wireReopeners();
+  }
+
+  const choice = readChoice();
+  if (choice === "granted") {
+    runGatedScripts();
+  } else {
+    /* Anything the snippet left behind on an earlier visit goes now, so that
+       "no" and "never asked" leave the same empty state. Idempotent, and a
+       no-op for a first-time visitor. */
+    forgetAnalytics();
+    if (choice === null && !privacySignalSet()) show();
+  }
+})();
+</script>
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+One-time "this site is built for larger screens" notice, shown on a phone
+only. Charts on this site float draggable legend/step controls over the
+plot; below the 991.98px breakpoint this uses, styles.css hides the trace
+legend (".ojs-legend-overlay") since there isn't room for it alongside the
+chart on a phone screen. The slider bar (".ojs-step-overlay") is NOT hidden
+-- it unpins and reflows to a plain block under the chart, so scrubbing and
+the play button still work on a phone; only the legend needs fullscreen.
+Keep this copy in step with that media query: it is a factual claim about
+what a phone visitor can and cannot do. This banner explains it once,
+remembered in localStorage so it never shows again -- same shape as
+_includes/consent.html's banner, just a single acknowledgement instead of a
+granted/denied choice.
+-->
+
+<style>
+  .vml-mobile-warning {
+    position: fixed;
+    z-index: 1080;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+
+  .vml-mobile-warning[hidden] {
+    display: none;
+  }
+
+  .vml-mobile-warning-inner {
+    pointer-events: auto;
+    max-width: 32rem;
+    padding: 1.1rem 1.25rem;
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-radius: 0.5rem;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
+  }
+
+  .vml-mobile-warning-title {
+    margin: 0 0 0.4rem;
+    padding: 0;
+    border: none;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .vml-mobile-warning-text {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .vml-mobile-warning-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0.9rem;
+  }
+
+  .vml-mobile-warning-btn {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--bs-primary, #2563eb);
+    border-radius: 0.35rem;
+    background: var(--bs-primary, #2563eb);
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .vml-mobile-warning-btn:hover {
+    filter: brightness(1.08);
+  }
+</style>
+
+<div id="vml-mobile-warning" class="vml-mobile-warning" role="dialog" aria-labelledby="vml-mobile-warning-title" hidden="">
+  <div class="vml-mobile-warning-inner">
+    <h2 id="vml-mobile-warning-title" class="vml-mobile-warning-title">Built for a bigger screen</h2>
+    <p class="vml-mobile-warning-text">
+      Visual Math Lab's charts are built for a wider screen. Sliders still work here — they sit just below
+      each chart, and the play button animates them — but the trace legend needs more room than a phone
+      offers. Tap a chart's fullscreen button to bring it back, or visit from a tablet or computer for the
+      full experience.
+    </p>
+    <div class="vml-mobile-warning-buttons">
+      <button type="button" class="vml-mobile-warning-btn" data-mobile-warning-dismiss="">Got it</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const KEY = "vml-mobile-warning-dismissed"
+  const BREAKPOINT = "(max-width: 991.98px)"
+  const banner = document.getElementById("vml-mobile-warning")
+  if (!banner) return
+
+  function dismissed() {
+    try {
+      return localStorage.getItem(KEY) === "1"
+    } catch (e) {
+      return false
+    }
+  }
+
+  function dismiss() {
+    try {
+      localStorage.setItem(KEY, "1")
+    } catch (e) {
+      /* Private browsing with storage blocked: the choice just won't stick. */
+    }
+    banner.hidden = true
+  }
+
+  const button = banner.querySelector("[data-mobile-warning-dismiss]")
+  button.addEventListener("click", dismiss)
+
+  if (window.matchMedia(BREAKPOINT).matches && !dismissed()) {
+    banner.hidden = false
+  }
+})()
+</script>
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
+hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
+JS; styles.css forces the same off-canvas treatment at every width, driven
+by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
+.collapse/.show. This script owns those two classes and provides the one
+thing that treatment removes: a permanently visible way back in -- a slim
+rail at the left edge with a hamburger toggle, open-on-hover for a quick
+peek, click-to-pin for a session that stays open, Escape/click-outside to
+close.
+-->
+<script>
+(function () {
+  function init() {
+    var sidebar = document.getElementById("quarto-sidebar")
+    if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
+
+    var PIN_KEY = "vml-sidebar-pinned"
+    var body = document.body
+
+    // Below 992px Quarto renders its own .quarto-secondary-nav bar (mobile
+    // breadcrumbs) between the navbar and the sidebar/rail -- its height
+    // varies with breadcrumb depth/length and can wrap on a narrow phone,
+    // so it's measured here rather than hardcoded, and exposed as a CSS
+    // variable the top-offset media query in styles.css reads.
+    var secondaryNav = document.querySelector(".quarto-secondary-nav")
+    function updateSecondaryNavHeight() {
+      var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
+      document.documentElement.style.setProperty("--vm-secondary-nav-height", h + "px")
+    }
+    if (secondaryNav) {
+      updateSecondaryNavHeight()
+      window.addEventListener("resize", updateSecondaryNavHeight)
+    }
+
+    var rail = document.createElement("div")
+    rail.id = "vm-sidebar-rail"
+    rail.innerHTML =
+      '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
+      '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>' +
+      "</button>" +
+      '<button type="button" data-vm-pin aria-label="Keep sidebar open" title="Keep sidebar open">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.037l-1.394 1.393c.18.613.185 1.373.021 2.023-.212.828-.696 1.747-1.435 2.486l-.104.104a.5.5 0 0 1-.707 0l-2.404-2.404-2.968 2.967c-.09.09-.203.203-.401.401-.081.08-.181.18-.297.294a1.001 1.001 0 0 1-.399.245.998.998 0 0 1-.797-.061.998.998 0 0 1-.4-.245l-.106-.106a1 1 0 0 1-.06-.797 1 1 0 0 1 .245-.399l.294-.297.401-.401 2.967-2.968-2.404-2.404a.5.5 0 0 1 0-.707l.104-.104c.739-.739 1.658-1.223 2.486-1.435.65-.164 1.41-.159 2.023.021L9.617 2.65a5 5 0 0 1-.037-.46c0-.431.108-1.023.588-1.503A.5.5 0 0 1 9.828.722z"/></svg>' +
+      "</button>"
+    document.body.appendChild(rail)
+
+    var toggleBtn = rail.querySelector("[data-vm-toggle]")
+    var pinBtn = rail.querySelector("[data-vm-pin]")
+    var closeTimer = null
+    var COARSE_POINTER = window.matchMedia && window.matchMedia("(hover: none), (pointer: coarse)").matches
+
+    function isPinned() {
+      try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
+    }
+
+    function setPinned(pinned) {
+      try { localStorage.setItem(PIN_KEY, pinned ? "1" : "0") } catch (e) { /* storage unavailable */ }
+      body.classList.toggle("vm-sidebar-pinned", pinned)
+      pinBtn.setAttribute("aria-pressed", String(pinned))
+    }
+
+    function openSidebar() {
+      if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
+      body.classList.add("vm-sidebar-open")
+      toggleBtn.setAttribute("aria-expanded", "true")
+    }
+
+    function closeSidebar() {
+      if (isPinned()) return
+      body.classList.remove("vm-sidebar-open")
+      toggleBtn.setAttribute("aria-expanded", "false")
+    }
+
+    function scheduleClose() {
+      if (closeTimer) clearTimeout(closeTimer)
+      closeTimer = setTimeout(closeSidebar, 200)
+    }
+
+    // Hover-to-preview (mouse only -- COARSE_POINTER skips it so a tap on
+    // the rail doesn't also fire a hover-open right before the click
+    // handler runs).
+    if (!COARSE_POINTER) {
+      rail.addEventListener("mouseenter", openSidebar)
+      rail.addEventListener("mouseleave", scheduleClose)
+      sidebar.addEventListener("mouseenter", openSidebar)
+      sidebar.addEventListener("mouseleave", scheduleClose)
+    }
+
+    toggleBtn.addEventListener("click", function () {
+      if (body.classList.contains("vm-sidebar-open")) {
+        setPinned(false)
+        closeSidebar()
+      } else {
+        openSidebar()
+      }
+    })
+
+    pinBtn.addEventListener("click", function () {
+      var next = !isPinned()
+      setPinned(next)
+      if (next) openSidebar()
+    })
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return
+      if (!body.classList.contains("vm-sidebar-open")) return
+      setPinned(false)
+      closeSidebar()
+    })
+
+    // Click-outside: covers touch (no hover/mouseleave to rely on) and
+    // mouse clicks that land directly on the page content rather than
+    // drifting out through the sidebar's own edge.
+    document.addEventListener("click", function (event) {
+      if (!body.classList.contains("vm-sidebar-open")) return
+      if (isPinned()) return
+      if (sidebar.contains(event.target) || rail.contains(event.target)) return
+      closeSidebar()
+    })
+
+    if (isPinned()) {
+      setPinned(true)
+      openSidebar()
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init)
+  } else {
+    init()
+  }
+})()
+</script>
+<script type="ojs-module-contents">
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIFZNIGlzIHRoZSBzaGFyZWQgdXRpbGl0eSBsaWJyYXJ5LCBsb2FkZWQgZ2xvYmFsbHkgdmlhIF9pbmNsdWRlcy9oZWFkLXNjcmlwdHMuaHRtbCAoanMvKiopLiBUaGlzIHBhZ2UgdXNlcyBWTS5udW1lcmljYWwubGluZWFyUmVncmVzc2lvbiAoTDIpLCBWTS5udW1lcmljYWwubDFSZWdyZXNzaW9uIChMMSksIFZNLnBsb3R0aW5nLnBhZGRlZFJhbmdlLCBWTS51aS5yZW5kZXJUYWJsZS5cblZNID0gd2luZG93LlZNXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTIiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiIvLyBzZXZlcml0eU1heDogdGhlIHNsaWRlcidzIGJvdW5kIGluIGVhY2ggZGlyZWN0aW9uIChyYW5nZSBpc1xuLy8gWy1zZXZlcml0eU1heCwgc2V2ZXJpdHlNYXhdKS4gVXNlZCBib3RoIGZvciB0aGUgc2xpZGVyIGl0c2VsZiBhbmQgKGluXG4vLyBzZXR1cCwgYmVsb3cpIHRvIGZpeCB0aGUgcGxvdCdzIHktYXhpcyB0byB0aGUgc2xpZGVyJ3MgZnVsbCByZWFjaCDigJQgbm90XG4vLyB0aGUgY3VycmVudCBzZXZlcml0eSB2YWx1ZSDigJQgc28gdGhlIGF4aXMgbmV2ZXIgcmVzY2FsZXMgYXMgdGhlIHNsaWRlclxuLy8gbW92ZXMuIFdpdGhvdXQgdGhhdCwgYW4gYXV0b3NjYWxpbmcgYXhpcyB3b3VsZCBzaHJpbmsgdGhlIEwyIGxpbmUnc1xuLy8gZHJpZnQgYmFjayBkb3duIHRvIGxvb2tpbmcgc21hbGwgYXQgZXZlcnkgc3RlcCwgd2hpY2ggZGVmZWF0cyB0aGVcbi8vIHBvaW50IG9mIHRoZSBkZW1vLlxuc2V2ZXJpdHlNYXggPSAxNVxuXG5maXRPcHRpb25zID0gW1wiTDIgZml0IChsZWFzdCBzcXVhcmVzKVwiLCBcIkwxIGZpdCAobGVhc3QgYWJzb2x1dGUgZGV2aWF0aW9ucylcIiwgXCJQb2ludHNcIiwgXCJPdXRsaWVyc1wiXVxuXG4vLyBNYXRjaGVzIHRoZSBsaW5lL21hcmtlciBjb2xvcnMgbWFpblBsb3QgdXNlcyBmb3IgZWFjaCB0cmFjZSwgc28gdGhlXG4vLyBvdmVybGF5IGxlZ2VuZCdzIHN3YXRjaGVzIGRvdWJsZSBhcyBhIGNvbG9yIGtleS4gI2Y5NzMxNiAob3JhbmdlKSBoYXMgbm9cbi8vIFZNLnBsb3R0aW5nLmNvbG9ycygpIHRva2VuIC0tIGxlZnQgYXMgYSBsaXRlcmFsLlxuLy8gdm1UaGVtZSBpcyB3aGF0IG1ha2VzIHRoZSBjb2xvcnMgYmVsb3cgcmVhY3RpdmUuIFRoZSBjaGFydCdzIG93biBjaHJvbWVcbi8vIChiYWNrZ3JvdW5kLCBheGVzLCBncmlkbGluZXMpIHJlcGFpbnRzIG9uIGEgZGFyay1tb2RlIHRvZ2dsZSBieSBpdHNlbGYsXG4vLyB2aWEgdGhlIHJlbGF5b3V0IHBhdGNoIGluIHBsb3RseS1mdWxsc2NyZWVuLWJ1dHRvbi5qcyAtLSBidXQgdGhlICp0cmFjZSpcbi8vIGNvbG9ycyBhcmUgdmFsdWVzIHRoaXMgcGFnZSBiYWtlcyBpbnRvIHRoZSB0cmFjZXMgaXQgYnVpbGRzLCBzbyBub3RoaW5nXG4vLyByZXBhaW50cyB0aGVtIHVubGVzcyBtYWluUGxvdCByZS1ydW5zLiBEZXBlbmRpbmcgb24gdm1UaGVtZSBpcyB3aGF0XG4vLyByZS1ydW5zIGl0LiBTZWUgVk0ucGxvdHRpbmcub25UaGVtZUNoYW5nZSBmb3Igd2h5IGl0IGZpcmVzIGEgY291cGxlIG9mXG4vLyBmcmFtZXMgYWZ0ZXIgdGhlIHRvZ2dsZSByYXRoZXIgdGhhbiBpbmxpbmUuXG52bVRoZW1lID0gR2VuZXJhdG9ycy5vYnNlcnZlKG5vdGlmeSA9PiBWTS5wbG90dGluZy5vblRoZW1lQ2hhbmdlKG5vdGlmeSkpXG5cbmNoYXJ0Q29sb3JzID0gVk0ucGxvdHRpbmcuY29sb3JzKHZtVGhlbWUpXG5cbmZpdENvbG9ycyA9IG5ldyBNYXAoW1xuICBbXCJMMiBmaXQgKGxlYXN0IHNxdWFyZXMpXCIsIGNoYXJ0Q29sb3JzLmFsdF0sXG4gIFtcIkwxIGZpdCAobGVhc3QgYWJzb2x1dGUgZGV2aWF0aW9ucylcIiwgY2hhcnRDb2xvcnMuZm5dLFxuICBbXCJQb2ludHNcIiwgY2hhcnRDb2xvcnMuaW5rXSxcbiAgW1wiT3V0bGllcnNcIiwgXCIjZjk3MzE2XCJdXG5dKVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0zIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gYmFzZVBvaW50cyByZWRyYXdzIHdoZW5ldmVyIHJlZ2VuZXJhdGVUcmlnZ2VyIGNoYW5nZXMgKGluaXRpYWwgbG9hZFxuLy8gY291bnRzIGFzIG9uZSBkcmF3KSwgc2VlZGVkIGZyb20gdGhlIGN1cnJlbnQgdGltZXN0YW1wIHNvIGVhY2ggZHJhdyBpcyBhXG4vLyBmcmVzaCwgbm9uLXJlcGVhdGluZyBzZXQgb2YgcG9pbnRzIGFuZCBvdXRsaWVyIGxvY2F0aW9ucy4gUG9pbnRzIGNhcnJ5XG4vLyB0aGVpciBwcmUtb3V0bGllciAobm9pc3ksIG9uLXRoZS1saW5lKSB5LXZhbHVlOyBvdXRsaWVyU2V2ZXJpdHkgaXNcbi8vIGFwcGxpZWQgb24gdG9wIG9mIHRoaXMgaW4gYHBvaW50c2AsIGJlbG93LCBzbyBkcmFnZ2luZyB0aGUgc2xpZGVyIG5ldmVyXG4vLyBuZWVkcyB0byByZS1kcmF3IHRoZSBub2lzZS5cbi8vXG4vLyBLZXB0IG91dHNpZGUgdGhlIG9qcy1yb3cgZGl2IGJlbG93OiBhbiBvdXRwdXQ6ZmFsc2UgY2VsbCBzdGlsbCByZW5kZXJzXG4vLyBhbiBlbXB0eSAuY2VsbCBkaXYsIGFuZCBpZiBpdCBzYXQgaW5zaWRlIHRoZSByb3cgaXQgd291bGQgYmVjb21lIHRoZVxuLy8gcm93J3MgZmlyc3QgY2hpbGQsIHN0ZWFsaW5nIHRoZSBgZmxleDogMSAxIDIwMHB4YCBmaWxsIHJ1bGUgbWVhbnQgZm9yXG4vLyB0aGUgc2xpZGVyLlxuYmFzZVBvaW50cyA9IHtcbiAgcmVnZW5lcmF0ZVRyaWdnZXJcbiAgLy8gU2VlZGVkIFBSTkcgKG11bGJlcnJ5MzIpLCBzZWVkZWQgZnJvbSB0aGUgY3VycmVudCB0aW1lIHNvIGVhY2hcbiAgLy8gXCJSZWdlbmVyYXRlXCIgY2xpY2sgcHJvZHVjZXMgYSBkaWZmZXJlbnQgZHJhdy5cbiAgbGV0IHN0YXRlID0gRGF0ZS5ub3coKVxuICBjb25zdCByYW5kID0gKCkgPT4ge1xuICAgIHN0YXRlID0gKHN0YXRlICsgMHg2RDJCNzlGNSkgfCAwXG4gICAgbGV0IHQgPSBNYXRoLmltdWwoc3RhdGUgXiAoc3RhdGUgPj4+IDE1KSwgMSB8IHN0YXRlKVxuICAgIHQgPSAodCArIE1hdGguaW11bCh0IF4gKHQgPj4+IDcpLCA2MSB8IHQpKSBeIHRcbiAgICByZXR1cm4gKCh0IF4gKHQgPj4+IDE0KSkgPj4+IDApIC8gNDI5NDk2NzI5NlxuICB9XG4gIC8vIEJveC1NdWxsZXIgdHJhbnNmb3JtOiB0dXJucyB0d28gdW5pZm9ybSBzYW1wbGVzIGludG8gb25lIHN0YW5kYXJkLW5vcm1hbCBzYW1wbGUuXG4gIGNvbnN0IGdhdXNzaWFuID0gKCkgPT4ge1xuICAgIGNvbnN0IHUxID0gTWF0aC5tYXgocmFuZCgpLCAxZS0xMilcbiAgICBjb25zdCB1MiA9IHJhbmQoKVxuICAgIHJldHVybiBNYXRoLnNxcnQoLTIgKiBNYXRoLmxvZyh1MSkpICogTWF0aC5jb3MoMiAqIE1hdGguUEkgKiB1MilcbiAgfVxuXG4gIGNvbnN0IHRvdGFsUG9pbnRzID0gMjRcbiAgY29uc3Qgb3V0bGllckNvdW50ID0gNFxuICAvLyBTbG9wZSBhbmQgaW50ZXJjZXB0IGFyZSByZWRyYXduIG9uIGV2ZXJ5IHJlZ2VuZXJhdGUgdG9vIChub3QganVzdCB0aGVcbiAgLy8gbm9pc2UpLCBzbyB0aGUgdW5kZXJseWluZyBsaW5lIGl0c2VsZiBpcyBkaWZmZXJlbnQgZWFjaCB0aW1lLCBub3QganVzdFxuICAvLyB0aGUgc2NhdHRlciBhcm91bmQgaXQuIFRoZSBzaWduIGlzIHJhbmRvbWl6ZWQgdG9vLCBzbyB0aGUgbGluZSBzbGFudHNcbiAgLy8gZG93biBhcyBvZnRlbiBhcyBpdCBzbGFudHMgdXAuXG4gIGNvbnN0IHNsb3BlID0gKHJhbmQoKSA8IDAuNSA/IC0xIDogMSkgKiAoMC41ICsgcmFuZCgpICogMilcbiAgY29uc3QgaW50ZXJjZXB0ID0gcmFuZCgpICogNVxuICBjb25zdCBub2lzZVN0ZCA9IDFcblxuICBjb25zdCBwdHMgPSBbXVxuICBmb3IgKGxldCBpID0gMDsgaSA8IHRvdGFsUG9pbnRzOyBpKyspIHtcbiAgICBjb25zdCB4ID0gaSAqIDEwIC8gKHRvdGFsUG9pbnRzIC0gMSlcbiAgICBjb25zdCB5ID0gc2xvcGUgKiB4ICsgaW50ZXJjZXB0ICsgbm9pc2VTdGQgKiBnYXVzc2lhbigpXG4gICAgcHRzLnB1c2goe3gsIHl9KVxuICB9XG5cbiAgLy8gUGljayBvdXRsaWVyQ291bnQgZGlzdGluY3QgaW5kaWNlcywgYXdheSBmcm9tIHRoZSB2ZXJ5IGVuZHMgc28gdGhlXG4gIC8vIG91dGxpZXJzIHNpdCBpbnNpZGUgdGhlIHZpc2libGUgc3BhbiBvZiB0aGUgbGluZSByYXRoZXIgdGhhbiByaWdodCBhdFxuICAvLyBpdHMgZWRnZS5cbiAgY29uc3Qgb3V0bGllckluZGljZXMgPSBbXVxuICB3aGlsZSAob3V0bGllckluZGljZXMubGVuZ3RoIDwgb3V0bGllckNvdW50KSB7XG4gICAgY29uc3QgaSA9IDIgKyBNYXRoLmZsb29yKHJhbmQoKSAqICh0b3RhbFBvaW50cyAtIDQpKVxuICAgIGlmICghb3V0bGllckluZGljZXMuaW5jbHVkZXMoaSkpIG91dGxpZXJJbmRpY2VzLnB1c2goaSlcbiAgfVxuXG4gIHJldHVybiB7cG9pbnRzOiBwdHMsIG91dGxpZXJJbmRpY2VzLCBzbG9wZSwgaW50ZXJjZXB0fVxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC00IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gcmVnZW5lcmF0ZVRyaWdnZXI6IGNsaWNraW5nIFwiUmVnZW5lcmF0ZSBwb2ludHNcIiBidW1wcyB0aGlzLCB3aGljaCBpcyB0aGVcbi8vIG9ubHkgdGhpbmcgYmFzZVBvaW50cyBkZXBlbmRzIG9uIGJlbG93IOKAlCB0aGF0J3Mgd2hhdCBtYWtlcyBhIGZyZXNoIGRyYXdcbi8vIGhhcHBlbiBvbiBjbGljayBpbnN0ZWFkIG9mIG9ubHkgb25jZSBhdCBwYWdlIGxvYWQuXG52aWV3b2YgcmVnZW5lcmF0ZVRyaWdnZXIgPSB7XG4gIGNvbnN0IGJ1dHRvbiA9IElucHV0cy5idXR0b24oXCJSZWdlbmVyYXRlIHBvaW50c1wiLCB7dmFsdWU6IDAsIHJlZHVjZTogdiA9PiB2ICsgMX0pXG4gIGJ1dHRvbi5jbGFzc0xpc3QuYWRkKFwib2pzLWF1dG9cIilcbiAgcmV0dXJuIGJ1dHRvblxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC01IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gcG9pbnRzOiBhcHBsaWVzIHRoZSBjdXJyZW50IG91dGxpZXIgc2V2ZXJpdHkgb24gdG9wIG9mIGJhc2VQb2ludHMuIE9ubHlcbi8vIHRoZSBvdXRsaWVyIGluZGljZXMnIHktdmFsdWVzIGNoYW5nZSB3aXRoIHRoZSBzbGlkZXIg4oCUIGVhY2gga2VlcHMgaXRzXG4vLyBvd24gbm9pc3kgeS12YWx1ZSBmcm9tIGJhc2VQb2ludHMgYW5kIGlzIHNoaWZ0ZWQgYnkgZXhhY3RseVxuLy8gYG91dGxpZXJTZXZlcml0eWAgb24gdG9wIG9mIGl0IChwb3NpdGl2ZSBwdXNoZXMgaXQgdXAsIG5lZ2F0aXZlIHB1c2hlc1xuLy8gaXQgZG93biksIHNvIHNldmVyaXR5IDAgbWVhbnMgXCJub3QgYWN0dWFsbHkgYW4gb3V0bGllciB5ZXRcIiAoaWRlbnRpY2FsXG4vLyB0byBpdHMgb3JpZ2luYWwgbm9pc3kgcG9zaXRpb24pIGFuZCBsYXJnZXIgbWFnbml0dWRlIG1lYW5zIFwiZnVydGhlclxuLy8gZnJvbSB3aGVyZSBpdCBzaG91bGQgYmUuXCIgU2hpZnRpbmcgZWFjaCBwb2ludCdzIG93biBub2lzeSB5IOKAlCByYXRoZXJcbi8vIHRoYW4gcmVjb21wdXRpbmcgaXQgZnJvbSB0aGUgbGluZSBlcXVhdGlvbiDigJQgaXMgd2hhdCBrZWVwcyB0aGUgNFxuLy8gb3V0bGllcnMgZnJvbSBsYW5kaW5nIGV4YWN0bHkgb24gYSBzZWNvbmQsIHBlcmZlY3RseSBzdHJhaWdodCBsaW5lIGFzXG4vLyB0aGUgc2xpZGVyIG1vdmVzLiBFdmVyeSBvdGhlciBwb2ludCBzdGF5cyBmaXhlZCBhcyB0aGUgc2xpZGVyIG1vdmVzLlxucG9pbnRzID0ge1xuICBjb25zdCBwdHMgPSBbXVxuICBmb3IgKGxldCBpID0gMDsgaSA8IGJhc2VQb2ludHMucG9pbnRzLmxlbmd0aDsgaSsrKSB7XG4gICAgY29uc3QgcCA9IGJhc2VQb2ludHMucG9pbnRzW2ldXG4gICAgaWYgKGJhc2VQb2ludHMub3V0bGllckluZGljZXMuaW5jbHVkZXMoaSkpIHtcbiAgICAgIHB0cy5wdXNoKHt4OiBwLngsIHk6IHAueSArIG91dGxpZXJTZXZlcml0eX0pXG4gICAgfSBlbHNlIHtcbiAgICAgIHB0cy5wdXNoKHApXG4gICAgfVxuICB9XG4gIHJldHVybiBwdHNcbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtNiIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIHJlc3VsdDogZml0cyBib3RoIGFuIEwyIChvcmRpbmFyeSBsZWFzdC1zcXVhcmVzKSBhbmQgYW4gTDEgKGxlYXN0XG4vLyBhYnNvbHV0ZSBkZXZpYXRpb25zKSBsaW5lIHRvIHRoZSBjdXJyZW50IHBvaW50cywgcGx1cyBlYWNoIGZpdCdzIHRvdGFsXG4vLyBzcXVhcmVkL2Fic29sdXRlIHJlc2lkdWFsIGFuZCBob3cgbG9uZyBpdCB0b29rIHRvIGNvbXB1dGUuIEEgc2luZ2xlIGZpdFxuLy8gaXMgc3ViLW1pbGxpc2Vjb25kIGFuZCB0b28gbm9pc3kgdG8gdGltZSBtZWFuaW5nZnVsbHksIHNvIGVhY2ggZml0IHJ1bnNcbi8vIGByZXBzYCB0aW1lcyBhbmQgd2UgcmVwb3J0IHRoZSBhdmVyYWdlIOKAlCB0aGlzIGlzIGFsc28gd2hhdCBtYWtlcyB0aGVcbi8vIHRpbWluZyBjb21wYXJpc29uIGZhaXIgYmV0d2VlbiB0aGUgdHdvIG1ldGhvZHMgKEwyIGlzIGEgY2xvc2VkLWZvcm1cbi8vIGZvcm11bGE7IEwxIGlzIGl0ZXJhdGl2ZSBhbmQgZG9lcyBtb3JlIHdvcmsgcGVyIGNhbGwpLlxucmVzdWx0ID0ge1xuICBjb25zdCByZXBzID0gMjAwXG5cbiAgY29uc3QgdDAgPSBwZXJmb3JtYW5jZS5ub3coKVxuICBsZXQgbDJcbiAgZm9yIChsZXQgaSA9IDA7IGkgPCByZXBzOyBpKyspIGwyID0gVk0ubnVtZXJpY2FsLmxpbmVhclJlZ3Jlc3Npb24ocG9pbnRzKVxuICBjb25zdCB0MSA9IHBlcmZvcm1hbmNlLm5vdygpXG4gIGxldCBsMVxuICBmb3IgKGxldCBpID0gMDsgaSA8IHJlcHM7IGkrKykgbDEgPSBWTS5udW1lcmljYWwubDFSZWdyZXNzaW9uKHBvaW50cylcbiAgY29uc3QgdDIgPSBwZXJmb3JtYW5jZS5ub3coKVxuXG4gIGNvbnN0IHJlc2lkdWFsU3RhdHMgPSBmaXQgPT4ge1xuICAgIGxldCBzdW1TcXVhcmVkID0gMCwgc3VtQWJzb2x1dGUgPSAwXG4gICAgZm9yIChjb25zdCBwIG9mIHBvaW50cykge1xuICAgICAgY29uc3QgcmVzaWR1YWwgPSBwLnkgLSAoZml0LnNsb3BlICogcC54ICsgZml0LmludGVyY2VwdClcbiAgICAgIHN1bVNxdWFyZWQgKz0gcmVzaWR1YWwgKiByZXNpZHVhbFxuICAgICAgc3VtQWJzb2x1dGUgKz0gTWF0aC5hYnMocmVzaWR1YWwpXG4gICAgfVxuICAgIHJldHVybiB7c3VtU3F1YXJlZCwgc3VtQWJzb2x1dGV9XG4gIH1cblxuICByZXR1cm4ge1xuICAgIHBvaW50cyxcbiAgICBsMjogey4uLmwyLCAuLi5yZXNpZHVhbFN0YXRzKGwyKSwgdGltZU1zOiAodDEgLSB0MCkgLyByZXBzfSxcbiAgICBsMTogey4uLmwxLCAuLi5yZXNpZHVhbFN0YXRzKGwxKSwgdGltZU1zOiAodDIgLSB0MSkgLyByZXBzfVxuICB9XG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTciLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJzaG93TDIgPSBzaG93bkZpdHMuaW5jbHVkZXMoXCJMMiBmaXQgKGxlYXN0IHNxdWFyZXMpXCIpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTgiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJzaG93TDEgPSBzaG93bkZpdHMuaW5jbHVkZXMoXCJMMSBmaXQgKGxlYXN0IGFic29sdXRlIGRldmlhdGlvbnMpXCIpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTkiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJzaG93UG9pbnRzID0gc2hvd25GaXRzLmluY2x1ZGVzKFwiUG9pbnRzXCIpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTEwIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoic2hvd091dGxpZXJzID0gc2hvd25GaXRzLmluY2x1ZGVzKFwiT3V0bGllcnNcIilcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMTEiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiIvLyBzZXR1cDogYXhpcyByYW5nZXMgYW5kIGxpbmUgZW5kcG9pbnRzIHNoYXJlZCBieSBtYWluUGxvdC5cbnNldHVwID0ge1xuICBjb25zdCB4cyA9IFtdXG4gIGZvciAoY29uc3QgcCBvZiBiYXNlUG9pbnRzLnBvaW50cykgeHMucHVzaChwLngpXG4gIGNvbnN0IHhSYW5nZSA9IFZNLnBsb3R0aW5nLnBhZGRlZFJhbmdlKHhzLCB7ZW1wdHlSYW5nZTogWy0xLCAxMV0sIHJlbGF0aXZlUGFkZGluZzogMC4wOCwgbWluUGFkZGluZzogMC41fSlcblxuICAvLyBGaXhlZCB5LXJhbmdlLCBzaXplZCBmcm9tIHRoZSBzbGlkZXIncyBmdWxsIFstc2V2ZXJpdHlNYXgsIHNldmVyaXR5TWF4XVxuICAvLyByZWFjaCDigJQgbm90IHRoZSBjdXJyZW50IG91dGxpZXJTZXZlcml0eSB2YWx1ZSDigJQgc28gdGhlIGF4aXMgbmV2ZXJcbiAgLy8gcmVzY2FsZXMgYXMgdGhlIHNsaWRlciBtb3ZlcyAoc2VlIHRoZSBub3RlIG9uIHNldmVyaXR5TWF4IGFib3ZlKS5cbiAgY29uc3QgeXMgPSBbXVxuICBmb3IgKGxldCBpID0gMDsgaSA8IGJhc2VQb2ludHMucG9pbnRzLmxlbmd0aDsgaSsrKSB7XG4gICAgY29uc3QgcCA9IGJhc2VQb2ludHMucG9pbnRzW2ldXG4gICAgeXMucHVzaChwLnkpXG4gICAgaWYgKGJhc2VQb2ludHMub3V0bGllckluZGljZXMuaW5jbHVkZXMoaSkpIHtcbiAgICAgIHlzLnB1c2gocC55ICsgc2V2ZXJpdHlNYXgpXG4gICAgICB5cy5wdXNoKHAueSAtIHNldmVyaXR5TWF4KVxuICAgIH1cbiAgfVxuICBjb25zdCB5UmFuZ2UgPSBWTS5wbG90dGluZy5wYWRkZWRSYW5nZSh5cywge2VtcHR5UmFuZ2U6IFstMiwgMjBdLCByZWxhdGl2ZVBhZGRpbmc6IDAuMTIsIG1pblBhZGRpbmc6IDF9KVxuXG4gIGNvbnN0IGxpbmVZcyA9IGZpdCA9PiBbZml0LnNsb3BlICogeFJhbmdlLmxvICsgZml0LmludGVyY2VwdCwgZml0LnNsb3BlICogeFJhbmdlLmhpICsgZml0LmludGVyY2VwdF1cblxuICByZXR1cm4ge1xuICAgIHBvaW50czogcmVzdWx0LnBvaW50cyxcbiAgICBvdXRsaWVySW5kaWNlczogYmFzZVBvaW50cy5vdXRsaWVySW5kaWNlcyxcbiAgICB4UmFuZ2UsIHlSYW5nZSxcbiAgICBsaW5lWHM6IFt4UmFuZ2UubG8sIHhSYW5nZS5oaV0sXG4gICAgbDJMaW5lWXM6IGxpbmVZcyhyZXN1bHQubDIpLFxuICAgIGwxTGluZVlzOiBsaW5lWXMocmVzdWx0LmwxKVxuICB9XG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTEyIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gbWFpblBsb3QgZHJhd3MgdGhlIGlubGllciBwb2ludHMsIHRoZSBvdXRsaWVyIHBvaW50cywgYW5kIGJvdGggZml0dGVkXG4vLyBsaW5lcy5cbi8vXG4vLyBfcGxvdERpdiBpcyBrZXB0IGluIGEgY2xvc3VyZSBzbyBQbG90bHkgcmV1c2VzIHRoZSBzYW1lIERPTSBub2RlIGFjcm9zc1xuLy8gcmVhY3RpdmUgdXBkYXRlcyDigJQgdGhpcyBwcmVzZXJ2ZXMgem9vbSBhbmQgcGFuIHdoZW4gdGhlIHNsaWRlciBvciBidXR0b25cbi8vIGNoYW5nZXMuXG5tYWluUGxvdCA9IHtcbiAgY29uc3QgUGxvdGx5ID0gd2luZG93LlBsb3RseVxuICBsZXQgX3Bsb3REaXYgPSBudWxsXG5cbiAgcmV0dXJuICh7cG9pbnRzLCBvdXRsaWVySW5kaWNlcywgeFJhbmdlLCB5UmFuZ2UsIGxpbmVYcywgbDJMaW5lWXMsIGwxTGluZVlzfSwgc2hvd0wyLCBzaG93TDEsIHNob3dQb2ludHMsIHNob3dPdXRsaWVycykgPT4ge1xuICAgIGNvbnN0IGlubGllclhzID0gW10sIGlubGllcllzID0gW10sIG91dGxpZXJYcyA9IFtdLCBvdXRsaWVyWXMgPSBbXVxuICAgIGZvciAobGV0IGkgPSAwOyBpIDwgcG9pbnRzLmxlbmd0aDsgaSsrKSB7XG4gICAgICBpZiAob3V0bGllckluZGljZXMuaW5jbHVkZXMoaSkpIHtcbiAgICAgICAgb3V0bGllclhzLnB1c2gocG9pbnRzW2ldLngpXG4gICAgICAgIG91dGxpZXJZcy5wdXNoKHBvaW50c1tpXS55KVxuICAgICAgfSBlbHNlIHtcbiAgICAgICAgaW5saWVyWHMucHVzaChwb2ludHNbaV0ueClcbiAgICAgICAgaW5saWVyWXMucHVzaChwb2ludHNbaV0ueSlcbiAgICAgIH1cbiAgICB9XG5cbiAgICBjb25zdCBkYXRhID0gW11cbiAgICBpZiAoc2hvd0wyKSB7XG4gICAgICBkYXRhLnB1c2goe3g6IGxpbmVYcywgeTogbDJMaW5lWXMsIHR5cGU6IFwic2NhdHRlclwiLCBtb2RlOiBcImxpbmVzXCIsIG5hbWU6IFwiTDIgZml0IChsZWFzdCBzcXVhcmVzKVwiLCBzaG93bGVnZW5kOiBmYWxzZSwgbGluZToge2NvbG9yOiBjaGFydENvbG9ycy5hbHQsIHdpZHRoOiAyLjV9fSlcbiAgICB9XG4gICAgaWYgKHNob3dMMSkge1xuICAgICAgZGF0YS5wdXNoKHt4OiBsaW5lWHMsIHk6IGwxTGluZVlzLCB0eXBlOiBcInNjYXR0ZXJcIiwgbW9kZTogXCJsaW5lc1wiLCBuYW1lOiBcIkwxIGZpdCAobGVhc3QgYWJzb2x1dGUgZGV2aWF0aW9ucylcIiwgc2hvd2xlZ2VuZDogZmFsc2UsIGxpbmU6IHtjb2xvcjogY2hhcnRDb2xvcnMuZm4sIHdpZHRoOiAyLjV9fSlcbiAgICB9XG4gICAgaWYgKHNob3dQb2ludHMpIHtcbiAgICAgIGRhdGEucHVzaCh7eDogaW5saWVyWHMsIHk6IGlubGllcllzLCB0eXBlOiBcInNjYXR0ZXJcIiwgbW9kZTogXCJtYXJrZXJzXCIsIG5hbWU6IFwiUG9pbnRzXCIsIHNob3dsZWdlbmQ6IGZhbHNlLCBtYXJrZXI6IHtjb2xvcjogY2hhcnRDb2xvcnMuaW5rLCBzaXplOiA4LCBsaW5lOiB7Y29sb3I6IGNoYXJ0Q29sb3JzLmhhbG8sIHdpZHRoOiAxfX19KVxuICAgIH1cbiAgICBpZiAoc2hvd091dGxpZXJzKSB7XG4gICAgICBkYXRhLnB1c2goe3g6IG91dGxpZXJYcywgeTogb3V0bGllcllzLCB0eXBlOiBcInNjYXR0ZXJcIiwgbW9kZTogXCJtYXJrZXJzXCIsIG5hbWU6IFwiT3V0bGllcnNcIiwgc2hvd2xlZ2VuZDogZmFsc2UsIG1hcmtlcjoge2NvbG9yOiBcIiNmOTczMTZcIiwgc2l6ZTogMTMsIHN5bWJvbDogXCJkaWFtb25kXCIsIGxpbmU6IHtjb2xvcjogY2hhcnRDb2xvcnMuaGFsbywgd2lkdGg6IDEuNX19fSlcbiAgICB9XG5cbiAgICBjb25zdCBsYXlvdXQgPSB7XG4gICAgICB4YXhpczoge3RpdGxlOiBcInhcIiwgcmFuZ2U6IFt4UmFuZ2UubG8sIHhSYW5nZS5oaV0sIHplcm9saW5lOiB0cnVlfSxcbiAgICAgIHlheGlzOiB7dGl0bGU6IFwieVwiLCByYW5nZTogW3lSYW5nZS5sbywgeVJhbmdlLmhpXSwgemVyb2xpbmU6IHRydWV9LFxuICAgICAgaG92ZXJtb2RlOiBcImNsb3Nlc3RcIixcbiAgICAgIHVpcmV2aXNpb246IFwic3RhdGljXCIsXG4gICAgICBhdXRvc2l6ZTogdHJ1ZVxuICAgIH1cbiAgICBjb25zdCBjb25maWcgPSBWTS5wbG90dGluZy5jb25maWcoKVxuXG4gICAgaWYgKCFfcGxvdERpdikge1xuICAgICAgX3Bsb3REaXYgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KFwiZGl2XCIpXG4gICAgICBfcGxvdERpdi5jbGFzc05hbWUgPSBcInBsb3RseS1ib3gtbGFyZ2VcIlxuICAgICAgUGxvdGx5Lm5ld1Bsb3QoX3Bsb3REaXYsIGRhdGEsIGxheW91dCwgY29uZmlnKVxuICAgICAgLy8gbmV3UGxvdCBmaXJlcyBiZWZvcmUgdGhlIGRpdiBpcyBpbiB0aGUgRE9NLCBzbyBQbG90bHkgbWVhc3VyZXMgMCB3aWR0aC5cbiAgICAgIC8vIEEgUmVzaXplT2JzZXJ2ZXIgY2F0Y2hlcyB0aGUgcmVhbCBzaXplIG9uY2UgaXQncyBpbnNlcnRlZCBhbmQgbGFpZCBvdXQuXG4gICAgICBWTS5wbG90dGluZy5hdXRvUmVzaXplKF9wbG90RGl2KVxuICAgIH0gZWxzZSB7XG4gICAgICBQbG90bHkucmVhY3QoX3Bsb3REaXYsIGRhdGEsIGxheW91dCwgY29uZmlnKVxuICAgIH1cbiAgICByZXR1cm4gX3Bsb3REaXZcbiAgfVxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0xMyIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Im1haW5QbG90KHNldHVwLCBzaG93TDIsIHNob3dMMSwgc2hvd1BvaW50cywgc2hvd091dGxpZXJzKVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0xNCIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6InZpZXdvZiBzaG93bkZpdHMgPSB7XG4gIGNvbnN0IGl0ZW1zID0gW11cbiAgZm9yIChjb25zdCBsYWJlbCBvZiBmaXRPcHRpb25zKSBpdGVtcy5wdXNoKHtsYWJlbCwgY29sb3I6IGZpdENvbG9ycy5nZXQobGFiZWwpfSlcbiAgcmV0dXJuIFZNLnVpLmxlZ2VuZE92ZXJsYXkoaXRlbXMsIHt2YWx1ZTogZml0T3B0aW9uc30pXG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTE1IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoidmlld29mIG91dGxpZXJTZXZlcml0eSA9IHtcbiAgY29uc3QgaW5wdXQgPSBJbnB1dHMucmFuZ2UoWy1zZXZlcml0eU1heCwgc2V2ZXJpdHlNYXhdLCB7c3RlcDogMC41LCB2YWx1ZTogNSwgbGFiZWw6IFwiT3V0bGllciBzZXZlcml0eVwifSlcbiAgaW5wdXQuY2xhc3NMaXN0LmFkZChcIm9qcy1maWxsXCIpXG4gIHJldHVybiBpbnB1dFxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0xNiIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIGNvbXBhcmlzb25UYWJsZSByZXBvcnRzIGVhY2ggZml0J3Mgc2xvcGUvaW50ZXJjZXB0LCBpdHMgdG90YWwgc3F1YXJlZFxuLy8gYW5kIGFic29sdXRlIHJlc2lkdWFsIG92ZXIgdGhlIGN1cnJlbnQgcG9pbnRzLCBhbmQgdGhlIGF2ZXJhZ2UgdGltZSB0b1xuLy8gY29tcHV0ZSBpdC4gTDIgYWx3YXlzIGhhcyB0aGUgc21hbGxlciBcInN1bSBvZiBzcXVhcmVkIHJlc2lkdWFsc1wiIChpdCdzXG4vLyBleGFjdGx5IHdoYXQgaXQgbWluaW1pemVzKSBhbmQgTDEgYWx3YXlzIGhhcyB0aGUgc21hbGxlciBcInN1bSBvZlxuLy8gYWJzb2x1dGUgcmVzaWR1YWxzXCIgKHNhbWUgcmVhc29uKSDigJQgdGhlIGNvbHVtbiB0byB3YXRjaCBhcyB0aGUgc2xpZGVyXG4vLyBtb3ZlcyBpcyBzbG9wZSBhbmQgaW50ZXJjZXB0OiBMMidzIGRyaWZ0IG5vdGljZWFibHkgZnVydGhlciBmcm9tIHRoZVxuLy8gdW5kZXJseWluZyAocHJlLW91dGxpZXIpIGxpbmUg4oCUIHNob3duIGluIHRoZSBub3RlIGJlbG93IHRoZSB0YWJsZSDigJRcbi8vIHRoYW4gTDEncyBkb2VzLlxuY29tcGFyaXNvblRhYmxlID0ge1xuICBjb25zdCByb3cgPSAobGFiZWwsIGZpdCkgPT4gW1xuICAgIGxhYmVsLFxuICAgIGZpdC5zbG9wZS50b0ZpeGVkKDQpLFxuICAgIGZpdC5pbnRlcmNlcHQudG9GaXhlZCg0KSxcbiAgICBmaXQuc3VtU3F1YXJlZC50b0V4cG9uZW50aWFsKDMpLFxuICAgIGZpdC5zdW1BYnNvbHV0ZS50b0V4cG9uZW50aWFsKDMpLFxuICAgIChmaXQudGltZU1zICogMTAwMCkudG9GaXhlZCgyKVxuICBdXG5cbiAgcmV0dXJuIFZNLnVpLnJlbmRlclRhYmxlKHtcbiAgICBodG1sLFxuICAgIGhlYWRlcnM6IFtcIkZpdFwiLCBcIlNsb3BlXCIsIFwiSW50ZXJjZXB0XCIsIFwiU3VtIG9mIHNxdWFyZWQgcmVzaWR1YWxzXCIsIFwiU3VtIG9mIGFic29sdXRlIHJlc2lkdWFsc1wiLCBcIkF2Zy4gZml0IHRpbWUgKM68cylcIl0sXG4gICAgY3N2SGVhZGVyczogW1wiRml0XCIsIFwiU2xvcGVcIiwgXCJJbnRlcmNlcHRcIiwgXCJTdW0gb2Ygc3F1YXJlZCByZXNpZHVhbHNcIiwgXCJTdW0gb2YgYWJzb2x1dGUgcmVzaWR1YWxzXCIsIFwiQXZnIGZpdCB0aW1lIChtaWNyb3NlY29uZHMpXCJdLFxuICAgIGZpbGVuYW1lOiBcImwxLXZzLWwyLWNvbXBhcmlzb24uY3N2XCIsXG4gICAgcm93czogW3JvdyhcIkwyIChsZWFzdCBzcXVhcmVzKVwiLCByZXN1bHQubDIpLCByb3coXCJMMSAobGVhc3QgYWJzb2x1dGUgZGV2aWF0aW9ucylcIiwgcmVzdWx0LmwxKV1cbiAgfSlcbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMTciLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJtZGBUaGUgdW5kZXJseWluZyAocHJlLW91dGxpZXIpIGxpbmUgaGFzIHNsb3BlICoqJHtiYXNlUG9pbnRzLnNsb3BlLnRvRml4ZWQoMil9KiogYW5kIGludGVyY2VwdCAqKiR7YmFzZVBvaW50cy5pbnRlcmNlcHQudG9GaXhlZCgyKX0qKiDigJQgY29tcGFyZSBlYWNoIGZpdCdzIHNsb3BlL2ludGVyY2VwdCBhYm92ZSB0byB0aGF0IGFzIHlvdSBtb3ZlIHRoZSBzbGlkZXIuXG5cbkwxJ3MgZml0IHRvb2sgKioke3Jlc3VsdC5sMS5pdGVyYXRpb25zfSoqIHJld2VpZ2h0aW5nIGl0ZXJhdGlvbnMgdG8gY29udmVyZ2UgYXQgdGhlIGN1cnJlbnQgc2V2ZXJpdHksIHdoaWNoIGlzIHdoeSBpdCdzIGNvbnNpc3RlbnRseSBzbG93ZXIgdGhhbiBMMidzIHNpbmdsZSBjbG9zZWQtZm9ybSBzb2x2ZSwgZXZlbiBvbiBhIGRhdGFzZXQgdGhpcyBzbWFsbC5gXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6InNoaW55SW5wdXQoJ3JlZ2VuZXJhdGVUcmlnZ2VyJykifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6InNoaW55SW5wdXQoJ3Nob3duRml0cycpIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJzaGlueUlucHV0KCdvdXRsaWVyU2V2ZXJpdHknKSJ9XX0=
+</script>
+<script type="module">
+if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }
+window._ojs.paths.runtimeToDoc = "../../apps/l1-vs-l2-regression";
+window._ojs.paths.runtimeToRoot = "../..";
+window._ojs.paths.docToRoot = "../..";
+window._ojs.selfContained = false;
+window._ojs.runtime.interpretFromScriptTags();
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    // Ensure there is a toggle, if there isn't float one in the top right
+    if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+      const a = window.document.createElement('a');
+      a.classList.add('top-right');
+      a.classList.add('quarto-color-scheme-toggle');
+      a.href = "";
+      a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+      const i = window.document.createElement("i");
+      i.classList.add('bi');
+      a.appendChild(i);
+      window.document.body.appendChild(a);
+    }
+    setColorSchemeToggle(hasAlternateSentinel())
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/www\.visualmathlab\.com");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="../../apps/polynomial-fits/index.html" class="pagination-link" aria-label="Polynomial Fits">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Polynomial Fits</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="../../topics/probability/index.html" class="pagination-link" aria-label="Probability">
+        <span class="nav-page-text">Probability</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+<p>Copyright © 2025-2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="../../privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

@@ -45,7 +45,7 @@
    * `grid-column: body-end / page-end`, and the rule above collapses that
    * whole span onto a single 1.5em track -- so the TOC laid out 26px wide
    * against 100px of content on every page that has one (measured at 1440px
-   * on privacy, sperners-lemma/geometric-proof and 1d-recursive-filters).
+   * on privacy, apps/sperners-lemma-geometric-proof and recursive-filters-1d).
    * Restoring Quarto's own right-hand margin tracks just for those pages
    * keeps the wide, centered body column everywhere else, which is the
    * point of the override above: the interactive method pages have no
@@ -54,7 +54,7 @@
    *
    * :has() rather than Quarto's `fullcontent` body class, which looks like
    * the right discriminator but isn't -- it's set on the homepage listing
-   * and NOT on root-finding/newton-method, which has no TOC either. The
+   * and NOT on apps/newton-method, which has no TOC either. The
    * presence of the nav element is the only thing that actually tracks
    * whether a TOC exists. (:has() is already used further down this file
    * for the fullscreen chart chain.) */
@@ -444,7 +444,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * the *fullscreen* viewport once entered, not its original box, and would
  * otherwise stretch the plot to a different ratio than on the page. The
  * existing per-page ResizeObserver on the graph div (see e.g.
- * root-finding/newton-method/index.qmd's mainPlot cell) already calls
+ * apps/newton-method/index.qmd's mainPlot cell) already calls
  * Plotly.Plots.resize whenever this box resizes, so Plotly's own redraw
  * picks up the letterboxed size with no extra JS here. */
 .ojs-plot-overlay:fullscreen {
@@ -670,7 +670,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   width: auto;
 }
 
-/* A multi-slider overlay bar (e.g. 1d-recursive-filters' four filter
+/* A multi-slider overlay bar (e.g. recursive-filters-1d' four filter
  * parameters) uses .ojs-step-overlay.ojs-grid instead of the plain bar --
  * see the .ojs-grid rule above for the auto-fit track. Inside a single-line
  * step bar the label-beside-control layout above is right: there's exactly
@@ -1114,7 +1114,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 
 /* ── Invalid input ───────────────────────────────────────────────── */
 /* Promoted from the page-local .bt-invalid in
- * differential-equations/butcher-tableau/index.qmd, which was the only
+ * apps/butcher-tableau/index.qmd, which was the only
  * error affordance anywhere on the site. Pairs with the in-chart empty
  * state (VM.plotting.emptyState) so a formula that won't parse is flagged
  * both at the field and on the chart. */

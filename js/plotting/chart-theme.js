@@ -44,7 +44,7 @@
 
   // "dark" | "light". Exported so a page can build a reactive OJS cell that
   // re-runs on a theme toggle -- see the vmTheme pattern in
-  // root-finding/newton-method/index.qmd.
+  // apps/newton-method/index.qmd.
   const themeName = () => (isDark() ? "dark" : "light")
 
   // Matches $font-family-sans-serif in _theme/vml-{light,dark}.scss, so

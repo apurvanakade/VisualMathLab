@@ -269,11 +269,12 @@ Authors: Dhruv Azad, Apurva Nakade
 
 /* ── Chart overlay ───────────────────────────────────────────────── */
 
-/* Both floating panels hide themselves when they have nothing in them: the
+/* Both chart panels hide themselves when they have nothing in them: the
    slider bar for a selection with no parameters (an edge without a demo,
    nothing selected, Uniform), the legend for a single-series plot, which
    needs no key. Declarative rather than the cells reaching out to style
-   their own container. */
+   their own container. display: none rather than a zero height, so the bar
+   takes no flow space at all -- it sits below the chart, not over it. */
 .ojs-step-overlay:not(:has(input[type="range"])) {
   display: none;
 }
@@ -285,7 +286,7 @@ Authors: Dhruv Azad, Apurva Nakade
   display: none;
 }
 
-/* The site's grid overlay bar expects one cell per slider, so each becomes a
+/* The site's grid slider bar expects one cell per slider, so each becomes a
    grid item (see apps/recursive-filters-1d). Here the set of sliders changes
    with the selection, so they all come from one cell -- and Quarto wraps that
    cell's output in several nested divs, so .ojs-step-overlay's own grid sees
@@ -304,7 +305,7 @@ Authors: Dhruv Azad, Apurva Nakade
   align-items: end;
 }
 
-/* Reading instructions for an overlay, sat directly under it. */
+/* Reading instructions for the chart, sat directly under its slider bar. */
 .ojs-demo-caption {
   margin: 0.4rem 0 0.9rem 0;
   color: var(--vm-text-soft);

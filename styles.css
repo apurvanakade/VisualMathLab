@@ -139,19 +139,43 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
 /* The always-visible rail: a slim strip at the left edge with a hamburger
  * toggle, present regardless of sidebar state so there's always something
  * to hover or click to bring the sidebar back. */
+/* Only as tall as the buttons it holds. It used to run the full height of
+ * the viewport, to catch a pointer drifting into the left edge and preview
+ * the sidebar; with that behaviour gone the tall box had no purpose and one
+ * real cost, since an element is hit-tested whether or not it paints
+ * anything. Below 768px the body column starts at x:26px, inside the rail's
+ * 44px width, so that invisible strip sat over the leftmost 21px of the
+ * page's own text and swallowed clicks meant for it. */
 #vm-sidebar-rail {
   position: fixed;
   top: 66px;
   left: 0;
-  bottom: 0;
   width: 2.75rem;
   z-index: 1056;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding-top: 0.6rem;
   transition: left 0.22s ease;
+}
+
+/* The buttons' own surface. Without it the two icons sit in open space with
+ * nothing behind them, and the rail reads as an unfinished fragment rather
+ * than a control that was cut off. Shaped as a tab hanging off the left
+ * edge -- no left border, rounded on the right only -- so it looks attached
+ * to the edge it is anchored to, and equally to the sidebar's own edge once
+ * the sidebar is open and the rail has moved out to x:280. */
+.vm-rail-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.3rem;
+  margin-top: 0.5rem;
+  background: var(--vm-surface);
+  border: 1px solid var(--vm-border);
+  border-left: none;
+  border-radius: 0 var(--vm-radius) var(--vm-radius) 0;
+  box-shadow: var(--vm-shadow);
 }
 
 /* Once open, the sidebar's own box occupies x:0-280px at the same z-index
@@ -235,6 +259,19 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
   align-items: flex-end;
+}
+
+/* A flex/grid item's automatic minimum size is its content's min-content
+ * width, so an item can refuse to shrink below whatever is inside it and
+ * push the whole row past its container instead. Every child here wraps one
+ * Observable control whose intrinsic width is a fixed 360px (see the width
+ * rule on .ojs-panel form[class^="oi-"] below), which is wider than a
+ * two-column .ojs-grid track on a narrow viewport -- and a track sized to a
+ * min-content contribution that large overflows the page rather than
+ * wrapping. Same reason .quarto-layout-cell needs it above. */
+.ojs-row > *,
+.ojs-grid > * {
+  min-width: 0;
 }
 
 /* First control grows to fill the row; later ones (e.g. a button) keep their
@@ -348,6 +385,16 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.15rem;
+  /* Observable gives every form a fixed 360px width. In the row layout it
+   * was written for that is a sensible default; in a narrower .ojs-grid
+   * track it is a hard floor the item cannot shrink under, so a two-column
+   * grid on a ~700px viewport resolved its tracks to 360px each and pushed
+   * ~70px off the right of the page. A percentage is the fix rather than a
+   * smaller fixed width: percentages don't contribute to intrinsic sizing,
+   * so the track goes back to being sized by the grid instead of by its
+   * contents. The visible field width is unaffected either way -- that is
+   * set on the input (10em, or .ojs-fill for a formula), not on the form. */
+  width: 100%;
 }
 
 /* Observable also hardcodes every <label> to a fixed width: 120px;
@@ -422,9 +469,15 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   min-width: 0;
 }
 
+/* 72vh rather than the 78vh this was while the step bar floated over the
+ * chart: the bar now sits below and adds its own ~53px (plus margin), so the
+ * chart gives back about what the bar takes and a chart block occupies close
+ * to the height it always did. The visible plot area is a wash -- 78vh with
+ * a slider bar covering its bottom strip showed about as much curve as 72vh
+ * with nothing over it -- but none of it is obscured any more. */
 .plotly-box-large {
   width: 100%;
-  height: 78vh;
+  height: 72vh;
   min-height: 500px;
 }
 
@@ -449,6 +502,12 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * picks up the letterboxed size with no extra JS here. */
 .ojs-plot-overlay:fullscreen {
   background: var(--vm-bg);
+  /* The step bar is a normal-flow sibling below the chart (see
+   * .ojs-step-overlay), so fullscreen has to divide the viewport between the
+   * two rather than letting the chart claim all of it -- hence a column here
+   * and the flex sizing on each part below. */
+  display: flex;
+  flex-direction: column;
 }
 
 /* Quarto/Observable sits several plain wrapper divs between .ojs-plot-overlay
@@ -471,12 +530,36 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   height: 100%;
 }
 
+/* The chain above is `height: 100%` all the way down, which is right for
+ * every link except the outermost one: as a flex item of the column above it
+ * has to take the height the step bar leaves rather than the container's
+ * full height, or the bar is pushed off the bottom of the screen. Same
+ * specificity as the rule above (a child combinator adds none), so this has
+ * to stay *after* it to win. */
+.ojs-plot-overlay:fullscreen > div:has(.js-plotly-plot) {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  /* Makes this the size container the letterbox math below measures against.
+   * Its cqh is the height left after the step bar takes its share, which is
+   * the number that box actually has to fit the chart into; 100vh is the
+   * whole screen and overstates it by the height of the bar, which showed up
+   * as a chart stretched wider than its on-page aspect ratio. */
+  container-type: size;
+}
+
+/* Never shrink the controls to make room for the chart -- the chart is the
+ * part with flexible height here. */
+.ojs-plot-overlay:fullscreen > .ojs-step-overlay {
+  flex: 0 0 auto;
+}
+
 .ojs-plot-overlay:fullscreen .js-plotly-plot {
   /* Each candidate is "fit to the full height" vs. "fit to the full width"
    * at the recorded ratio; min() picks whichever one doesn't overflow the
    * other axis, which is exactly contain-style letterboxing. */
-  width: min(100%, calc(100vh * var(--vm-plot-aspect-ratio, 1.6)));
-  height: min(100%, calc(100vw / var(--vm-plot-aspect-ratio, 1.6)));
+  width: min(100%, calc(100cqh * var(--vm-plot-aspect-ratio, 1.6)));
+  height: min(100%, calc(100cqw / var(--vm-plot-aspect-ratio, 1.6)));
   min-height: 0;
 }
 
@@ -536,52 +619,41 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   text-decoration: line-through;
 }
 
-/* Floating step-slider bar -- move a page's viewof stepControl inside
- * .ojs-plot-overlay and wrap it in this to float it atop the chart's
- * bottom edge, same floating-panel chrome as .ojs-legend-overlay above but
- * anchored to the bottom and spanning the chart's width instead of
- * hugging a corner. Staying inside .ojs-plot-overlay is what keeps it
- * visible when the chart goes fullscreen (see plotly-fullscreen-button.js). */
+/* Step/parameter slider bar -- move a page's viewof stepControl inside
+ * .ojs-plot-overlay and wrap it in this to sit it directly beneath the
+ * chart, spanning its width. It is a normal-flow block, NOT a floating card:
+ * a bar pinned over the chart's bottom edge covers the part of the curve a
+ * reader is usually scrubbing toward, and no amount of translucency or
+ * collapsing changes the fact that it is in the way. Reserving the space
+ * instead means the chart is never obscured at all.
+ *
+ * Staying inside .ojs-plot-overlay is still what keeps it visible when the
+ * chart goes fullscreen (see plotly-fullscreen-button.js), which is why this
+ * is not simply a sibling of that wrapper. It takes .ojs-panel's chrome -- a
+ * solid surface rather than the blurred translucent card the legend uses --
+ * because there is no longer any curve behind it to show through. */
 .ojs-step-overlay {
-  position: absolute;
-  bottom: 0.75rem;
-  left: 0.75rem;
-  right: 0.75rem;
-  z-index: 5;
+  margin-top: 0.5rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius);
-  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--vm-surface);
   box-shadow: var(--vm-shadow);
 }
 
-/* On a phone the legend overlay has nowhere to go but on top of the chart
- * it annotates, so it's hidden below the same breakpoint the sidebar uses,
- * except when the chart is actually fullscreened -- the Fullscreen API
- * applies straight to .ojs-plot-overlay (see plotly-fullscreen-button.js),
- * so :fullscreen needs no JS-toggled class here, and there's room for it
- * once it is.
+/* The legend is the one panel still floating on the chart, and on a phone it
+ * has nowhere to go but on top of the curve it annotates -- so it's hidden
+ * below the same breakpoint the sidebar uses, except when the chart is
+ * actually fullscreened. The Fullscreen API applies straight to
+ * .ojs-plot-overlay (see plotly-fullscreen-button.js), so :fullscreen needs
+ * no JS-toggled class here, and there's room for it once it is.
  *
- * The step overlay gets different treatment: it's the slider (and now the
- * play button) a reader animates, and without it a phone gets no animation
- * at all. Rather than hide it, unpin it from the chart and let it reflow as
- * a plain block underneath -- same look as an .ojs-panel, not a floating
- * card, since there's no curve left to float over once it's off the chart. */
+ * The step bar needs nothing here any more: it reflows as a plain block
+ * beneath the chart at every width, which is what this breakpoint used to
+ * arrange for narrow screens alone. */
 @media (max-width: 991.98px) {
   .ojs-plot-overlay:not(:fullscreen) .ojs-legend-overlay {
     display: none;
-  }
-
-  .ojs-plot-overlay:not(:fullscreen) .ojs-step-overlay {
-    position: static;
-    inset: auto;
-    width: auto;
-    margin-top: 0.5rem;
-    background: var(--vm-surface);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
 }
 
@@ -714,16 +786,18 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 /* ── Draggable overlay panels ────────────────────────────────────── */
-/* Both floating panels above are pinned to a corner by default, which is
+/* The legend floats over the chart, pinned to a corner by default, which is
  * sometimes exactly where the interesting part of the curve is. A grip fades
- * in at each panel's right edge; js/ui/draggable-overlay.js does the actual
- * dragging (and remembers where each panel was put), this is only its
- * chrome. */
+ * in at its right edge; js/ui/draggable-overlay.js does the actual dragging
+ * (and remembers where it was put), this is only its chrome. The step bar
+ * below the chart is not draggable -- it covers nothing, so there is nowhere
+ * to drag it to. */
 
-/* The gutter the grip sits in, so it can never overlap a legend label or the
- * "Max" field at the end of a step bar. */
-.ojs-legend-overlay,
-.ojs-step-overlay {
+/* The gutter the grip sits in, so it can never overlap a legend label. The
+ * step bar is in normal flow and has nothing to be dragged clear of, so it
+ * gets no grip and needs no gutter -- 1.5rem of dead space at the end of a
+ * full-width slider bar is worth reclaiming. */
+.ojs-legend-overlay {
   padding-right: 1.5rem;
 }
 
@@ -755,7 +829,6 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 /* Revealed on hover, matching the modebar pill below rather than adding a
  * third piece of always-on chrome to a chart. */
 .ojs-legend-overlay:hover .vm-overlay-grip,
-.ojs-step-overlay:hover .vm-overlay-grip,
 .vm-overlay-grip:focus-visible {
   opacity: 1;
 }
@@ -1110,6 +1183,35 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 .vm-play-pill:focus-visible {
   outline: 2px solid var(--vm-accent);
   outline-offset: 1px;
+}
+
+/* ── Wide content ─────────────────────────────────────────────────── */
+/* Two things on these pages are laid out at their natural width and will
+ * happily run off the side of a phone. Either one takes the whole page's
+ * horizontal scroll with it, which is worse than it sounds: every other
+ * element then sits in a viewport wider than the screen, so the reader
+ * scrolls sideways through the entire article to read one line of it. */
+
+/* A display equation (apps/recursive-filters-1d's Kalman update measures
+ * 812px against a 649px column) scrolls inside its own box instead, the
+ * same way .ojs-table-container does for a wide table. overflow-y stays
+ * hidden so this only ever adds a horizontal scrollbar; MathJax positions
+ * its own glyphs and needs no vertical scrolling. */
+mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* The scrollbar is drawn inside the box, so give it a lane of its own
+   * rather than letting it sit on the equation's descenders. */
+  padding-bottom: 0.25rem;
+}
+
+/* A bare URL is one unbreakable word, and the References section every proof
+ * page ends with (see CLAUDE.md's math-exposition conventions) spells its
+ * citations' links out in full rather than hiding them behind link text.
+ * Nothing else in prose is long enough to need this, so it stays scoped to
+ * links instead of licensing mid-word breaks in the body copy. */
+main.content a {
+  overflow-wrap: break-word;
 }
 
 /* ── Invalid input ───────────────────────────────────────────────── */

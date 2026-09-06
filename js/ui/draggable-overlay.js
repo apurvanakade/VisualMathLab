@@ -5,27 +5,35 @@
  */
 
 (function attachVM(globalThis) {
-  // Lets the reader drag the floating panels that sit on top of a Plotly
-  // chart -- the trace legend (js/ui/legend-overlay.js) and the
-  // step/parameter bar (.ojs-step-overlay) -- off whatever part of the curve
-  // they happen to be covering. Both are pinned to fixed corners by
-  // styles.css, which is the right default but is sometimes exactly where
-  // the interesting part of the plot is.
+  // Lets the reader drag the trace legend (js/ui/legend-overlay.js) off
+  // whatever part of the curve it happens to be covering. It is pinned to a
+  // fixed corner by styles.css, which is the right default but is sometimes
+  // exactly where the interesting part of the plot is.
   //
-  // Delegated, like js/ui/range-progress.js: both panels carry stable class
-  // names that every chart page already emits, so this wires itself up on all
-  // 15 of them with no per-page edit. Watching for panels that appear later
-  // is not optional either -- the legend element is destroyed and rebuilt on
-  // every dark-mode toggle (a page's `viewof traces` cell reads traceColors,
-  // which reads chartColors, which depends on vmTheme), so a one-time sweep
-  // would leave the rebuilt legend undraggable and back in its corner.
+  // The legend is the only draggable panel. The step/parameter bar
+  // (.ojs-step-overlay) used to float over the chart's bottom edge and be
+  // draggable for the same reason, but it now sits in normal flow beneath the
+  // chart and covers nothing, so there is nowhere to drag it to. Leaving it
+  // out of PANEL_SELECTOR is also what keeps a *stored* offset from a version
+  // that did float it from shoving the in-flow bar out of place: the only
+  // thing that ever writes `transform` here is this module, so a bar it never
+  // touches simply renders where the stylesheet puts it, and the stale
+  // localStorage entry is inert rather than actively wrong.
   //
-  // Dragging is deliberately restricted to the grip: the panels are made
-  // almost entirely of controls (slider thumbs, legend rows), and a
+  // Delegated, like js/ui/range-progress.js: the legend carries a stable
+  // class name that every chart page already emits, so this wires itself up
+  // with no per-page edit. Watching for panels that appear later is not
+  // optional either -- the legend element is destroyed and rebuilt on every
+  // dark-mode toggle (a page's `viewof traces` cell reads traceColors, which
+  // reads chartColors, which depends on vmTheme), so a one-time sweep would
+  // leave the rebuilt legend undraggable and back in its corner.
+  //
+  // Dragging is deliberately restricted to the grip: the panel is made almost
+  // entirely of controls (the legend rows are clickable toggles), and a
   // drag-anywhere surface would keep stealing those interactions.
 
   const KEY_PREFIX = "vml-overlay-pos"
-  const PANEL_SELECTOR = ".ojs-legend-overlay, .ojs-step-overlay"
+  const PANEL_SELECTOR = ".ojs-legend-overlay"
   const CONTAINER_SELECTOR = ".ojs-plot-overlay"
 
   const clampValue = (value, min, max) => {
@@ -115,8 +123,11 @@
     if (!container) return
     panel.dataset.vmDraggable = "1"
 
-    const role = panel.classList.contains("ojs-legend-overlay") ? "legend" : "controls"
-    const key = overlayStorageKey(window.location.pathname, role, containerIndex(container))
+    // Only the legend is enhanced (see the header), but the role stays in the
+    // key so previously-stored legend positions keep resolving to the same
+    // entry, and so a second draggable panel could be added without silently
+    // colliding with this one.
+    const key = overlayStorageKey(window.location.pathname, "legend", containerIndex(container))
 
     // The offset the reader actually asked for, kept separate from the one
     // currently applied. Anything that re-clamps -- a window resize, entering
@@ -144,13 +155,12 @@
 
     // Appended last, not prepended. Either end interacts with styles.css's
     // `.ojs-row > div:first-of-type { flex: 1 1 200px }` /
-    // `:last-of-type { flex: 0 0 auto }` sizing on a step bar -- those were
-    // written as :first-child/:last-child, which any inserted sibling would
-    // have knocked out of matching entirely (":first-child" is "a div that is
-    // also the first child", not "the first div"). They're -of-type now so
-    // the grip can't disturb them, and the grip is position: absolute so it
-    // also takes no .ojs-grid track. Last also puts it after the controls in
-    // tab order.
+    // `:last-of-type { flex: 0 0 auto }` sizing -- those were written as
+    // :first-child/:last-child, which any inserted sibling would have knocked
+    // out of matching entirely (":first-child" is "a div that is also the
+    // first child", not "the first div"). They're -of-type now so the grip
+    // can't disturb them, and the grip is position: absolute so it also takes
+    // no .ojs-grid track. Last also puts it after the controls in tab order.
     const grip = document.createElement("button")
     grip.type = "button"
     grip.className = "vm-overlay-grip"

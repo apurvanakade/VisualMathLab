@@ -142,6 +142,25 @@ Authors: Apurva Nakade
 <script src="../../js/numerical/lagrange-quadratic.js"></script>
 <script src="../../js/sampling/seeded-random.js"></script>
 <script src="../../js/sampling/gaussian-random.js"></script>
+<script src="../../js/distributions/log-gamma.js"></script>
+<script src="../../js/distributions/sample-curve.js"></script>
+<script src="../../js/distributions/histogram-bins.js"></script>
+<script src="../../js/distributions/bernoulli-pmf.js"></script>
+<script src="../../js/distributions/binomial-pmf.js"></script>
+<script src="../../js/distributions/poisson-pmf.js"></script>
+<script src="../../js/distributions/geometric-pmf.js"></script>
+<script src="../../js/distributions/exponential-pdf.js"></script>
+<script src="../../js/distributions/normal-pdf.js"></script>
+<script src="../../js/distributions/gamma-pdf.js"></script>
+<script src="../../js/distributions/chi-squared-pdf.js"></script>
+<script src="../../js/distributions/beta-pdf.js"></script>
+<script src="../../js/distributions/student-t-pdf.js"></script>
+<script src="../../js/distributions/f-pdf.js"></script>
+<script src="../../js/distributions/negative-binomial-pmf.js"></script>
+<script src="../../js/distributions/hypergeometric-pmf.js"></script>
+<script src="../../js/distributions/lognormal-pdf.js"></script>
+<script src="../../js/distributions/cauchy-pdf.js"></script>
+<script src="../../js/distributions/weibull-pdf.js"></script>
 <script src="../../js/filters/moving-average-filter.js"></script>
 <script src="../../js/filters/ema-filter.js"></script>
 <script src="../../js/filters/kalman-1d-filter.js"></script>
@@ -597,6 +616,12 @@ window.Quarto = {
  <span class="menu-text">1D Recursive Filters</span></a>
   </div>
 </li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../../apps/distribution-relationships/index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Distribution Relationships</span></a>
+  </div>
+</li>
       </ul>
   </li>
     </ul>
@@ -652,7 +677,7 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1788652394838" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
+<div class="g-col-1" data-index="0" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1788723482975" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
 <a href="../../apps/polynomial-fits/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -668,7 +693,7 @@ Polynomial Fits
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1788652394837" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
+<div class="g-col-1" data-index="1" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1788723482974" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
 <a href="../../apps/l1-vs-l2-regression/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1047,12 +1072,12 @@ Authors: Apurva Nakade
 
 <!--
 One-time "this site is built for larger screens" notice, shown on a phone
-only. Charts on this site float draggable legend/step controls over the
-plot; below the 991.98px breakpoint this uses, styles.css hides the trace
-legend (".ojs-legend-overlay") since there isn't room for it alongside the
-chart on a phone screen. The slider bar (".ojs-step-overlay") is NOT hidden
--- it unpins and reflows to a plain block under the chart, so scrubbing and
-the play button still work on a phone; only the legend needs fullscreen.
+only. Charts on this site float a draggable trace legend over the plot;
+below the 991.98px breakpoint this uses, styles.css hides that legend
+(".ojs-legend-overlay") since there isn't room for it alongside the chart on
+a phone screen. The slider bar (".ojs-step-overlay") is NOT hidden -- it
+sits in normal flow beneath the chart at every width, so scrubbing and the
+play button still work on a phone; only the legend needs fullscreen.
 Keep this copy in step with that media query: it is a factual claim about
 what a phone visitor can and cannot do. This banner explains it once,
 remembered in localStorage so it never shows again -- same shape as
@@ -1183,9 +1208,18 @@ JS; styles.css forces the same off-canvas treatment at every width, driven
 by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
 .collapse/.show. This script owns those two classes and provides the one
 thing that treatment removes: a permanently visible way back in -- a slim
-rail at the left edge with a hamburger toggle, open-on-hover for a quick
-peek, click-to-pin for a session that stays open, Escape/click-outside to
-close.
+rail at the left edge with a hamburger toggle, click-to-pin for a session
+that stays open, Escape/click-outside to close.
+
+The rail used to open the sidebar on hover anywhere down its full-height
+box. That is gone: the hamburger is a visible control and can simply be
+clicked, and the hover version cost more than it gave. It fired on any
+pointer drift into the left edge, and since it announces itself by writing
+.vm-sidebar-open onto <body>, every one of those accidental opens churned a
+class list that chart pages observe (see VM.plotting.onThemeChange). It also
+forced the rail's box to span the viewport to catch the pointer, which left
+an invisible 21px strip lying over the content column below 768px, where the
+body's own left margin is narrower than the rail.
 -->
 <script>
 (function () {
@@ -1213,19 +1247,21 @@ close.
 
     var rail = document.createElement("div")
     rail.id = "vm-sidebar-rail"
+    // The buttons live in their own wrapper, which is what carries the
+    // painted surface. See the .vm-rail-cluster rules in styles.css.
     rail.innerHTML =
+      '<div class="vm-rail-cluster">' +
       '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
       '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>' +
       "</button>" +
       '<button type="button" data-vm-pin aria-label="Keep sidebar open" title="Keep sidebar open">' +
       '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.037l-1.394 1.393c.18.613.185 1.373.021 2.023-.212.828-.696 1.747-1.435 2.486l-.104.104a.5.5 0 0 1-.707 0l-2.404-2.404-2.968 2.967c-.09.09-.203.203-.401.401-.081.08-.181.18-.297.294a1.001 1.001 0 0 1-.399.245.998.998 0 0 1-.797-.061.998.998 0 0 1-.4-.245l-.106-.106a1 1 0 0 1-.06-.797 1 1 0 0 1 .245-.399l.294-.297.401-.401 2.967-2.968-2.404-2.404a.5.5 0 0 1 0-.707l.104-.104c.739-.739 1.658-1.223 2.486-1.435.65-.164 1.41-.159 2.023.021L9.617 2.65a5 5 0 0 1-.037-.46c0-.431.108-1.023.588-1.503A.5.5 0 0 1 9.828.722z"/></svg>' +
-      "</button>"
+      "</button>" +
+      "</div>"
     document.body.appendChild(rail)
 
     var toggleBtn = rail.querySelector("[data-vm-toggle]")
     var pinBtn = rail.querySelector("[data-vm-pin]")
-    var closeTimer = null
-    var COARSE_POINTER = window.matchMedia && window.matchMedia("(hover: none), (pointer: coarse)").matches
 
     function isPinned() {
       try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
@@ -1238,7 +1274,6 @@ close.
     }
 
     function openSidebar() {
-      if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
       body.classList.add("vm-sidebar-open")
       toggleBtn.setAttribute("aria-expanded", "true")
     }
@@ -1247,21 +1282,6 @@ close.
       if (isPinned()) return
       body.classList.remove("vm-sidebar-open")
       toggleBtn.setAttribute("aria-expanded", "false")
-    }
-
-    function scheduleClose() {
-      if (closeTimer) clearTimeout(closeTimer)
-      closeTimer = setTimeout(closeSidebar, 200)
-    }
-
-    // Hover-to-preview (mouse only -- COARSE_POINTER skips it so a tap on
-    // the rail doesn't also fire a hover-open right before the click
-    // handler runs).
-    if (!COARSE_POINTER) {
-      rail.addEventListener("mouseenter", openSidebar)
-      rail.addEventListener("mouseleave", scheduleClose)
-      sidebar.addEventListener("mouseenter", openSidebar)
-      sidebar.addEventListener("mouseleave", scheduleClose)
     }
 
     toggleBtn.addEventListener("click", function () {
@@ -1286,9 +1306,8 @@ close.
       closeSidebar()
     })
 
-    // Click-outside: covers touch (no hover/mouseleave to rely on) and
-    // mouse clicks that land directly on the page content rather than
-    // drifting out through the sidebar's own edge.
+    // Click-outside, together with Escape and the toggle itself, is now the
+    // whole of how the sidebar closes.
     document.addEventListener("click", function (event) {
       if (!body.classList.contains("vm-sidebar-open")) return
       if (isPinned()) return

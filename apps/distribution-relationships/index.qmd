@@ -1,0 +1,1565 @@
+---
+title: "Distribution Relationships"
+description: "A clickable map of how the standard probability distributions turn into one another, with each distribution's density plotted from its own formula."
+author:
+  - Dhruv Azad
+  - Apurva Nakade
+date: 2026-08-23
+topic: "Probability"
+order: 3
+image: distribution-relationships.png
+categories:
+  - Probability
+  - Distributions
+  - Central Limit Theorem
+format:
+  html:
+    include-in-header:
+      # Both are page-local: d3 is the only CDN dependency the site loads
+      # outside _includes/head-scripts.html, and this is the only page that
+      # needs it, the same reason relationship-graph.js is colocated here
+      # rather than promoted into js/**.
+      - text: |
+          <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
+          <script src="relationship-graph.js"></script>
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad, Apurva Nakade
+-->
+
+<style>
+/* Page-local styles. Every selector here targets markup that exists only on
+   this page -- the d3 relationship graph built by relationship-graph.js, its
+   legend, and the detail blurb -- so it lives with the page rather than in
+   the site-wide styles.css (see CLAUDE.md's page-local CSS convention).
+   Colors are the same --vm-* design tokens styles.css uses, so all of it
+   re-themes with the site on a dark-mode toggle: --vm-accent for exact
+   relationships, --vm-alt for limiting ones, which are also dashed so the
+   distinction never rests on color alone. */
+
+.ojs-graph-container {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-bg);
+}
+
+.ojs-relationship-graph {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* The background pans and zooms, so it is a grab surface, not text. */
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ojs-graph-container.is-dragging .ojs-relationship-graph {
+  cursor: grabbing;
+}
+
+/* ── Nodes ───────────────────────────────────────────────────────── */
+
+.ojs-graph-node {
+  cursor: pointer;
+}
+
+.ojs-graph-node rect {
+  fill: var(--vm-surface);
+  stroke: var(--vm-border);
+  stroke-width: 1.5;
+  transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.ojs-graph-node text,
+.ojs-graph-node-probe {
+  fill: var(--vm-text);
+  font-size: 0.95rem;
+  font-weight: 550;
+  /* The <text> sits over its own <rect>, so without this a pointer over the
+     label itself would fall through the group's hover and drag handling. */
+  pointer-events: none;
+}
+
+.ojs-graph-node:hover rect,
+.ojs-graph-node:focus-visible rect {
+  fill: var(--vm-surface-hover);
+  stroke: var(--vm-accent);
+  stroke-width: 2.25;
+}
+
+.ojs-graph-node.is-selected rect {
+  fill: var(--vm-surface-hover);
+  stroke: var(--vm-accent);
+  stroke-width: 3;
+}
+
+/* ── Edges ───────────────────────────────────────────────────────── */
+
+.ojs-graph-edge {
+  fill: none;
+  stroke-width: 2;
+  /* Pointer events belong to the fat invisible .ojs-graph-edge-hit stroke
+     underneath, a far bigger target than this 2px curve. */
+  pointer-events: none;
+  transition: stroke-width 0.15s ease;
+}
+
+/* Stroke on the curve, fill on the arrowhead -- kept in separate rules on
+   purpose. Grouping them into one selector list also filled the curve, and a
+   filled quadratic bezier paints the lens between the curve and its chord,
+   which read as a fat wedge tapering into the arrow. .ojs-graph-edge's own
+   `fill: none` above loses to it: a descendant selector outweighs a single
+   class. */
+.ojs-graph-edge-exact .ojs-graph-edge {
+  stroke: var(--vm-accent);
+}
+
+.ojs-graph-arrow-exact {
+  fill: var(--vm-accent);
+}
+
+/* Limiting relationships are the larger half of the diagram, and at the same
+   weight as the exact ones they drown out the backbone of exact identities.
+   Drawn a little thinner and slightly translucent, they read as the second
+   layer they are -- and hover/selection below restores full weight, so
+   nothing is lost when the reader goes looking. */
+.ojs-graph-edge-limit .ojs-graph-edge {
+  stroke: var(--vm-alt);
+  stroke-dasharray: 6 5;
+  stroke-width: 1.6;
+  opacity: 0.72;
+}
+
+.ojs-graph-edge-limit:hover .ojs-graph-edge,
+.ojs-graph-edge-limit:focus-visible .ojs-graph-edge,
+.ojs-graph-edge-limit.is-selected .ojs-graph-edge {
+  opacity: 1;
+}
+
+.ojs-graph-arrow-limit {
+  fill: var(--vm-alt);
+}
+
+.ojs-graph-edge-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  cursor: pointer;
+}
+
+.ojs-graph-edge-group:hover .ojs-graph-edge,
+.ojs-graph-edge-group:focus-visible .ojs-graph-edge {
+  stroke-width: 3.5;
+}
+
+.ojs-graph-edge-group.is-selected .ojs-graph-edge {
+  stroke-width: 4;
+}
+
+/* ── Selection focus ─────────────────────────────────────────────── */
+
+/* Whatever is selected pulls focus by fading everything unrelated, rather
+   than by shouting louder than it. */
+.ojs-graph-node.is-dimmed,
+.ojs-graph-edge-group.is-dimmed {
+  opacity: 0.32;
+}
+
+.ojs-graph-node,
+.ojs-graph-edge-group {
+  transition: opacity 0.2s ease;
+}
+
+/* The rect's / curve's own stroke is the focus indicator, so the browser's
+   default ring would just draw a second, squarer outline around it. */
+.ojs-graph-node:focus-visible,
+.ojs-graph-edge-group:focus-visible {
+  outline: none;
+}
+
+.ojs-graph-edge-group:focus-visible .ojs-graph-edge-hit {
+  stroke: var(--vm-accent);
+  stroke-opacity: 0.18;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ojs-graph-node,
+  .ojs-graph-node rect,
+  .ojs-graph-edge,
+  .ojs-graph-edge-group {
+    transition: none;
+  }
+}
+
+/* ── Legend ──────────────────────────────────────────────────────── */
+
+.ojs-graph-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin: 0.35rem 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: var(--vm-text-soft);
+  align-items: center;
+}
+
+.ojs-graph-legend-swatch {
+  display: inline-block;
+  width: 1.5rem;
+  height: 0;
+  border-top-width: 2.5px;
+  border-top-style: solid;
+  vertical-align: middle;
+  margin-right: 0.35rem;
+}
+
+.ojs-graph-legend-swatch.is-exact { border-top-color: var(--vm-accent); }
+
+.ojs-graph-legend-swatch.is-limit {
+  border-top-color: var(--vm-alt);
+  border-top-style: dashed;
+}
+
+/* ── Detail blurb ────────────────────────────────────────────────── */
+
+/* Built as a DOM node rather than markdown, since its content changes with
+   the selection -- so its spacing is set here rather than by Pandoc. */
+.ojs-detail-title {
+  display: block;
+  font-weight: 600;
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
+}
+
+.ojs-detail-math {
+  margin: 0.45rem 0;
+  text-align: center;
+  /* A statement wider than the panel scrolls. Without this the centring
+     would clip it at both ends, hiding the left side with no way to scroll
+     back to it -- the flex fallback pins overflow to the start instead. */
+  display: flex;
+  flex-direction: column;
+  align-items: safe center;
+  /* A long identity scrolls inside the panel rather than widening it and
+     pushing the whole page sideways. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* KaTeX display mode adds its own generous top/bottom margin, which stacks
+   with .ojs-detail-math's and leaves the two statement lines drifting apart. */
+.ojs-detail-math .katex-display {
+  margin: 0.35rem 0;
+}
+
+.ojs-detail-note {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--vm-text-soft);
+}
+
+.ojs-detail-empty {
+  color: var(--vm-text-soft);
+}
+
+/* ── Chart overlay ───────────────────────────────────────────────── */
+
+/* Both floating panels hide themselves when they have nothing in them: the
+   slider bar for a selection with no parameters (an edge without a demo,
+   nothing selected, Uniform), the legend for a single-series plot, which
+   needs no key. Declarative rather than the cells reaching out to style
+   their own container. */
+.ojs-step-overlay:not(:has(input[type="range"])) {
+  display: none;
+}
+
+/* :not(:has(a row)) rather than :empty -- draggable-overlay.js appends its
+   drag grip to every overlay panel, so a legend with no rows still has a
+   child and :empty never matches it. */
+.ojs-legend-overlay:not(:has(.ojs-legend-item)) {
+  display: none;
+}
+
+/* The site's grid overlay bar expects one cell per slider, so each becomes a
+   grid item (see apps/recursive-filters-1d). Here the set of sliders changes
+   with the selection, so they all come from one cell -- and Quarto wraps that
+   cell's output in several nested divs, so .ojs-step-overlay's own grid sees
+   a single child and stacks the sliders in a column.
+
+   Making the form itself the grid, rather than trying to collapse those
+   wrappers with display: contents, keeps this off Quarto's internal class
+   names (.cell-output-display, .ojs-in-a-box-waiting-for-module-import),
+   which are generated markup this page has no business depending on. The
+   wrapper keeps .ojs-grid so styles.css's label-above-track rule, which
+   matches forms at any depth, still applies. */
+.ojs-step-overlay .vm-params-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.25rem 0.75rem;
+  align-items: end;
+}
+
+/* Reading instructions for an overlay, sat directly under it. */
+.ojs-demo-caption {
+  margin: 0.4rem 0 0.9rem 0;
+  color: var(--vm-text-soft);
+  font-size: 0.9rem;
+}
+
+/* ── References ──────────────────────────────────────────────────── */
+
+/* The citations link bare URLs, which have no spaces to break at -- on a
+   390px viewport they ran 53px past the edge and scrolled the whole page
+   sideways. Breaking mid-URL is the right call here: an unbreakable token
+   is exactly the case `anywhere` exists for. */
+#references a {
+  overflow-wrap: anywhere;
+}
+</style>
+
+```{ojs}
+//| output: false
+// graphNodes: x, y seed the d3-force layout and keep anchoring it (see the
+// forceX/forceY in relationship-graph.js) -- they encode the semantic
+// grouping a physics simulation has no way to recover on its own: discrete
+// family on the left, continuous on the right, Normal centered as the hub
+// several edges converge on. The simulation resolves exact spacing and
+// guarantees no two boxes overlap, so these are intent, not final positions.
+// Laid out in three bands that follow the mathematics rather than the
+// alphabet: the discrete families across the top-left, the continuous ones
+// they pass into down the middle-left, and the normal and everything derived
+// from it on the right. The coordinates are the layout -- forceX/forceY hold
+// each box at its own anchor and collision only nudges neighbours apart, so
+// the diagram renders the same way every time instead of settling wherever a
+// free simulation happens to throw it.
+graphNodes = [
+  // Discrete, top-left.
+  {id: "hypergeometric", label: "Hypergeometric", x: 114, y: 69},
+  {id: "bernoulli", label: "Bernoulli", x: 87, y: 212},
+  {id: "binomial", label: "Binomial", x: 309, y: 137},
+  {id: "poisson", label: "Poisson", x: 538, y: 76},
+  {id: "geometric", label: "Geometric", x: 106, y: 347},
+  {id: "negativeBinomial", label: "Negative Binomial", x: 312, y: 258},
+  // Continuous, middle and lower-left.
+  {id: "weibull", label: "Weibull", x: 107, y: 489},
+  {id: "exponential", label: "Exponential", x: 458, y: 432},
+  {id: "uniform", label: "Uniform", x: 166, y: 614},
+  {id: "beta", label: "Beta", x: 302, y: 728},
+  {id: "gamma", label: "Gamma", x: 597, y: 596},
+  // The normal and its sampling distributions, right.
+  {id: "normal", label: "Normal", x: 685, y: 253},
+  {id: "lognormal", label: "Lognormal", x: 885, y: 91},
+  {id: "chiSquared", label: "Chi-squared", x: 724, y: 498},
+  {id: "studentT", label: "Student's t", x: 872, y: 719},
+  {id: "f", label: "F-distribution", x: 677, y: 748},
+  {id: "cauchy", label: "Cauchy", x: 924, y: 621}
+]
+```
+
+```{ojs}
+//| output: false
+// graphEdges: type "exact" (solid line) is a special case, sum, or exact
+// transformation; type "limit" (dashed line) is a limiting/approximate
+// relationship (large-n, CLT-type) -- same convention as the reference
+// chart at johndcook.com/blog/distribution_chart.
+//
+// Clicking an edge shows the identity and a short note in the detail panel
+// below the graph (see edgeText).
+graphEdges = [
+  {id: "hypergeometric-binomial", from: "hypergeometric", to: "binomial", type: "limit", label: "Hypergeometric → Binomial: large population"},
+  {id: "bernoulli-binomial", from: "bernoulli", to: "binomial", type: "exact", bidirectional: true, label: "Bernoulli ↔ Binomial: sum of n trials / n = 1"},
+  {id: "binomial-poisson", from: "binomial", to: "poisson", type: "limit", label: "Binomial → Poisson: n→∞, np=λ fixed"},
+  {id: "binomial-normal", from: "binomial", to: "normal", type: "limit", label: "Binomial → Normal: n→∞ (CLT)"},
+  {id: "geometric-negativebinomial", from: "geometric", to: "negativeBinomial", type: "exact", bidirectional: true, label: "Geometric ↔ Negative Binomial: sum of r waits / r = 1"},
+  {id: "negativebinomial-poisson", from: "negativeBinomial", to: "poisson", type: "limit", label: "Negative Binomial → Poisson: r→∞, r(1−p)=λ fixed"},
+  {id: "poisson-normal", from: "poisson", to: "normal", type: "limit", label: "Poisson → Normal: λ→∞ (CLT)"},
+  {id: "poisson-exponential", from: "poisson", to: "exponential", type: "exact", bidirectional: true, label: "Poisson ↔ Exponential: inter-arrival times"},
+  {id: "geometric-exponential", from: "geometric", to: "exponential", type: "limit", label: "Geometric → Exponential: continuous-time limit"},
+  {id: "uniform-exponential", from: "uniform", to: "exponential", type: "exact", bidirectional: true, label: "Uniform ↔ Exponential: inverse-CDF transform"},
+  {id: "exponential-weibull", from: "exponential", to: "weibull", type: "exact", bidirectional: true, label: "Exponential ↔ Weibull: power transform / shape = 1"},
+  {id: "exponential-gamma", from: "exponential", to: "gamma", type: "exact", bidirectional: true, label: "Exponential ↔ Gamma: sum of n draws / shape = 1"},
+  {id: "gamma-beta", from: "gamma", to: "beta", type: "exact", label: "Gamma → Beta: X₁/(X₁+X₂)"},
+  {id: "beta-uniform", from: "beta", to: "uniform", type: "exact", label: "Beta → Uniform: special case a = b = 1"},
+  {id: "beta-normal", from: "beta", to: "normal", type: "limit", label: "Beta → Normal: a, b both large"},
+  {id: "gamma-normal", from: "gamma", to: "normal", type: "limit", label: "Gamma → Normal: shape → ∞"},
+  {id: "normal-lognormal", from: "normal", to: "lognormal", type: "exact", label: "Normal → Lognormal: exponentiate"},
+  {id: "normal-cauchy", from: "normal", to: "cauchy", type: "exact", label: "Normal → Cauchy: ratio of two normals"},
+  {id: "normal-chisquared", from: "normal", to: "chiSquared", type: "exact", label: "Normal → Chi-squared: sum of k squares"},
+  {id: "gamma-chisquared", from: "gamma", to: "chiSquared", type: "exact", bidirectional: true, label: "Gamma ↔ Chi-squared: special case"},
+  {id: "chisquared-exponential", from: "chiSquared", to: "exponential", type: "exact", label: "Chi-squared → Exponential: special case k = 2"},
+  {id: "chisquared-studentt", from: "chiSquared", to: "studentT", type: "exact", label: "Chi-squared → Student's t"},
+  {id: "chisquared-f", from: "chiSquared", to: "f", type: "exact", label: "Chi-squared → F-distribution"},
+  {id: "f-chisquared", from: "f", to: "chiSquared", type: "limit", label: "F → Chi-squared: second d.f. → ∞"},
+  {id: "studentt-cauchy", from: "studentT", to: "cauchy", type: "exact", label: "Student's t → Cauchy: special case k = 1"},
+  {id: "studentt-normal", from: "studentT", to: "normal", type: "limit", label: "Student's t → Normal: k → ∞"},
+  {id: "studentt-f", from: "studentT", to: "f", type: "exact", label: "Student's t → F: square of t"}
+]
+```
+
+```{ojs}
+//| output: false
+// nodeConfigs: shown when a node (distribution) is clicked -- the
+// distribution's closed-form density/mass function plotted directly (no
+// sampling), with its parameters as adjustable sliders.
+//   density(x, prm)  the closed-form PDF (continuous) or PMF (integerSource)
+//   xRange(prm)      the [xmin, xmax] window to plot over, chosen from the
+//                    distribution's own moments (mean ± a few sd, clamped to
+//                    its support) rather than from data -- so the picture is
+//                    stable and doesn't depend on any random draw.
+nodeConfigs = ({
+  bernoulli: {
+    title: "Bernoulli",
+    formula: "P(X=1)=p, \\quad P(X=0)=1-p",
+    statsFormula: "\\begin{gathered} p \\in (0,1) \\\\[2pt] \\text{Mean} = p, \\quad \\text{Variance} = p(1-p) \\end{gathered}",
+    note: "The Bernoulli distribution is the probability distribution of a single trial with two possible outcomes, conventionally labelled success and failure, which occur with probabilities p and 1 − p. It is the simplest non-trivial distribution, specified entirely by the single parameter p. Most of the counting distributions on this map are built by combining Bernoulli trials, so the assumptions made at this level, namely that the trials are independent and that p does not change between them, are inherited by every distribution downstream. In practice, binomial models fail on real data most often because one of those two assumptions does not hold.",
+    integerSource: true,
+    params: [{key: "p", label: "p", min: 0.05, max: 0.95, step: 0.05, default: 0.5}],
+    density: (x, prm) => VM.distributions.bernoulliPmf(x, prm.p),
+    xRange: () => [-0.6, 1.6]
+  },
+  binomial: {
+    title: "Binomial",
+    formula: "P(X=k)=\\binom{n}{k}p^k(1-p)^{n-k}",
+    statsFormula: "\\begin{gathered} n \\in \\mathbb{Z}^+, \\quad p \\in (0,1) \\\\[2pt] \\text{Mean} = np, \\quad \\text{Variance} = np(1-p) \\end{gathered}",
+    note: "The binomial distribution gives the number of successes in a fixed number n of independent trials, each having the same success probability p. It describes such quantities as the number of defective items in a batch of n, the number of favourable responses in a survey of n people, or the number of heads in n coin tosses. Two features distinguish it from its neighbours on this map. The number of trials is fixed in advance, whereas the geometric and negative binomial distributions instead fix the number of successes and leave the number of trials random. The trials are also independent, unlike those of the hypergeometric distribution, where sampling without replacement makes each draw depend on the ones before it.",
+    integerSource: true,
+    params: [{key: "n", label: "n", min: 1, max: 100, step: 1, default: 20}, {key: "p", label: "p", min: 0.02, max: 0.98, step: 0.02, default: 0.5}],
+    density: (x, prm) => VM.distributions.binomialPmf(x, prm.n, prm.p),
+    xRange: (prm) => {
+      const mean = prm.n * prm.p
+      const sd = Math.sqrt(prm.n * prm.p * (1 - prm.p))
+      const lo = Math.max(-0.5, Math.floor(mean - 4 * sd) - 0.5)
+      const hi = Math.min(prm.n + 0.5, Math.ceil(mean + 4 * sd) + 0.5)
+      return [lo, hi]
+    }
+  },
+  hypergeometric: {
+    title: "Hypergeometric",
+    formula: "P(X=k)=\\dfrac{\\binom{K}{k}\\binom{N-K}{n-k}}{\\binom{N}{n}}",
+    statsFormula: "\\begin{gathered} N \\ \\text{population}, \\ K \\ \\text{successes}, \\ n \\ \\text{drawn} \\\\[2pt] \\text{Mean} = n\\tfrac{K}{N}, \\quad \\text{Variance} = n\\tfrac{K}{N}\\left(1-\\tfrac{K}{N}\\right)\\tfrac{N-n}{N-1} \\end{gathered}",
+    note: "The hypergeometric distribution describes the number of successes among n items drawn without replacement from a finite population of N items containing K successes. Because each draw removes an item from the population, the draws are not independent, and obtaining a success lowers the probability that the next draw is also a success. This dependence reduces the variance by the finite population correction factor (N − n)/(N − 1). The distribution arises in acceptance sampling, in card games, and in capture–recapture estimates of population size. When the population is large relative to the sample, the effect of removing items becomes negligible and the distribution approaches the binomial.",
+    integerSource: true,
+    params: [
+      {key: "N", label: "N (population)", min: 10, max: 200, step: 1, default: 50},
+      {key: "K", label: "K (successes)", min: 1, max: 100, step: 1, default: 15},
+      {key: "n", label: "n (drawn)", min: 1, max: 60, step: 1, default: 10}
+    ],
+    density: (x, prm) => VM.distributions.hypergeometricPmf(x, prm.N, Math.min(prm.K, prm.N), Math.min(prm.n, prm.N)),
+    xRange: (prm) => [-0.5, Math.min(prm.n, prm.K) + 0.5]
+  },
+  poisson: {
+    title: "Poisson",
+    formula: "P(X=k)=\\dfrac{\\lambda^k e^{-\\lambda}}{k!}",
+    statsFormula: "\\begin{gathered} \\lambda > 0 \\\\[2pt] \\text{Mean} = \\text{Variance} = \\lambda \\end{gathered}",
+    note: "The Poisson distribution gives the number of events occurring in a fixed interval when events occur independently at a constant average rate λ. Typical applications include arrivals per minute at a queue, typographical errors per page, and radioactive decays per second. Its mean and its variance are both equal to λ, a constraint that makes the model unusually easy to check against data. Observed counts are frequently more dispersed than this equality permits, a condition known as overdispersion, which indicates that events are clustering rather than arriving independently. The distribution arises as a limit of the binomial in which the trials are many and each individual success is rare, which is why it needs no parameter recording how many trials took place.",
+    integerSource: true,
+    params: [{key: "lambda", label: "λ", min: 0.5, max: 60, step: 0.5, default: 4}],
+    density: (x, prm) => VM.distributions.poissonPmf(x, prm.lambda),
+    xRange: (prm) => [-0.5, Math.ceil(prm.lambda + 4 * Math.sqrt(prm.lambda)) + 0.5]
+  },
+  geometric: {
+    title: "Geometric",
+    formula: "P(X=k)=(1-p)^{k-1}p,\\ \\ k=1,2,\\dots",
+    statsFormula: "\\begin{gathered} p \\in (0,1) \\\\[2pt] \\text{Mean} = \\tfrac{1}{p}, \\quad \\text{Variance} = \\tfrac{1-p}{p^2} \\end{gathered}",
+    note: "The geometric distribution gives the number of trials required to obtain the first success in a sequence of independent trials with constant success probability p. It is the only discrete distribution that is memoryless: conditional on the first ten trials having failed, the distribution of the remaining wait is identical to the original one. This property is the precise sense in which a run of failures does not make a success more likely, since past failures leave no trace in the model. The exponential distribution is memoryless for the same reason, and a limit on this map connects the two.",
+    integerSource: true,
+    params: [{key: "p", label: "p", min: 0.02, max: 0.9, step: 0.02, default: 0.3}],
+    density: (x, prm) => VM.distributions.geometricPmf(x, prm.p),
+    xRange: (prm) => [0.5, Math.min(200, Math.ceil(Math.log(0.001) / Math.log(1 - prm.p))) + 0.5]
+  },
+  negativeBinomial: {
+    title: "Negative Binomial",
+    formula: "P(X=k)=\\binom{k-1}{r-1}p^r(1-p)^{k-r},\\ \\ k=r,r+1,\\dots",
+    statsFormula: "\\begin{gathered} r \\in \\mathbb{Z}^+, \\quad p \\in (0,1) \\\\[2pt] \\text{Mean} = \\tfrac{r}{p}, \\quad \\text{Variance} = \\tfrac{r(1-p)}{p^2} \\end{gathered}",
+    note: "The negative binomial distribution gives the number of trials required to obtain r successes, and so stands to the geometric distribution as the binomial stands to the Bernoulli: it is a sum of r independent copies, and setting r = 1 recovers the geometric. It has a second and largely unrelated use in count modelling. Its variance always exceeds its mean, which makes it the usual replacement for the Poisson distribution when count data are overdispersed. Under this reading it is a Poisson distribution whose rate is itself random, an interpretation that accounts for its prevalence in ecology and in the analysis of sequencing data.",
+    integerSource: true,
+    params: [
+      {key: "r", label: "r (successes)", min: 1, max: 20, step: 1, default: 3},
+      {key: "p", label: "p", min: 0.05, max: 0.95, step: 0.05, default: 0.35}
+    ],
+    density: (x, prm) => VM.distributions.negativeBinomialPmf(x, prm.r, prm.p),
+    xRange: (prm) => [prm.r - 0.5, Math.ceil(prm.r / prm.p + 4 * Math.sqrt(prm.r * (1 - prm.p)) / prm.p) + 0.5]
+  },
+  uniform: {
+    title: "Uniform",
+    formula: "f(x)=1,\\ \\ 0<x<1",
+    statsFormula: "\\begin{gathered} \\text{Support } (0,1) \\\\[2pt] \\text{Mean} = \\tfrac{1}{2}, \\quad \\text{Variance} = \\tfrac{1}{12} \\end{gathered}",
+    note: "The continuous uniform distribution assigns equal probability density to every value in an interval. Its role on this map is as raw material rather than as a model of any particular phenomenon. A uniform draw is what a pseudorandom number generator produces, and passing such a draw through the inverse cumulative distribution function of any distribution yields a draw from that distribution. Every continuous distribution shown here is therefore reachable from the uniform, either by such a transformation or, in the case of the beta distribution, as the single member of a family that happens to be flat.",
+    integerSource: false,
+    params: [],
+    density: (x) => (x >= 0 && x <= 1 ? 1 : 0),
+    xRange: () => [-0.1, 1.1]
+  },
+  exponential: {
+    title: "Exponential",
+    formula: "f(x)=\\lambda e^{-\\lambda x},\\ \\ x>0",
+    statsFormula: "\\begin{gathered} \\lambda > 0 \\ \\text{(rate)} \\\\[2pt] \\text{Mean} = \\tfrac{1}{\\lambda}, \\quad \\text{Variance} = \\tfrac{1}{\\lambda^2} \\end{gathered}",
+    note: "The exponential distribution describes the waiting time until the next event of a process occurring at a constant rate λ. Like the geometric distribution it is memoryless, which in continuous time has a strong consequence: a component that has already operated for an hour is exactly as likely to fail during the next hour as a new one, so the distribution cannot represent wear or ageing at all. The Weibull distribution exists to lift this restriction, adding a shape parameter that allows the failure rate to rise or fall with age and recovering the exponential when that shape equals 1.",
+    integerSource: false,
+    params: [{key: "lambda", label: "λ (rate)", min: 0.1, max: 5, step: 0.1, default: 1}],
+    density: (x, prm) => VM.distributions.exponentialPdf(x, prm.lambda),
+    xRange: (prm) => [0, -Math.log(0.001) / prm.lambda]
+  },
+  weibull: {
+    title: "Weibull",
+    formula: "f(x)=\\dfrac{k}{\\lambda}\\left(\\dfrac{x}{\\lambda}\\right)^{k-1}e^{-(x/\\lambda)^k},\\ \\ x>0",
+    statsFormula: "\\begin{gathered} k > 0 \\ \\text{(shape)}, \\quad \\lambda > 0 \\ \\text{(scale)} \\\\[2pt] \\text{Mean} = \\lambda\\,\\Gamma\\!\\left(1+\\tfrac{1}{k}\\right) \\end{gathered}",
+    note: "The Weibull distribution generalises the exponential by allowing the failure rate to vary with age rather than remain constant. A shape parameter below 1 gives a failure rate that decreases with age, characteristic of early-life defects being eliminated; a shape above 1 gives one that increases, characteristic of wear; and a shape of exactly 1 gives the exponential distribution. This single parameter accounts for the distribution's standard role in reliability engineering and survival analysis, where the fitted shape indicates whether the population under study is burning in, wearing out, or doing neither.",
+    integerSource: false,
+    params: [
+      {key: "shape", label: "k (shape)", min: 0.3, max: 5, step: 0.1, default: 1.5},
+      {key: "scale", label: "λ (scale)", min: 0.2, max: 5, step: 0.2, default: 1}
+    ],
+    density: (x, prm) => VM.distributions.weibullPdf(x, prm.shape, prm.scale),
+    xRange: (prm) => [0, prm.scale * Math.pow(-Math.log(0.001), 1 / prm.shape)]
+  },
+  normal: {
+    title: "Normal",
+    formula: "f(x)=\\dfrac{1}{\\sqrt{2\\pi\\sigma^2}}\\,e^{-(x-\\mu)^2/2\\sigma^2}",
+    statsFormula: "\\begin{gathered} \\mu \\in \\mathbb{R}, \\quad \\sigma^2 > 0 \\\\[2pt] \\text{Mean} = \\mu, \\quad \\text{Variance} = \\sigma^2 \\end{gathered}",
+    note: "The normal distribution, also called the Gaussian distribution, is the limiting distribution of sums of many small independent contributions, largely irrespective of how the individual terms are distributed. This universality is the content of the central limit theorem, and it is why four separate limits on this map, from the binomial, Poisson, gamma and beta distributions, all terminate here. The theorem concerns sums, and its scope is correspondingly limited: quantities produced by repeated multiplication converge to the lognormal distribution instead, and the ratio of two normal variables follows the Cauchy distribution, which has no mean at all.",
+    integerSource: false,
+    params: [{key: "mean", label: "μ", min: -10, max: 10, step: 0.5, default: 0}, {key: "variance", label: "σ²", min: 0.2, max: 20, step: 0.2, default: 1}],
+    density: (x, prm) => VM.distributions.normalPdf(x, prm.mean, prm.variance),
+    xRange: (prm) => {
+      const sd = Math.sqrt(prm.variance)
+      return [prm.mean - 4 * sd, prm.mean + 4 * sd]
+    }
+  },
+  lognormal: {
+    title: "Lognormal",
+    formula: "f(x)=\\dfrac{1}{x\\sqrt{2\\pi\\sigma^2}}\\,e^{-(\\ln x-\\mu)^2/2\\sigma^2},\\ \\ x>0",
+    statsFormula: "\\begin{gathered} \\mu \\in \\mathbb{R}, \\quad \\sigma^2 > 0 \\ (\\text{of } \\ln X) \\\\[2pt] \\text{Mean} = e^{\\mu+\\sigma^2/2}, \\quad \\text{Median} = e^{\\mu} \\end{gathered}",
+    note: "A random variable has a lognormal distribution if its logarithm is normally distributed. Where the central limit theorem sends sums to the normal distribution, it sends products here, which makes the lognormal the natural model for quantities generated by repeated proportional change, such as incomes, city populations, particle diameters and asset prices. It is positive by construction and right-skewed, with a tail long enough that its mean lies well above its median, so an average of lognormal quantities is often a misleading summary. Its two parameters describe the underlying normal distribution rather than the mean and variance of the lognormal itself.",
+    integerSource: false,
+    params: [
+      {key: "mean", label: "μ (of ln X)", min: -2, max: 3, step: 0.1, default: 0},
+      {key: "variance", label: "σ² (of ln X)", min: 0.05, max: 3, step: 0.05, default: 0.5}
+    ],
+    density: (x, prm) => VM.distributions.lognormalPdf(x, prm.mean, prm.variance),
+    xRange: (prm) => [0, Math.exp(prm.mean + 3 * Math.sqrt(prm.variance))]
+  },
+  cauchy: {
+    title: "Cauchy",
+    formula: "f(x)=\\dfrac{1}{\\pi\\gamma\\left[1+\\left(\\frac{x-x_0}{\\gamma}\\right)^2\\right]}",
+    statsFormula: "\\begin{gathered} x_0 \\in \\mathbb{R} \\ \\text{(median)}, \\quad \\gamma > 0 \\ \\text{(scale)} \\\\[2pt] \\text{Mean and variance do not exist} \\end{gathered}",
+    note: "The Cauchy distribution is a continuous distribution with a perfectly well-defined density but no mean and no variance, since both defining integrals diverge. Its tails are heavy enough that averaging brings no benefit: the sample mean of n independent Cauchy variables has exactly the same Cauchy distribution as a single observation, so collecting more data does not improve the estimate and the central limit theorem does not apply. The distribution is not a contrived counterexample, as it arises as the ratio of two independent standard normal variables and as Student's t-distribution with one degree of freedom.",
+    integerSource: false,
+    params: [
+      {key: "location", label: "x₀ (median)", min: -5, max: 5, step: 0.5, default: 0},
+      {key: "scale", label: "γ (scale)", min: 0.2, max: 5, step: 0.2, default: 1}
+    ],
+    density: (x, prm) => VM.distributions.cauchyPdf(x, prm.location, prm.scale),
+    xRange: (prm) => [prm.location - 10 * prm.scale, prm.location + 10 * prm.scale]
+  },
+  gamma: {
+    title: "Gamma",
+    formula: "f(x)=\\dfrac{\\beta^\\alpha x^{\\alpha-1}e^{-\\beta x}}{\\Gamma(\\alpha)},\\ \\ x>0",
+    statsFormula: "\\begin{gathered} \\alpha, \\beta > 0 \\ \\text{(shape, rate)} \\\\[2pt] \\text{Mean} = \\tfrac{\\alpha}{\\beta}, \\quad \\text{Variance} = \\tfrac{\\alpha}{\\beta^2} \\end{gathered}",
+    note: "The gamma distribution describes the total waiting time for α events of a process occurring at rate β, and generalises the exponential distribution in the way that the binomial generalises the Bernoulli. The shape parameter α determines the form of the density: at α = 1 the density is largest at zero and decreases from there, while as α grows the mass moves away from zero into an increasingly symmetric peak, because averaging over many waits reduces the relative variability of each. The chi-squared distribution is a member of this same family, at shape k/2 and rate 1/2.",
+    integerSource: false,
+    params: [{key: "shape", label: "α (shape)", min: 1, max: 20, step: 1, default: 2}, {key: "rate", label: "β (rate)", min: 0.2, max: 5, step: 0.2, default: 1}],
+    density: (x, prm) => VM.distributions.gammaPdf(x, prm.shape, prm.rate),
+    xRange: (prm) => [0, prm.shape / prm.rate + 5 * Math.sqrt(prm.shape) / prm.rate]
+  },
+  beta: {
+    title: "Beta",
+    formula: "f(x)=\\dfrac{x^{a-1}(1-x)^{b-1}}{B(a,b)},\\ \\ 0<x<1",
+    statsFormula: "\\begin{gathered} a, b > 0 \\\\[2pt] \\text{Mean} = \\tfrac{a}{a+b}, \\quad \\text{Variance} = \\tfrac{ab}{(a+b)^2(a+b+1)} \\end{gathered}",
+    note: "The beta distribution is supported on the interval (0, 1), which makes it a natural way to represent uncertainty about a probability. Its two parameters behave like tallies of evidence, with a acting as a count of successes already observed and b as a count of failures. Setting a = b = 1 gives the uniform distribution, representing the absence of any evidence, while larger values concentrate the density around a/(a + b). This behaviour is why the beta is the standard prior distribution for a binomial probability: observing new data simply increments a and b, leaving the posterior distribution in the same family.",
+    integerSource: false,
+    params: [{key: "a", label: "a", min: 0.5, max: 20, step: 0.5, default: 2}, {key: "b", label: "b", min: 0.5, max: 20, step: 0.5, default: 2}],
+    density: (x, prm) => VM.distributions.betaPdf(x, prm.a, prm.b),
+    xRange: () => [-0.02, 1.02]
+  },
+  chiSquared: {
+    title: "Chi-squared",
+    formula: "f(x)=\\dfrac{x^{k/2-1}e^{-x/2}}{2^{k/2}\\Gamma(k/2)},\\ \\ x>0",
+    statsFormula: "\\begin{gathered} k \\in \\mathbb{Z}^+ \\ \\text{(degrees of freedom)} \\\\[2pt] \\text{Mean} = k, \\quad \\text{Variance} = 2k \\end{gathered}",
+    note: "The chi-squared distribution with k degrees of freedom is the distribution of the sum of the squares of k independent standard normal variables. Squaring discards the sign and retains only magnitude, which is precisely the operation a sample variance performs, so the distribution describes how much a variance estimate fluctuates and provides the reference against which observed variability is judged. It also plays a structural role, appearing in the denominator of both Student's t and the F-distribution, which is the formal expression of the fact that both correct for a scale having been estimated rather than known.",
+    integerSource: false,
+    params: [{key: "k", label: "k", min: 1, max: 40, step: 1, default: 4}],
+    density: (x, prm) => VM.distributions.chiSquaredPdf(x, prm.k),
+    xRange: (prm) => [0, prm.k + 5 * Math.sqrt(2 * prm.k)]
+  },
+  studentT: {
+    title: "Student's t",
+    formula: "f(x)=\\dfrac{\\Gamma(\\frac{k+1}{2})}{\\sqrt{k\\pi}\\,\\Gamma(\\frac{k}{2})}\\left(1+\\dfrac{x^2}{k}\\right)^{-(k+1)/2}",
+    statsFormula: "\\begin{gathered} k \\in \\mathbb{Z}^+ \\ \\text{(degrees of freedom)} \\\\[2pt] \\text{Mean} = 0 \\ (k>1), \\quad \\text{Variance} = \\tfrac{k}{k-2} \\ (k>2) \\end{gathered}",
+    note: "Student's t-distribution arises when a normal mean is standardised using a standard deviation estimated from the same sample rather than a known value. That estimate is itself subject to sampling error, and the additional uncertainty appears as heavier tails, which is why confidence intervals from small samples are wider than the ±1.96 standard errors appropriate to a known variance. The degrees of freedom k control the size of the effect: at k = 1 the tails are heavy enough that the mean does not exist and the distribution is exactly Cauchy, while as k grows the estimate sharpens and the distribution converges to the normal.",
+    integerSource: false,
+    params: [{key: "k", label: "k", min: 1, max: 40, step: 1, default: 5}],
+    density: (x, prm) => VM.distributions.studentTPdf(x, prm.k),
+    xRange: () => [-7, 7]
+  },
+  f: {
+    title: "F-distribution",
+    formula: "f(x)=\\dfrac{1}{xB(\\frac{d_1}{2},\\frac{d_2}{2})}\\sqrt{\\dfrac{(d_1x)^{d_1}d_2^{d_2}}{(d_1x+d_2)^{d_1+d_2}}},\\ \\ x>0",
+    statsFormula: "\\begin{gathered} d_1, d_2 \\in \\mathbb{Z}^+ \\\\[2pt] \\text{Mean} = \\tfrac{d_2}{d_2-2} \\ (d_2>2) \\end{gathered}",
+    note: "The F-distribution is the distribution of the ratio of two independent variance estimates, each divided by its own degrees of freedom so that the comparison does not depend on sample size. It is therefore the natural distribution for testing whether one source of variation exceeds another, which is the question addressed by the analysis of variance, where the variation between groups is compared with the variation within them. Because it is built from two independent chi-squared variables it carries two degrees-of-freedom parameters, one for the numerator and one for the denominator, and these are not interchangeable.",
+    integerSource: false,
+    params: [{key: "d1", label: "d₁", min: 1, max: 30, step: 1, default: 5}, {key: "d2", label: "d₂", min: 1, max: 30, step: 1, default: 10}],
+    density: (x, prm) => VM.distributions.fPdf(x, prm.d1, prm.d2),
+    xRange: () => [0, 6]
+  }
+})
+```
+
+```{ojs}
+//| output: false
+// edgeText: the descriptive blurb shown in the detail panel when an edge is
+// clicked -- title, the identity in TeX, and a one-line note.
+edgeText = ({
+  "hypergeometric-binomial": {
+    title: "Hypergeometric → Binomial",
+    formula: "\\begin{aligned} X_N &\\sim \\text{Hypergeometric}(N, pN, n) \\\\[2pt] X_N &\\xrightarrow{\\ d\\ } \\text{Binomial}(n, p) \\quad (N \\to \\infty) \\end{aligned}",
+    note: "Sampling without replacement differs from sampling with replacement only in that each draw depletes the population. When the population is large relative to the sample that depletion is negligible, since removing ten items from a million barely alters the remaining proportion, so the draws are effectively independent and the count is approximately binomial. A common rule of thumb is that the approximation is adequate when the sample is less than about a tenth of the population, below which the finite population correction (N − n)/(N − 1) is close enough to 1 to be ignored."
+  },
+  "bernoulli-binomial": {
+    title: "Bernoulli ↔ Binomial",
+    formula: "\\begin{aligned} X_1,\\dots,X_n &\\stackrel{\\text{iid}}{\\sim} \\text{Bernoulli}(p) \\implies \\textstyle\\sum_i X_i \\sim \\text{Binomial}(n,p) \\\\[2pt] \\text{Binomial}(1,p) &= \\text{Bernoulli}(p) \\end{aligned}",
+    note: "The relationship holds in both directions. A sum of n independent Bernoulli indicators is binomial, and a binomial distribution with a single trial reduces to a Bernoulli. What the sum inherits is the assumption of independence, which is made once at the level of the individual trial and from which the properties of the binomial follow. If the trials are correlated, as when surveyed individuals influence one another or manufactured parts share a common faulty batch, the total is no longer binomial even though each individual trial remains Bernoulli."
+  },
+  "binomial-poisson": {
+    title: "Binomial → Poisson",
+    formula: "\\begin{aligned} X_n &\\sim \\text{Binomial}(n,\\ \\lambda/n) \\\\[2pt] \\lim_{n \\to \\infty} P(X_n = k) &= \\frac{\\lambda^k e^{-\\lambda}}{k!} \\end{aligned}",
+    note: "This limit is known as the law of rare events: a large number of opportunities, each individually unlikely, with the expected number of successes held fixed at λ. In the limit the number of trials disappears from the result entirely, which is what makes the Poisson distribution useful in practice, since accidents per month or mutations per genome can be modelled without knowing how many opportunities for one there were. The approximation is accurate when p is small; when p is moderate the binomial's upper bound at n still matters and the normal limit is the better approximation."
+  },
+  "binomial-normal": {
+    title: "Binomial → Normal",
+    formula: "\\begin{aligned} X_n &\\sim \\text{Binomial}(n,p) \\\\[2pt] \\frac{X_n - np}{\\sqrt{np(1-p)}} &\\xrightarrow{\\ d\\ } N(0,1) \\quad (n \\to \\infty) \\end{aligned}",
+    note: "This is the earliest form of the central limit theorem, proved by Abraham de Moivre in 1733 for the case p = 1/2 and extended to general p by Laplace. It justifies treating a sample proportion as approximately normal, and hence the ±1.96 standard errors quoted as margins of error in survey results. Convergence is fastest at p = 1/2, where the binomial distribution is already symmetric, and slowest for p near 0 or 1, where it remains visibly skewed. That is precisely the regime in which the Poisson limit is the more accurate approximation."
+  },
+  "geometric-negativebinomial": {
+    title: "Geometric ↔ Negative Binomial",
+    formula: "\\begin{aligned} X_1,\\dots,X_r &\\stackrel{\\text{iid}}{\\sim} \\text{Geometric}(p) \\implies \\textstyle\\sum_i X_i \\sim \\text{NegBinomial}(r,p) \\\\[2pt] \\text{NegBinomial}(1,p) &= \\text{Geometric}(p) \\end{aligned}",
+    note: "Waiting for r successes consists of waiting for the first, then beginning again and waiting for the second, and so on. Because the geometric distribution is memoryless, beginning again is genuinely equivalent to starting from scratch, with no residual effect from the failures already observed. The total is therefore a sum of r independent geometric variables, and setting r = 1 returns the geometric distribution itself. This is the same sum-of-copies construction that relates the Bernoulli to the binomial, one level up: there the fixed quantity is the number of trials, here it is the number of successes."
+  },
+  "negativebinomial-poisson": {
+    title: "Negative Binomial → Poisson",
+    formula: "\\begin{aligned} Y_r &\\sim \\text{NegBinomial counting failures},\\ \\ r(1-p) = \\lambda \\\\[2pt] Y_r &\\xrightarrow{\\ d\\ } \\text{Poisson}(\\lambda) \\quad (r \\to \\infty,\\ p \\to 1) \\end{aligned}",
+    note: "The variance of the negative binomial distribution always exceeds its mean, by a factor that shrinks as r grows. Taking r to infinity while holding the mean fixed removes that excess, leaving mean and variance equal, which characterises the Poisson distribution. The relationship underlies a standard modelling practice: a negative binomial distribution is fitted to overdispersed counts, and the fitted value of r measures how far the data depart from the Poisson case, with a large r indicating that a Poisson model would have been adequate."
+  },
+  "poisson-normal": {
+    title: "Poisson → Normal",
+    formula: "\\begin{aligned} X_\\lambda &\\sim \\text{Poisson}(\\lambda) \\\\[2pt] \\frac{X_\\lambda - \\lambda}{\\sqrt{\\lambda}} &\\xrightarrow{\\ d\\ } N(0,1) \\quad (\\lambda \\to \\infty) \\end{aligned}",
+    note: "A Poisson count over a long interval is the sum of the counts over many shorter disjoint intervals, and those are independent, so the central limit theorem applies directly with λ playing the role of the sample size. For small λ the distribution is strongly skewed and bounded below by zero, so no normal distribution approximates it well. By about λ = 20 the skew has largely disappeared and the normal approximation is routine, which is the basis for the square-root-of-the-count error bars commonly quoted for count data."
+  },
+  "poisson-exponential": {
+    title: "Poisson ↔ Exponential",
+    formula: "\\begin{aligned} \\text{gaps } T_{i+1}-T_i &\\stackrel{\\text{iid}}{\\sim} \\text{Exponential}(\\lambda) \\\\[2pt] \\text{count } N(W) &\\sim \\text{Poisson}(\\lambda W) \\end{aligned}",
+    note: "The two distributions are alternative descriptions of a single process, which is why the relationship runs in both directions. Counting the events that occur in a fixed interval gives a Poisson distribution, while measuring the gaps between consecutive events gives exponential distributions. Either description determines the other completely and the same rate λ appears in both, so they are not two models but two ways of parameterising one. The memorylessness of the gaps and the independence of counts in disjoint intervals are likewise the same assumption stated twice."
+  },
+  "geometric-exponential": {
+    title: "Geometric → Exponential",
+    formula: "\\begin{aligned} G_m &\\sim \\text{Geometric}(\\lambda/m) \\\\[2pt] \\tfrac{1}{m} G_m &\\xrightarrow{\\ d\\ } \\text{Exponential}(\\lambda) \\quad (m \\to \\infty) \\end{aligned}",
+    note: "Dividing time into m steps per unit and giving each step a success probability of λ/m keeps the expected number of successes per unit time equal to λ. As the steps become finer, the discrete waiting time, rescaled to continuous time, converges to the exponential distribution. This is the sense in which the exponential is the continuous-time analogue of the geometric, and it accounts for both being memoryless, since at no stage of the construction does the process record how long it has already waited."
+  },
+  "uniform-exponential": {
+    title: "Uniform ↔ Exponential",
+    formula: "\\begin{aligned} U &\\sim \\text{Uniform}(0,1) \\implies -\\tfrac{1}{\\lambda}\\ln U \\sim \\text{Exponential}(\\lambda) \\\\[2pt] X &\\sim \\text{Exponential}(\\lambda) \\implies e^{-\\lambda X} \\sim \\text{Uniform}(0,1) \\end{aligned}",
+    note: "This is an instance of inverse transform sampling: applying the inverse cumulative distribution function of a distribution to a uniform draw produces a draw from that distribution, and applying the cumulative distribution function reverses the map. For the exponential distribution both directions are available in closed form, which is why simulation software generates exponential waiting times in exactly this way rather than by any approximation. The same construction is what makes the uniform distribution the common ancestor of every continuous distribution on this map."
+  },
+  "exponential-weibull": {
+    title: "Exponential ↔ Weibull",
+    formula: "\\begin{aligned} X &\\sim \\text{Exponential}(1) \\implies \\lambda X^{1/k} \\sim \\text{Weibull}(k, \\lambda) \\\\[2pt] \\text{Weibull}(1, \\lambda) &= \\text{Exponential}(1/\\lambda) \\end{aligned}",
+    note: "Raising an exponential waiting time to a power stretches or compresses the time axis unevenly, and that is what converts a constant failure rate into one that varies with age. A shape parameter k greater than 1 makes later failures relatively more likely, corresponding to wear, while a value below 1 makes early failures dominate, corresponding to manufacturing defects. Setting k = 1 leaves the time axis unchanged and returns the exponential distribution, so the exponential is precisely the Weibull distribution that is neutral about ageing."
+  },
+  "exponential-gamma": {
+    title: "Exponential ↔ Gamma",
+    formula: "\\begin{aligned} X_1,\\dots,X_n &\\stackrel{\\text{iid}}{\\sim} \\text{Exponential}(\\lambda) \\implies \\textstyle\\sum_i X_i \\sim \\text{Gamma}(n,\\lambda) \\\\[2pt] \\text{Gamma}(1,\\lambda) &= \\text{Exponential}(\\lambda) \\end{aligned}",
+    note: "Waiting for the n-th event of a Poisson process amounts to adding n independent exponential waits, and the total follows a gamma distribution with shape n. The shape parameter supplies what the exponential lacks. At n = 1 the density is greatest at zero, because the next instant is the single most likely moment for the first event to occur, whereas for n greater than 1 the density must vanish at zero, since accumulating several waits in no time at all is impossible. Memorylessness is lost in the sum, as progress towards the n-th event is genuinely recorded."
+  },
+  "gamma-beta": {
+    title: "Gamma → Beta",
+    formula: "\\begin{aligned} X &\\sim \\text{Gamma}(a, \\beta), \\quad Y \\sim \\text{Gamma}(b, \\beta), \\quad \\text{independent} \\\\[2pt] \\frac{X}{X+Y} &\\sim \\text{Beta}(a, b) \\end{aligned}",
+    note: "Given two independent gamma variables sharing a common rate, the fraction of their total accounted for by the first follows a beta distribution. The shared rate cancels completely, since the proportion does not depend on the units in which time was measured, only on how the two shape parameters compare. This construction is the origin of the beta distribution's role as a distribution over proportions, and it also explains why its parameters behave like counts: they are the shape parameters of the two gamma variables being compared."
+  },
+  "beta-uniform": {
+    title: "Beta → Uniform",
+    formula: "X \\sim \\text{Beta}(1,1) \\implies X \\sim \\text{Uniform}(0,1)",
+    note: "The uniform distribution is the flat member of the beta family, occurring at a = b = 1 and nowhere else. In Bayesian terms this is the prior distribution expressing no information about a probability: having observed neither successes nor failures, every value in (0, 1) is equally credible. Observing data increments a and b, which bends the density towards whichever outcome predominates. The uniform distribution is therefore not a special case appended to the family but its natural starting point."
+  },
+  "beta-normal": {
+    title: "Beta → Normal",
+    formula: "\\begin{aligned} X &\\sim \\text{Beta}(a, b) \\\\[2pt] X &\\xrightarrow{\\ d\\ } N\\!\\left(\\tfrac{a}{a+b},\\ \\tfrac{ab}{(a+b)^2(a+b+1)}\\right) \\quad (a, b \\to \\infty) \\end{aligned}",
+    note: "As both parameters grow, the beta distribution concentrates around a/(a + b) and its shape becomes symmetric and approximately normal. Read as a posterior distribution, this is the familiar statement that a probability estimated from a large quantity of data has approximately normal uncertainty. Convergence is fastest when a and b grow at similar rates, and the approximation is poor when either stays small or when the mean lies near an endpoint, since the beta distribution is confined to (0, 1) while a normal distribution is not."
+  },
+  "gamma-normal": {
+    title: "Gamma → Normal",
+    formula: "\\begin{aligned} X &\\sim \\text{Gamma}(\\alpha, \\beta) \\\\[2pt] \\frac{X - \\alpha/\\beta}{\\sqrt{\\alpha}/\\beta} &\\xrightarrow{\\ d\\ } N(0,1) \\quad (\\alpha \\to \\infty) \\end{aligned}",
+    note: "For integer shape parameters the gamma distribution is a sum of α independent exponential variables, so the central limit theorem applies with α in the role of the sample size, and the result extends to non-integer shapes as well. The skew that dominates at small α, inherited from the sharp peak of the exponential density at zero, is averaged away as the individual waits are combined. Because the chi-squared distribution is a member of the gamma family, the same argument explains why a chi-squared distribution with many degrees of freedom is approximately normal."
+  },
+  "normal-lognormal": {
+    title: "Normal → Lognormal",
+    formula: "X \\sim N(\\mu, \\sigma^2) \\implies e^{X} \\sim \\text{Lognormal}(\\mu, \\sigma^2)",
+    note: "Exponentiation converts sums into products, and that single fact is the substance of the relationship. Wherever the central limit theorem gives a normal distribution for an accumulation of additive effects, it gives a lognormal distribution for an accumulation of multiplicative ones, such as repeated percentage growth, successive fragmentation, or compounding returns. The parameters carry over unchanged but now describe the logarithm of the quantity, which is why the mean of a lognormal variable, exp(μ + σ²/2), lies above its median exp(μ) rather than on it."
+  },
+  "normal-cauchy": {
+    title: "Normal → Cauchy",
+    formula: "\\begin{aligned} X, Y &\\stackrel{\\text{iid}}{\\sim} N(0,1) \\\\[2pt] \\frac{X}{Y} &\\sim \\text{Cauchy}(0,1) \\end{aligned}",
+    note: "The ratio of two independent standard normal variables follows a Cauchy distribution, which has neither a mean nor a variance despite being built from two of the best-behaved objects in probability theory. The denominator is responsible: it takes values near zero often enough that the ratio attains very large values with non-negligible probability, and the resulting tail is too heavy for the integral defining the mean to converge. The relationship is a standard illustration that ratios of estimates can behave far worse than the estimates from which they are formed."
+  },
+  "normal-chisquared": {
+    title: "Normal → Chi-squared",
+    formula: "Z_1,\\dots,Z_k \\stackrel{\\text{iid}}{\\sim} N(0,1) \\implies Z_1^2+\\cdots+Z_k^2 \\sim \\chi^2(k)",
+    note: "Squaring removes the sign, so the sum measures total deviation without regard to direction, which is exactly what a sample variance computes. This is how the chi-squared distribution enters statistical inference: it is the distribution of the sum of squared residuals when the underlying errors are normal, and therefore the reference distribution for any test concerning a variance. The parameter k counts the genuinely free squared terms, which is why estimating a mean from the same data costs one degree of freedom."
+  },
+  "gamma-chisquared": {
+    title: "Gamma ↔ Chi-squared",
+    formula: "\\text{Gamma}\\!\\left(\\tfrac{k}{2},\\ \\tfrac{1}{2}\\right) = \\chi^2(k) \\quad \\text{for every } k",
+    note: "This relationship is an exact identity rather than an approximation. The chi-squared distribution is not an independent distribution so much as a single curve through the gamma family, at shape k/2 and rate 1/2. Results already established for the gamma distribution therefore transfer directly: its normal limit at large shape becomes the normal limit at large degrees of freedom, and the fact that independent gamma variables with a common rate add becomes the fact that independent chi-squared variables add their degrees of freedom."
+  },
+  "chisquared-exponential": {
+    title: "Chi-squared → Exponential",
+    formula: "\\chi^2(2) = \\text{Gamma}(1, \\tfrac{1}{2}) = \\text{Exponential}(\\tfrac{1}{2})",
+    note: "At two degrees of freedom the chi-squared distribution is exactly an exponential distribution of rate 1/2. This follows immediately from the gamma identity, since a shape of k/2 equals 1 when k = 2 and a gamma distribution of shape 1 is exponential. The special case is worth noting on its own, because it means the squared length of a two-dimensional standard normal vector has a memoryless distribution. That fact underlies the Box–Muller transform, which generates normal samples from uniform ones."
+  },
+  "chisquared-studentt": {
+    title: "Chi-squared → Student's t",
+    formula: "\\begin{aligned} Z &\\sim N(0,1), \\quad V \\sim \\chi^2(k), \\quad \\text{independent} \\\\[2pt] \\frac{Z}{\\sqrt{V/k}} &\\sim t(k) \\end{aligned}",
+    note: "The numerator is the standardised quantity that would be used if the variance were known, while the denominator is an estimate of the scale, carrying its own sampling error. Dividing by a random denominator rather than a constant is what thickens the tails: an unusually small variance estimate inflates the ratio, so large values occur more often than they would under a normal distribution. As the degrees of freedom increase the estimate stabilises and the correction becomes negligible."
+  },
+  "chisquared-f": {
+    title: "Chi-squared → F-distribution",
+    formula: "\\begin{aligned} U &\\sim \\chi^2(d_1), \\quad V \\sim \\chi^2(d_2), \\quad \\text{independent} \\\\[2pt] \\frac{U/d_1}{V/d_2} &\\sim F(d_1,d_2) \\end{aligned}",
+    note: "Each chi-squared variable is divided by its own degrees of freedom before the ratio is formed, so the quantities being compared are two variance estimates rather than two raw sums of squares. Without that scaling the ratio would grow merely because one group contained more observations. With it, the expected value sits near 1 when the two variances are genuinely equal, which is what makes the F-distribution usable as a test statistic in the analysis of variance."
+  },
+  "f-chisquared": {
+    title: "F → Chi-squared",
+    formula: "\\begin{aligned} X &\\sim F(d_1, d_2) \\\\[2pt] d_1 X &\\xrightarrow{\\ d\\ } \\chi^2(d_1) \\quad (d_2 \\to \\infty) \\end{aligned}",
+    note: "The denominator of an F-distributed variable is a variance estimate built from d₂ degrees of freedom. As d₂ grows that estimate converges to the true value, so the random denominator becomes effectively constant and the distribution collapses to its numerator alone, a chi-squared variable on d₁ degrees of freedom after rescaling. The argument parallels the convergence of Student's t to the normal distribution, one level up: in both cases, once the denominator stops being uncertain, the correction for having estimated it disappears."
+  },
+  "studentt-cauchy": {
+    title: "Student's t → Cauchy",
+    formula: "t(1) = \\text{Cauchy}(0,1)",
+    note: "With one degree of freedom the variance estimate in the denominator is as unreliable as it can be, consisting of a single squared normal variable that is frequently near zero, and the resulting tails are heavy enough that the mean ceases to exist. The distribution is then exactly Cauchy. Taken together with the limit to the normal distribution, this brackets the whole family: t with one degree of freedom has no mean, t with infinitely many is normal, and each finite value in between has progressively more of its moments defined."
+  },
+  "studentt-normal": {
+    title: "Student's t → Normal",
+    formula: "\\begin{aligned} X &\\sim t(k) \\\\[2pt] X &\\xrightarrow{\\ d\\ } N(0,1) \\quad (k \\to \\infty) \\end{aligned}",
+    note: "As the degrees of freedom grow, the variance estimate in the denominator concentrates on the true value, the denominator becomes effectively constant, and the ratio is left as a plain standard normal variable. Convergence is rapid in practice: by about k = 30 the two distributions differ little enough that the normal critical value of 1.96 is commonly used in place of the corresponding t value, which is the origin of the familiar rule of thumb about large samples."
+  },
+  "studentt-f": {
+    title: "Student's t → F",
+    formula: "X \\sim t(k) \\implies X^2 \\sim F(1, k)",
+    note: "The square of a t-distributed variable follows an F-distribution with one numerator degree of freedom. The two are therefore the same test expressed differently: a two-sided t-test on a single parameter and an F-test on that same parameter are algebraically identical, which is why regression software may report either without inconsistency. Squaring discards the sign, so the F-test is inherently two-sided and cannot indicate the direction in which an effect went."
+  }
+})
+```
+
+Solid edges are exact relationships — a special case, a sum, or a transformation; dashed edges are limiting relationships that only hold as a parameter grows large.
+
+<div class="ojs-graph-legend">
+<span><span class="ojs-graph-legend-swatch is-exact"></span>Exact relationship</span>
+<span><span class="ojs-graph-legend-swatch is-limit"></span>Limiting relationship (large-n / CLT)</span>
+</div>
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via
+// _includes/head-scripts.html: js/** utilities plus js/distributions/** (the
+// closed-form PDF/PMF functions this page plots), and this page's own
+// colocated relationship-graph.js (see include-in-header). This page uses
+// VM.relationshipGraph, VM.distributions.*, and VM.plotting.*.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// The page's whole state is (what is selected, that distribution's parameter
+// values), and both live in the query string so a link reproduces the view.
+// `sel` is "node:<id>" or "edge:<id>"; the rest are parameter values.
+urlQuery = new URLSearchParams(window.location.search)
+```
+
+```{ojs}
+//| output: false
+initialSelection = {
+  const raw = urlQuery.get("sel")
+  if (!raw) return null
+  const [type, id] = raw.split(":")
+  if (type !== "node" && type !== "edge") return null
+  if (!id) return null
+  if (type === "node" && !nodeConfigs[id]) return null
+  if (type === "edge" && !edgeText[id]) return null
+  return {type, id}
+}
+```
+
+```{ojs}
+viewof selection = VM.relationshipGraph(graphNodes, graphEdges, {
+  width: 1000,
+  height: 780,
+  value: initialSelection
+})
+```
+
+```{ojs}
+//| output: false
+// activeConfig: the selected distribution's config, or null when an edge (or
+// nothing) is selected -- everything below the blurb renders only for a node.
+activeConfig = {
+  if (!selection || selection.type !== "node") return null
+  return nodeConfigs[selection.id] ?? null
+}
+```
+
+```{ojs}
+// detail: the math blurb. For a distribution, its density formula plus its
+// parameter ranges and moments; for an edge, the identity relating the two
+// distributions. Both end with a plain-language note.
+detail = {
+  const panel = document.createElement("div")
+  panel.className = "ojs-panel"
+
+  if (!selection) {
+    const empty = document.createElement("em")
+    empty.className = "ojs-detail-empty"
+    empty.textContent = "Click a distribution to see its density and formula, or an edge to see how two distributions relate."
+    panel.append(empty)
+    return panel
+  }
+
+  const info = selection.type === "node" ? nodeConfigs[selection.id] : edgeText[selection.id]
+  if (!info) return panel
+
+  const title = document.createElement("strong")
+  title.className = "ojs-detail-title"
+  title.textContent = info.title
+  panel.append(title)
+
+  // tex.block, not tex: these statements are the point of the panel, so they
+  // get their own centered display line rather than sitting inline in a
+  // sentence. Each goes in its own scroll container -- a wide identity should
+  // scroll within the panel rather than stretch the page.
+  const addMath = (source) => {
+    const line = document.createElement("div")
+    line.className = "ojs-detail-math"
+    line.append(tex.block`${source}`)
+    panel.append(line)
+  }
+
+  addMath(info.formula)
+  // Only a distribution carries a second line, of support and moments.
+  if (info.statsFormula) addMath(info.statsFormula)
+
+  const note = document.createElement("span")
+  note.className = "ojs-detail-note"
+  note.textContent = info.note
+  panel.append(note)
+  return panel
+}
+```
+
+```{ojs}
+//| output: false
+// The two-cell theme dance every chart page uses: vmTheme re-fires whenever
+// the site's dark-mode toggle flips, and chartColors takes it as an argument
+// purely to create that reactive edge (VM.plotting.colors ignores it), so the
+// chart cell re-runs and repaints its trace. Chart chrome re-themes itself
+// via the shared relayout patch, but a trace color is a value this page baked
+// in, so only a re-run updates it.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+```
+
+```{ojs}
+//| output: false
+chartColors = VM.plotting.colors(vmTheme)
+```
+
+```{ojs}
+//| output: false
+// edgeDemos: the relationships whose two distributions can be drawn on one
+// pair of axes, so the reader can watch them meet.
+//
+// Only some can. A limit (Binomial → Poisson, → Normal, Poisson → Normal,
+// Geometric → Exponential) puts both sides on a shared axis, so convergence
+// is literally visible as a parameter moves. An exact special case (Gamma ↔
+// Chi-squared, Beta → Uniform) draws two curves that lie exactly on top of
+// each other, which is the claim itself.
+//
+// The rest are deliberately left without a plot, because there is nothing to
+// see: a sum (Bernoulli → Binomial, Exponential → Gamma, Normal →
+// Chi-squared) relates a distribution to one of a different variable, a ratio
+// (Student's t, F) likewise, and a change of variable (Poisson ↔ Exponential,
+// Uniform → Exponential) puts the two sides on axes measuring different
+// things -- counts against waiting times. Overlaying either pair would draw
+// two curves whose proximity means nothing.
+//
+// Each distribution gets its OWN sliders, deliberately uncoupled: the reader
+// moves them and finds where the two meet, rather than being handed a
+// parameterization that can only ever agree. The matching condition is the
+// theorem, so discovering it is the point -- each demo opens already at that
+// condition, and any slider breaks it.
+//
+// Each series returns its own {xs, ys}: `kind` is "bars" for a probability
+// mass function (support only on isolated points) and "line" for a density.
+edgeDemos = ({
+  "hypergeometric-binomial": {
+    labels: ["Hypergeometric", "Binomial"],
+    yTitle: "probability",
+    params: [
+      {key: "N", label: "N (population)", min: 20, max: 400, step: 5, default: 200},
+      {key: "K", label: "K (successes)", min: 1, max: 200, step: 1, default: 60},
+      {key: "n", label: "n (drawn)", min: 1, max: 40, step: 1, default: 12},
+      {key: "p", label: "p (Binomial)", min: 0.02, max: 0.98, step: 0.02, default: 0.3}
+    ],
+    caption: "They coincide when p = K/N and the population dwarfs the sample. Shrink N toward n and the Hypergeometric visibly narrows — that is the finite-population correction, the price of not replacing what you draw.",
+    xRange: (prm) => [-0.5, Math.min(prm.n, prm.K) + 0.5],
+    series: (prm, range) => [
+      {name: `Hypergeometric(${prm.N}, ${prm.K}, ${prm.n})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.hypergeometricPmf(k, prm.N, Math.min(prm.K, prm.N), Math.min(prm.n, prm.N)))},
+      {name: `Binomial(${prm.n}, ${prm.p})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.binomialPmf(k, prm.n, prm.p))}
+    ]
+  },
+  "geometric-negativebinomial": {
+    labels: ["Geometric", "Negative Binomial"],
+    yTitle: "probability",
+    params: [
+      {key: "p", label: "p (Geometric)", min: 0.05, max: 0.9, step: 0.05, default: 0.3},
+      {key: "r", label: "r (Neg. Binomial)", min: 1, max: 12, step: 1, default: 1},
+      {key: "q", label: "p (Neg. Binomial)", min: 0.05, max: 0.9, step: 0.05, default: 0.3}
+    ],
+    caption: "Only r = 1 makes them agree, and then only if the two success probabilities match. Raise r and the Negative Binomial marches right and grows a hump — the wait for several successes cannot start at the first trial.",
+    xRange: (prm) => {
+      const geoHi = Math.log(0.005) / Math.log(1 - prm.p)
+      const nbHi = prm.r / prm.q + 4 * Math.sqrt(prm.r * (1 - prm.q)) / prm.q
+      return [0.5, Math.ceil(Math.max(geoHi, nbHi)) + 0.5]
+    },
+    series: (prm, range) => [
+      {name: `Geometric(${prm.p})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.geometricPmf(k, prm.p))},
+      {name: `NegBinomial(${prm.r}, ${prm.q})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.negativeBinomialPmf(k, prm.r, prm.q))}
+    ]
+  },
+  "negativebinomial-poisson": {
+    labels: ["Negative Binomial", "Poisson"],
+    yTitle: "probability",
+    params: [
+      {key: "r", label: "r (successes)", min: 1, max: 200, step: 1, default: 60},
+      {key: "q", label: "p (Neg. Binomial)", min: 0.5, max: 0.99, step: 0.01, default: 0.94},
+      {key: "lambda", label: "λ (Poisson)", min: 0.5, max: 40, step: 0.5, default: 4}
+    ],
+    caption: "Counting failures rather than trials, the Negative Binomial approaches Poisson(λ) when r(1−p) = λ with r large. Lower r at fixed mean and it spreads out past the Poisson — that surplus variance is exactly why it is the standard fix for overdispersed counts.",
+    xRange: (prm) => [-0.5, Math.ceil(prm.lambda + 5 * Math.sqrt(prm.lambda)) + 1.5],
+    series: (prm, range) => [
+      // Shifted to count failures rather than trials, so both distributions
+      // start at 0 and the limit is visible on a shared axis.
+      {name: `NegBinomial(${prm.r}, ${prm.q}) failures`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.negativeBinomialPmf(k + prm.r, prm.r, prm.q))},
+      {name: `Poisson(${prm.lambda})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.poissonPmf(k, prm.lambda))}
+    ]
+  },
+  "gamma-normal": {
+    labels: ["Gamma", "Normal"],
+    yTitle: "density",
+    params: [
+      {key: "shape", label: "α (Gamma shape)", min: 1, max: 60, step: 1, default: 20},
+      {key: "rate", label: "β (Gamma rate)", min: 0.2, max: 4, step: 0.2, default: 1},
+      {key: "mean", label: "μ (Normal)", min: 0, max: 80, step: 0.5, default: 20},
+      {key: "variance", label: "σ² (Normal)", min: 0.5, max: 100, step: 0.5, default: 20}
+    ],
+    caption: "They coincide when μ = α/β and σ² = α/β². Drop α toward 1 and the Gamma collapses onto the Exponential's spike at zero, which no normal can follow; raise it and the skew averages away.",
+    xRange: (prm) => {
+      const sd = Math.sqrt(prm.variance)
+      const gHi = prm.shape / prm.rate + 5 * Math.sqrt(prm.shape) / prm.rate
+      return [Math.min(0, prm.mean - 4 * sd), Math.max(gHi, prm.mean + 4 * sd)]
+    },
+    series: (prm, range) => [
+      {name: `Gamma(${prm.shape}, ${prm.rate})`, kind: "line",
+       ...VM.distributions.sampleCurve(x => VM.distributions.gammaPdf(x, prm.shape, prm.rate), Math.max(0, range[0]), range[1])},
+      {name: `Normal(${prm.mean}, ${prm.variance})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.normalPdf(x, prm.mean, prm.variance), range[0], range[1])}
+    ]
+  },
+  "beta-normal": {
+    labels: ["Beta", "Normal"],
+    yTitle: "density",
+    params: [
+      {key: "a", label: "a (Beta)", min: 0.5, max: 60, step: 0.5, default: 20},
+      {key: "b", label: "b (Beta)", min: 0.5, max: 60, step: 0.5, default: 20},
+      {key: "mean", label: "μ (Normal)", min: 0, max: 1, step: 0.01, default: 0.5},
+      {key: "variance", label: "σ² (Normal)", min: 0.0005, max: 0.08, step: 0.0005, default: 0.006}
+    ],
+    caption: "They coincide when μ = a/(a+b) and σ² = ab/((a+b)²(a+b+1)). Shrink a and b and the Beta is pinned inside (0, 1) while the normal spills past both ends — the approximation fails wherever the boundary matters.",
+    xRange: () => [-0.05, 1.05],
+    series: (prm, range) => [
+      {name: `Beta(${prm.a}, ${prm.b})`, kind: "line",
+       ...VM.distributions.sampleCurve(x => VM.distributions.betaPdf(x, prm.a, prm.b), 0, 1)},
+      {name: `Normal(${prm.mean}, ${prm.variance})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.normalPdf(x, prm.mean, prm.variance), range[0], range[1])}
+    ]
+  },
+  "studentt-normal": {
+    labels: ["Student's t", "Normal"],
+    yTitle: "density",
+    params: [
+      {key: "k", label: "k (t degrees of freedom)", min: 1, max: 60, step: 1, default: 30},
+      {key: "mean", label: "μ (Normal)", min: -2, max: 2, step: 0.1, default: 0},
+      {key: "variance", label: "σ² (Normal)", min: 0.2, max: 4, step: 0.1, default: 1}
+    ],
+    caption: "They coincide as k grows, with μ = 0 and σ² = 1. The gap lives in the tails rather than the peak, so watch the edges of the axis, not the middle — at k = 1 the t is Cauchy and has no mean at all.",
+    xRange: () => [-6, 6],
+    series: (prm, range) => [
+      {name: `t(${prm.k})`, kind: "line",
+       ...VM.distributions.sampleCurve(x => VM.distributions.studentTPdf(x, prm.k), range[0], range[1])},
+      {name: `Normal(${prm.mean}, ${prm.variance})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.normalPdf(x, prm.mean, prm.variance), range[0], range[1])}
+    ]
+  },
+  "studentt-cauchy": {
+    labels: ["Student's t", "Cauchy"],
+    yTitle: "density",
+    params: [
+      {key: "k", label: "k (t degrees of freedom)", min: 1, max: 30, step: 1, default: 1},
+      {key: "location", label: "x₀ (Cauchy)", min: -2, max: 2, step: 0.1, default: 0},
+      {key: "scale", label: "γ (Cauchy)", min: 0.2, max: 3, step: 0.1, default: 1}
+    ],
+    caption: "At k = 1, with x₀ = 0 and γ = 1, the two are the same distribution exactly. Raise k by one and they separate immediately — the Cauchy is the single most extreme member of the t family, not a limit of it.",
+    xRange: () => [-8, 8],
+    series: (prm, range) => [
+      {name: `t(${prm.k})`, kind: "line", width: 5,
+       ...VM.distributions.sampleCurve(x => VM.distributions.studentTPdf(x, prm.k), range[0], range[1])},
+      {name: `Cauchy(${prm.location}, ${prm.scale})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.cauchyPdf(x, prm.location, prm.scale), range[0], range[1])}
+    ]
+  },
+  "chisquared-exponential": {
+    labels: ["Chi-squared", "Exponential"],
+    yTitle: "density",
+    params: [
+      {key: "k", label: "k (Chi-squared)", min: 1, max: 12, step: 1, default: 2},
+      {key: "lambda", label: "λ (Exponential rate)", min: 0.1, max: 2, step: 0.1, default: 0.5}
+    ],
+    caption: "Exactly at k = 2 and λ = ½ the two curves are one curve. Any other k moves the Chi-squared off the Exponential entirely, since only two degrees of freedom give the Gamma the shape of 1 that makes it memoryless.",
+    xRange: (prm) => [0, Math.max(prm.k + 5 * Math.sqrt(2 * prm.k), -Math.log(0.01) / prm.lambda)],
+    series: (prm, range) => [
+      {name: `Chi-squared(${prm.k})`, kind: "line", width: 5,
+       ...VM.distributions.sampleCurve(x => VM.distributions.chiSquaredPdf(x, prm.k), range[0], range[1])},
+      {name: `Exponential(${prm.lambda})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.exponentialPdf(x, prm.lambda), range[0], range[1])}
+    ]
+  },
+  "f-chisquared": {
+    labels: ["F, rescaled", "Chi-squared"],
+    yTitle: "density",
+    params: [
+      {key: "d1", label: "d₁ (F numerator)", min: 1, max: 20, step: 1, default: 5},
+      {key: "d2", label: "d₂ (F denominator)", min: 1, max: 200, step: 1, default: 150},
+      {key: "k", label: "k (Chi-squared)", min: 1, max: 20, step: 1, default: 5}
+    ],
+    caption: "Plotting d₁·F against Chi-squared(k), they meet when k = d₁ and d₂ is large. Pull d₂ down and the F develops a heavy right tail — that is the uncertainty in its denominator, which vanishes as d₂ grows.",
+    xRange: (prm) => [0, Math.max(prm.k + 5 * Math.sqrt(2 * prm.k), prm.d1 + 5 * Math.sqrt(2 * prm.d1))],
+    series: (prm, range) => [
+      // Y = d1 * X has density f_X(y/d1)/d1, which is what makes the limit
+      // land on a Chi-squared rather than on a rescaled copy of one.
+      {name: `${prm.d1}·F(${prm.d1}, ${prm.d2})`, kind: "line", width: 5,
+       ...VM.distributions.sampleCurve(y => VM.distributions.fPdf(y / prm.d1, prm.d1, prm.d2) / prm.d1, range[0], range[1])},
+      {name: `Chi-squared(${prm.k})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.chiSquaredPdf(x, prm.k), range[0], range[1])}
+    ]
+  },
+  "exponential-weibull": {
+    labels: ["Exponential", "Weibull"],
+    yTitle: "density",
+    params: [
+      {key: "lambda", label: "λ (Exponential rate)", min: 0.2, max: 3, step: 0.1, default: 1},
+      {key: "shape", label: "k (Weibull shape)", min: 0.3, max: 4, step: 0.1, default: 1},
+      {key: "scale", label: "λ (Weibull scale)", min: 0.2, max: 5, step: 0.1, default: 1}
+    ],
+    caption: "They are identical whenever the Weibull's shape is 1 and its scale is the reciprocal of the Exponential's rate. Move the shape off 1 in either direction and no scale recovers the fit — that is ageing appearing, which the Exponential cannot represent.",
+    xRange: (prm) => [0, Math.max(-Math.log(0.01) / prm.lambda, prm.scale * Math.pow(-Math.log(0.01), 1 / prm.shape))],
+    series: (prm, range) => [
+      {name: `Exponential(${prm.lambda})`, kind: "line", width: 5,
+       ...VM.distributions.sampleCurve(x => VM.distributions.exponentialPdf(x, prm.lambda), range[0], range[1])},
+      {name: `Weibull(${prm.shape}, ${prm.scale})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.weibullPdf(x, prm.shape, prm.scale), range[0], range[1])}
+    ]
+  },
+  "exponential-gamma": {
+    labels: ["Exponential", "Gamma"],
+    yTitle: "density",
+    params: [
+      {key: "lambda", label: "λ (Exponential rate)", min: 0.2, max: 3, step: 0.1, default: 1},
+      {key: "shape", label: "α (Gamma shape)", min: 1, max: 12, step: 1, default: 1},
+      {key: "rate", label: "β (Gamma rate)", min: 0.2, max: 3, step: 0.1, default: 1}
+    ],
+    caption: "Shape 1 is the whole story: Gamma(1, β) is Exponential(β) exactly. Raise the shape and the Gamma lifts off zero, because several waits stacked end to end cannot all finish immediately — the sum has lost the Exponential's memorylessness.",
+    xRange: (prm) => [0, Math.max(-Math.log(0.01) / prm.lambda, prm.shape / prm.rate + 5 * Math.sqrt(prm.shape) / prm.rate)],
+    series: (prm, range) => [
+      {name: `Exponential(${prm.lambda})`, kind: "line", width: 5,
+       ...VM.distributions.sampleCurve(x => VM.distributions.exponentialPdf(x, prm.lambda), range[0], range[1])},
+      {name: `Gamma(${prm.shape}, ${prm.rate})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.gammaPdf(x, prm.shape, prm.rate), range[0], range[1])}
+    ]
+  },
+  "binomial-poisson": {
+    labels: ["Binomial", "Poisson"],
+    yTitle: "probability",
+    params: [
+      {key: "n", label: "n (Binomial)", min: 1, max: 100, step: 1, default: 20},
+      {key: "p", label: "p (Binomial)", min: 0.01, max: 0.99, step: 0.01, default: 0.2},
+      {key: "lambda", label: "λ (Poisson)", min: 0.5, max: 30, step: 0.5, default: 4}
+    ],
+    caption: "They coincide when λ = np, and the agreement is best when p is small and n large — the Binomial's extra structure (it can never exceed n) stops mattering. The sliders open on n = 20, p = 0.2, λ = 4; move any one and the match breaks.",
+    xRange: (prm) => {
+      const binMean = prm.n * prm.p
+      const binSd = Math.sqrt(prm.n * prm.p * (1 - prm.p))
+      const binHi = Math.min(prm.n, binMean + 4 * binSd)
+      const poisHi = prm.lambda + 4 * Math.sqrt(prm.lambda)
+      return [-0.5, Math.ceil(Math.max(binHi, poisHi)) + 1.5]
+    },
+    series: (prm, range) => [
+      {name: `Binomial(${prm.n}, ${prm.p})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.binomialPmf(k, prm.n, prm.p))},
+      {name: `Poisson(${prm.lambda})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.poissonPmf(k, prm.lambda))}
+    ]
+  },
+  "binomial-normal": {
+    labels: ["Binomial", "Normal"],
+    yTitle: "probability / density",
+    params: [
+      {key: "n", label: "n (Binomial)", min: 1, max: 200, step: 1, default: 40},
+      {key: "p", label: "p (Binomial)", min: 0.02, max: 0.98, step: 0.02, default: 0.5},
+      {key: "mean", label: "μ (Normal)", min: -5, max: 120, step: 0.5, default: 20},
+      {key: "variance", label: "σ² (Normal)", min: 0.5, max: 60, step: 0.5, default: 10}
+    ],
+    caption: "They coincide when μ = np and σ² = np(1−p), and the fit improves with n — fastest near p = 0.5, slowest at the extremes where the Binomial stays visibly skewed. The bars are probabilities and the curve a density, comparable only because the bars sit one unit apart.",
+    xRange: (prm) => {
+      const binMean = prm.n * prm.p
+      const binSd = Math.sqrt(prm.n * prm.p * (1 - prm.p))
+      const sd = Math.sqrt(prm.variance)
+      const lo = Math.min(Math.max(-0.5, binMean - 4 * binSd), prm.mean - 4 * sd)
+      const hi = Math.max(Math.min(prm.n + 0.5, binMean + 4 * binSd), prm.mean + 4 * sd)
+      return [lo, hi]
+    },
+    series: (prm, range) => [
+      {name: `Binomial(${prm.n}, ${prm.p})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.binomialPmf(k, prm.n, prm.p))},
+      {name: `Normal(${prm.mean}, ${prm.variance})`, kind: "line",
+       ...VM.distributions.sampleCurve(x => VM.distributions.normalPdf(x, prm.mean, prm.variance), range[0], range[1])}
+    ]
+  },
+  "poisson-normal": {
+    labels: ["Poisson", "Normal"],
+    yTitle: "probability / density",
+    params: [
+      {key: "lambda", label: "λ (Poisson)", min: 1, max: 80, step: 1, default: 25},
+      {key: "mean", label: "μ (Normal)", min: 0, max: 100, step: 1, default: 25},
+      {key: "variance", label: "σ² (Normal)", min: 1, max: 120, step: 1, default: 25}
+    ],
+    caption: "They coincide when μ = σ² = λ — the one distribution whose mean and variance are forced equal meeting the one where they are free. Drop λ toward 1 and the Poisson's skew reappears; no choice of μ and σ² can follow it there.",
+    xRange: (prm) => {
+      const sd = Math.sqrt(prm.variance)
+      const lo = Math.min(-0.5, prm.mean - 4 * sd)
+      const hi = Math.max(prm.lambda + 4 * Math.sqrt(prm.lambda), prm.mean + 4 * sd)
+      return [lo, hi]
+    },
+    series: (prm, range) => [
+      {name: `Poisson(${prm.lambda})`, kind: "bars",
+       ...integerPoints(range, k => VM.distributions.poissonPmf(k, prm.lambda))},
+      {name: `Normal(${prm.mean}, ${prm.variance})`, kind: "line",
+       ...VM.distributions.sampleCurve(x => VM.distributions.normalPdf(x, prm.mean, prm.variance), range[0], range[1])}
+    ]
+  },
+  "geometric-exponential": {
+    labels: ["Geometric (rescaled)", "Exponential"],
+    yTitle: "density",
+    params: [
+      {key: "p", label: "p (Geometric)", min: 0.02, max: 0.9, step: 0.02, default: 0.2},
+      {key: "m", label: "m (steps per unit)", min: 1, max: 40, step: 1, default: 5},
+      {key: "lambda", label: "λ (Exponential)", min: 0.2, max: 8, step: 0.2, default: 1}
+    ],
+    caption: "The Geometric wait is rescaled so that m trials take one unit of time. The two coincide when λ = pm, and the steps flatten into the curve as m grows with pm held there. Each bar is multiplied by m so its area is that step's probability, which is what makes a mass function comparable to a density.",
+    xRange: (prm) => {
+      const geoTail = Math.log(0.01) / Math.log(1 - prm.p) / prm.m
+      return [0, Math.max(-Math.log(0.01) / prm.lambda, geoTail)]
+    },
+    series: (prm, range) => {
+      // The rescaled wait lives on 1/m, 2/m, ... -- spacing 1/m rather than
+      // 1, so each mass is multiplied by m to become a density. Without that
+      // the bars shrink toward zero as m grows and never meet the curve.
+      const xs = []
+      const ys = []
+      for (let k = 1; k / prm.m <= range[1]; k++) {
+        xs.push(k / prm.m)
+        ys.push(prm.m * VM.distributions.geometricPmf(k, prm.p))
+      }
+      return [
+        {name: `Geometric(${prm.p}) rescaled by m = ${prm.m}`, kind: "bars", xs, ys, width: 0.85 / prm.m},
+        {name: `Exponential(${prm.lambda})`, kind: "line",
+         ...VM.distributions.sampleCurve(x => VM.distributions.exponentialPdf(x, prm.lambda), range[0], range[1])}
+      ]
+    }
+  },
+  "gamma-chisquared": {
+    labels: ["Gamma", "Chi-squared"],
+    yTitle: "density",
+    params: [
+      {key: "shape", label: "α (Gamma shape)", min: 0.5, max: 20, step: 0.5, default: 3},
+      {key: "rate", label: "β (Gamma rate)", min: 0.1, max: 3, step: 0.1, default: 0.5},
+      {key: "k", label: "k (Chi-squared)", min: 1, max: 40, step: 1, default: 6}
+    ],
+    caption: "These two do not merely approach each other, they land exactly on top of one another — whenever α = k/2 and β = 1/2. Nudge β off 0.5 and no α recovers the fit, which is what it means for the Chi-squared to be a single slice through the Gamma family rather than a limit of it.",
+    xRange: (prm) => {
+      const gammaHi = prm.shape / prm.rate + 5 * Math.sqrt(prm.shape) / prm.rate
+      const chiHi = prm.k + 5 * Math.sqrt(2 * prm.k)
+      return [0, Math.max(gammaHi, chiHi)]
+    },
+    series: (prm, range) => [
+      {name: `Gamma(${prm.shape}, ${prm.rate})`, kind: "line", width: 5,
+       ...VM.distributions.sampleCurve(x => VM.distributions.gammaPdf(x, prm.shape, prm.rate), range[0], range[1])},
+      {name: `Chi-squared(${prm.k})`, kind: "line", dash: "dash",
+       ...VM.distributions.sampleCurve(x => VM.distributions.chiSquaredPdf(x, prm.k), range[0], range[1])}
+    ]
+  },
+  "beta-uniform": {
+    labels: ["Beta", "Uniform"],
+    yTitle: "density",
+    params: [
+      {key: "a", label: "a (Beta)", min: 0.5, max: 5, step: 0.1, default: 1},
+      {key: "b", label: "b (Beta)", min: 0.5, max: 5, step: 0.1, default: 1}
+    ],
+    caption: "The Uniform has no parameters to move, so the whole search is on the Beta's two. They coincide at exactly one point, a = b = 1; anywhere else the flat line bends into a tilt or a peak.",
+    xRange: () => [-0.02, 1.02],
+    series: (prm, range) => [
+      {name: `Beta(${prm.a.toFixed(1)}, ${prm.b.toFixed(1)})`, kind: "line",
+       ...VM.distributions.sampleCurve(x => VM.distributions.betaPdf(x, prm.a, prm.b), 0, 1)},
+      {name: "Uniform(0, 1)", kind: "line", dash: "dash", xs: [0, 1], ys: [1, 1]}
+    ]
+  }
+})
+```
+
+```{ojs}
+//| output: false
+// integerPoints: a probability mass function has support only on the
+// integers, so it is evaluated there rather than on a fine grid.
+integerPoints = (range, pmf) => {
+  const xs = []
+  const ys = []
+  for (let k = Math.max(0, Math.ceil(range[0])); k <= Math.floor(range[1]); k++) {
+    xs.push(k)
+    ys.push(pmf(k))
+  }
+  return {xs, ys}
+}
+```
+
+```{ojs}
+//| output: false
+// activeDemo: the overlay for the selected edge, when that relationship has
+// one. Most don't -- see edgeDemos.
+activeDemo = {
+  if (!selection || selection.type !== "edge") return null
+  return edgeDemos[selection.id] ?? null
+}
+```
+
+```{ojs}
+//| output: false
+// activeControls: whichever of the two is showing a chart. Both a
+// distribution's config and an edge's demo expose a `params` list, so the
+// slider form and the URL sync below work off this one cell rather than
+// branching on the selection type in three places.
+activeControls = activeConfig ?? activeDemo
+```
+
+```{ojs}
+//| output: false
+// plotSpec: the traces to draw, or null when the selection has no chart (an
+// edge without a demo, or nothing selected). Returns null too while the
+// params form is mid-rebuild for a new selection and its values haven't
+// propagated -- the chart cell holds the previous frame rather than flashing.
+plotSpec = {
+  if (!activeControls) return null
+  for (const p of activeControls.params) {
+    if (typeof params[p.key] !== "number") return null
+  }
+
+  if (activeConfig) {
+    const range = activeConfig.xRange(params)
+    const discrete = Boolean(activeConfig.integerSource)
+    const curve = VM.distributions.sampleCurve(
+      x => activeConfig.density(x, params),
+      range[0], range[1],
+      {discrete}
+    )
+    return {
+      key: activeConfig.title,
+      range,
+      yTitle: discrete ? "probability" : "density",
+      labels: [activeConfig.title],
+      traces: [{name: legendLabel(activeConfig, params), kind: discrete ? "bars" : "line", xs: curve.xs, ys: curve.ys}]
+    }
+  }
+
+  const range = activeDemo.xRange(params)
+  return {
+    key: selection.id,
+    range,
+    // Each demo names its own axis: two mass functions measure probability,
+    // two densities measure density, and a mass function compared against a
+    // density at unit spacing is honestly both.
+    yTitle: activeDemo.yTitle ?? "density",
+    labels: activeDemo.labels,
+    traces: activeDemo.series(params, range)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// legendLabel: "Name(sym = value, ...)" for a single distribution's legend
+// entry, e.g. "Poisson(λ = 4)" or "Normal(μ = 0, σ² = 1)". An overlay's
+// series name themselves.
+legendLabel = (config, prm) => {
+  if (config.params.length === 0) return config.title
+  const parts = []
+  for (const p of config.params) parts.push(`${p.label} = ${prm[p.key]}`)
+  return `${config.title}(${parts.join(", ")})`
+}
+```
+
+```{ojs}
+//| output: false
+// renderChart: draws whatever plotSpec asked for -- one exact density, or two
+// overlaid. Nothing is sampled or simulated: every curve is its closed-form
+// function, so a slider move animates the shape rather than resampling noise.
+//
+// Follows the site's chart shape (see apps/about.qmd, apps/newton-method):
+// every trace sets showlegend: false because the floating legend above
+// replaces Plotly's own, a hidden trace is never pushed rather than pushed
+// with visible: false, and _plotDiv is kept in a closure so Plotly reuses one
+// DOM node across reactive updates -- which is what preserves zoom and pan
+// while a parameter slider moves.
+renderChart = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (spec, colors, visible) => {
+    // First series is what the relationship starts from, second what it
+    // converges or reduces to.
+    const palette = [colors.fn, colors.alt]
+    const tokens = ["fn", "alt"]
+    const data = []
+    let hasBars = false
+
+    for (let i = 0; i < spec.traces.length; i++) {
+      const label = spec.labels[i]
+      // A single-series plot has no legend to switch it off with, so it is
+      // always drawn; an overlay's series appear only while checked.
+      if (spec.labels.length > 1 && !visible.includes(label)) continue
+
+      const t = spec.traces[i]
+      const color = palette[i % palette.length]
+      const token = tokens[i % tokens.length]
+
+      if (t.kind === "bars") {
+        hasBars = true
+        data.push({
+          x: t.xs, y: t.ys, type: "bar", name: t.name, showlegend: false,
+          width: t.width,
+          marker: {color: VM.plotting.alpha(token, 0.55), line: {color, width: 1}},
+          hoverlabel: VM.plotting.hoverLabel()
+        })
+      } else {
+        data.push({
+          x: t.xs, y: t.ys, type: "scatter", mode: "lines", name: t.name, showlegend: false,
+          line: {color, width: t.width ?? 2.5, dash: t.dash},
+          // Only fill under a lone curve. Under an overlay the fills stack
+          // and the lower one reads as a third, non-existent distribution.
+          fill: spec.traces.length === 1 ? "tozeroy" : undefined,
+          fillcolor: spec.traces.length === 1 ? VM.plotting.alpha("fn", 0.12) : undefined,
+          hoverlabel: VM.plotting.hoverLabel()
+        })
+      }
+    }
+
+    const layout = {
+      xaxis: {title: "x", range: spec.range},
+      yaxis: {title: spec.yTitle, rangemode: "tozero"},
+      // Keyed to what is selected, not to its parameters: dragging a slider
+      // keeps whatever zoom the reader set, switching selection starts fresh.
+      uirevision: spec.key,
+      // Two mass functions on the same integers must sit side by side, or the
+      // one drawn second hides the first entirely.
+      barmode: hasBars ? "group" : undefined,
+      bargap: 0.15,
+      annotations: data.length > 0 ? [] : VM.plotting.emptyState("Every trace is hidden — switch one back on in the legend."),
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // Not a bare `new ResizeObserver(...)`: the div is built detached, so
+      // Plotly measures it 0x0 at newPlot time, and an unmanaged observer
+      // outlives the div once a re-run replaces it. autoResize disconnects.
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// traceItems: the legend's rows -- one per series, in draw order, each
+// carrying the exact color the chart draws that series in so the swatches
+// double as a color key. Empty for a single-series plot: Plotly would not
+// show a legend for one trace either, and a one-row panel floating over the
+// chart is noise rather than a key.
+traceItems = {
+  if (!plotSpec || plotSpec.labels.length < 2) return []
+  const palette = [chartColors.fn, chartColors.alt]
+  const items = []
+  for (let i = 0; i < plotSpec.labels.length; i++) {
+    items.push({label: plotSpec.labels[i], color: palette[i % palette.length]})
+  }
+  return items
+}
+```
+
+<div class="ojs-plot-overlay">
+
+```{ojs}
+// chart: a distribution's density, or an overlay for the relationships that
+// have one. An edge without a demo renders nothing here -- there is no second
+// axis to put it on, and an empty frame would imply there should be.
+chart = {
+  if (!plotSpec) return html``
+  return renderChart(plotSpec, chartColors, traces)
+}
+```
+
+```{ojs}
+// The site's own legend rather than Plotly's built-in one (every trace below
+// sets showlegend: false). It sits on the chart, is draggable off whatever
+// part of the curve it covers, and toggles traces -- see js/ui/legend-overlay.js
+// and js/ui/draggable-overlay.js, both of which self-install.
+viewof traces = {
+  const labels = []
+  for (const item of traceItems) labels.push(item.label)
+  return VM.ui.legendOverlay(traceItems, {value: labels})
+}
+```
+
+<div class="ojs-step-overlay ojs-grid">
+
+```{ojs}
+// params: one slider per parameter of whatever is selected -- a
+// distribution's own, or the ones driving an edge's overlay.
+//
+// They live in the chart's own overlay bar, the site convention for
+// always-live controls whose only job is to change what the chart shows. The
+// bar hides itself when it holds no slider -- an edge without a demo, nothing
+// selected, or a parameter-free distribution like Uniform -- see the :has()
+// rule in this page's <style> block.
+viewof params = {
+  if (!activeControls || activeControls.params.length === 0) return Inputs.form({})
+
+  // Seed from the query string, but only for the selection the incoming link
+  // actually named, and only the first time it is shown -- urlSeed.used is a
+  // plain object mutation, invisible to OJS's reactivity, so navigating away
+  // and back later gets the defaults rather than resurrecting values from a
+  // URL the reader has since moved past.
+  let seed = {}
+  if (activeControls === initialControls && !urlSeed.used) {
+    seed = urlSeed.values
+    urlSeed.used = true
+  }
+
+  const fields = {}
+  for (const p of activeControls.params) {
+    const value = typeof seed[p.key] === "number" ? seed[p.key] : p.default
+    fields[p.key] = Inputs.range([p.min, p.max], {step: p.step, value, label: p.label})
+  }
+  const form = Inputs.form(fields)
+  form.classList.add("vm-params-form")
+  return form
+}
+```
+
+</div>
+
+</div>
+
+```{ojs}
+// demoCaption: what to look for in the overlay above. Only edges have one; a
+// distribution's own plot needs no reading instructions.
+demoCaption = {
+  if (!activeDemo || !plotSpec) return html``
+  const note = document.createElement("p")
+  note.className = "ojs-demo-caption"
+  note.textContent = activeDemo.caption
+  return note
+}
+```
+
+```{ojs}
+//| output: false
+// initialControls and urlSeed resolve the load-time query string. Both cells
+// are dependency-free, so they run exactly once per page load, which is what
+// makes the urlSeed.used mutation above safe.
+initialControls = {
+  if (!initialSelection) return null
+  if (initialSelection.type === "node") return nodeConfigs[initialSelection.id] ?? null
+  return edgeDemos[initialSelection.id] ?? null
+}
+```
+
+```{ojs}
+//| output: false
+urlSeed = {
+  const values = {}
+  if (initialControls) {
+    for (const p of initialControls.params) {
+      const raw = urlQuery.get(p.key)
+      if (raw === null) continue
+      const parsed = Number(raw)
+      if (Number.isFinite(parsed)) values[p.key] = parsed
+    }
+  }
+  return {values, used: false}
+}
+```
+
+```{ojs}
+//| output: false
+// urlSync: keeps the address bar a reproducible link to what is on screen.
+// Every control here is always-live -- there is no Plot button to gate a
+// commit on -- so this writes on each change. replaceState, not pushState:
+// clicking around the map shouldn't fill up the back button.
+urlSync = {
+  const next = new URLSearchParams()
+  if (selection) next.set("sel", `${selection.type}:${selection.id}`)
+  if (activeControls) {
+    for (const p of activeControls.params) {
+      if (typeof params[p.key] === "number") next.set(p.key, params[p.key])
+    }
+  }
+  const query = next.toString()
+  history.replaceState(null, "", query ? `?${query}` : window.location.pathname)
+  return query
+}
+```
+## References
+
+Cook, John D. "Diagram of distribution relationships." Blog post. [https://www.johndcook.com/blog/distribution_chart/](https://www.johndcook.com/blog/distribution_chart/)
+
+Leemis, Lawrence M., and Jacquelyn T. McQueston. "Univariate Distribution Relationships." *The American Statistician* 62(1), 2008, 45–53. [https://www.math.wm.edu/~leemis/2008amstat.pdf](https://www.math.wm.edu/~leemis/2008amstat.pdf)

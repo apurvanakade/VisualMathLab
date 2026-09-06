@@ -149,9 +149,32 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding-top: 0.6rem;
   transition: left 0.22s ease;
+  /* Deliberately unpainted: the box runs the full height of the viewport so
+   * that flicking the pointer anywhere down the left edge previews the
+   * sidebar, but below 992px the body column starts at x:26px, inside this
+   * 44px width, so painting the whole strip would lay an opaque band over
+   * the page's own text. Only .vm-rail-cluster below is painted. */
+}
+
+/* The buttons' own surface. Without it the two icons sit in open space with
+ * nothing behind them, and the rail reads as an unfinished fragment rather
+ * than a control that was cut off. Shaped as a tab hanging off the left
+ * edge -- no left border, rounded on the right only -- so it looks attached
+ * to the edge it is anchored to, and equally to the sidebar's own edge once
+ * the sidebar is open and the rail has moved out to x:280. */
+.vm-rail-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.3rem;
+  margin-top: 0.5rem;
+  background: var(--vm-surface);
+  border: 1px solid var(--vm-border);
+  border-left: none;
+  border-radius: 0 var(--vm-radius) var(--vm-radius) 0;
+  box-shadow: var(--vm-shadow);
 }
 
 /* Once open, the sidebar's own box occupies x:0-280px at the same z-index

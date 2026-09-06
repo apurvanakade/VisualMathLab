@@ -11,9 +11,18 @@ JS; styles.css forces the same off-canvas treatment at every width, driven
 by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
 .collapse/.show. This script owns those two classes and provides the one
 thing that treatment removes: a permanently visible way back in -- a slim
-rail at the left edge with a hamburger toggle, open-on-hover for a quick
-peek, click-to-pin for a session that stays open, Escape/click-outside to
-close.
+rail at the left edge with a hamburger toggle, click-to-pin for a session
+that stays open, Escape/click-outside to close.
+
+The rail used to open the sidebar on hover anywhere down its full-height
+box. That is gone: the hamburger is a visible control and can simply be
+clicked, and the hover version cost more than it gave. It fired on any
+pointer drift into the left edge, and since it announces itself by writing
+.vm-sidebar-open onto <body>, every one of those accidental opens churned a
+class list that chart pages observe (see VM.plotting.onThemeChange). It also
+forced the rail's box to span the viewport to catch the pointer, which left
+an invisible 21px strip lying over the content column below 768px, where the
+body's own left margin is narrower than the rail.
 -->
 <script>
 (function () {
@@ -41,12 +50,8 @@ close.
 
     var rail = document.createElement("div")
     rail.id = "vm-sidebar-rail"
-    // The buttons live in their own wrapper so the painted surface can hug
-    // just them. The rail's own box has to stay the full height of the
-    // viewport, because that whole edge is the hover target that previews
-    // the sidebar, but painting all of it would cover page content on
-    // narrow viewports where the body column starts inside the rail's
-    // width. See the .vm-rail-cluster rules in styles.css.
+    // The buttons live in their own wrapper, which is what carries the
+    // painted surface. See the .vm-rail-cluster rules in styles.css.
     rail.innerHTML =
       '<div class="vm-rail-cluster">' +
       '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
@@ -60,8 +65,6 @@ close.
 
     var toggleBtn = rail.querySelector("[data-vm-toggle]")
     var pinBtn = rail.querySelector("[data-vm-pin]")
-    var closeTimer = null
-    var COARSE_POINTER = window.matchMedia && window.matchMedia("(hover: none), (pointer: coarse)").matches
 
     function isPinned() {
       try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
@@ -74,7 +77,6 @@ close.
     }
 
     function openSidebar() {
-      if (closeTimer) { clearTimeout(closeTimer); closeTimer = null }
       body.classList.add("vm-sidebar-open")
       toggleBtn.setAttribute("aria-expanded", "true")
     }
@@ -83,21 +85,6 @@ close.
       if (isPinned()) return
       body.classList.remove("vm-sidebar-open")
       toggleBtn.setAttribute("aria-expanded", "false")
-    }
-
-    function scheduleClose() {
-      if (closeTimer) clearTimeout(closeTimer)
-      closeTimer = setTimeout(closeSidebar, 200)
-    }
-
-    // Hover-to-preview (mouse only -- COARSE_POINTER skips it so a tap on
-    // the rail doesn't also fire a hover-open right before the click
-    // handler runs).
-    if (!COARSE_POINTER) {
-      rail.addEventListener("mouseenter", openSidebar)
-      rail.addEventListener("mouseleave", scheduleClose)
-      sidebar.addEventListener("mouseenter", openSidebar)
-      sidebar.addEventListener("mouseleave", scheduleClose)
     }
 
     toggleBtn.addEventListener("click", function () {
@@ -122,9 +109,8 @@ close.
       closeSidebar()
     })
 
-    // Click-outside: covers touch (no hover/mouseleave to rely on) and
-    // mouse clicks that land directly on the page content rather than
-    // drifting out through the sidebar's own edge.
+    // Click-outside, together with Escape and the toggle itself, is now the
+    // whole of how the sidebar closes.
     document.addEventListener("click", function (event) {
       if (!body.classList.contains("vm-sidebar-open")) return
       if (isPinned()) return

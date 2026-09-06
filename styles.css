@@ -139,22 +139,23 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
 /* The always-visible rail: a slim strip at the left edge with a hamburger
  * toggle, present regardless of sidebar state so there's always something
  * to hover or click to bring the sidebar back. */
+/* Only as tall as the buttons it holds. It used to run the full height of
+ * the viewport, to catch a pointer drifting into the left edge and preview
+ * the sidebar; with that behaviour gone the tall box had no purpose and one
+ * real cost, since an element is hit-tested whether or not it paints
+ * anything. Below 768px the body column starts at x:26px, inside the rail's
+ * 44px width, so that invisible strip sat over the leftmost 21px of the
+ * page's own text and swallowed clicks meant for it. */
 #vm-sidebar-rail {
   position: fixed;
   top: 66px;
   left: 0;
-  bottom: 0;
   width: 2.75rem;
   z-index: 1056;
   display: flex;
   flex-direction: column;
   align-items: center;
   transition: left 0.22s ease;
-  /* Deliberately unpainted: the box runs the full height of the viewport so
-   * that flicking the pointer anywhere down the left edge previews the
-   * sidebar, but below 992px the body column starts at x:26px, inside this
-   * 44px width, so painting the whole strip would lay an opaque band over
-   * the page's own text. Only .vm-rail-cluster below is painted. */
 }
 
 /* The buttons' own surface. Without it the two icons sit in open space with

@@ -6,9 +6,9 @@
 
 (function attachVM(globalThis) {
   // In fullscreen the chart is letterboxed to its on-page aspect ratio (see
-  // styles.css), so it no longer spans the screen — but the step bar beneath
-  // it is a plain block that does, leaving a control strip visibly wider than
-  // the chart it drives. Matching the two can't be written in CSS: the bar's
+  // styles.css), so it no longer spans the screen — but the controls bar
+  // above it is a plain block that does, leaving a control strip visibly wider
+  // than the chart it drives. Matching the two can't be written in CSS: the bar's
   // width follows the chart's, the chart's width follows the height left over
   // once the bar has taken its share, and the bar's height follows its own
   // width again (an .ojs-grid bar rewraps into more rows as it narrows).
@@ -28,7 +28,7 @@
   let settlePasses = 0
 
   const clearBarWidth = () => {
-    for (const el of document.querySelectorAll(".ojs-plot-overlay")) {
+    for (const el of document.querySelectorAll(".ojs-chart-block")) {
       el.style.removeProperty(BAR_WIDTH_PROP)
     }
   }
@@ -37,7 +37,7 @@
     const target = document.fullscreenElement
     if (!target || typeof target.querySelector !== "function") return
     const gd = target.querySelector(".js-plotly-plot")
-    const bar = target.querySelector(".ojs-step-overlay")
+    const bar = target.querySelector(".ojs-chart-controls")
     if (!gd || !bar) return
     const width = Math.round(gd.getBoundingClientRect().width)
     if (width <= 0) return
@@ -52,7 +52,7 @@
 
   // Resize the plot once the browser finishes entering/leaving fullscreen —
   // Plotly doesn't know the div's size changed on its own. When the
-  // fullscreened element is a .ojs-plot-overlay wrapper (see below) rather
+  // fullscreened element is a .ojs-chart-block wrapper (see below) rather
   // than the Plotly graph div itself, Plotly.Plots.resize needs the actual
   // graph div (Plotly tags it "js-plotly-plot"), not the wrapper.
   document.addEventListener("fullscreenchange", () => {
@@ -79,7 +79,7 @@
 
     if (typeof ResizeObserver === "undefined") return
     const gd = target.querySelector(".js-plotly-plot")
-    const bar = target.querySelector(".ojs-step-overlay")
+    const bar = target.querySelector(".ojs-chart-controls")
     if (!gd || !bar) return
     // The chart for a width to copy, the bar because its own height is the
     // other half of the loop.
@@ -117,14 +117,14 @@
       path: "M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"
     },
     click: (gd) => {
-      // Fullscreen the .ojs-plot-overlay wrapper when present, not just the
+      // Fullscreen the .ojs-chart-block wrapper when present, not just the
       // graph div gd itself -- pages with a VM.ui.legendOverlay checkbox
       // legend (js/ui/legend-overlay.js) position it as a sibling of gd
       // inside that wrapper, and the Fullscreen API only keeps descendants
       // of the fullscreened element visible, so fullscreening gd alone
       // would hide the legend. Pages without that wrapper fall back to
       // fullscreening gd, same as before.
-      const target = gd.closest(".ojs-plot-overlay") || gd
+      const target = gd.closest(".ojs-chart-block") || gd
       if (document.fullscreenElement === target) {
         document.exitFullscreen()
       } else {

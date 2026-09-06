@@ -281,7 +281,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * these were. The child forms mean "a div that is ALSO the first/last child",
  * so any non-div sibling inserted at either end stops them matching anything
  * at all -- which is what happened when js/ui/draggable-overlay.js started
- * appending its <button> grip to the step-overlay bars, silently dropping the
+ * appending its <button> grip to the legend panel, silently dropping the
  * `flex: 1 1 200px` that makes a step slider fill its row. Every .ojs-row's
  * children are Quarto `div.cell` wrappers, so the two forms are otherwise
  * equivalent here. */
@@ -470,7 +470,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 /* 72vh rather than the 78vh this was while the step bar floated over the
- * chart: the bar now sits below and adds its own ~53px (plus margin), so the
+ * chart: the bar now sits above it and adds its own ~53px (plus margin), so the
  * chart gives back about what the bar takes and a chart block occupies close
  * to the height it always did. The visible plot area is a wash -- 78vh with
  * a slider bar covering its bottom strip showed about as much curve as 72vh
@@ -483,9 +483,17 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 
 /* Anchor for .ojs-legend-overlay below -- wrap a page's mainPlot cell and
  * its viewof VM.ui.legendOverlay(...) cell together in this so the legend
- * positions itself relative to the plot rather than the page. */
-.ojs-plot-overlay {
+ * positions itself relative to the plot rather than the page.
+ *
+ * A column, so the slider bar can be ordered above the chart rather than
+ * below it: every other control on the page sits in the .ojs-panel above the
+ * chart, so a bar underneath left the reader's eye travelling past the chart
+ * and back again. Reordering here rather than in the 14 pages' markup keeps
+ * it one edit -- see the order values on the two rules below. */
+.ojs-chart-block {
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 /* The Fullscreen API paints a black backdrop behind the fullscreened
@@ -500,17 +508,17 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * apps/newton-method/index.qmd's mainPlot cell) already calls
  * Plotly.Plots.resize whenever this box resizes, so Plotly's own redraw
  * picks up the letterboxed size with no extra JS here. */
-.ojs-plot-overlay:fullscreen {
+.ojs-chart-block:fullscreen {
   background: var(--vm-bg);
-  /* The step bar is a normal-flow sibling below the chart (see
-   * .ojs-step-overlay), so fullscreen has to divide the viewport between the
+  /* The controls bar is a normal-flow sibling above the chart (see
+   * .ojs-chart-controls), so fullscreen has to divide the viewport between the
    * two rather than letting the chart claim all of it -- hence a column here
    * and the flex sizing on each part below. */
   display: flex;
   flex-direction: column;
 }
 
-/* Quarto/Observable sits several plain wrapper divs between .ojs-plot-overlay
+/* Quarto/Observable sits several plain wrapper divs between .ojs-chart-block
  * and the actual .js-plotly-plot graph div (.cell > .cell-output-display >
  * #ojs-cell-N > div.observablehq > .js-plotly-plot) -- each one shrinks to
  * the chart's on-page size by default, which would otherwise cap the
@@ -522,7 +530,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * .js-plotly-plot so this rule doesn't match it. The legend/step overlays
  * are unaffected since they're siblings of this chain, not ancestors of
  * the graph div. */
-.ojs-plot-overlay:fullscreen div:has(.js-plotly-plot) {
+.ojs-chart-block:fullscreen div:has(.js-plotly-plot) {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -536,7 +544,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * full height, or the bar is pushed off the bottom of the screen. Same
  * specificity as the rule above (a child combinator adds none), so this has
  * to stay *after* it to win. */
-.ojs-plot-overlay:fullscreen > div:has(.js-plotly-plot) {
+.ojs-chart-block:fullscreen > div:has(.js-plotly-plot) {
   flex: 1 1 auto;
   height: auto;
   min-height: 0;
@@ -546,6 +554,16 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
    * whole screen and overstates it by the height of the bar, which showed up
    * as a chart stretched wider than its on-page aspect ratio. */
   container-type: size;
+}
+
+/* The legend's cell is what its top/left are measured from (see the ordering
+ * rules further down), so in fullscreen it has to be the chart's box rather
+ * than the screen's -- otherwise the legend hangs in the letterbox margin to
+ * the left of a chart it is supposed to be annotating. Same measured width
+ * the controls bar uses. */
+.ojs-chart-block:fullscreen > div:has(.ojs-legend-overlay) {
+  width: var(--vm-fs-plot-width, 100%);
+  margin-inline: auto;
 }
 
 /* Never shrink the controls to make room for the chart -- the chart is the
@@ -561,13 +579,13 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * follows bar width) so there is no expressing it here. The 100% fallback is
  * what applies if that script hasn't measured yet, i.e. the old behaviour
  * for one frame rather than a collapsed bar. */
-.ojs-plot-overlay:fullscreen > .ojs-step-overlay {
+.ojs-chart-block:fullscreen > .ojs-chart-controls {
   flex: 0 0 auto;
   width: var(--vm-fs-plot-width, 100%);
   margin-inline: auto;
 }
 
-.ojs-plot-overlay:fullscreen .js-plotly-plot {
+.ojs-chart-block:fullscreen .js-plotly-plot {
   /* Each candidate is "fit to the full height" vs. "fit to the full width"
    * at the recorded ratio; min() picks whichever one doesn't overflow the
    * other axis, which is exactly contain-style letterboxing. */
@@ -633,20 +651,23 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 /* Step/parameter slider bar -- move a page's viewof stepControl inside
- * .ojs-plot-overlay and wrap it in this to sit it directly beneath the
+ * .ojs-chart-block and wrap it in this to sit it directly above the
  * chart, spanning its width. It is a normal-flow block, NOT a floating card:
  * a bar pinned over the chart's bottom edge covers the part of the curve a
  * reader is usually scrubbing toward, and no amount of translucency or
  * collapsing changes the fact that it is in the way. Reserving the space
  * instead means the chart is never obscured at all.
  *
- * Staying inside .ojs-plot-overlay is still what keeps it visible when the
+ * Staying inside .ojs-chart-block is still what keeps it visible when the
  * chart goes fullscreen (see plotly-fullscreen-button.js), which is why this
  * is not simply a sibling of that wrapper. It takes .ojs-panel's chrome -- a
  * solid surface rather than the blurred translucent card the legend uses --
  * because there is no longer any curve behind it to show through. */
-.ojs-step-overlay {
-  margin-top: 0.5rem;
+.ojs-chart-controls {
+  /* Ordered ahead of both the chart and the legend cell below, so the page
+   * reads controls-panel, sliders, chart from top to bottom. */
+  order: -2;
+  margin-bottom: 0.5rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius);
@@ -654,28 +675,56 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   box-shadow: var(--vm-shadow);
 }
 
+/* The legend is absolutely positioned, and its containing block used to be
+ * .ojs-chart-block -- whose top edge was the chart's top edge, so top:
+ * 0.75rem put it just inside the chart's corner. With the bar ordered above
+ * the chart that is no longer the same point, and the legend would sit on
+ * the sliders. Ordering the legend's own cell between the two puts a
+ * zero-height box exactly at the chart's top edge, and making it the
+ * containing block restores what top/left are measured from -- no JS, and
+ * nothing to keep in sync with the bar's height.
+ *
+ * The overflow reset is not optional: Quarto gives .cell-output-display
+ * overflow: auto (see CLAUDE.md), which clips any descendant escaping its
+ * box. That does nothing while the legend's containing block is outside
+ * that wrapper, but the moment the cell becomes the containing block the
+ * wrapper starts clipping the legend to a zero-height box -- i.e. to
+ * nothing. Same trap the playback popover hit, solved there with the top
+ * layer; here the clip is one known ancestor, so switching it off is
+ * narrower than reaching for [popover]. */
+.ojs-chart-block > div:has(.ojs-legend-overlay) {
+  order: -1;
+  position: relative;
+  height: 0;
+}
+
+.ojs-chart-block > div:has(.ojs-legend-overlay) .cell-output-display,
+.ojs-chart-block > div:has(.ojs-legend-overlay) [id^="ojs-cell-"] {
+  overflow: visible;
+}
+
 /* The legend is the one panel still floating on the chart, and on a phone it
  * has nowhere to go but on top of the curve it annotates -- so it's hidden
  * below the same breakpoint the sidebar uses, except when the chart is
  * actually fullscreened. The Fullscreen API applies straight to
- * .ojs-plot-overlay (see plotly-fullscreen-button.js), so :fullscreen needs
+ * .ojs-chart-block (see plotly-fullscreen-button.js), so :fullscreen needs
  * no JS-toggled class here, and there's room for it once it is.
  *
  * The step bar needs nothing here any more: it reflows as a plain block
- * beneath the chart at every width, which is what this breakpoint used to
+ * above the chart at every width, which is what this breakpoint used to
  * arrange for narrow screens alone. */
 @media (max-width: 991.98px) {
-  .ojs-plot-overlay:not(:fullscreen) .ojs-legend-overlay {
+  .ojs-chart-block:not(:fullscreen) .ojs-legend-overlay {
     display: none;
   }
 }
 
 /* Observable Inputs sizes every range input to a fixed ~180px track of its
- * own, which strands an overlay slider at a fraction of the bar it sits in
+ * own, which strands a slider at a fraction of the bar it sits in
  * -- and leaves it that same fixed size when the chart is fullscreened,
  * instead of growing with the bar. The .ojs-panel rule above already gives
- * panel sliders a fluid track; overlay bars need the same. */
-.ojs-step-overlay input[type="range"] {
+ * panel sliders a fluid track; the chart-controls bar needs the same. */
+.ojs-chart-controls input[type="range"] {
   accent-color: var(--vm-accent);
   width: 100%;
 }
@@ -683,14 +732,14 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 /* ...and with the track now fluid, cap the number readout beside it the way
  * .ojs-panel already does, so the pair splits the bar sensibly instead of
  * the spinner eating a third of it. */
-.ojs-step-overlay input[type="number"] {
+.ojs-chart-controls input[type="number"] {
   width: 5.5em;
   flex: none !important;
 }
 
 /* .ojs-panel input[type="text"] (below) caps every text field on the site at
  * 10em -- except this one never got the equivalent, so the one text-type
- * field that lives in the overlay bar (every page's "Max"/"Max steps"/"Max
+ * field that lives in the chart-controls bar (every page's "Max"/"Max steps"/"Max
  * depth" field) had nothing capping it. Without a width, it falls through to
  * `width: inherit` from Observable's own wrapper div, which in turn inherits
  * from the form's own natural size -- and since that form is .ojs-auto
@@ -698,7 +747,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * shrinking to its actual "20"/"2000" content), the input rendered at 273px:
  * three times the width of the number spinner (94px, capped just above) it
  * sits right next to in the same bar. */
-.ojs-step-overlay input[type="text"] {
+.ojs-chart-controls input[type="text"] {
   width: 10em;
   max-width: 100%;
   flex: none !important;
@@ -706,14 +755,14 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 
 /* Inputs.radio()/checkbox() option groups render one block-level row per
  * option by default (Observable Inputs' own stylesheet, not this project's)
- * -- fine in a roomy .ojs-panel, but a tight chart-overlay bar shared with
+ * -- fine in a roomy .ojs-panel, but a tight chart-controls bar shared with
  * sliders reads better as one horizontal row for a short option list.
  * Observable appends a "-checkbox" suffix to the form's class for both
  * radio and checkbox groups, alongside its hashed "oi-<hash>" prefix (the
  * same hash-prefix convention this file already relies on elsewhere via
  * `form[class^="oi-"]`) -- matching on that stable suffix instead of the
  * hash keeps this working across Observable Inputs versions. */
-.ojs-step-overlay form[class$="-checkbox"] > div {
+.ojs-chart-controls form[class$="-checkbox"] > div {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 1rem;
@@ -729,7 +778,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  *
  * Unlike the .ojs-panel fix, this does NOT also switch to flex-direction:
  * column -- .ojs-panel has room to spare and stacking there is the established
- * look, but the overlay bar is deliberately compact with the label beside the
+ * look, but the chart-controls bar is deliberately compact with the label beside the
  * control (see every other page's Step/Max), and column-stacking here would
  * grow that bar's height on every page, not just this one. Letting the label
  * size to its content on a single line is enough: short labels were already
@@ -751,12 +800,12 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * `.ojs-row`'s own `flex-wrap: wrap` has already dropped this field onto its
  * own line below "Max steps" by the width this matters at, so the two no
  * longer need to share a row's height in the first place. */
-.ojs-step-overlay form[class^="oi-"]:not([class$="-checkbox"]) label {
+.ojs-chart-controls form[class^="oi-"]:not([class$="-checkbox"]) label {
   width: auto;
 }
 
-/* A multi-slider overlay bar (e.g. recursive-filters-1d' four filter
- * parameters) uses .ojs-step-overlay.ojs-grid instead of the plain bar --
+/* A multi-slider chart-controls bar (e.g. recursive-filters-1d' four filter
+ * parameters) uses .ojs-chart-controls.ojs-grid instead of the plain bar --
  * see the .ojs-grid rule above for the auto-fit track. Inside a single-line
  * step bar the label-beside-control layout above is right: there's exactly
  * one control and plenty of width. Inside a grid cell it isn't: each
@@ -774,7 +823,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * label and the track, since it lays out all three children vertically; a
  * wrapped row instead breaks only after the label, leaving play button,
  * readout and track together on the second line. */
-.ojs-step-overlay.ojs-grid form[class^="oi-"].vm-has-play {
+.ojs-chart-controls.ojs-grid form[class^="oi-"].vm-has-play {
   /* Restated here purely to win on specificity. `.vm-has-play` already asks
    * for wrap, but that is a lone class (0,1,0) and Observable Inputs injects
    * its own `.oi-<hash>` rule into <head> at runtime -- same specificity,
@@ -785,7 +834,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   flex-wrap: wrap;
 }
 
-.ojs-step-overlay.ojs-grid form[class^="oi-"] label {
+.ojs-chart-controls.ojs-grid form[class^="oi-"] label {
   width: auto;
   flex: 0 0 100%;
 }
@@ -794,16 +843,16 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * 250px a typical chart width fits four cells per row, which is exactly the
  * cramped layout being fixed above. A wider floor lays the four out as a
  * clean 2x2 with room for the play button next to each track. */
-.ojs-step-overlay.ojs-grid {
+.ojs-chart-controls.ojs-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
 }
 
-/* ── Draggable overlay panels ────────────────────────────────────── */
+/* ── Draggable legend panel ──────────────────────────────────────── */
 /* The legend floats over the chart, pinned to a corner by default, which is
  * sometimes exactly where the interesting part of the curve is. A grip fades
  * in at its right edge; js/ui/draggable-overlay.js does the actual dragging
  * (and remembers where it was put), this is only its chrome. The step bar
- * below the chart is not draggable -- it covers nothing, so there is nowhere
+ * above the chart is not draggable -- it covers nothing, so there is nowhere
  * to drag it to. */
 
 /* The gutter the grip sits in, so it can never overlap a legend label. The
@@ -873,7 +922,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * when it appears. The icon colors themselves come from layout.modebar in
  * js/plotting/chart-theme.js -- only Plotly can set those, since it paints
  * the SVG fills inline. Everything here is the surrounding chrome, matching
- * .ojs-legend-overlay / .ojs-step-overlay so all three float in the same
+ * .ojs-legend-overlay / .ojs-chart-controls so all three float in the same
  * visual language. */
 
 .js-plotly-plot .modebar {
@@ -943,7 +992,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * be painted as a gradient on the track itself. */
 
 .ojs-panel input[type="range"],
-.ojs-step-overlay input[type="range"] {
+.ojs-chart-controls input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -955,7 +1004,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 .ojs-panel input[type="range"]::-webkit-slider-runnable-track,
-.ojs-step-overlay input[type="range"]::-webkit-slider-runnable-track {
+.ojs-chart-controls input[type="range"]::-webkit-slider-runnable-track {
   height: 0.3rem;
   border-radius: 999px;
   background:
@@ -964,7 +1013,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 .ojs-panel input[type="range"]::-webkit-slider-thumb,
-.ojs-step-overlay input[type="range"]::-webkit-slider-thumb {
+.ojs-chart-controls input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 0.95rem;
@@ -979,28 +1028,28 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 .ojs-panel input[type="range"]:active::-webkit-slider-thumb,
-.ojs-step-overlay input[type="range"]:active::-webkit-slider-thumb {
+.ojs-chart-controls input[type="range"]:active::-webkit-slider-thumb {
   transform: scale(1.15);
 }
 
 /* Firefox paints the filled portion itself via ::-moz-range-progress, so it
  * needs no --sx and gets a plain track underneath. */
 .ojs-panel input[type="range"]::-moz-range-track,
-.ojs-step-overlay input[type="range"]::-moz-range-track {
+.ojs-chart-controls input[type="range"]::-moz-range-track {
   height: 0.3rem;
   border-radius: 999px;
   background: var(--vm-border);
 }
 
 .ojs-panel input[type="range"]::-moz-range-progress,
-.ojs-step-overlay input[type="range"]::-moz-range-progress {
+.ojs-chart-controls input[type="range"]::-moz-range-progress {
   height: 0.3rem;
   border-radius: 999px;
   background: var(--vm-accent);
 }
 
 .ojs-panel input[type="range"]::-moz-range-thumb,
-.ojs-step-overlay input[type="range"]::-moz-range-thumb {
+.ojs-chart-controls input[type="range"]::-moz-range-thumb {
   width: 0.95rem;
   height: 0.95rem;
   border: none;
@@ -1010,7 +1059,7 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 .ojs-panel input[type="range"]:focus-visible,
-.ojs-step-overlay input[type="range"]:focus-visible {
+.ojs-chart-controls input[type="range"]:focus-visible {
   outline: 2px solid var(--vm-accent);
   outline-offset: 2px;
 }
@@ -1022,8 +1071,8 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * inside Observable Inputs' own <form>.
  *
  * Laid out as a wrapping flex row so it works with both form layouts the
- * site already has: in a .ojs-step-overlay the label stays beside the
- * control (see the overlay label rule above) and everything sits on one
+ * site already has: in a .ojs-chart-controls the label stays beside the
+ * control (see the chart-controls label rule above) and everything sits on one
  * line, while in a .ojs-panel the label is given a full-width basis below
  * so it keeps the stacked look the panel rule established.
  *

@@ -153,7 +153,7 @@
   const SUPPORTS_POPOVER = typeof HTMLElement !== "undefined" &&
     Object.prototype.hasOwnProperty.call(HTMLElement.prototype, "popover")
 
-  const SLIDER_SELECTOR = '.ojs-panel input[type="range"], .ojs-step-overlay input[type="range"]'
+  const SLIDER_SELECTOR = '.ojs-panel input[type="range"], .ojs-chart-controls input[type="range"]'
   const OPT_OUT_SELECTOR = '[data-vm-play="off"]'
 
   // Bootstrap Icons (MIT) -- same source as the grip in
@@ -331,7 +331,7 @@
     }
 
     // Deliberately NOT appended to `wrap`: the popover is mounted at the top
-    // level when opened (see openPanel). A .ojs-step-overlay bar carries
+    // level when opened (see openPanel). A .ojs-chart-controls bar carries
     // backdrop-filter, and a backdrop-filtered element becomes its own render
     // surface that CLIPS descendants to its own bounds -- an absolutely
     // positioned child extending above the bar is simply not painted, so the

@@ -108,7 +108,7 @@ async function shootOne(browser, base, pageInfo) {
   // Hide the modebar and the floating legend/step overlays so the
   // thumbnail is just the chart itself, chrome-free.
   await page.addStyleTag({
-    content: '.modebar-container, .ojs-legend-overlay, .ojs-step-overlay { display: none !important; }'
+    content: '.modebar-container, .ojs-legend-overlay, .ojs-chart-controls { display: none !important; }'
   })
   await page.waitForTimeout(300)
 

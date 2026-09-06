@@ -11,8 +11,8 @@
   // exactly where the interesting part of the plot is.
   //
   // The legend is the only draggable panel. The step/parameter bar
-  // (.ojs-step-overlay) used to float over the chart's bottom edge and be
-  // draggable for the same reason, but it now sits in normal flow beneath the
+  // (.ojs-chart-controls) used to float over the chart's bottom edge and be
+  // draggable for the same reason, but it now sits in normal flow above the
   // chart and covers nothing, so there is nowhere to drag it to. Leaving it
   // out of PANEL_SELECTOR is also what keeps a *stored* offset from a version
   // that did float it from shoving the in-flow bar out of place: the only
@@ -34,7 +34,7 @@
 
   const KEY_PREFIX = "vml-overlay-pos"
   const PANEL_SELECTOR = ".ojs-legend-overlay"
-  const CONTAINER_SELECTOR = ".ojs-plot-overlay"
+  const CONTAINER_SELECTOR = ".ojs-chart-block"
 
   const clampValue = (value, min, max) => {
     // A panel bigger than the chart it floats on has no valid range at all

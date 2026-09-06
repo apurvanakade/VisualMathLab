@@ -274,13 +274,13 @@ Authors: Dhruv Azad, Apurva Nakade
    nothing selected, Uniform), the legend for a single-series plot, which
    needs no key. Declarative rather than the cells reaching out to style
    their own container. display: none rather than a zero height, so the bar
-   takes no flow space at all -- it sits below the chart, not over it. */
-.ojs-step-overlay:not(:has(input[type="range"])) {
+   takes no flow space at all -- it sits above the chart, not over it. */
+.ojs-chart-controls:not(:has(input[type="range"])) {
   display: none;
 }
 
 /* :not(:has(a row)) rather than :empty -- draggable-overlay.js appends its
-   drag grip to every overlay panel, so a legend with no rows still has a
+   drag grip to the legend panel, so a legend with no rows still has a
    child and :empty never matches it. */
 .ojs-legend-overlay:not(:has(.ojs-legend-item)) {
   display: none;
@@ -289,7 +289,7 @@ Authors: Dhruv Azad, Apurva Nakade
 /* The site's grid slider bar expects one cell per slider, so each becomes a
    grid item (see apps/recursive-filters-1d). Here the set of sliders changes
    with the selection, so they all come from one cell -- and Quarto wraps that
-   cell's output in several nested divs, so .ojs-step-overlay's own grid sees
+   cell's output in several nested divs, so .ojs-chart-controls's own grid sees
    a single child and stacks the sliders in a column.
 
    Making the form itself the grid, rather than trying to collapse those
@@ -298,7 +298,7 @@ Authors: Dhruv Azad, Apurva Nakade
    which are generated markup this page has no business depending on. The
    wrapper keeps .ojs-grid so styles.css's label-above-track rule, which
    matches forms at any depth, still applies. */
-.ojs-step-overlay .vm-params-form {
+.ojs-chart-controls .vm-params-form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 0.25rem 0.75rem;
@@ -1436,7 +1436,7 @@ traceItems = {
 }
 ```
 
-<div class="ojs-plot-overlay">
+<div class="ojs-chart-block">
 
 ```{ojs}
 // chart: a distribution's density, or an overlay for the relationships that
@@ -1460,13 +1460,13 @@ viewof traces = {
 }
 ```
 
-<div class="ojs-step-overlay ojs-grid">
+<div class="ojs-chart-controls ojs-grid">
 
 ```{ojs}
 // params: one slider per parameter of whatever is selected -- a
 // distribution's own, or the ones driving an edge's overlay.
 //
-// They live in the chart's own overlay bar, the site convention for
+// They live in the chart's own controls bar, the site convention for
 // always-live controls whose only job is to change what the chart shows. The
 // bar hides itself when it holds no slider -- an edge without a demo, nothing
 // selected, or a parameter-free distribution like Uniform -- see the :has()

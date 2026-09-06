@@ -549,9 +549,22 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 }
 
 /* Never shrink the controls to make room for the chart -- the chart is the
- * part with flexible height here. */
+ * part with flexible height here.
+ *
+ * The chart is letterboxed to its on-page aspect ratio and so is narrower
+ * than the screen; a full-width bar under it reads as a control strip for
+ * something bigger than the chart it drives, and stops matching the
+ * chart-width bar the reader saw a moment earlier on the page. Width comes
+ * from js/plotting/plotly-fullscreen-button.js, which measures the chart
+ * once the browser has laid it out -- the relationship is circular (bar
+ * width follows chart width follows leftover height follows bar height
+ * follows bar width) so there is no expressing it here. The 100% fallback is
+ * what applies if that script hasn't measured yet, i.e. the old behaviour
+ * for one frame rather than a collapsed bar. */
 .ojs-plot-overlay:fullscreen > .ojs-step-overlay {
   flex: 0 0 auto;
+  width: var(--vm-fs-plot-width, 100%);
+  margin-inline: auto;
 }
 
 .ojs-plot-overlay:fullscreen .js-plotly-plot {

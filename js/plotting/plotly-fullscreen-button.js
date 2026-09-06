@@ -5,17 +5,104 @@
  */
 
 (function attachVM(globalThis) {
+  // In fullscreen the chart is letterboxed to its on-page aspect ratio (see
+  // styles.css), so it no longer spans the screen — but the step bar beneath
+  // it is a plain block that does, leaving a control strip visibly wider than
+  // the chart it drives. Matching the two can't be written in CSS: the bar's
+  // width follows the chart's, the chart's width follows the height left over
+  // once the bar has taken its share, and the bar's height follows its own
+  // width again (an .ojs-grid bar rewraps into more rows as it narrows).
+  // Measuring the chart the browser has already laid out cuts that cycle.
+  //
+  // Narrowing the bar can still change its height and so the chart's width,
+  // which is what the ResizeObserver below is for: it re-measures until the
+  // two agree. That settles in one pass for a bar that doesn't rewrap and two
+  // for one that does. MAX_SETTLE_PASSES is a backstop in case some layout
+  // oscillates between two widths rather than converging — giving up leaves
+  // the bar at a measured chart width, which is never wider than the screen,
+  // so the failure mode is a few pixels of mismatch rather than an overflow
+  // or a spin.
+  const BAR_WIDTH_PROP = "--vm-fs-plot-width"
+  const MAX_SETTLE_PASSES = 6
+  let barWidthObserver = null
+  let settlePasses = 0
+
+  const clearBarWidth = () => {
+    for (const el of document.querySelectorAll(".ojs-plot-overlay")) {
+      el.style.removeProperty(BAR_WIDTH_PROP)
+    }
+  }
+
+  const syncBarWidth = () => {
+    const target = document.fullscreenElement
+    if (!target || typeof target.querySelector !== "function") return
+    const gd = target.querySelector(".js-plotly-plot")
+    const bar = target.querySelector(".ojs-step-overlay")
+    if (!gd || !bar) return
+    const width = Math.round(gd.getBoundingClientRect().width)
+    if (width <= 0) return
+    // Sub-pixel churn is the observer chasing its own rounding, not a real
+    // change; NaN on the first pass compares false and falls through to set.
+    const applied = parseFloat(target.style.getPropertyValue(BAR_WIDTH_PROP))
+    if (Math.abs(applied - width) < 1) return
+    if (settlePasses >= MAX_SETTLE_PASSES) return
+    settlePasses += 1
+    target.style.setProperty(BAR_WIDTH_PROP, width + "px")
+  }
+
   // Resize the plot once the browser finishes entering/leaving fullscreen —
   // Plotly doesn't know the div's size changed on its own. When the
   // fullscreened element is a .ojs-plot-overlay wrapper (see below) rather
   // than the Plotly graph div itself, Plotly.Plots.resize needs the actual
   // graph div (Plotly tags it "js-plotly-plot"), not the wrapper.
   document.addEventListener("fullscreenchange", () => {
-    if (document.fullscreenElement && globalThis.Plotly) {
-      const gd = document.fullscreenElement.querySelector(".js-plotly-plot") || document.fullscreenElement
+    if (barWidthObserver) {
+      barWidthObserver.disconnect()
+      barWidthObserver = null
+    }
+    settlePasses = 0
+
+    const target = document.fullscreenElement
+    if (!target) {
+      // Back on the page the bar spans its column again, same as any other
+      // chart, so the override has to go rather than linger at a stale width.
+      clearBarWidth()
+      return
+    }
+
+    if (globalThis.Plotly) {
+      const gd = target.querySelector(".js-plotly-plot") || target
       globalThis.Plotly.Plots.resize(gd)
     }
+
+    syncBarWidth()
+
+    if (typeof ResizeObserver === "undefined") return
+    const gd = target.querySelector(".js-plotly-plot")
+    const bar = target.querySelector(".ojs-step-overlay")
+    if (!gd || !bar) return
+    // The chart for a width to copy, the bar because its own height is the
+    // other half of the loop.
+    barWidthObserver = new ResizeObserver(syncBarWidth)
+    barWidthObserver.observe(gd)
+    barWidthObserver.observe(bar)
   })
+
+  // A genuine viewport change (rotating a tablet, resizing the window while
+  // fullscreen) is a fresh layout, not another settle pass, so it gets its
+  // own budget.
+  //
+  // Feature-detected because scripts/load-vm.mjs runs every file listed in
+  // head-scripts.html against a minimal stub so the unit tests can exercise
+  // the real functions, and that stub's `window` is Node's globalThis, which
+  // has no addEventListener — the same reason js/ui/draggable-overlay.js
+  // checks before touching the DOM. `document.addEventListener` above is
+  // safe: the stub does provide that one.
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    window.addEventListener("resize", () => {
+      settlePasses = 0
+    })
+  }
 
   // A Plotly modebar button (add via config.modeBarButtonsToAdd) that
   // toggles the graph div into the browser's native fullscreen mode.

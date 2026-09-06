@@ -261,6 +261,19 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   align-items: flex-end;
 }
 
+/* A flex/grid item's automatic minimum size is its content's min-content
+ * width, so an item can refuse to shrink below whatever is inside it and
+ * push the whole row past its container instead. Every child here wraps one
+ * Observable control whose intrinsic width is a fixed 360px (see the width
+ * rule on .ojs-panel form[class^="oi-"] below), which is wider than a
+ * two-column .ojs-grid track on a narrow viewport -- and a track sized to a
+ * min-content contribution that large overflows the page rather than
+ * wrapping. Same reason .quarto-layout-cell needs it above. */
+.ojs-row > *,
+.ojs-grid > * {
+  min-width: 0;
+}
+
 /* First control grows to fill the row; later ones (e.g. a button) keep their
  * natural width.
  *
@@ -372,6 +385,16 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   flex-direction: column;
   align-items: flex-start;
   gap: 0.15rem;
+  /* Observable gives every form a fixed 360px width. In the row layout it
+   * was written for that is a sensible default; in a narrower .ojs-grid
+   * track it is a hard floor the item cannot shrink under, so a two-column
+   * grid on a ~700px viewport resolved its tracks to 360px each and pushed
+   * ~70px off the right of the page. A percentage is the fix rather than a
+   * smaller fixed width: percentages don't contribute to intrinsic sizing,
+   * so the track goes back to being sized by the grid instead of by its
+   * contents. The visible field width is unaffected either way -- that is
+   * set on the input (10em, or .ojs-fill for a formula), not on the form. */
+  width: 100%;
 }
 
 /* Observable also hardcodes every <label> to a fixed width: 120px;
@@ -1160,6 +1183,35 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
 .vm-play-pill:focus-visible {
   outline: 2px solid var(--vm-accent);
   outline-offset: 1px;
+}
+
+/* ── Wide content ─────────────────────────────────────────────────── */
+/* Two things on these pages are laid out at their natural width and will
+ * happily run off the side of a phone. Either one takes the whole page's
+ * horizontal scroll with it, which is worse than it sounds: every other
+ * element then sits in a viewport wider than the screen, so the reader
+ * scrolls sideways through the entire article to read one line of it. */
+
+/* A display equation (apps/recursive-filters-1d's Kalman update measures
+ * 812px against a 649px column) scrolls inside its own box instead, the
+ * same way .ojs-table-container does for a wide table. overflow-y stays
+ * hidden so this only ever adds a horizontal scrollbar; MathJax positions
+ * its own glyphs and needs no vertical scrolling. */
+mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* The scrollbar is drawn inside the box, so give it a lane of its own
+   * rather than letting it sit on the equation's descenders. */
+  padding-bottom: 0.25rem;
+}
+
+/* A bare URL is one unbreakable word, and the References section every proof
+ * page ends with (see CLAUDE.md's math-exposition conventions) spells its
+ * citations' links out in full rather than hiding them behind link text.
+ * Nothing else in prose is long enough to need this, so it stays scoped to
+ * links instead of licensing mid-word breaks in the body copy. */
+main.content a {
+  overflow-wrap: break-word;
 }
 
 /* ── Invalid input ───────────────────────────────────────────────── */

@@ -19,7 +19,47 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-A standard mammogram has 80% sensitivity and 90% specificity: if you have cancer, it comes back positive 80% of the time; if you don't, it comes back negative 90% of the time. You test positive. What are the odds you actually have cancer? Drag the sliders below — the dots are a simulated population, red for the fraction with the condition, dark for the fraction without. 
+<style>
+/* Page-local styles for the three-stage detection flow in the closing
+   section -- markup only this page emits, so it lives here rather than in
+   styles.css (see CLAUDE.md's page-local CSS convention). Colors are the
+   --vm-* tokens, so it re-themes with the site; a plain code block, which
+   this replaced, rendered black-on-dark under the dark theme. */
+.ppv-flow {
+  margin: 1rem 0 1.25rem;
+}
+/* Pandoc emits each stage as one <p> holding the label span and its text;
+   a two-column grid puts the loose text in its own column (anonymous grid
+   item), so a wrapped description hangs beside the chip, not under it. */
+.ppv-flow-step p {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: 0.6em;
+  margin: 0;
+}
+/* The arrow between stages, indented so it hangs under the label chip. */
+.ppv-flow-step + .ppv-flow-step::before {
+  content: "\25BC";
+  display: block;
+  margin: 0.45rem 0 0.45rem 1.1em;
+  color: var(--vm-text-soft);
+  font-size: 0.75em;
+  line-height: 1;
+}
+.ppv-flow-label {
+  display: inline-block;
+  padding: 0.2em 0.7em;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>
+
+A screening mammogram in U.S. community practice has about 87% sensitivity and 89% specificity ([Lehman et al., 2017](#references)): if you have cancer, it comes back positive 87% of the time; if you don't, it comes back negative 89% of the time. About 6 in 1,000 women screened actually have breast cancer. You test positive. What are the odds you have it? Drag the sliders below; the dots are a simulated population, red for the fraction with the condition, dark for the fraction without. The app starts at a prevalence of 1% rather than 0.6% so the red sliver is wide enough to see; the closing section works through the real number.
 
 ```{ojs}
 //| output: false
@@ -238,21 +278,25 @@ function drawDiagnosticCanvas(points, prevalence, sensitivity, specificity, opti
 ```{ojs}
 viewof sensitivity = {
   const params = new URLSearchParams(window.location.search)
-  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "sensitivity", 0.8), label: "Sensitivity"})
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "sensitivity", 0.87), label: "Sensitivity"})
 }
 ```
 
 ```{ojs}
 viewof specificity = {
   const params = new URLSearchParams(window.location.search)
-  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "specificity", 0.9), label: "Specificity"})
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "specificity", 0.89), label: "Specificity"})
 }
 ```
 
 ```{ojs}
 viewof prevalence = {
   const params = new URLSearchParams(window.location.search)
-  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "prevalence", 0.11), label: "Prevalence"})
+  // Defaults to 0.01 rather than the real 0.006 (see References) so the red
+  // region is wide enough to read; the step is finer than the other two
+  // sliders' so the real value is still reachable (the closing prose links
+  // to it) — on a 0.01 grid the browser would snap 0.006 up to 0.01.
+  return Inputs.range([0, 1], {step: 0.001, value: paramNumber(params, "prevalence", 0.01), label: "Prevalence"})
 }
 ```
 
@@ -365,3 +409,46 @@ This is also why retesting works so well. Each repeat test is applied to a popul
 $$
 P(\text{condition} \mid \text{positive}) = \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})}.
 $$
+
+## What this means for a real mammogram
+
+At the real prevalence of 0.6% ([set the sliders to it](?prevalence=0.006&sensitivity=0.87&specificity=0.89)) the PPV is about 4.6%. Lehman et al. measured 4.4% directly across 1.7 million screens. Here is how to read that number.
+
+### High sensitivity, low PPV
+
+Mammography is a wide, fine-meshed safety net. Its job is to minimize missed cancers, and the price is false alarms.
+
+- **Sensitivity is high (75–90%).** Of 100 women with undetected breast cancer, the test flags 75 to 90. The accepted floor for a radiologist is 75%; the U.S. average is 87%.
+- **PPV₁ is low (3–8%).** Of 100 women flagged for a second look, only 3 to 8 have cancer. The rest are cysts, dense tissue, and harmless calcifications that a cautious reader flags rather than risk missing something.
+
+Both ranges are the American College of Radiology's acceptable-performance bands (Carney et al.); a radiologist outside them is considered for additional training.
+
+### The role of the base rate
+
+The PPV is set less by the test than by how rare the condition is. Only 5 or 6 of every 1,000 women screened have breast cancer. A radiologist who recalls 100 of them to be sure of catching those 5 lands at a PPV₁ of about 5% no matter how carefully each image is read: the other 95 recalls are the 11% false-positive rate applied to 994 healthy women.
+
+### How the detection process works
+
+A positive screen is the start of a process, not a diagnosis. Each stage below is a round of the retesting picture above: the PPV coming out of one stage is the prevalence going into the next.
+
+::: {.ppv-flow}
+::: {.ppv-flow-step}
+[Screening mammogram]{.ppv-flow-label}
+flags about 10% of women for a closer look (recall)
+:::
+::: {.ppv-flow-step}
+[Diagnostic imaging]{.ppv-flow-label}
+additional views, ultrasound or MRI clear about 80% of those recalled
+:::
+::: {.ppv-flow-step}
+[Biopsy]{.ppv-flow-label}
+confirms cancer in 20–40% of the remaining cases (PPV₂)
+:::
+:::
+
+In Lehman et al.'s data, per 1,000 women screened: 116 are recalled, 20 are biopsied, 5 have cancer. PPV₁ is 4.4% at the first stage and PPV₂ is 26% at biopsy. A negative screen, by contrast, is very reassuring: NPV is about 99.9%.
+
+## References
+
+- Lehman, C. D., Arao, R. F., Sprague, B. L., Lee, J. M., Buist, D. S. M., Kerlikowske, K., Henderson, L. M., Onega, T., Tosteson, A. N. A., Rauscher, G. H., & Miglioretti, D. L. (2017). National Performance Benchmarks for Modern Screening Digital Mammography: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 283(1), 49–58. [https://doi.org/10.1148/radiol.2016161174](https://doi.org/10.1148/radiol.2016161174). Source of this page's sensitivity (86.9%), specificity (88.9%) and prevalence (5.1 cancers detected plus 0.8 missed per 1,000 screens) figures, from 1,682,504 U.S. screening mammograms, 2007–2013.
+- Carney, P. A., Sickles, E. A., Monsees, B. S., Bassett, L. W., Brenner, R. J., Feig, S. A., Smith, R. A., Rosenberg, R. D., Bogart, T. A., Browning, S., Barry, J. W., Kelly, M. M., Tran, K. A., & Miglioretti, D. L. (2010). Identifying Minimally Acceptable Interpretive Performance Criteria for Screening Mammography. *Radiology*, 255(2), 354–361. [https://doi.org/10.1148/radiol.10091636](https://doi.org/10.1148/radiol.10091636). Source of the acceptable-performance ranges: sensitivity at least 75%, specificity 88–95%, recall rate 5–12%, PPV₁ 3–8%, PPV₂ 20–40%.

@@ -69,9 +69,9 @@ Authors: Apurva Nakade
 }
 </style>
 
-A screening mammogram in U.S. community practice — digital breast tomosynthesis, the "3D mammogram" now in routine use — has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer, it comes back positive 87% of the time; if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened actually have breast cancer. You test positive. What are the odds you have it?
+A screening mammogram in U.S. community practice (digital breast tomosynthesis, the 3D mammogram now in routine use) has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time; if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened have breast cancer. You test positive. What are the odds you have it?
 
-Each dot below is one of 1,000 people screened, red for those who have the condition, dark for those who don't. Drag the sliders to change the numbers; the closing section works through the real ones.
+Each dot below is one of 1,000 people screened: red has the condition, dark doesn't. The sliders start at the real numbers.
 
 ```{ojs}
 //| output: false
@@ -177,7 +177,7 @@ function npvOf(prevalence, sensitivity, specificity) {
 // formatPct: PPV/NPV are 0/0 when a group is empty (e.g. prevalence or
 // sensitivity dragged to an extreme) -- guard against rendering "NaN%".
 function formatPct(value) {
-  if (!Number.isFinite(value)) return "—"
+  if (!Number.isFinite(value)) return "n/a"
   return (value * 100).toFixed(1) + "%"
 }
 
@@ -354,10 +354,10 @@ drawGrid(populationPeople, {rounds: 0})
 ```
 
 ```{ojs}
-html`<div class="ojs-panel"><strong>The population.</strong> Each dot is one of 1,000 people; ${swatch(config.colors.infected, true)} <strong style="color: ${config.colors.infected}">red</strong> are the ${initialSplit.infected} (${formatPct(prevalence)}) who have the condition, ${swatch(config.colors.healthy, true)} dark the ${initialSplit.healthy} who don't. Nobody has been tested yet.</div>`
+html`<div class="ojs-panel"><strong>The population.</strong> ${swatch(config.colors.infected, true)} the ${initialSplit.infected} (${formatPct(prevalence)}) who have the condition; ${swatch(config.colors.healthy, true)} the ${initialSplit.healthy} who don't. Nobody has been tested yet.</div>`
 ```
 
-Now apply a test to that population. The two sliders below set how often it is right about each group: sensitivity is the share of the red dots it catches, specificity the share of the dark dots it correctly clears. The test hollows out everyone it clears; whoever is still solid afterwards has a positive result — true positives among the red, false positives among the dark.
+Now apply a test. Sensitivity is the share of red dots it catches; specificity is the share of dark dots it clears. The test hollows out everyone it clears, so whoever is still solid has tested positive.
 
 <div class="ojs-panel ojs-grid">
 
@@ -428,7 +428,7 @@ drawGrid(people, {rounds: 1})
 ```
 
 ```{ojs}
-html`<div class="ojs-panel"><strong>After one test.</strong> A hollow dot is a negative result: ${swatch(config.colors.healthy, false, fadeOpacity(1, 1, false))} the ${initialSplit.trueNegatives} people correctly cleared, faded into the background, and ${swatch(config.colors.infected, false)} the ${initialSplit.falseNegatives} the test missed, left at full strength so you can still find them. The solid dots are everyone who tests positive — ${initialSplit.positives} people, of whom ${swatch(config.colors.infected, true)} ${initialSplit.truePositives} actually have the condition and ${swatch(config.colors.healthy, true)} ${initialSplit.falsePositives} don't. Positive predictive value (chance you have the condition, given a positive test): <strong>${formatPct(initialPpv)}</strong>. Negative predictive value: <strong>${formatPct(initialNpv)}</strong>.</div>`
+html`<div class="ojs-panel"><strong>After one test.</strong> Hollow dots are negatives: ${swatch(config.colors.healthy, false, fadeOpacity(1, 1, false))} the ${initialSplit.trueNegatives} correctly cleared, faded, and ${swatch(config.colors.infected, false)} the ${initialSplit.falseNegatives} missed, kept at full strength. Solid dots are the ${initialSplit.positives} positives: ${swatch(config.colors.infected, true)} ${initialSplit.truePositives} who have the condition and ${swatch(config.colors.healthy, true)} ${initialSplit.falsePositives} who don't. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(initialPpv)}</strong>. Negative predictive value: <strong>${formatPct(initialNpv)}</strong>.</div>`
 ```
 
 ```{ojs}
@@ -446,7 +446,7 @@ drawGrid(people, {rounds: 2})
 ```
 
 ```{ojs}
-html`<div class="ojs-panel"><strong>After a second test of the positives</strong> — the same 1,000 people in the same places. Only the ${initialSplit.positives} who were solid above are tested again; going in, ${initialSplit.truePositives} of them have the condition, so the effective prevalence is now ${formatPct(newPrevalence1)} rather than ${formatPct(prevalence)}. Everyone the first test cleared fades a step further (${swatch(config.colors.healthy, false, fadeOpacity(2, 1, false))}); the ${split1.negatives} the second test clears become hollow (${swatch(config.colors.healthy, false, fadeOpacity(2, 2, false))} ${split1.trueNegatives} false alarms resolved, ${swatch(config.colors.infected, false)} ${split1.falseNegatives} missed this time — a missed case never fades). ${split1.positives} people are still solid, ${swatch(config.colors.infected, true)} ${split1.truePositives} of them red. PPV jumps to <strong>${formatPct(ppv1)}</strong>.</div>`
+html`<div class="ojs-panel"><strong>After a second test of the positives.</strong> Same people, same places. Only the ${initialSplit.positives} solid dots are retested; ${initialSplit.truePositives} of them have the condition, so the effective prevalence is now ${formatPct(newPrevalence1)}. Those the first test cleared fade further (${swatch(config.colors.healthy, false, fadeOpacity(2, 1, false))}); the ${split1.negatives} the second test clears become hollow (${swatch(config.colors.healthy, false, fadeOpacity(2, 2, false))} ${split1.trueNegatives} false alarms resolved, ${swatch(config.colors.infected, false)} ${split1.falseNegatives} missed, never faded). ${split1.positives} remain solid, ${swatch(config.colors.infected, true)} ${split1.truePositives} of them red. PPV: <strong>${formatPct(ppv1)}</strong>.</div>`
 ```
 
 ::: {.callout-note collapse="true" title="Summary table"}
@@ -475,9 +475,9 @@ summaryTable = {
 
 :::
 
-Even with a highly accurate test, a positive result is far less conclusive than it sounds when the condition is rare: there are so many more healthy people that a small false-positive rate among them can outnumber the true positives among the few who are actually sick. That's what the solid dots above show — the positives are a handful of red in a crowd of dark, and at low prevalence the dark ones dominate.
+Even a highly accurate test gives a weak positive result when the condition is rare: the healthy population is so much larger that a small false-positive rate among them outnumbers the true positives among the few who are sick. That is what the solid dots show: a handful of red in a crowd of dark.
 
-This is also why retesting works so well. Each repeat test is applied to a population where the *effective* prevalence has already jumped to the previous round's PPV, so the same sensitivity and specificity produce a much sharper result — and the chance of missing the condition across repeated tests (the false-negative rate, compounding each round) shrinks just as fast. These updates are exactly what Bayes' theorem formalizes:
+Retesting works because each repeat test starts from a population whose prevalence is the previous round's PPV, so the same sensitivity and specificity give a much sharper result, and the chance of missing the condition shrinks just as fast. Bayes' theorem is this update:
 
 $$
 P(\text{condition} \mid \text{positive}) = \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})}.
@@ -485,14 +485,14 @@ $$
 
 ## What this means for a real mammogram
 
-At the real prevalence of 0.66% — 5.8 cancers found plus 0.8 missed per 1,000 screens, rounded to 7 in 1,000 as the default above; [reset the sliders](?prevalence=0.007&sensitivity=0.87&specificity=0.92) if you've moved them — the PPV is about 7%: in the picture, 6 of the 85 who test positive. Lee et al. measured 6.9% directly across 458,175 screens. Here is how to read that number.
+At the real prevalence of 0.66% (5.8 cancers found plus 0.8 missed per 1,000 screens; the default rounds it to 7 in 1,000, and [this link](?prevalence=0.007&sensitivity=0.87&specificity=0.92) resets the sliders) the PPV is about 7%: 6 of the 85 who test positive in the picture. Lee et al. measured 6.9% across 458,175 screens.
 
 ### High sensitivity, low PPV
 
-Mammography is a wide, fine-meshed safety net. Its job is to minimize missed cancers, and the price is false alarms.
+Mammography is a fine-meshed safety net: its job is to miss as few cancers as possible, and the price is false alarms.
 
 - **Sensitivity is high (75–90%).** Of 100 women with undetected breast cancer, the test flags 75 to 90. The accepted floor for a radiologist is 75%; the U.S. average is 87%.
-- **PPV₁ is low (3–8%).** Of 100 women flagged for a second look, only 3 to 8 have cancer. The rest are cysts, dense tissue, and harmless calcifications that a cautious reader flags rather than risk missing something.
+- **PPV₁ is low (3–8%).** Of 100 women flagged for a second look, 3 to 8 have cancer. The rest are cysts, dense tissue, and harmless calcifications that a cautious reader flags rather than risk missing.
 
 Both ranges are the American College of Radiology's acceptable-performance bands (Carney et al.); a radiologist outside them is considered for additional training.
 
@@ -502,7 +502,7 @@ The PPV is set less by the test than by how rare the condition is. Only 6 or 7 o
 
 ### How the detection process works
 
-A positive screen is the start of a process, not a diagnosis. Each stage below is a round of the retesting picture above: the PPV coming out of one stage is the prevalence going into the next.
+A positive screen starts a process; it is not a diagnosis. Each stage is one round of the retesting picture above: the PPV coming out of one stage is the prevalence going into the next.
 
 ::: {.ppv-flow}
 ::: {.ppv-flow-step}
@@ -519,10 +519,10 @@ confirms cancer in 20–40% of the remaining cases (PPV₂)
 :::
 :::
 
-In Lee et al.'s data, per 1,000 women screened: 83 are recalled, about 18 are recommended for biopsy, and 6 have cancer (5.8 found, 0.8 missed). PPV₁ is 6.9% at the first stage and PPV₂ is 32% at biopsy. A negative screen, by contrast, is very reassuring: NPV is about 99.9%. The earlier 2D digital mammography benchmark (Lehman et al., 2017) had the same sensitivity but lower specificity (89%), so it recalled 116 per 1,000 for a PPV₁ of 4.4% — the same lesson, with a noisier test.
+Per 1,000 women screened in Lee et al.'s data: 83 are recalled, about 18 are recommended for biopsy, 6 have cancer (5.8 found, 0.8 missed). PPV₁ is 6.9%, PPV₂ is 32%, and NPV is about 99.9%. The earlier 2D benchmark (Lehman et al., 2017) had the same sensitivity but 89% specificity, so it recalled 116 per 1,000 for a PPV₁ of 4.4%: the same lesson with a noisier test.
 
 ## References
 
 - Lee, C. I., Abraham, L., Miglioretti, D. L., Stout, N. K., Kerlikowske, K., Henderson, L. M., Tosteson, A. N. A., Bissell, M. C. S., Onega, T., Sprague, B. L., Sabatino, S. A., Lawson, M. B., Lowry, K. P., Buist, D. S. M., & Breast Cancer Surveillance Consortium (2023). National Performance Benchmarks for Screening Digital Breast Tomosynthesis: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 307(4), e222499. [https://doi.org/10.1148/radiol.222499](https://doi.org/10.1148/radiol.222499). Source of this page's sensitivity (87.4%), specificity (92.2%) and prevalence (5.8 cancers detected plus 0.8 missed per 1,000 screens) figures, plus the recall rate (8.3%), PPV₁ (6.9%) and PPV₂ (32.2%), from 458,175 U.S. screening DBT examinations, 2011–2018.
-- Lehman, C. D., Arao, R. F., Sprague, B. L., Lee, J. M., Buist, D. S. M., Kerlikowske, K., Henderson, L. M., Onega, T., Tosteson, A. N. A., Rauscher, G. H., & Miglioretti, D. L. (2017). National Performance Benchmarks for Modern Screening Digital Mammography: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 283(1), 49–58. [https://doi.org/10.1148/radiol.2016161174](https://doi.org/10.1148/radiol.2016161174). The previous benchmark, for 2D digital mammography (sensitivity 86.9%, specificity 88.9%, recall rate 11.6%, PPV₁ 4.4%, 5.1 cancers detected plus 0.8 missed per 1,000 screens), from 1,682,504 U.S. screening mammograms, 2007–2013 — cited for comparison.
+- Lehman, C. D., Arao, R. F., Sprague, B. L., Lee, J. M., Buist, D. S. M., Kerlikowske, K., Henderson, L. M., Onega, T., Tosteson, A. N. A., Rauscher, G. H., & Miglioretti, D. L. (2017). National Performance Benchmarks for Modern Screening Digital Mammography: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 283(1), 49–58. [https://doi.org/10.1148/radiol.2016161174](https://doi.org/10.1148/radiol.2016161174). The previous benchmark, for 2D digital mammography (sensitivity 86.9%, specificity 88.9%, recall rate 11.6%, PPV₁ 4.4%, 5.1 cancers detected plus 0.8 missed per 1,000 screens), from 1,682,504 U.S. screening mammograms, 2007–2013; cited for comparison.
 - Carney, P. A., Sickles, E. A., Monsees, B. S., Bassett, L. W., Brenner, R. J., Feig, S. A., Smith, R. A., Rosenberg, R. D., Bogart, T. A., Browning, S., Barry, J. W., Kelly, M. M., Tran, K. A., & Miglioretti, D. L. (2010). Identifying Minimally Acceptable Interpretive Performance Criteria for Screening Mammography. *Radiology*, 255(2), 354–361. [https://doi.org/10.1148/radiol.10091636](https://doi.org/10.1148/radiol.10091636). Source of the acceptable-performance ranges: sensitivity at least 75%, specificity 88–95%, recall rate 5–12%, PPV₁ 3–8%, PPV₂ 20–40%.

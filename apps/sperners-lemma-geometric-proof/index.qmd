@@ -27,16 +27,37 @@ Authors: Apurva Nakade
 .ojs-chart-block.ojs-svg-block:fullscreen .sperner-compare {
   flex-direction: row;
 }
+
+/* The two orientation shades named in the prose, matching the hatch fills
+   makeOrientationDefs draws (the same accent2 hue at a light and a dark
+   opacity) rather than the flat 40% tint .vm-swatch uses for a plain
+   color name. */
+.sperner-shade-light {
+  background: color-mix(in srgb, var(--vm-accent2) 25%, var(--vm-bg));
+}
+.sperner-shade-dark {
+  background: color-mix(in srgb, var(--vm-accent2) 60%, var(--vm-bg));
+}
 </style>
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
 VM = window.VM
 ```
 
+```{ojs}
+//| output: false
+// vmTheme is what makes the colors below reactive: it re-runs on every
+// dark/light toggle, and the plot cells read their colors through
+// chartColors (or through a VM.discreteMath color helper, which reads the
+// same palette at call time), so both panels repaint in the new theme.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+chartColors = VM.plotting.colors(vmTheme)
+```
+
 This is my new favorite proof of [Sperner's lemma](../sperners-lemma-statement/index.qmd).
-In the following app the vertices are slowly morphed to the "cardinal" `R`, `G`, `B` vertices with time while preserving the adjacency relations. Only the rainbow (`RGB`) triangles are shaded — everything else is left unfilled. Both orientations use the same indigo, distinguished by shading: <span style="background-color:rgba(75, 0, 130, 0.25)">light, ⟋-hatched</span> triangles are oriented counter-clockwise and <span style="background-color:rgba(75, 0, 130, 0.6)">dark, ⟍-hatched</span> triangles are oriented clockwise. Can you come up with the proof yourself without peeking below? You can try reducing the number of subdivisions to get a sense of what's going on.
+In the following app the vertices are slowly morphed to the "cardinal" `R`, `G`, `B` vertices with time while preserving the adjacency relations. Only the rainbow (`RGB`) triangles are shaded — everything else is left unfilled. Both orientations use the same purple, distinguished by shading: <span class="vm-swatch sperner-shade-light">light, ⟋-hatched</span> triangles are oriented counter-clockwise and <span class="vm-swatch sperner-shade-dark">dark, ⟍-hatched</span> triangles are oriented clockwise. Can you come up with the proof yourself without peeking below? You can try reducing the number of subdivisions to get a sense of what's going on.
 
 ```{ojs}
 vertices = [
@@ -65,7 +86,8 @@ function createTriangleMorpher(N, vertices, assignColor) {
     const [A, B, C] = vertices
     const vertexMap = { red: C, green: A, blue: B }
 
-    const morphedPoints = baryCoords.map(([a, b, c]) => {
+    const morphedPoints = []
+    for (const [a, b, c] of baryCoords) {
       const sum = a + b + c
       const x0 = (a * A.x + b * B.x + c * C.x) / sum
       const y0 = (a * A.y + b * B.y + c * C.y) / sum
@@ -73,23 +95,27 @@ function createTriangleMorpher(N, vertices, assignColor) {
       const color = colorMap.get(`${a},${b},${c}`)
       const target = vertexMap[color]
 
-      return {
+      morphedPoints.push({
         x: (1 - t) * x0 + t * target.x,
         y: (1 - t) * y0 + t * target.y,
         color,
         barycentricTriple: [a, b, c]
-      }
-    })
+      })
+    }
 
-    const morphedMap = new Map(morphedPoints.map(p => [p.barycentricTriple.join(','), p]))
+    const morphedMap = new Map()
+    for (const p of morphedPoints) morphedMap.set(p.barycentricTriple.join(','), p)
     return { morphedPoints, morphedMap }
   }
 
   const generateSubTriangles = morphedMap => {
-    return VM.discreteMath.subTriangleTriples(N).map(coordinates => {
-      const vertex_colors = coordinates.map(c => morphedMap.get(c.join(',')).color)
-      return { coordinates, vertex_colors }
-    })
+    const triangles = []
+    for (const coordinates of VM.discreteMath.subTriangleTriples(N)) {
+      const vertex_colors = []
+      for (const c of coordinates) vertex_colors.push(morphedMap.get(c.join(',')).color)
+      triangles.push({ coordinates, vertex_colors })
+    }
+    return triangles
   }
 
   return {
@@ -126,7 +152,8 @@ fillColorGroups = {
 // ('ccw') or the reverse ('cw'). Returns null for a non-rainbow triangle.
 triangleOrientation = vertexColors => {
   const map = { red: 'R', green: 'G', blue: 'B' }
-  const key = vertexColors.map(c => map[c.toLowerCase()] || '').join('')
+  let key = ''
+  for (const c of vertexColors) key += map[c.toLowerCase()] || ''
 
   if (fillColorGroups.group1.has(key)) return 'ccw'
   if (fillColorGroups.group2.has(key)) return 'cw'
@@ -135,17 +162,17 @@ triangleOrientation = vertexColors => {
 ```
 
 ```{ojs}
-// One color (the same vivid indigo used for rainbow triangles on every
-// Sperner's lemma page) for both orientations -- distinguished by shading,
-// not hue: counter-clockwise is a light diagonal hatch sloped one way,
-// clockwise is a darker, denser hatch sloped the other way. IDs are unique
-// per call since this page renders several plots (teaser + two comparison
-// panels) in the same document, and SVG pattern references are resolved
-// by document-wide id.
-function makeOrientationDefs(ccwId, cwId) {
+// One color (the same palette purple, accent2, used for rainbow triangles
+// on every Sperner's lemma page -- passed in by the caller, which holds the
+// current theme's snapshot) for both orientations -- distinguished by
+// shading, not hue: counter-clockwise is a light diagonal hatch sloped one
+// way, clockwise is a darker, denser hatch sloped the other way. IDs are
+// unique per call since this page renders two comparison panels in the
+// same document, and SVG pattern references are resolved by document-wide
+// id.
+function makeOrientationDefs(ccwId, cwId, color) {
   const svgNS = "http://www.w3.org/2000/svg";
   const defs = document.createElementNS(svgNS, "defs");
-  const color = "rgb(75, 0, 130)";
 
   function hatch(id, angleDegrees, shadeOpacity) {
     const pattern = document.createElementNS(svgNS, "pattern");
@@ -183,9 +210,11 @@ function makeOrientationDefs(ccwId, cwId) {
 ```
 
 ```{ojs}
-function plotTriangles(triangles, morphedPoints, N) {
-  // Edges between differently-colored (morphed) vertices, in the same
-  // shared gold/teal/orchid palette used elsewhere for mixed edges.
+// `colors` is the caller's VM.plotting.colors() snapshot (chartColors), so
+// a plot cell that passes it re-runs, and repaints, on a theme toggle.
+function plotTriangles(triangles, morphedPoints, N, colors) {
+  // Edges between differently-colored (morphed) vertices, in the shared
+  // amber/teal/purple pair palette used elsewhere for mixed edges.
   const mixedEdges = [];
   for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
     const pa = morphedPoints.morphedMap.get(a.join(','));
@@ -207,37 +236,39 @@ function plotTriangles(triangles, morphedPoints, N) {
     return VM.discreteMath.triangleFillColor(tri.vertex_colors);
   };
 
-  const plot = Plot.plot({
-    width: 800,
-    height: 800,
-    margin: 40,
+  const features = [];
+  for (const tri of triangles) {
+    const ring = [];
+    for (const c of tri.coordinates) {
+      const p = morphedPoints.morphedMap.get(c.join(','));
+      ring.push([p.x, p.y]);
+    }
+    ring.push(ring[0]);
+    features.push({
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [ring] },
+      properties: { fillColor: fillFor(tri) }
+    });
+  }
+
+  // A diagram, not a graph: no axes, and a height chosen so the unit-wide
+  // equilateral triangle is drawn to scale (Plot stretches y to fill
+  // whatever height it is given otherwise).
+  const width = 800;
+  const margin = 20;
+  const height = (width - 2 * margin) * Math.sqrt(3) / 2 + 2 * margin;
+
+  const plot = Plot.plot(VM.plotting.plotOptions({
+    width,
+    height,
+    margin,
+    grid: false,
     x: {domain: [0, 1], axis: null},
     y: {domain: [0, Math.sqrt(3) / 2], axis: null},
     marks: [
-      Plot.geo({
-        type: "FeatureCollection",
-        features: triangles.map(tri => ({
-          type: "Feature",
-          geometry: {
-            type: "Polygon",
-            coordinates: [[
-              ...tri.coordinates.map(c => {
-                const p = morphedPoints.morphedMap.get(c.join(','))
-                return [p.x, p.y]
-              }),
-              (() => {
-                const p = morphedPoints.morphedMap.get(tri.coordinates[0].join(','))
-                return [p.x, p.y]
-              })()
-            ]]
-          },
-          properties: {
-            fillColor: fillFor(tri)
-          }
-        }))
-      }, {
+      Plot.geo({ type: "FeatureCollection", features }, {
         fill: d => d.properties.fillColor,
-        stroke: "black",
+        stroke: colors.ink,
         strokeWidth: 1
       }),
       Plot.link(mixedEdges, {
@@ -246,13 +277,14 @@ function plotTriangles(triangles, morphedPoints, N) {
         strokeWidth: 3
       }),
       Plot.dot(morphedPoints.morphedPoints, {
-        x: "x", y: "y", fill: "color", r: 4
+        x: "x", y: "y", fill: d => VM.discreteMath.vertexColor(d.color), r: 4
       })
     ]
-  });
+  }));
 
-  const svgRoot = plot.tagName === 'svg' ? plot : plot.querySelector('svg');
-  if (svgRoot) svgRoot.prepend(makeOrientationDefs(ccwId, cwId));
+  let svgRoot = plot;
+  if (plot.tagName !== 'svg') svgRoot = plot.querySelector('svg');
+  if (svgRoot) svgRoot.prepend(makeOrientationDefs(ccwId, cwId, colors.accent2));
 
   return plot;
 }
@@ -293,13 +325,14 @@ viewof comparisonRegenerate = {
 </div>
 
 ```{ojs}
-// Side by side, with each plot captioned above. .sperner-compare is what
-// keeps the pair a row in fullscreen, where styles.css's letterbox chain
-// otherwise turns every wrapper around a figure into a column (see the
-// page-local <style> block).
-html`<div class="sperner-compare" style="display: flex; gap: 1rem;">
-  <div><p><b>Sperner's condition satisfied</b></p>${plotValid}</div>
-  <div><p><b>Sperner's condition violated</b></p>${plotInvalid}</div>
+// Side by side, with each plot captioned above (stacking into one column
+// on a phone-width viewport, where two half-width panels would be too
+// small to read). .sperner-compare is what keeps the pair a row in
+// fullscreen, where styles.css's letterbox chain otherwise turns every
+// wrapper around a figure into a column (see the page-local <style> block).
+html`<div class="sperner-compare" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+  <div style="flex: 1 1 280px; min-width: 0;"><p><b>Sperner's condition satisfied</b></p>${plotValid}</div>
+  <div style="flex: 1 1 280px; min-width: 0;"><p><b>Sperner's condition violated</b></p>${plotInvalid}</div>
 </div>`
 ```
 
@@ -315,7 +348,7 @@ colorMapValid = {
 
 morphedValid = morpherValid.interpolatePoints(t, colorMapValid)
 trianglesValid = morpherValid.generateSubTriangles(morphedValid.morphedMap)
-plotValid = plotTriangles(trianglesValid, morphedValid, N)
+plotValid = plotTriangles(trianglesValid, morphedValid, N, chartColors)
 ```
 
 ```{ojs}
@@ -328,14 +361,14 @@ colorMapInvalid = {
 
 morphedInvalid = morpherInvalid.interpolatePoints(t, colorMapInvalid)
 trianglesInvalid = morpherInvalid.generateSubTriangles(morphedInvalid.morphedMap)
-plotInvalid = plotTriangles(trianglesInvalid, morphedInvalid, N)
+plotInvalid = plotTriangles(trianglesInvalid, morphedInvalid, N, chartColors)
 ```
 
 
 Let $v^R$, $v^G$, and $v^B$ be the vertices of the original triangle, colored
-<span style="background-color:red">red</span>,
-<span style="background-color:green">green</span>, and
-<span style="background-color:blue">blue</span>, respectively.
+<span class="vm-swatch vm-swatch-alt">red</span>,
+<span class="vm-swatch vm-swatch-ok">green</span>, and
+<span class="vm-swatch vm-swatch-accent">blue</span>, respectively.
 
 Consider a triangulation $\Delta$ of the triangle $(v^R, v^G, v^B)$.   We’ll use the variable $\delta$ to refer to the smaller triangles within this triangulation $\Delta$. Assume each $\delta$ is oriented counterclockwise, consistent with the orientation of $(v^R, v^G, v^B)$. This orientation will be important when we define [signed areas](#signed-areas).
 

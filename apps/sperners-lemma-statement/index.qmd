@@ -15,16 +15,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-Consider a triangulation of a triangle. (Below, we show a regular triangulation of an equilateral triangle, but the theorem applies to *any* triangulation of a triangle.) We color the vertices of the triangle with three colors—say, <span style="color:white; background-color:red">red</span>, <span style="color:white; background-color:green">green</span>, and <span style="color:white; background-color:blue">blue</span>—with the following conditions:
+Consider a triangulation of a triangle. (Below, we show a regular triangulation of an equilateral triangle, but the theorem applies to *any* triangulation of a triangle.) We color the vertices of the triangle with three colors—say, <span class="vm-swatch vm-swatch-alt">red</span>, <span class="vm-swatch vm-swatch-ok">green</span>, and <span class="vm-swatch vm-swatch-accent">blue</span>—with the following conditions:
 
-1. The vertices of the triangle are colored with the three colors: <span style="color:white; background-color:red">red</span>, <span style="color:white; background-color:green">green</span>, and <span style="color:white; background-color:blue">blue</span>.
+1. The vertices of the triangle are colored with the three colors: <span class="vm-swatch vm-swatch-alt">red</span>, <span class="vm-swatch vm-swatch-ok">green</span>, and <span class="vm-swatch vm-swatch-accent">blue</span>.
 2. The vertices that lie on the edges of the triangle are colored with one of the colors of the endpoints of that edge—*this is crucial*.
 3. The vertices that lie in the interior of the triangle may be colored with any of the three colors.
 
 Conditions 1 and 2 are often referred to as the **Sperner condition**.
 
 ::: {#sperner-lemma .callout-note title="Theorem: Sperner's lemma"}
-Any triangulation of a triangle satisfying Sperner's condition has at least one "rainbow" triangle whose vertices are colored with all three colors: <span style="color:white; background-color:red">red</span>, <span style="color:white; background-color:green">green</span>, and <span style="color:white; background-color:blue">blue</span>.
+Any triangulation of a triangle satisfying Sperner's condition has at least one "rainbow" triangle whose vertices are colored with all three colors: <span class="vm-swatch vm-swatch-alt">red</span>, <span class="vm-swatch vm-swatch-ok">green</span>, and <span class="vm-swatch vm-swatch-accent">blue</span>.
 :::
 
 In fact, you always have an odd number of such triangles.
@@ -32,8 +32,18 @@ In fact, you always have an odd number of such triangles.
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
 VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// vmTheme is what makes the colors below reactive: it re-runs on every
+// dark/light toggle, and every cell that draws reads its colors through
+// chartColors (or through a VM.discreteMath color helper, which reads the
+// same palette at call time), so the figure repaints in the new theme.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+chartColors = VM.plotting.colors(vmTheme)
 ```
 
 <div class="ojs-chart-block ojs-svg-block">
@@ -62,65 +72,68 @@ viewof regenerate = {
 </div>
 
 ```{ojs}
-viewof mainPlot = Plot.plot({
-  width: 800,
-  height: 800,
-  x: {
-    label: "x",
-    domain: [0, 1]
-  },
-  y: {
-    label: "y",
-    domain: [0, Math.sqrt(3) / 2]
-  },
-  marks: [
-    Plot.line([...vertices, vertices[0]], {
-      x: "x",
-      y: "y",
-      stroke: "black",
-      strokeWidth: 1
-    }),
-    Plot.geo(
-      {
-        type: "FeatureCollection",
-        features: subTriangles.map(triangle => {
-          let coords = triangle.coordinates.map(coord => colored.byKey.get(coord.join(',')).getCoords());
-          return {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [coords[0], coords[1], coords[2], coords[0]].map(c => [c.x, c.y])
-              ]
-            },
-            properties: {
-              fillColor: VM.discreteMath.triangleFillColor(triangle.vertex_colors)
-            }
-          };
-        })
-      },
-      {
-        fill: d => d.properties.fillColor,
-        stroke: "black",
-        strokeWidth: 1
-      }
-    ),
-    Plot.link(mixedEdges, {
-      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-      stroke: "color",
-      strokeWidth: 3
-    }),
-    Plot.dot(
-      colored.points,
-      {
+// A diagram, not a graph: no axes, and a height chosen so the unit-wide
+// equilateral triangle is drawn to scale (Plot stretches y to fill
+// whatever height it is given otherwise).
+viewof mainPlot = {
+  const width = 800;
+  const margin = 20;
+  const height = (width - 2 * margin) * Math.sqrt(3) / 2 + 2 * margin;
+
+  const features = [];
+  for (const triangle of subTriangles) {
+    const ring = [];
+    for (const coord of triangle.coordinates) {
+      const c = colored.byKey.get(coord.join(',')).getCoords();
+      ring.push([c.x, c.y]);
+    }
+    ring.push(ring[0]);
+    features.push({
+      type: "Feature",
+      geometry: { type: "Polygon", coordinates: [ring] },
+      properties: { fillColor: VM.discreteMath.triangleFillColor(triangle.vertex_colors) }
+    });
+  }
+
+  return Plot.plot(VM.plotting.plotOptions({
+    width,
+    height,
+    margin,
+    grid: false,
+    x: { domain: [0, 1], axis: null },
+    y: { domain: [0, Math.sqrt(3) / 2], axis: null },
+    marks: [
+      Plot.line([...vertices, vertices[0]], {
         x: "x",
         y: "y",
-        fill: d => d.color,
-        r: 4
-      }
-    )
-  ]
-});
+        stroke: chartColors.ink,
+        strokeWidth: 1
+      }),
+      Plot.geo(
+        { type: "FeatureCollection", features },
+        {
+          fill: d => d.properties.fillColor,
+          stroke: chartColors.ink,
+          strokeWidth: 1
+        }
+      ),
+      Plot.link(mixedEdges, {
+        x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+        stroke: "color",
+        strokeWidth: 3
+      }),
+      Plot.dot(
+        colored.points,
+        {
+          x: "x",
+          y: "y",
+          fill: d => VM.discreteMath.vertexColor(d.color),
+          r: 4
+        }
+      )
+    ]
+  }));
+}
 ```
 
 </div>
@@ -159,7 +172,10 @@ class ColoredPoint {
 ```{ojs}
 colored = {
   regenerate;
-  const points = VM.discreteMath.barycentricTriples(N).map(triple => new ColoredPoint(triple, vertices, N));
+  const points = [];
+  for (const triple of VM.discreteMath.barycentricTriples(N)) {
+    points.push(new ColoredPoint(triple, vertices, N));
+  }
 
   const byKey = new Map();
   for (const p of points) {
@@ -174,7 +190,10 @@ colored = {
 subTriangles = {
   const triangles = [];
   for (const coordinates of VM.discreteMath.subTriangleTriples(N)) {
-    const vertex_colors = new Set(coordinates.map(coord => colored.byKey.get(coord.join(',')).getColor()));
+    const vertex_colors = new Set();
+    for (const coord of coordinates) {
+      vertex_colors.add(colored.byKey.get(coord.join(',')).getColor());
+    }
     triangles.push({ coordinates, vertex_colors });
   }
   return triangles;
@@ -182,10 +201,12 @@ subTriangles = {
 ```
 
 ```{ojs}
-// Edges between differently-colored vertices, in the same shared palette
-// as VM.discreteMath.triangleFillColor's two-color case (gold/teal/orchid). Same-color
-// edges are skipped entirely to avoid clutter.
+// Edges between differently-colored vertices, in the shared amber/teal/
+// purple pair palette (VM.discreteMath.pairColor). Same-color edges are
+// skipped entirely to avoid clutter. chartColors is referenced so the
+// stored colors are recomputed on a theme toggle.
 mixedEdges = {
+  chartColors;
   const edges = [];
   for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
     const pa = colored.byKey.get(a.join(','));
@@ -203,7 +224,13 @@ mixedEdges = {
 
 ```{ojs}
 // print the number of RGB triangles as a html element
-numRGBTriangles = subTriangles.filter(triangle => triangle.vertex_colors.size === 3).length;
+numRGBTriangles = {
+  let count = 0;
+  for (const triangle of subTriangles) {
+    if (triangle.vertex_colors.size === 3) count++;
+  }
+  return count;
+}
 html`<b>Number of RGB triangles: ${numRGBTriangles}</b>`
 ```
 

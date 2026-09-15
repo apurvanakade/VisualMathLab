@@ -19,8 +19,18 @@ This picture is a combinatorial proof of [Sperner's Lemma](../sperners-lemma-sta
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
 VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// vmTheme is what makes the colors below reactive: it re-runs on every
+// dark/light toggle, and every cell that draws reads its colors through
+// chartColors (or through a VM.discreteMath color helper, which reads the
+// same palette at call time), so the figures repaint in the new theme.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+chartColors = VM.plotting.colors(vmTheme)
 ```
 
 <div class="ojs-chart-block ojs-svg-block">
@@ -50,37 +60,47 @@ viewof regenerate = {
 
 ```{ojs}
 // === Main Plot ===
-viewof mainPlot = Plot.plot({
-  width: 800,
-  height: 800,
-  x: { label: "x", domain: [0, 1] },
-  y: { label: "y", domain: [0, Math.sqrt(3) / 2] },
-  marks: [
-    Plot.geo(
-      { type: "FeatureCollection", features: triangleFeatures(triangles.all, cpMap) },
-      { fill: d => d.properties.fillColor, stroke: "black", strokeWidth: 1 }
-    ),
-    Plot.link(mixedEdgeFeatures(N, cpMap), {
-      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-      stroke: "color",
-      strokeWidth: 3
-    }),
-    ...makeEdgeLines(triangles.rg),
-    ...makeEdgeLines(triangles.rgb),
-    Plot.dot(
-      coloredPointsWithTitle,
-      {
-        x: "x",
-        y: "y",
-        fill: "color",
-        r: 4,
-        title: "title"
-      }
-    ),
-    ...makeSpecialPoints(triangles.rg),
-    ...makeSpecialPoints(triangles.rgb)
-  ]
-});
+// A diagram, not a graph: no axes, and a height chosen so the unit-wide
+// equilateral triangle is drawn to scale (Plot stretches y to fill
+// whatever height it is given otherwise).
+viewof mainPlot = {
+  const width = 800;
+  const margin = 20;
+  const height = (width - 2 * margin) * Math.sqrt(3) / 2 + 2 * margin;
+  return Plot.plot(VM.plotting.plotOptions({
+    width,
+    height,
+    margin,
+    grid: false,
+    x: { domain: [0, 1], axis: null },
+    y: { domain: [0, Math.sqrt(3) / 2], axis: null },
+    marks: [
+      Plot.geo(
+        { type: "FeatureCollection", features: triangleFeatures(triangles.all, cpMap) },
+        { fill: d => d.properties.fillColor, stroke: chartColors.ink, strokeWidth: 1 }
+      ),
+      Plot.link(mixedEdgeFeatures(N, cpMap), {
+        x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+        stroke: "color",
+        strokeWidth: 3
+      }),
+      ...makeEdgeLines(triangles.rg, chartColors),
+      ...makeEdgeLines(triangles.rgb, chartColors),
+      Plot.dot(
+        coloredPointsWithTitle,
+        {
+          x: "x",
+          y: "y",
+          fill: d => VM.discreteMath.vertexColor(d.color),
+          r: 4,
+          title: "title"
+        }
+      ),
+      ...makeSpecialPoints(triangles.rg, chartColors),
+      ...makeSpecialPoints(triangles.rgb, chartColors)
+    ]
+  }));
+}
 ```
 
 </div>
@@ -213,14 +233,15 @@ generateTriangleData = (coordinates, cpMap) => {
 
 ```{ojs}
 // === Plotting Utilities ===
-// RGB (rainbow) triangles get the shared vivid indigo, chosen to contrast
-// clearly with gold. RG triangles get a
-// faint gold -- just enough to spot the "hallway" rooms the door argument
-// below relies on, without competing with the rainbow triangles for
-// attention. Everything else (GB, RB, monochromatic) is left unfilled.
+// RGB (rainbow) triangles get the shared translucent purple, chosen to
+// contrast clearly with amber. RG triangles get a faint amber -- just
+// enough to spot the "hallway" rooms the door argument below relies on,
+// without competing with the rainbow triangles for attention. Everything
+// else (GB, RB, monochromatic) is left unfilled. Both fills come from the
+// shared chart palette at call time, so they follow a theme toggle.
 triangleFillColor = tri => {
   if (tri.classification.isRGB) return VM.discreteMath.triangleFillColor(tri.vertex_colors);
-  if (tri.classification.isRG) return 'rgba(255, 215, 0, 0.3)';
+  if (tri.classification.isRG) return VM.plotting.alpha('warn', 0.3);
   return 'none';
 }
 
@@ -243,9 +264,9 @@ triangleFeatures = (triangles, cpMap) => {
   return features;
 }
 
-// Edges between differently-colored vertices, in the same shared
-// gold/teal/orchid palette as the two-color triangle fills. Distinct from
-// the black "door" path below -- this is a general structural layer, not
+// Edges between differently-colored vertices, in the shared amber/teal/
+// purple pair palette (VM.discreteMath.pairColor). Distinct from the
+// ink-colored "door" path below -- this is a general structural layer, not
 // specific to RG doors.
 mixedEdgeFeatures = (N, cpMap) => {
   const edges = [];
@@ -261,24 +282,29 @@ mixedEdgeFeatures = (N, cpMap) => {
   return edges;
 }
 
-makeEdgeLines = (triangles) => {
+// The "door" path through each RG/RGB room, in the page's ink color (the
+// palette snapshot is passed in from the plot cell, which re-runs on a
+// theme toggle).
+makeEdgeLines = (triangles, colors) => {
   const lines = [];
   for (const tri of triangles) {
     for (let i = 0; i < tri.edges.length; i++) {
       const pt = tri.edges[i];
       const next = tri.edges[(i + 1) % tri.edges.length];
-      lines.push(Plot.line([pt, next], { x: "x", y: "y", stroke: "black", strokeWidth: 5 }));
+      lines.push(Plot.line([pt, next], { x: "x", y: "y", stroke: colors.ink, strokeWidth: 5 }));
     }
   }
   return lines;
 }
 
-makeSpecialPoints = (triangles) => {
+// Path endpoints: a hollow ring, filled with the halo color (white on
+// light, the page background on dark) rather than a literal white.
+makeSpecialPoints = (triangles, colors) => {
   const dots = [];
   for (const tri of triangles) {
     for (const pt of tri.special_points) {
       if (pt && pt.x !== undefined && pt.y !== undefined) {
-        dots.push(Plot.dot([pt], { x: "x", y: "y", fill: "white", stroke: "black", r: 4 }));
+        dots.push(Plot.dot([pt], { x: "x", y: "y", fill: colors.halo, stroke: colors.ink, r: 4 }));
       }
     }
   }
@@ -299,10 +325,18 @@ vertices = [
 // === Generate Colored Points ===
 coloredPoints = {
   regenerate;
-  return VM.discreteMath.barycentricTriples(N).map(triple => new ColoredPoint(triple, vertices, N));
+  const points = [];
+  for (const triple of VM.discreteMath.barycentricTriples(N)) {
+    points.push(new ColoredPoint(triple, vertices, N));
+  }
+  return points;
 }
 
-cpMap = new Map(coloredPoints.map(p => [p.barycentricTriple.join(','), p]));
+cpMap = {
+  const map = new Map();
+  for (const p of coloredPoints) map.set(p.barycentricTriple.join(','), p);
+  return map;
+}
 
 coloredPointsWithTitle = {
   const arr = [];
@@ -339,17 +373,18 @@ triangles = generateAllTriangles(N, cpMap);
 
 Imagine each small triangle as a **room with three walls**. Treat each `RG` edge as a **door**. Here's what we observe:
 
-1. <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles have **exactly one** door.
-2. <span style="background-color:rgba(255, 215, 0, 1)">**RRG**</span> and <span style="background-color:rgba(255, 215, 0, 1)">**RGG**</span> triangles have **two** doors.
+1. <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangles have **exactly one** door.
+2. <span class="vm-swatch vm-swatch-warn">**RRG**</span> and <span class="vm-swatch vm-swatch-warn">**RGG**</span> triangles have **two** doors.
 3. All other triangles have **no** doors.
 
-(In the plot above, `RRG`/`RGG` triangles are shaded a much fainter gold than in the diagram below, so the rainbow triangles stay the visual focus; every other non-rainbow triangle is left unfilled. Mixed-color edges still get a colored line, the same convention used on the other Sperner's lemma pages.)
+(In the plot above, `RRG`/`RGG` triangles are shaded a much fainter amber than in the diagram below, so the rainbow triangles stay the visual focus; every other non-rainbow triangle is left unfilled. Mixed-color edges still get a colored line, the same convention used on the other Sperner's lemma pages.)
 
 ```{ojs}
+// The three room types, each drawn with its vertex colors; the fill is
+// resolved from the palette when the marks are built, not stored here.
 doorExamples = [
   {
     label: "RGB",
-    fill: "rgba(75, 0, 130, 0.55)",
     vertices: [
       {x: 50, y: 150, color: "red"},
       {x: 100, y: 50, color: "green"},
@@ -358,7 +393,6 @@ doorExamples = [
   },
   {
     label: "RRG",
-    fill: "rgba(255, 215, 0, 1)",
     vertices: [
       {x: 250, y: 150, color: "red"},
       {x: 300, y: 50, color: "red"},
@@ -367,7 +401,6 @@ doorExamples = [
   },
   {
     label: "RGG",
-    fill: "rgba(255, 215, 0, 1)",
     vertices: [
       {x: 450, y: 150, color: "red"},
       {x: 500, y: 50, color: "green"},
@@ -379,16 +412,26 @@ doorExamples = [
 
 ```{ojs}
 // Builds the marks for the RGB/RRG/RGG example diagram: one filled polygon
-// per example triangle, a bold dashed line on each RG ("door") edge, a
-// colored dot per vertex, and a label above each triangle.
+// per example triangle (the shared rainbow purple for RGB, a solid amber
+// for the two-door rooms -- stronger than the faint amber in the main
+// plot, since here nothing competes with it), a bold dashed line on each
+// RG ("door") edge, a colored dot per vertex, and a label above each
+// triangle. chartColors is referenced so the fills are recomputed on a
+// theme toggle.
 doorExampleMarks = {
+  chartColors;
   const fills = [];
   const doors = [];
   const dots = [];
   const labels = [];
 
   for (const tri of doorExamples) {
-    const { vertices, fill, label } = tri;
+    const { vertices, label } = tri;
+
+    const vertexColors = [];
+    for (const v of vertices) vertexColors.push(v.color);
+    let fill = VM.discreteMath.triangleFillColor(vertexColors);
+    if (fill === 'none') fill = VM.plotting.alpha('warn', 0.9);
 
     const ring = [];
     for (const v of vertices) ring.push([v.x, v.y]);
@@ -415,36 +458,41 @@ doorExampleMarks = {
 }
 ```
 
+<div class="ojs-chart-block ojs-svg-block">
+
 ```{ojs}
-viewof doorExamplePlot = Plot.plot({
+viewof doorExamplePlot = Plot.plot(VM.plotting.plotOptions({
   width: 600,
   height: 200,
   margin: 10,
+  grid: false,
   x: { domain: [0, 600], axis: null },
   y: { domain: [200, 0], axis: null },
   marks: [
     Plot.geo(
       { type: "FeatureCollection", features: doorExampleMarks.fills },
-      { fill: d => d.properties.fill, stroke: "black", strokeWidth: 1 }
+      { fill: d => d.properties.fill, stroke: chartColors.ink, strokeWidth: 1 }
     ),
     Plot.link(doorExampleMarks.doors, {
       x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-      stroke: "black", strokeWidth: 4, strokeDasharray: "8,4"
+      stroke: chartColors.ink, strokeWidth: 4, strokeDasharray: "8,4"
     }),
-    Plot.dot(doorExampleMarks.dots, { x: "x", y: "y", fill: "color", stroke: "black", r: 4 }),
+    Plot.dot(doorExampleMarks.dots, { x: "x", y: "y", fill: d => VM.discreteMath.vertexColor(d.color), stroke: chartColors.ink, r: 4 }),
     Plot.text(doorExampleMarks.labels, { x: "x", y: "y", text: "text", dy: -10, fontSize: 12 })
   ]
-})
+}))
 ```
 
-In other words, we can identify <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles as the rooms with an **odd** number of doors. Sperner's Lemma, then, can be restated in a more visual way: **If Sperner's condition holds, there is at least one room with an odd number of doors.** We'll prove a related version of this statement.
+</div>
+
+In other words, we can identify <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangles as the rooms with an **odd** number of doors. Sperner's Lemma, then, can be restated in a more visual way: **If Sperner's condition holds, there is at least one room with an odd number of doors.** We'll prove a related version of this statement.
 
 ## Following the Doors
 
-Picture all the possible paths that can be formed by stepping through these `RG` doors — the black lines in the diagram represent all of these paths.
+Picture all the possible paths that can be formed by stepping through these `RG` doors — the thick dark lines in the diagram represent all of these paths.
 
-- The <span style="background-color:rgba(255, 215, 0, 1)">yellow</span> triangles have paths that **enter through one door and exit through another** — like hallways.
-- The <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles have **only one door**, so they are endpoints — there's no way to pass through.
+- The <span class="vm-swatch vm-swatch-warn">amber</span> triangles have paths that **enter through one door and exit through another** — like hallways.
+- The <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangles have **only one door**, so they are endpoints — there's no way to pass through.
 
 Using simple logic, we can deduce the following:
 
@@ -453,18 +501,18 @@ Using simple logic, we can deduce the following:
 3. Paths that do not form loops must have **two endpoints**, so the **total number of endpoints is even**.
 4. The **only possible endpoints** are:
    a. An `RG` door on the outer boundary of the big triangle
-   b. An <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangle.
+   b. An <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangle.
 
 Putting this all together gives us a key result:
 
 ::: {#even-theorem .callout-note title="Theorem: Doors plus RGB triangles is even"}
-The sum of the number of `RG` boundary edges, and the number of <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles must be **even**.
+The sum of the number of `RG` boundary edges, and the number of <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangles must be **even**.
 :::
 
 From this, we immediately get:
 
 ::: {#same-parity-theorem .callout-note title="Theorem: RGB triangles share parity with the boundary"}
-The number of <span style="background-color:rgba(75, 0, 130, 0.55)">**RGB**</span> triangles is **odd** if and only if the number of `RG` edges on the boundary is **odd**.
+The number of <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangles is **odd** if and only if the number of `RG` edges on the boundary is **odd**.
 :::
 
 So to conclude the proof, all that remains is to show:
@@ -517,23 +565,24 @@ viewof boundaryRegenerate = {
 </div>
 
 ```{ojs}
-viewof boundaryPlot = Plot.plot({
+viewof boundaryPlot = Plot.plot(VM.plotting.plotOptions({
   width: 600,
   height: 100,
   margin: 20,
+  grid: false,
   x: { domain: [0, M], axis: null },
   y: { domain: [0, 1], axis: null },
   marks: [
     Plot.link(boundaryEdges.segments, {
       x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
-      stroke: "black", strokeWidth: d => d.bold ? 6 : 1
+      stroke: chartColors.ink, strokeWidth: d => d.bold ? 6 : 1
     }),
-    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: "color", stroke: "black", r: 5 }),
+    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: d => VM.discreteMath.vertexColor(d.color), stroke: chartColors.ink, r: 5 }),
     Plot.text([{ x: M / 2, y: 0.9, text: `Number of RG edges: ${boundaryEdges.boldCount}` }], {
       x: "x", y: "y", text: "text", fontSize: 16
     })
   ]
-})
+}))
 ```
 
 </div>

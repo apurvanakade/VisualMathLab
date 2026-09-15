@@ -35,6 +35,24 @@ Authors: Apurva Nakade
   vertical-align: -0.05em;
 }
 .ppv-swatch.filled { background: currentColor; }
+/* The hover tooltip on a grid dot. One element for the whole page, appended
+   to <body> (see tooltipElement), and position: fixed -- so it sits outside
+   every OJS cell wrapper and Quarto's overflow: auto on those can't clip it,
+   the trap CLAUDE.md's chart-controls notes describe. */
+#ppv-tooltip {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  padding: 0.35em 0.6em;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  box-shadow: var(--vm-shadow);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  white-space: pre-line;
+}
 .ppv-flow {
   margin: 1rem 0 1.25rem;
 }
@@ -251,6 +269,76 @@ function fadeOpacity(rounds, clearedRound, infected) {
 
 ```{ojs}
 //| output: false
+// personTooltip: the text a dot shows on hover -- the person's condition,
+// then one line per test they have taken so far. After `rounds` tests a
+// person cleared in an earlier round wasn't retested (only positives are),
+// so their later lines say so instead of inventing a result.
+function personTooltip(person, rounds) {
+  let lines = ["Does not have the condition"]
+  if (person.infected) lines = ["Has the condition"]
+  for (let round = 1; round <= rounds; round++) {
+    if (person.clearedRound !== null && person.clearedRound < round) {
+      lines.push(`Test ${round}: not retested`)
+      break
+    }
+    let outcome = "positive"
+    if (person.clearedRound === round) outcome = "negative"
+    lines.push(`Test ${round}: ${outcome}`)
+  }
+  return lines.join("\n")
+}
+
+// tooltipElement: the page's single tooltip node, created on first use and
+// appended to <body> rather than inside a cell -- looked up by id each
+// time, since cells re-run and must not create a second one.
+function tooltipElement() {
+  let tip = document.getElementById("ppv-tooltip")
+  if (tip === null) {
+    tip = document.createElement("div")
+    tip.id = "ppv-tooltip"
+    tip.setAttribute("role", "tooltip")
+    tip.hidden = true
+    document.body.appendChild(tip)
+  }
+  return tip
+}
+
+// attachTooltip: shows each circle's data-tip text beside the pointer while
+// it is over that circle, and hides it in the gaps between dots and when
+// the pointer leaves the grid. Delegated on the <svg>, one listener set per
+// grid instead of three per circle; pointer events cover mouse and touch
+// (a tap fires pointerover) alike. The tooltip is offset down-right of the
+// pointer and flipped to the other side near the viewport's right or
+// bottom edge so it never runs off screen.
+function attachTooltip(svg) {
+  const offset = 12
+  const show = (event) => {
+    const text = event.target.dataset?.tip
+    const tip = tooltipElement()
+    if (text === undefined) {
+      tip.hidden = true
+      return
+    }
+    tip.textContent = text
+    tip.hidden = false
+    move(event)
+  }
+  const move = (event) => {
+    const tip = tooltipElement()
+    if (tip.hidden) return
+    let left = event.clientX + offset
+    let top = event.clientY + offset
+    if (left + tip.offsetWidth > window.innerWidth) left = event.clientX - offset - tip.offsetWidth
+    if (top + tip.offsetHeight > window.innerHeight) top = event.clientY - offset - tip.offsetHeight
+    tip.style.left = `${left}px`
+    tip.style.top = `${top}px`
+  }
+  const hide = () => { tooltipElement().hidden = true }
+  svg.addEventListener("pointerover", show)
+  svg.addEventListener("pointermove", move)
+  svg.addEventListener("pointerleave", hide)
+}
+
 // drawGrid: one dot per person, laid out column-major on a grid. Hue is the
 // person's true condition; a solid dot is still testing positive, a hollow
 // one has been cleared, faded by how many tests ago (fadeOpacity).
@@ -258,7 +346,11 @@ function fadeOpacity(rounds, clearedRound, infected) {
 // population with every dot solid -- the test is what hollows out the
 // people it clears, so whoever is still solid afterwards is a positive
 // result. Every grid on the page draws the same people in the same slots,
-// so the reader can follow one dot from picture to picture.
+// so the reader can follow one dot from picture to picture. Hovering a
+// dot shows personTooltip's text (attachTooltip) -- not via an SVG <title>,
+// which the browser only surfaces after the pointer has sat still on the
+// element for about a second, a delay any drift across a grid of 1,000
+// tiny dots keeps resetting, so it almost never actually appeared.
 //
 // Returns an inline SVG with a viewBox, stretched to the column's full
 // width by CSS -- so the grid is always page-wide, whatever the column
@@ -289,11 +381,14 @@ function drawGrid(people, options = {}) {
     const cy = ((slot % rows) + 0.5) * pitch
     let color = config.colors.healthy
     if (person.infected) color = config.colors.infected
+    // A literal newline inside a quoted attribute is kept as-is by the HTML
+    // parser; the tooltip's white-space: pre-line turns it into a line break.
+    const tip = `data-tip="${personTooltip(person, rounds)}"`
     if (rounds > 0 && person.clearedRound !== null && person.clearedRound <= rounds) {
       const opacity = fadeOpacity(rounds, person.clearedRound, person.infected)
-      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${(radius - ringWidth / 2).toFixed(2)}" fill="none" stroke="${color}" stroke-width="${ringWidth.toFixed(2)}" opacity="${opacity.toFixed(3)}"/>`
+      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${(radius - ringWidth / 2).toFixed(2)}" fill="none" stroke="${color}" stroke-width="${ringWidth.toFixed(2)}" opacity="${opacity.toFixed(3)}" ${tip}/>`
     } else {
-      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}" fill="${color}"/>`
+      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}" fill="${color}" ${tip}/>`
     }
   }
 
@@ -306,6 +401,11 @@ function drawGrid(people, options = {}) {
   svg.style.display = "block"
   svg.style.width = "100%"
   svg.style.height = "auto"
+  // A hollow ring has fill="none", and by default only its painted stroke
+  // is hoverable -- the hole in the middle would show no tooltip. "all"
+  // (inherited by every circle) makes the whole disc a target either way.
+  svg.style.pointerEvents = "all"
+  attachTooltip(svg)
   return holder
 }
 

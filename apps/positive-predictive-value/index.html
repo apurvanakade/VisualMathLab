@@ -123,9 +123,28 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<!--
+Third-party requests are a privacy surface, and privacy.qmd describes it, so
+keep that page in step with anything added here.
+
+- Send no Referer to any other origin. Every page's query string is the
+  visitor's own math input (see the URL-shareable inputs section of
+  CLAUDE.md); without this, a CDN could see it on every request. Browsers'
+  default policy already trims cross-origin referrers to the bare origin,
+  but a document-wide policy makes privacy.qmd's claim independent of
+  browser defaults, and it also covers the MathJax and polyfill scripts
+  Quarto injects further down <head>, which no per-tag attribute could
+  reach. Outbound links (GitHub) carry no referrer either; nothing here
+  relies on one. (Measured: the only cross-origin requests that still carry
+  a Referer are MathJax's own font fetches, which it issues with its own
+  policy, and they carry the bare origin -- never the path or query string.)
+- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
+  only third-party origins a page loads from are the script CDNs below plus
+  Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+-->
+<meta name="referrer" content="same-origin">
+
+<link rel="stylesheet" href="../../fonts/fonts.css">
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -1649,6 +1668,8 @@ Two local modifications to the upstream code, both marked "LOCAL:" below:
      requests to Google and nothing is written to localStorage.
   4. Do Not Track and Global Privacy Control are honoured, so a visitor
      signalling either is not measured even if they accepted the banner.
+     consent.html disables Allow in that state rather than record a
+     consent that measures nothing; privacy.qmd says the signal wins.
   5. `dl` (the reported page location) drops the query string. On this site a
      query string is the visitor's own input - the function they typed, their
      initial guess, their seed - which has no place in an analytics report,
@@ -1790,6 +1811,12 @@ localStorage, so this site sets no cookies at all.
     border-color: var(--bs-primary, #2563eb);
   }
 
+  .vml-consent-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+  }
+
   .vml-consent-btn-primary {
     border-color: var(--bs-primary, #2563eb);
     background: var(--bs-primary, #2563eb);
@@ -1833,8 +1860,11 @@ localStorage, so this site sets no cookies at all.
   if (!banner) return;
 
   /* Global Privacy Control and Do Not Track are a standing answer to this
-     question, so don't ask it again. Treated as "no" until the visitor
-     overrides it through the footer link. */
+     question, so don't ask it again. The footer link still opens the banner,
+     but only to say so: the snippet in analytics.html checks the same two
+     signals itself and returns before sending anything, so Allow would
+     record a "yes" that measures nothing. It is disabled instead of
+     pretending (privacy.qmd says the same). */
   function privacySignalSet() {
     if (navigator.globalPrivacyControl === true) return true;
     if (navigator.doNotTrack === "1") return true;
@@ -1909,12 +1939,20 @@ localStorage, so this site sets no cookies at all.
 
   function show() {
     const choice = readChoice();
-    if (choice === null) {
-      status.hidden = true;
-    } else {
+    const allow = banner.querySelector('[data-consent-choice="granted"]');
+    if (privacySignalSet()) {
       status.hidden = false;
-      if (choice === "granted") status.textContent = "Analytics is currently allowed.";
-      else status.textContent = "Analytics is currently switched off.";
+      status.textContent = "Your browser is sending a Do Not Track or Global Privacy Control signal, so analytics stays off whatever is chosen here.";
+      allow.disabled = true;
+    } else {
+      allow.disabled = false;
+      if (choice === null) {
+        status.hidden = true;
+      } else {
+        status.hidden = false;
+        if (choice === "granted") status.textContent = "Analytics is currently allowed.";
+        else status.textContent = "Analytics is currently switched off.";
+      }
     }
     banner.hidden = false;
   }
@@ -2681,7 +2719,7 @@ window._ojs.runtime.interpretFromScriptTags();
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p>Copyright © 2025-2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="../../privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
+<p>Copyright © 2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="../../privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;

@@ -83,9 +83,28 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<!--
+Third-party requests are a privacy surface, and privacy.qmd describes it, so
+keep that page in step with anything added here.
+
+- Send no Referer to any other origin. Every page's query string is the
+  visitor's own math input (see the URL-shareable inputs section of
+  CLAUDE.md); without this, a CDN could see it on every request. Browsers'
+  default policy already trims cross-origin referrers to the bare origin,
+  but a document-wide policy makes privacy.qmd's claim independent of
+  browser defaults, and it also covers the MathJax and polyfill scripts
+  Quarto injects further down <head>, which no per-tag attribute could
+  reach. Outbound links (GitHub) carry no referrer either; nothing here
+  relies on one. (Measured: the only cross-origin requests that still carry
+  a Referer are MathJax's own font fetches, which it issues with its own
+  policy, and they carry the bare origin -- never the path or query string.)
+- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
+  only third-party origins a page loads from are the script CDNs below plus
+  Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+-->
+<meta name="referrer" content="same-origin">
+
+<link rel="stylesheet" href="./fonts/fonts.css">
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -567,6 +586,7 @@ Authors: Apurva Nakade
   <ul>
   <li><a href="#what-is-collected" id="toc-what-is-collected" class="nav-link active" data-scroll-target="#what-is-collected">What is collected</a></li>
   <li><a href="#what-is-not-collected" id="toc-what-is-not-collected" class="nav-link" data-scroll-target="#what-is-not-collected">What is <em>not</em> collected</a></li>
+  <li><a href="#third-party-resources" id="toc-third-party-resources" class="nav-link" data-scroll-target="#third-party-resources">Third-party resources</a></li>
   <li><a href="#cookies-and-local-storage" id="toc-cookies-and-local-storage" class="nav-link" data-scroll-target="#cookies-and-local-storage">Cookies and local storage</a></li>
   <li><a href="#changing-your-mind" id="toc-changing-your-mind" class="nav-link" data-scroll-target="#changing-your-mind">Changing your mind</a></li>
   <li><a href="#why-collect-anything" id="toc-why-collect-anything" class="nav-link" data-scroll-target="#why-collect-anything">Why collect anything</a></li>
@@ -603,18 +623,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 <p>Visual Math Lab is a static website. Every visualization on it runs entirely in your browser: the functions you type, the parameters you set, and the numbers that come out of them are computed locally and never sent anywhere. There is no backend, no account system, and no database.</p>
-<p>The only data that leaves your browser is anonymous usage analytics, and only if you agree to it.</p>
+<p>The only data that leaves your browser <em>about you</em> is anonymous usage analytics, and only if you agree to it. The one other thing a page fetches from outside this site is a few open-source libraries, described under <a href="#third-party-resources">Third-party resources</a> below.</p>
 <section id="what-is-collected" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-collected">What is collected</h2>
-<p>If you accept analytics, the site sends a small event to <a href="https://policies.google.com/privacy">Google Analytics</a> when you open a page, when you scroll to the bottom of one, when you follow a link to another site, and when you leave a page. Each event carries:</p>
+<p>If you accept analytics, the site sends a small event to <a href="https://policies.google.com/privacy">Google Analytics</a> when you open a page, when you scroll to the bottom of one, when you follow a link to another site, and when the page goes out of view (you close it, navigate away, or switch to another tab). Each event carries:</p>
 <ul>
 <li>the address of the page you are on, and its title</li>
 <li>the address of the page that referred you, if any</li>
 <li>your screen size and browser language</li>
 <li>a randomly generated identifier, described below</li>
 <li>how long you spent on the page</li>
+<li>a per-browser count of visits and of events within the current visit, used to tell a returning visitor from a new one</li>
 </ul>
-<p>Google derives an approximate location (typically city-level) from your IP address. The IP address itself is not stored by Google Analytics 4.</p>
+<p>Google derives an approximate location (typically city-level) from your IP address; Google states that the IP address itself is not logged or stored by Google Analytics 4.</p>
 </section>
 <section id="what-is-not-collected" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-not-collected">What is <em>not</em> collected</h2>
@@ -624,15 +645,27 @@ Authors: Apurva Nakade
 <li><strong>No mathematical input.</strong> The expressions, parameters, and data points you enter into a visualization stay in your browser. They are part of the page address so that you can share a link to a particular example, but the address recorded in analytics is stripped of that query string before it is sent.</li>
 </ul>
 </section>
+<section id="third-party-resources" class="level2">
+<h2 class="anchored" data-anchor-id="third-party-resources">Third-party resources</h2>
+<p>Each page loads three open-source libraries from public content-delivery networks: <a href="https://plotly.com/javascript/">Plotly</a> from <code>cdn.plot.ly</code>, <a href="https://mathjs.org/">math.js</a> and <a href="https://www.mathjax.org/">MathJax</a> from <code>cdn.jsdelivr.net</code>, and a small compatibility script from <code>cdnjs.cloudflare.com</code>. This happens whether or not you allow analytics, because the visualizations cannot run without them.</p>
+<p>Like any web request, fetching a file from one of those hosts shows it your IP address, and at most that the request came from this site. It does not show it which page you are on or what you typed: the site tells your browser to send no referrer to any other origin, and the one exception — MathJax fetches its own math fonts with a referrer of its choosing — carries only the site’s domain, never the page. Nothing is stored by those hosts on your device, and once your browser has cached a library it does not ask for it again.</p>
+<p>Fonts are served from this site directly, not from Google Fonts, so no font request goes to Google.</p>
+</section>
 <section id="cookies-and-local-storage" class="level2">
 <h2 class="anchored" data-anchor-id="cookies-and-local-storage">Cookies and local storage</h2>
 <p><strong>This site sets no cookies.</strong> Not for analytics, not for remembering your choice about analytics, not for anything else.</p>
-<p>A small number of values are kept in your browser’s local storage instead:</p>
+<p>A small number of values are kept in your browser’s local storage instead. Two of them concern analytics:</p>
 <ul>
 <li><strong>Your answer to the analytics question</strong>, so you are not asked again on every page. Stored whether you say yes or no — declining is worth remembering too.</li>
 <li><strong>A random identifier</strong>, only if you allowed analytics: something like <code>529229690.1787577926</code>, so that repeat visits from the same browser are counted as one returning visitor rather than several new ones. It is generated on your device, is not derived from anything about you, and is not linked to any other service. A few related values record whether the current visit continues a recent one.</li>
-<li><strong>Whether you pinned the navigation sidebar open</strong>, regardless of your answer, so it stays as you left it from page to page.</li>
-<li><strong>Where you dragged the controls on an interactive chart</strong>, regardless of your answer — a legend or slider panel you moved off the curve stays where you put it. One small entry per panel you actually move; nothing is stored for panels you leave alone.</li>
+</ul>
+<p>The rest are viewing preferences, stored regardless of your answer so the site stays as you left it from page to page:</p>
+<ul>
+<li><strong>Whether you chose the light or dark theme.</strong></li>
+<li><strong>Whether you pinned the navigation sidebar open.</strong></li>
+<li><strong>Where you dragged the legend on an interactive chart</strong> — a legend you moved off the curve stays where you put it. One small entry per chart whose legend you actually move; nothing is stored for the ones you leave alone.</li>
+<li><strong>The speed and mode you picked for the play button</strong> that sweeps a slider.</li>
+<li><strong>That you have dismissed the one-time notice</strong> shown on small screens.</li>
 </ul>
 <p>All of it stays on your device. Clearing your browser’s site data for this domain erases every one of these values, and you become an unrecognized first-time visitor who will be asked again.</p>
 </section>
@@ -640,7 +673,7 @@ Authors: Apurva Nakade
 <h2 class="anchored" data-anchor-id="changing-your-mind">Changing your mind</h2>
 <p>Use the <strong>Analytics preferences</strong> link in the footer of any page. It reopens the same question and shows what is currently set, so you can switch either way at any time. Turning analytics off also deletes the identifier described above.</p>
 <p>If you say no, the analytics code is never executed at all — it is not merely told to stay quiet. It is delivered to your browser as inert text, and only becomes a running script if you say yes.</p>
-<p>If your browser sends a Global Privacy Control or Do Not Track signal, that is taken as an answer already given: analytics stays off and you are not asked. You can still turn it on deliberately through the footer link.</p>
+<p>If your browser sends a Global Privacy Control or Do Not Track signal, that is taken as an answer already given: analytics stays off and you are not asked. The browser signal wins even over the footer link — the reopened banner says so, and its Allow button is disabled — so to turn analytics on you would have to switch the signal off in your browser first.</p>
 </section>
 <section id="why-collect-anything" class="level2">
 <h2 class="anchored" data-anchor-id="why-collect-anything">Why collect anything</h2>
@@ -680,6 +713,8 @@ Two local modifications to the upstream code, both marked "LOCAL:" below:
      requests to Google and nothing is written to localStorage.
   4. Do Not Track and Global Privacy Control are honoured, so a visitor
      signalling either is not measured even if they accepted the banner.
+     consent.html disables Allow in that state rather than record a
+     consent that measures nothing; privacy.qmd says the signal wins.
   5. `dl` (the reported page location) drops the query string. On this site a
      query string is the visitor's own input - the function they typed, their
      initial guess, their seed - which has no place in an analytics report,
@@ -821,6 +856,12 @@ localStorage, so this site sets no cookies at all.
     border-color: var(--bs-primary, #2563eb);
   }
 
+  .vml-consent-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+  }
+
   .vml-consent-btn-primary {
     border-color: var(--bs-primary, #2563eb);
     background: var(--bs-primary, #2563eb);
@@ -864,8 +905,11 @@ localStorage, so this site sets no cookies at all.
   if (!banner) return;
 
   /* Global Privacy Control and Do Not Track are a standing answer to this
-     question, so don't ask it again. Treated as "no" until the visitor
-     overrides it through the footer link. */
+     question, so don't ask it again. The footer link still opens the banner,
+     but only to say so: the snippet in analytics.html checks the same two
+     signals itself and returns before sending anything, so Allow would
+     record a "yes" that measures nothing. It is disabled instead of
+     pretending (privacy.qmd says the same). */
   function privacySignalSet() {
     if (navigator.globalPrivacyControl === true) return true;
     if (navigator.doNotTrack === "1") return true;
@@ -940,12 +984,20 @@ localStorage, so this site sets no cookies at all.
 
   function show() {
     const choice = readChoice();
-    if (choice === null) {
-      status.hidden = true;
-    } else {
+    const allow = banner.querySelector('[data-consent-choice="granted"]');
+    if (privacySignalSet()) {
       status.hidden = false;
-      if (choice === "granted") status.textContent = "Analytics is currently allowed.";
-      else status.textContent = "Analytics is currently switched off.";
+      status.textContent = "Your browser is sending a Do Not Track or Global Privacy Control signal, so analytics stays off whatever is chosen here.";
+      allow.disabled = true;
+    } else {
+      allow.disabled = false;
+      if (choice === null) {
+        status.hidden = true;
+      } else {
+        status.hidden = false;
+        if (choice === "granted") status.textContent = "Analytics is currently allowed.";
+        else status.textContent = "Analytics is currently switched off.";
+      }
     }
     banner.hidden = false;
   }
@@ -1689,7 +1741,7 @@ body's own left margin is narrower than the rail.
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p>Copyright © 2025-2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="./privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
+<p>Copyright © 2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="./privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;

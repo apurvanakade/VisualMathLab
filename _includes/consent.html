@@ -112,6 +112,12 @@ localStorage, so this site sets no cookies at all.
     border-color: var(--bs-primary, #2563eb);
   }
 
+  .vml-consent-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: none;
+  }
+
   .vml-consent-btn-primary {
     border-color: var(--bs-primary, #2563eb);
     background: var(--bs-primary, #2563eb);
@@ -155,8 +161,11 @@ localStorage, so this site sets no cookies at all.
   if (!banner) return;
 
   /* Global Privacy Control and Do Not Track are a standing answer to this
-     question, so don't ask it again. Treated as "no" until the visitor
-     overrides it through the footer link. */
+     question, so don't ask it again. The footer link still opens the banner,
+     but only to say so: the snippet in analytics.html checks the same two
+     signals itself and returns before sending anything, so Allow would
+     record a "yes" that measures nothing. It is disabled instead of
+     pretending (privacy.qmd says the same). */
   function privacySignalSet() {
     if (navigator.globalPrivacyControl === true) return true;
     if (navigator.doNotTrack === "1") return true;
@@ -231,12 +240,20 @@ localStorage, so this site sets no cookies at all.
 
   function show() {
     const choice = readChoice();
-    if (choice === null) {
-      status.hidden = true;
-    } else {
+    const allow = banner.querySelector('[data-consent-choice="granted"]');
+    if (privacySignalSet()) {
       status.hidden = false;
-      if (choice === "granted") status.textContent = "Analytics is currently allowed.";
-      else status.textContent = "Analytics is currently switched off.";
+      status.textContent = "Your browser is sending a Do Not Track or Global Privacy Control signal, so analytics stays off whatever is chosen here.";
+      allow.disabled = true;
+    } else {
+      allow.disabled = false;
+      if (choice === null) {
+        status.hidden = true;
+      } else {
+        status.hidden = false;
+        if (choice === "granted") status.textContent = "Analytics is currently allowed.";
+        else status.textContent = "Analytics is currently switched off.";
+      }
     }
     banner.hidden = false;
   }

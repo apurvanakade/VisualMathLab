@@ -60,6 +60,19 @@ Usage analytics only — no ads signals, no remarketing, no Google Signals.
   site a query string is the visitor's own math input (see the URL-shareable
   inputs section below), which doesn't belong in an analytics report and would
   fragment one page into hundreds of addresses.
+- **Do Not Track / Global Privacy Control win over the footer link.** The
+  snippet returns early on either signal even after consent, so a recorded
+  "yes" would measure nothing; the reopened banner therefore says so and
+  disables Allow rather than pretending. `privacy.qmd` states the signal
+  wins; both test tiers assert it.
+- **Third-party requests are part of the privacy surface**, and `privacy.qmd`
+  has a "Third-party resources" section that names every host a page loads
+  from (`cdn.plot.ly`, `cdn.jsdelivr.net` for math.js and Quarto's MathJax,
+  `cdnjs.cloudflare.com` for Quarto's polyfill). `_includes/head-scripts.html`
+  sets `<meta name="referrer" content="same-origin">` so none of them sees the
+  page path or query string, and fonts are self-hosted (see the theme section
+  above). Adding a CDN script means adding its host to that page — a Tier 1
+  test cross-checks the two.
 - Covered by both test tiers: `scripts/analytics.test.js` (Tier 1 — structural
   invariants on both files' contents, plus the snippet's client-side logic run
   against a stubbed DOM) and `scripts/verify-analytics.mjs` / `npm run
@@ -82,7 +95,7 @@ OJS cells wire Quarto `Inputs.*` controls (function text, initial guess/endpoint
 
 ### Theme, design tokens, and site chrome
 
-`_theme/vml-light.scss` / `_theme/vml-dark.scss` (wired in as `format.html.theme.light`/`.dark` in `_quarto.yml`) own the palette — no other file defines a `--vm-*` token's value. Each has two layers: `scss:defaults` sets Bootstrap's own `$variables` (`$body-bg`, `$link-color`, `$border-color`, `$font-family-sans-serif`, ...) so Quarto's built-in chrome (navbar, cards, callouts, tables) inherits the palette, and `scss:rules` re-declares the same values as runtime `--vm-*` custom properties (`--vm-bg`, `--vm-surface`, `--vm-text`, `--vm-text-soft`, `--vm-border`, `--vm-accent`, `--vm-accent-hover`, `--vm-grid`, `--vm-radius`, `--vm-shadow`) under `body.quarto-dark`/light default, since those also have to be readable at runtime by JS (`js/plotting/chart-theme.js` reads them via `getComputedStyle` to theme Plotly/Observable Plot charts — a Sass variable is compile-time-only and doesn't survive into the page). `styles.css` consumes only `--vm-*` — never a raw hex, never a `--bs-*` fallback chain — so re-theming the site is a two-file edit. Fonts are Inter (body/UI) + JetBrains Mono (code), loaded via Google Fonts `<link>`s at the top of `_includes/head-scripts.html`.
+`_theme/vml-light.scss` / `_theme/vml-dark.scss` (wired in as `format.html.theme.light`/`.dark` in `_quarto.yml`) own the palette — no other file defines a `--vm-*` token's value. Each has two layers: `scss:defaults` sets Bootstrap's own `$variables` (`$body-bg`, `$link-color`, `$border-color`, `$font-family-sans-serif`, ...) so Quarto's built-in chrome (navbar, cards, callouts, tables) inherits the palette, and `scss:rules` re-declares the same values as runtime `--vm-*` custom properties (`--vm-bg`, `--vm-surface`, `--vm-text`, `--vm-text-soft`, `--vm-border`, `--vm-accent`, `--vm-accent-hover`, `--vm-grid`, `--vm-radius`, `--vm-shadow`) under `body.quarto-dark`/light default, since those also have to be readable at runtime by JS (`js/plotting/chart-theme.js` reads them via `getComputedStyle` to theme Plotly/Observable Plot charts — a Sass variable is compile-time-only and doesn't survive into the page). `styles.css` consumes only `--vm-*` — never a raw hex, never a `--bs-*` fallback chain — so re-theming the site is a two-file edit. Fonts are Inter (body/UI) + JetBrains Mono (code), **self-hosted** from `fonts/` (`fonts/fonts.css` holds the `@font-face` blocks, linked from the top of `_includes/head-scripts.html`; `_quarto.yml`'s `project.resources` copies the folder into `docs/`). They used to come from Google Fonts — don't put that back: a Google Fonts request hands Google every visitor's IP address before consent, which is the thing a German court ruled a GDPR violation, and `privacy.qmd` now states that no font request goes to Google. The header comment in `fonts/fonts.css` says how to refresh the files.
 
 The sidebar (`#quarto-sidebar`) is forced off-canvas at *every* width (not just Quarto's own sub-992px behavior) via `styles.css`, and driven by `.vm-sidebar-open`/`.vm-sidebar-pinned` classes on `<body>` that `_includes/sidebar-rail.html` owns — a small always-visible rail at the left edge (click the hamburger to open, click-to-pin, `Escape`/click-outside to close, pin state in `localStorage`) — deliberately **no** hover-to-preview: opening on pointer drift into the left edge churned `<body>`'s class list (see the `onThemeChange` note below) and forced the rail's box to span the viewport, which left an invisible strip over the content column below 768px rather than Bootstrap's own `.collapse`/`.show` machinery, which this bypasses entirely. `#vm-sidebar-rail` is inserted at runtime, not server-rendered.
 

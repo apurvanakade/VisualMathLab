@@ -4,9 +4,28 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!--
+Third-party requests are a privacy surface, and privacy.qmd describes it, so
+keep that page in step with anything added here.
+
+- Send no Referer to any other origin. Every page's query string is the
+  visitor's own math input (see the URL-shareable inputs section of
+  CLAUDE.md); without this, a CDN could see it on every request. Browsers'
+  default policy already trims cross-origin referrers to the bare origin,
+  but a document-wide policy makes privacy.qmd's claim independent of
+  browser defaults, and it also covers the MathJax and polyfill scripts
+  Quarto injects further down <head>, which no per-tag attribute could
+  reach. Outbound links (GitHub) carry no referrer either; nothing here
+  relies on one. (Measured: the only cross-origin requests that still carry
+  a Referer are MathJax's own font fetches, which it issues with its own
+  policy, and they carry the bare origin -- never the path or query string.)
+- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
+  only third-party origins a page loads from are the script CDNs below plus
+  Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+-->
+<meta name="referrer" content="same-origin">
+
+<link rel="stylesheet" href="/fonts/fonts.css">
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>

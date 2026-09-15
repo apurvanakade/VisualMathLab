@@ -209,7 +209,12 @@ async function main() {
       await page.click('a[href$="#analytics-preferences"]')
       await page.waitForTimeout(200)
       check('can still open preferences deliberately', await page.locator('#vml-consent').isVisible(), true)
-      await page.click('[data-consent-choice="granted"]')
+      // The snippet returns early on either signal, so a recorded "yes" would
+      // measure nothing; the banner says so and disables Allow rather than
+      // pretending (see consent.html's show()).
+      check('Allow is disabled', await page.locator('[data-consent-choice="granted"]').isDisabled(), true)
+      check('status explains why', /Do Not Track or Global Privacy Control/.test(await page.locator('#vml-consent-status').innerText()), true)
+      await page.evaluate(() => document.querySelector('[data-consent-choice="granted"]').click())
       await page.waitForTimeout(400)
       check('still not measured (browser signal wins)', hits.length, 0)
       check('console errors', errors.length, 0)

@@ -109,9 +109,17 @@ test('head-scripts.html: sends no referrer to other origins', () => {
 })
 
 test('fonts/fonts.css: every font file it references is in the repo', () => {
-  const urls = [...fontsCss.matchAll(/url\(\/fonts\/([^)]+)\)/g)].map((m) => m[1])
+  // Comments stripped first: the header comment mentions `url(...)` in prose.
+  const cssOnly = fontsCss.replace(/\/\*[\s\S]*?\*\//g, '')
+  const urls = [...cssOnly.matchAll(/url\(([^)]+)\)/g)].map((m) => m[1].replace(/^["']|["']$/g, ''))
   assert.ok(urls.length >= 2, 'expected @font-face src urls')
   for (const file of urls) {
+    // Bare file names, relative to the stylesheet. A root-relative
+    // `/fonts/x.woff2` is what Quarto mangles into `..fonts/x.woff2` when it
+    // copies the file into docs/ -- a 404 on every page, so no font loaded
+    // and the site silently fell back to system fonts (see the header
+    // comment in fonts/fonts.css).
+    assert.doesNotMatch(file, /^\/|^\.\.?\//, `font url must be a bare file name, got ${file}`)
     assert.ok(fs.existsSync(path.join(repoRoot, 'fonts', file)), `missing fonts/${file}`)
   }
   assert.doesNotMatch(fontsCss, /https?:\/\//, 'a font must not be fetched from a third party')

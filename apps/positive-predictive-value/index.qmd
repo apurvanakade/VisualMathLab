@@ -35,6 +35,23 @@ Authors: Apurva Nakade
   vertical-align: -0.05em;
 }
 .ppv-swatch.filled { background: currentColor; }
+/* The legend under each grid: one row per kind of dot -- swatch, count,
+   what it means -- so a reader matches a mark in the picture to a number
+   without parsing a paragraph. */
+.ppv-legend-rows {
+  display: grid;
+  grid-template-columns: max-content max-content 1fr;
+  gap: 0.2em 0.6em;
+  align-items: baseline;
+  margin-top: 0.35em;
+}
+.ppv-legend-rows .ppv-swatch { justify-self: center; }
+.ppv-legend-count {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 600;
+}
+.ppv-legend-note { margin-top: 0.5em; }
 /* The hover tooltip on a grid dot. One element for the whole page, appended
    to <body> (see tooltipElement), and position: fixed -- so it sits outside
    every OJS cell wrapper and Quarto's overflow: auto on those can't clip it,
@@ -417,6 +434,24 @@ function swatch(color, filled, opacity = 1) {
   if (filled) cls += " filled"
   return html`<i class="${cls}" style="color: ${color}; opacity: ${opacity}"></i>`
 }
+
+// legendPanel: the panel under a grid -- a title, then one row per kind of
+// dot in the picture (`rows` is [{color, filled, opacity, count, label}]),
+// and an optional closing note (PPV and so on). Two rows may share a
+// swatch: the picture draws a person missed by the first test and one
+// missed by the second identically, and the legend lists them apart
+// rather than summing them into one number the picture can't show.
+function legendPanel(title, rows, note) {
+  const cells = []
+  for (const row of rows) {
+    cells.push(swatch(row.color, row.filled, row.opacity ?? 1))
+    cells.push(html`<span class="ppv-legend-count">${row.count}</span>`)
+    cells.push(html`<span>${row.label}</span>`)
+  }
+  let noteNode = ""
+  if (note) noteNode = html`<div class="ppv-legend-note">${note}</div>`
+  return html`<div class="ojs-panel"><strong>${title}</strong><div class="ppv-legend-rows">${cells}</div>${noteNode}</div>`
+}
 ```
 
 <div class="ojs-panel">
@@ -456,7 +491,10 @@ drawGrid(populationPeople, {rounds: 0})
 ```
 
 ```{ojs}
-html`<div class="ojs-panel"><strong>The population.</strong> ${swatch(config.colors.infected, true)} the ${initialSplit.infected} (${formatPct(prevalence)}) who have the condition; ${swatch(config.colors.healthy, true)} the ${initialSplit.healthy} who don't. Nobody has been tested yet.</div>`
+legendPanel("The population, before any test", [
+  {color: config.colors.infected, filled: true, count: initialSplit.infected, label: `with the condition (${formatPct(prevalence)})`},
+  {color: config.colors.healthy, filled: true, count: initialSplit.healthy, label: "without the condition"}
+])
 ```
 
 Now apply a test. Sensitivity is the share of red dots it catches; specificity is the share of dark dots it clears. The test hollows out everyone it clears, so whoever is still solid has tested positive.
@@ -530,7 +568,12 @@ drawGrid(people, {rounds: 1})
 ```
 
 ```{ojs}
-html`<div class="ojs-panel"><strong>After one test.</strong> Hollow dots are negatives: ${swatch(config.colors.healthy, false, fadeOpacity(1, 1, false))} the ${initialSplit.trueNegatives} correctly cleared, faded, and ${swatch(config.colors.infected, false)} the ${initialSplit.falseNegatives} missed, kept at full strength. Solid dots are the ${initialSplit.positives} positives: ${swatch(config.colors.infected, true)} ${initialSplit.truePositives} who have the condition and ${swatch(config.colors.healthy, true)} ${initialSplit.falsePositives} who don't. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(initialPpv)}</strong>. Negative predictive value: <strong>${formatPct(initialNpv)}</strong>.</div>`
+legendPanel("After one test", [
+  {color: config.colors.infected, filled: true, count: initialSplit.truePositives, label: "with the condition, tested positive"},
+  {color: config.colors.healthy, filled: true, count: initialSplit.falsePositives, label: "without the condition, tested positive (false alarm)"},
+  {color: config.colors.infected, filled: false, count: initialSplit.falseNegatives, label: "with the condition, tested negative (missed)"},
+  {color: config.colors.healthy, filled: false, opacity: fadeOpacity(1, 1, false), count: initialSplit.trueNegatives, label: "without the condition, tested negative (cleared)"}
+], html`${initialSplit.positives} tested positive. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(initialPpv)}</strong>. Negative predictive value: <strong>${formatPct(initialNpv)}</strong>.`)
 ```
 
 ```{ojs}
@@ -548,7 +591,14 @@ drawGrid(people, {rounds: 2})
 ```
 
 ```{ojs}
-html`<div class="ojs-panel"><strong>After a second test of the positives.</strong> Same people, same places. Only the ${initialSplit.positives} solid dots are retested; ${initialSplit.truePositives} of them have the condition, so the effective prevalence is now ${formatPct(newPrevalence1)}. Those the first test cleared fade further (${swatch(config.colors.healthy, false, fadeOpacity(2, 1, false))}); the ${split1.negatives} the second test clears become hollow (${swatch(config.colors.healthy, false, fadeOpacity(2, 2, false))} ${split1.trueNegatives} false alarms resolved, ${swatch(config.colors.infected, false)} ${split1.falseNegatives} missed, never faded). ${split1.positives} remain solid, ${swatch(config.colors.infected, true)} ${split1.truePositives} of them red. PPV: <strong>${formatPct(ppv1)}</strong>.</div>`
+legendPanel("After a second test of the positives", [
+  {color: config.colors.infected, filled: true, count: split1.truePositives, label: "with the condition, positive on both tests"},
+  {color: config.colors.healthy, filled: true, count: split1.falsePositives, label: "without the condition, positive on both tests (false alarm)"},
+  {color: config.colors.infected, filled: false, count: split1.falseNegatives, label: "with the condition, missed by the second test"},
+  {color: config.colors.infected, filled: false, count: initialSplit.falseNegatives, label: "with the condition, missed by the first test (not retested)"},
+  {color: config.colors.healthy, filled: false, opacity: fadeOpacity(2, 2, false), count: split1.trueNegatives, label: "without the condition, cleared by the second test"},
+  {color: config.colors.healthy, filled: false, opacity: fadeOpacity(2, 1, false), count: initialSplit.trueNegatives, label: "without the condition, cleared by the first test (not retested)"}
+], html`Same people, same places. Only the ${initialSplit.positives} who tested positive were retested; ${initialSplit.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(newPrevalence1)}. Positive predictive value after two positive tests: <strong>${formatPct(ppv1)}</strong>.`)
 ```
 
 ::: {.callout-note collapse="true" title="Summary table"}

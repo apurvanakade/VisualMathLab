@@ -651,6 +651,22 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   }
 }
 
+/* On the page, a figure is centered in the block. Observable Plot's SVG is
+ * a fixed `width` (800 on every Sperner's lemma page) with its own
+ * `max-width: 100%; height: auto`, so it already shrinks on a narrow
+ * viewport but otherwise sits flush left in the wider content column,
+ * looking off-center against the centered controls bar above it. The
+ * selector mirrors findFigures in js/plotting/svg-fullscreen-button.js
+ * (any SVG not in the controls bar, the legend or a button) rather than
+ * keying on the .vm-fs-figure class that script adds, so the figure is
+ * centered from its first paint, not from the frame the script gets to it.
+ * A full-width SVG (the PPV page's grid) has no side margin to distribute,
+ * so this is a no-op there. */
+.ojs-svg-block svg:not(.ojs-chart-controls svg, .ojs-legend-overlay svg, button svg) {
+  display: block;
+  margin-inline: auto;
+}
+
 /* Fullscreen: the same letterbox chain as the Plotly block above, keyed on
  * the figure SVG (tagged .vm-fs-figure by the script) instead of the graph
  * div. Every wrapper between the block and the figure fills and centers its
@@ -692,6 +708,30 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   min-height: 0;
   flex: 0 1 auto;
 }
+
+/* ── Prose color swatches ────────────────────────────────────────── */
+/* A word in a sentence tinted with the color it names -- "the
+ * <span class="vm-swatch vm-swatch-alt">red</span> vertex" -- on the
+ * Sperner's lemma pages, where the prose keeps referring to what the
+ * diagram draws. The modifier picks a chart-palette token
+ * (js/plotting/chart-theme.js's colors(); the --vm-* copies live in
+ * _theme/vml-{light,dark}.scss), so the swatch is the same hue as the dot
+ * or fill it describes and follows a theme toggle with it. A tint with
+ * the body text color on top rather than white-on-solid: white on amber
+ * is unreadable, and dark mode lightens every hue anyway. */
+.vm-swatch {
+  padding: 0.05em 0.35em;
+  border-radius: var(--vm-radius-sm);
+  background: color-mix(in srgb, var(--vm-swatch) 40%, var(--vm-bg));
+  color: var(--vm-text);
+  white-space: nowrap;
+}
+
+.vm-swatch-alt     { --vm-swatch: var(--vm-alt); }
+.vm-swatch-ok      { --vm-swatch: var(--vm-ok); }
+.vm-swatch-accent  { --vm-swatch: var(--vm-accent); }
+.vm-swatch-warn    { --vm-swatch: var(--vm-warn); }
+.vm-swatch-accent2 { --vm-swatch: var(--vm-accent2); }
 
 /* Floating legend/checkbox hybrid, positioned atop a Plotly chart by
  * VM.ui.legendOverlay (js/ui/legend-overlay.js) in place of a separate

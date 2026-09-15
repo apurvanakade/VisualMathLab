@@ -133,6 +133,12 @@
     ink:     { light: "#111827", dark: "#c9cedb" },
     warn:    { light: "#f59e0b", dark: "#fbbf24" },
     accent2: { light: "#9333ea", dark: "#c084fc" },
+    // A third accent (teal), added for the Sperner's lemma pages: their
+    // three vertex colors are alt/ok/fn (red/green/blue) and each mixed
+    // pair of them needs a hue of its own -- red+green is warn, red+blue
+    // is accent2, and green+blue had nothing between the two until this.
+    // Same Tailwind family (teal-600 / teal-400) as the rest of the table.
+    accent3: { light: "#0d9488", dark: "#2dd4bf" },
     // The ring drawn around a marker to lift it off whatever it sits on --
     // pages hardcoded `line: {color: "white"}` for this, which is a white
     // halo on a near-black chart in dark mode.

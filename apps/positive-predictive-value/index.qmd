@@ -106,7 +106,7 @@ Authors: Apurva Nakade
 
 A screening mammogram in U.S. community practice (digital breast tomosynthesis, the 3D mammogram now in routine use) has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time; if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened have breast cancer. You test positive. What are the odds you have it?
 
-Each dot below is one of 1,000 people screened: red has the condition, dark doesn't. The sliders start at the real numbers.
+Each dot below is one of 1,000 people screened: red has the condition, dark doesn't. The sliders start at the real numbers. Sensitivity is the share of red dots a test catches; specificity is the share of dark dots it clears. A test hollows out everyone it clears, and each further test is given only to whoever is still solid -- so the solid dots are the people who have tested positive every time so far.
 
 ```{ojs}
 //| output: false
@@ -152,7 +152,12 @@ config = ({
     // again (see fadeOpacity), so the picture layers: still solid, cleared
     // by the latest test, cleared before that.
     negativeOpacity: 0.3
-  }
+  },
+  // How many tests the "Tests applied" slider runs to. Every round's split
+  // is computed up front (see splits), so raising this is a one-line
+  // change; the fade steps get faint fast, though, so past three the
+  // earliest cleared people are effectively invisible.
+  maxTests: 3
 })
 ```
 
@@ -234,7 +239,8 @@ function paramNumber(params, key, fallback) {
 // without (false alarms, then correct negatives). `keys[i]` is person i's
 // fixed shuffle key. `clearedRound` is the test that returned this
 // person's first negative result -- 1 here, for the first test -- or null
-// while they are still testing positive; applyRetest fills in round 2.
+// while they are still testing positive; applyRetest fills in the later
+// rounds.
 function makePeople(split, keys) {
   const people = []
   const add = (count, infected, clearedRound) => {
@@ -362,8 +368,8 @@ function attachTooltip(svg) {
 // options.rounds is how many tests have been applied: 0 draws the bare
 // population with every dot solid -- the test is what hollows out the
 // people it clears, so whoever is still solid afterwards is a positive
-// result. Every grid on the page draws the same people in the same slots,
-// so the reader can follow one dot from picture to picture. Hovering a
+// result. Every slider position draws the same people in the same slots,
+// so the reader can follow one dot as the tests are applied. Hovering a
 // dot shows personTooltip's text (attachTooltip) -- not via an SVG <title>,
 // which the browser only surfaces after the pointer has sat still on the
 // element for about a second, a delay any drift across a grid of 1,000
@@ -435,7 +441,7 @@ function swatch(color, filled, opacity = 1) {
   return html`<i class="${cls}" style="color: ${color}; opacity: ${opacity}"></i>`
 }
 
-// legendPanel: the panel under a grid -- a title, then one row per kind of
+// legendPanel: the panel under the grid -- a title, then one row per kind of
 // dot in the picture (`rows` is [{color, filled, opacity, count, label}]),
 // and an optional closing note (PPV and so on). Two rows may share a
 // swatch: the picture draws a person missed by the first test and one
@@ -454,7 +460,7 @@ function legendPanel(title, rows, note) {
 }
 ```
 
-<div class="ojs-panel">
+<div class="ojs-panel ojs-grid">
 
 ```{ojs}
 viewof prevalence = {
@@ -466,40 +472,6 @@ viewof prevalence = {
   return Inputs.range([0, 1], {step: 0.001, value: paramNumber(params, "prevalence", 0.007), label: "Prevalence"})
 }
 ```
-
-</div>
-
-```{ojs}
-//| output: false
-// infectedCount: how many of the 1,000 have the condition -- prevalence
-// rounded to whole people, so the first grid shows exactly this many red.
-infectedCount = Math.round(prevalence * config.grid.population)
-
-// populationPeople: the population before any test, built with a perfect
-// test (sensitivity and specificity both 1) so every person's `positive`
-// flag is just their condition. That keeps this grid out of the two test
-// sliders' reactive graph -- it only redraws when prevalence or the layout
-// changes -- and, since the category order (infected first) and the keys
-// are the same as `people` below, each dot sits in the same slot in both.
-populationPeople = makePeople(splitByTest(infectedCount, config.grid.population - infectedCount, 1, 1), shuffleKeys)
-```
-
-```{ojs}
-// The population before any test is applied: prevalence alone, every dot
-// solid.
-drawGrid(populationPeople, {rounds: 0})
-```
-
-```{ojs}
-legendPanel("The population, before any test", [
-  {color: config.colors.infected, filled: true, count: initialSplit.infected, label: `with the condition (${formatPct(prevalence)})`},
-  {color: config.colors.healthy, filled: true, count: initialSplit.healthy, label: "without the condition"}
-])
-```
-
-Now apply a test. Sensitivity is the share of red dots it catches; specificity is the share of dark dots it clears. The test hollows out everyone it clears, so whoever is still solid has tested positive.
-
-<div class="ojs-panel ojs-grid">
 
 ```{ojs}
 viewof sensitivity = {
@@ -522,8 +494,7 @@ viewof layout = {
   if (params.get("layout") === "sorted") initial = "sorted"
   // Shuffled is the honest default -- in a real population you can't tell
   // who has the condition by where they're standing. Sorted groups each
-  // category into a block, which is easier to count. Every grid on the
-  // page follows it, including the population grid above this panel.
+  // category into a block, which is easier to count.
   return Inputs.radio(new Map([["Shuffled", "shuffled"], ["Sorted", "sorted"]]), {value: initial, label: "Layout"})
 }
 ```
@@ -543,84 +514,180 @@ urlSync = {
   params.set("sensitivity", String(sensitivity))
   params.set("specificity", String(specificity))
   params.set("layout", layout)
+  params.set("tests", String(tests))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 }
 ```
 
 ```{ojs}
 //| output: false
-// initialSplit: how the 1,000 split by condition, and then by the first
-// test. split1: how the first test's positives split under a second test
-// -- their split by condition is exact (they *are* the true and false
-// positives), so only the second test's outcome is rounded again.
-initialSplit = splitByTest(infectedCount, config.grid.population - infectedCount, sensitivity, specificity)
-split1 = splitByTest(initialSplit.truePositives, initialSplit.falsePositives, sensitivity, specificity)
-// people: every person's result from both tests, in one array -- the
-// "after one test" grid draws it with rounds: 1, the retest grid with
-// rounds: 2, so the two pictures are the same people in the same slots.
-people = applyRetest(makePeople(initialSplit, shuffleKeys), split1, 2)
-initialPpv = ppvOf(prevalence, sensitivity, specificity)
-initialNpv = npvOf(prevalence, sensitivity, specificity)
+// infectedCount: how many of the 1,000 have the condition -- prevalence
+// rounded to whole people, so at zero tests the grid shows exactly this
+// many red.
+infectedCount = Math.round(prevalence * config.grid.population)
+
+// splits[r]: how the people going into test r split under it, for r from
+// 1 to maxTests (splits[0] is unused, so the index is the round number).
+// Test 1 is given to the whole population; each later test only to the
+// previous round's positives, whose split by condition is exact (they
+// *are* the true and false positives), so only that test's outcome is
+// rounded again.
+splits = {
+  const list = [null]
+  list.push(splitByTest(infectedCount, config.grid.population - infectedCount, sensitivity, specificity))
+  for (let round = 2; round <= config.maxTests; round++) {
+    const previous = list[round - 1]
+    list.push(splitByTest(previous.truePositives, previous.falsePositives, sensitivity, specificity))
+  }
+  return list
+}
+
+// ppvs[r]: the exact PPV after r positive tests, with ppvs[0] the raw
+// prevalence -- so ppvs[r - 1] is also the effective prevalence going into
+// test r, which is what makes each repeat test start from a sharper
+// population than the last. npvs[r] likewise, for a negative on test r.
+ppvs = {
+  const list = [prevalence]
+  for (let round = 1; round <= config.maxTests; round++) {
+    list.push(ppvOf(list[round - 1], sensitivity, specificity))
+  }
+  return list
+}
+
+npvs = {
+  const list = [null]
+  for (let round = 1; round <= config.maxTests; round++) {
+    list.push(npvOf(ppvs[round - 1], sensitivity, specificity))
+  }
+  return list
+}
+
+// people: every person's result from every test, in one array -- the grid
+// draws it with rounds: tests, so every slider position is the same people
+// in the same slots. Built without depending on `tests`, so scrubbing the
+// slider only redraws; it doesn't recompute anyone's results.
+people = {
+  const list = makePeople(splits[1], shuffleKeys)
+  for (let round = 2; round <= config.maxTests; round++) {
+    applyRetest(list, splits[round], round)
+  }
+  return list
+}
 ```
 
-```{ojs}
-drawGrid(people, {rounds: 1})
-```
+<div class="ojs-chart-block">
+
+<div class="ojs-chart-controls">
 
 ```{ojs}
-legendPanel("After one test", [
-  {color: config.colors.infected, filled: true, count: initialSplit.truePositives, label: "with the condition, tested positive"},
-  {color: config.colors.healthy, filled: true, count: initialSplit.falsePositives, label: "without the condition, tested positive (false alarm)"},
-  {color: config.colors.infected, filled: false, count: initialSplit.falseNegatives, label: "with the condition, tested negative (missed)"},
-  {color: config.colors.healthy, filled: false, opacity: fadeOpacity(1, 1, false), count: initialSplit.trueNegatives, label: "without the condition, tested negative (cleared)"}
-], html`${initialSplit.positives} tested positive. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(initialPpv)}</strong>. Negative predictive value: <strong>${formatPct(initialNpv)}</strong>.`)
+viewof tests = {
+  const params = new URLSearchParams(window.location.search)
+  let initial = paramNumber(params, "tests", 1)
+  initial = Math.min(config.maxTests, Math.max(0, Math.round(initial)))
+  // 0 is the bare population, every dot solid; each step applies one more
+  // test to whoever is still positive. Lives in the chart-controls bar
+  // (see CLAUDE.md) so it sits directly above the picture it scrubs, and
+  // so slider-play.js gives it a play button that sweeps the tests.
+  return Inputs.range([0, config.maxTests], {step: 1, value: initial, label: "Tests applied"})
+}
 ```
+
+</div>
+
+```{ojs}
+drawGrid(people, {rounds: tests})
+```
+
+</div>
 
 ```{ojs}
 //| output: false
-// The repeat test is applied to the first test's positives only -- the
-// population going in is those ${initialSplit.positives} people, whose
-// prevalence is the first round's PPV.
-newPrevalence1 = initialPpv
-ppv1 = ppvOf(newPrevalence1, sensitivity, specificity)
-npv1 = npvOf(newPrevalence1, sensitivity, specificity)
+// legendTitle / legendRows / legendNote: the legend under the grid for the
+// current slider position. It is cumulative: after `tests` tests it lists
+// the people still positive, then everyone cleared in each round so far,
+// latest round first -- the picture still shows all of them (fainter the
+// earlier they were cleared), so the legend still counts all of them.
+ordinal = ["zero", "one", "two", "three", "four", "five"]
+
+function legendTitle(rounds) {
+  if (rounds === 0) return "The population, before any test"
+  if (rounds === 1) return "After one test"
+  return `After ${ordinal[rounds]} tests, each given to the previous test's positives`
+}
+
+function legendRows(rounds) {
+  const red = config.colors.infected
+  const dark = config.colors.healthy
+  const rows = []
+  if (rounds === 0) {
+    rows.push({color: red, filled: true, count: infectedCount, label: `with the condition (${formatPct(prevalence)})`})
+    rows.push({color: dark, filled: true, count: config.grid.population - infectedCount, label: "without the condition"})
+    return rows
+  }
+
+  let positive = "tested positive"
+  if (rounds === 2) positive = "positive on both tests"
+  if (rounds >= 3) positive = `positive on all ${ordinal[rounds]} tests`
+  const last = splits[rounds]
+  rows.push({color: red, filled: true, count: last.truePositives, label: `with the condition, ${positive}`})
+  rows.push({color: dark, filled: true, count: last.falsePositives, label: `without the condition, ${positive} (false alarm)`})
+
+  // The cleared people, one row per round, latest first -- matching the
+  // picture, where the latest round's rings are the most visible.
+  for (let round = rounds; round >= 1; round--) {
+    let missed = `missed by test ${round}`
+    if (rounds === 1) missed = "tested negative (missed)"
+    if (round < rounds) missed += " (not retested)"
+    rows.push({color: red, filled: false, count: splits[round].falseNegatives, label: `with the condition, ${missed}`})
+  }
+  for (let round = rounds; round >= 1; round--) {
+    let cleared = `cleared by test ${round}`
+    if (rounds === 1) cleared = "tested negative (cleared)"
+    if (round < rounds) cleared += " (not retested)"
+    rows.push({color: dark, filled: false, opacity: fadeOpacity(rounds, round, false), count: splits[round].trueNegatives, label: `without the condition, ${cleared}`})
+  }
+  return rows
+}
+
+function legendNote(rounds) {
+  if (rounds === 0) {
+    return html`Move the <em>Tests applied</em> slider to give everyone a test.`
+  }
+  const last = splits[rounds]
+  if (rounds === 1) {
+    return html`${last.positives} tested positive. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(ppvs[1])}</strong>. Negative predictive value: <strong>${formatPct(npvs[1])}</strong>.`
+  }
+  const previous = splits[rounds - 1]
+  return html`Same people, same places. Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(ppvs[rounds - 1])}. Positive predictive value after ${ordinal[rounds]} positive tests: <strong>${formatPct(ppvs[rounds])}</strong>. Negative predictive value of test ${rounds}: <strong>${formatPct(npvs[rounds])}</strong>.`
+}
 ```
 
 ```{ojs}
-drawGrid(people, {rounds: 2})
-```
-
-```{ojs}
-legendPanel("After a second test of the positives", [
-  {color: config.colors.infected, filled: true, count: split1.truePositives, label: "with the condition, positive on both tests"},
-  {color: config.colors.healthy, filled: true, count: split1.falsePositives, label: "without the condition, positive on both tests (false alarm)"},
-  {color: config.colors.infected, filled: false, count: split1.falseNegatives, label: "with the condition, missed by the second test"},
-  {color: config.colors.infected, filled: false, count: initialSplit.falseNegatives, label: "with the condition, missed by the first test (not retested)"},
-  {color: config.colors.healthy, filled: false, opacity: fadeOpacity(2, 2, false), count: split1.trueNegatives, label: "without the condition, cleared by the second test"},
-  {color: config.colors.healthy, filled: false, opacity: fadeOpacity(2, 1, false), count: initialSplit.trueNegatives, label: "without the condition, cleared by the first test (not retested)"}
-], html`Same people, same places. Only the ${initialSplit.positives} who tested positive were retested; ${initialSplit.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(newPrevalence1)}. Positive predictive value after two positive tests: <strong>${formatPct(ppv1)}</strong>.`)
+legendPanel(legendTitle(tests), legendRows(tests), legendNote(tests))
 ```
 
 ::: {.callout-note collapse="true" title="Summary table"}
 
 ```{ojs}
 summaryTable = {
-  const row = (step, effectivePrevalence, split, ppv, npv) => [
-    step,
-    formatPct(effectivePrevalence),
-    `${split.truePositives} of ${split.positives}`,
-    formatPct(ppv),
-    formatPct(npv)
-  ]
+  const rows = []
+  for (let round = 1; round <= config.maxTests; round++) {
+    let step = `${round} positive tests`
+    if (round === 1) step = "1 positive test"
+    rows.push([
+      step,
+      formatPct(ppvs[round - 1]),
+      `${splits[round].truePositives} of ${splits[round].positives}`,
+      formatPct(ppvs[round]),
+      formatPct(npvs[round])
+    ])
+  }
 
   return VM.ui.renderTable({
     html,
     headers: ["Round", "Effective prevalence", "Positives who have it (in the picture)", "PPV", "NPV"],
     filename: "bayes-theorem-summary.csv",
-    rows: [
-      row("1 positive test", prevalence, initialSplit, initialPpv, initialNpv),
-      row("2 positive tests", newPrevalence1, split1, ppv1, npv1)
-    ]
+    rows
   })
 }
 ```

@@ -70,15 +70,18 @@
       return
     }
 
-    if (globalThis.Plotly) {
-      const gd = target.querySelector(".js-plotly-plot") || target
+    // A block with no Plotly chart in it -- a page that draws its own SVG
+    // and fullscreens the same .ojs-chart-block wrapper (e.g.
+    // apps/positive-predictive-value/index.qmd) -- has nothing to resize.
+    let gd = target
+    if (!gd.classList.contains("js-plotly-plot")) gd = target.querySelector(".js-plotly-plot")
+    if (globalThis.Plotly && gd) {
       globalThis.Plotly.Plots.resize(gd)
     }
 
     syncBarWidth()
 
     if (typeof ResizeObserver === "undefined") return
-    const gd = target.querySelector(".js-plotly-plot")
     const bar = target.querySelector(".ojs-chart-controls")
     if (!gd || !bar) return
     // The chart for a width to copy, the bar because its own height is the

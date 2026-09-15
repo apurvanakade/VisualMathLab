@@ -153,7 +153,7 @@ config = ({
     // by the latest test, cleared before that.
     negativeOpacity: 0.3
   },
-  // How many tests the "Tests applied" slider runs to. Every round's split
+  // How many tests the "Tests" slider runs to. Every round's split
   // is computed up front (see splits), so raising this is a one-line
   // change; the fade steps get faint fast, though, so past three the
   // earliest cleared people are effectively invisible.
@@ -487,18 +487,6 @@ viewof specificity = {
 }
 ```
 
-```{ojs}
-viewof layout = {
-  const params = new URLSearchParams(window.location.search)
-  let initial = "shuffled"
-  if (params.get("layout") === "sorted") initial = "sorted"
-  // Shuffled is the honest default -- in a real population you can't tell
-  // who has the condition by where they're standing. Sorted groups each
-  // category into a block, which is easier to count.
-  return Inputs.radio(new Map([["Shuffled", "shuffled"], ["Sorted", "sorted"]]), {value: initial, label: "Layout"})
-}
-```
-
 </div>
 
 ```{ojs}
@@ -577,7 +565,7 @@ people = {
 
 <div class="ojs-chart-block">
 
-<div class="ojs-chart-controls">
+<div class="ojs-chart-controls ojs-row">
 
 ```{ojs}
 viewof tests = {
@@ -588,7 +576,27 @@ viewof tests = {
   // test to whoever is still positive. Lives in the chart-controls bar
   // (see CLAUDE.md) so it sits directly above the picture it scrubs, and
   // so slider-play.js gives it a play button that sweeps the tests.
-  return Inputs.range([0, config.maxTests], {step: 1, value: initial, label: "Tests applied"})
+  const slider = Inputs.range([0, config.maxTests], {step: 1, value: initial, label: "Tests"})
+  // .ojs-fill lifts Observable's 360px cap on the form so the track takes
+  // the width the layout toggle leaves, as every other page's step slider
+  // does; without it the label, play button and readout leave ~90px of track.
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+```{ojs}
+viewof layout = {
+  const params = new URLSearchParams(window.location.search)
+  let initial = "shuffled"
+  if (params.get("layout") === "sorted") initial = "sorted"
+  // Shuffled is the honest default -- in a real population you can't tell
+  // who has the condition by where they're standing. Sorted groups each
+  // category into a block, which is easier to count. Unlabelled, and in
+  // the bar beside the tests slider (the .ojs-row's last div, so it keeps
+  // its natural width while the slider fills the rest): the two options
+  // name themselves, and it changes only how the picture is drawn.
+  return Inputs.radio(new Map([["Shuffled", "shuffled"], ["Sorted", "sorted"]]), {value: initial})
 }
 ```
 
@@ -651,14 +659,14 @@ function legendRows(rounds) {
 
 function legendNote(rounds) {
   if (rounds === 0) {
-    return html`Move the <em>Tests applied</em> slider to give everyone a test.`
+    return html`Move the <em>Tests</em> slider to give everyone a test.`
   }
   const last = splits[rounds]
   if (rounds === 1) {
     return html`${last.positives} tested positive. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(ppvs[1])}</strong>. Negative predictive value: <strong>${formatPct(npvs[1])}</strong>.`
   }
   const previous = splits[rounds - 1]
-  return html`Same people, same places. Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(ppvs[rounds - 1])}. Positive predictive value after ${ordinal[rounds]} positive tests: <strong>${formatPct(ppvs[rounds])}</strong>. Negative predictive value of test ${rounds}: <strong>${formatPct(npvs[rounds])}</strong>.`
+  return html`Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(ppvs[rounds - 1])}. Positive predictive value after ${ordinal[rounds]} positive tests: <strong>${formatPct(ppvs[rounds])}</strong>. Negative predictive value of test ${rounds}: <strong>${formatPct(npvs[rounds])}</strong>.`
 }
 ```
 

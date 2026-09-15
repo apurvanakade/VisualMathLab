@@ -123,15 +123,17 @@ config = ({
 
 ```{ojs}
 //| output: false
-// shuffleKeys: one fixed random number per person, generated once at load.
-// The shuffled layout places people in order of this key, so a person keeps
-// the same slot as the sliders move -- raising prevalence adds red dots
-// without reshuffling the ones already there -- and a subset (everyone who
-// tested positive) keeps its members' relative positions. Seeded for the
-// same reason every other page on the site seeds its RNG: a shared URL
-// should reproduce the picture it was shared from.
+// shuffleKeys: one random number per person, generated once at load. The
+// shuffled layout places people in order of this key, so a person keeps the
+// same slot as the sliders move -- raising prevalence adds red dots without
+// reshuffling the ones already there -- and a subset (everyone who tested
+// positive) keeps its members' relative positions. Seeded from the current
+// time rather than a fixed constant: unlike the other URL-shareable inputs
+// on this page, which layout a person happens to land in isn't part of the
+// picture worth reproducing from a shared link, so each visit (and each
+// reload) draws its own layout instead.
 shuffleKeys = {
-  const random = VM.sampling.seededRandom(20260801)
+  const random = VM.sampling.seededRandom(Date.now())
   const keys = []
   for (let i = 0; i < config.grid.population; i++) keys.push(random())
   return keys

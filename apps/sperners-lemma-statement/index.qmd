@@ -37,7 +37,9 @@ In fact, you always have an odd number of such triangles.
 VM = window.VM
 ```
 
-<div class="ojs-panel ojs-row">
+<div class="ojs-chart-block ojs-svg-block">
+
+<div class="ojs-chart-controls ojs-row">
 
 ```{ojs}
 viewof N = {
@@ -56,6 +58,70 @@ viewof regenerate = {
   button.classList.add("ojs-auto")
   return button
 }
+```
+
+</div>
+
+```{ojs}
+viewof mainPlot = Plot.plot({
+  width: 800,
+  height: 800,
+  x: {
+    label: "x",
+    domain: [0, 1]
+  },
+  y: {
+    label: "y",
+    domain: [0, Math.sqrt(3) / 2]
+  },
+  marks: [
+    Plot.line([...vertices, vertices[0]], {
+      x: "x",
+      y: "y",
+      stroke: "black",
+      strokeWidth: 1
+    }),
+    Plot.geo(
+      {
+        type: "FeatureCollection",
+        features: subTriangles.map(triangle => {
+          let coords = triangle.coordinates.map(coord => colored.byKey.get(coord.join(',')).getCoords());
+          return {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [
+                [coords[0], coords[1], coords[2], coords[0]].map(c => [c.x, c.y])
+              ]
+            },
+            properties: {
+              fillColor: VM.discreteMath.triangleFillColor(triangle.vertex_colors)
+            }
+          };
+        })
+      },
+      {
+        fill: d => d.properties.fillColor,
+        stroke: "black",
+        strokeWidth: 1
+      }
+    ),
+    Plot.link(mixedEdges, {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "color",
+      strokeWidth: 3
+    }),
+    Plot.dot(
+      colored.points,
+      {
+        x: "x",
+        y: "y",
+        fill: d => d.color,
+        r: 4
+      }
+    )
+  ]
+});
 ```
 
 </div>
@@ -135,67 +201,6 @@ mixedEdges = {
 }
 ```
 
-```{ojs}
-viewof mainPlot = Plot.plot({
-  width: 800,
-  height: 800,
-  x: {
-    label: "x",
-    domain: [0, 1]
-  },
-  y: {
-    label: "y",
-    domain: [0, Math.sqrt(3) / 2]
-  },
-  marks: [
-    Plot.line([...vertices, vertices[0]], {
-      x: "x",
-      y: "y",
-      stroke: "black",
-      strokeWidth: 1
-    }),
-    Plot.geo(
-      {
-        type: "FeatureCollection",
-        features: subTriangles.map(triangle => {
-          let coords = triangle.coordinates.map(coord => colored.byKey.get(coord.join(',')).getCoords());
-          return {
-            type: "Feature",
-            geometry: {
-              type: "Polygon",
-              coordinates: [
-                [coords[0], coords[1], coords[2], coords[0]].map(c => [c.x, c.y])
-              ]
-            },
-            properties: {
-              fillColor: VM.discreteMath.triangleFillColor(triangle.vertex_colors)
-            }
-          };
-        })
-      },
-      {
-        fill: d => d.properties.fillColor,
-        stroke: "black",
-        strokeWidth: 1
-      }
-    ),
-    Plot.link(mixedEdges, {
-      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-      stroke: "color",
-      strokeWidth: 3
-    }),
-    Plot.dot(
-      colored.points,
-      {
-        x: "x",
-        y: "y",
-        fill: d => d.color,
-        r: 4
-      }
-    )
-  ]
-});
-```
 
 ```{ojs}
 // print the number of RGB triangles as a html element

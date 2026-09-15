@@ -15,6 +15,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
+<style>
+/* Page-local: the side-by-side comparison pair below the sliders. In
+   fullscreen, styles.css's .ojs-svg-block letterbox chain makes every
+   wrapper around a figure a centered column (so each plot's caption stays
+   above it); the pair's own wrapper has to stay a row, or the two plots
+   stack. Markup only this page emits, so it lives here (see CLAUDE.md).
+   Both block classes are spelled out for specificity: the chain rule this
+   overrides ends in `div:has(.vm-fs-figure)`, and :has() counts its
+   argument, so a plain `.ojs-svg-block:fullscreen .sperner-compare` loses. */
+.ojs-chart-block.ojs-svg-block:fullscreen .sperner-compare {
+  flex-direction: row;
+}
+</style>
+
 ```{ojs}
 //| output: false
 // VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor.
@@ -245,9 +259,9 @@ function plotTriangles(triangles, morphedPoints, N) {
 ```
 
 
-<div class="ojs-panel">
+<div class="ojs-chart-block ojs-svg-block">
 
-<div class="ojs-row">
+<div class="ojs-chart-controls ojs-grid">
 
 ```{ojs}
 viewof N = {
@@ -278,6 +292,17 @@ viewof comparisonRegenerate = {
 
 </div>
 
+```{ojs}
+// Side by side, with each plot captioned above. .sperner-compare is what
+// keeps the pair a row in fullscreen, where styles.css's letterbox chain
+// otherwise turns every wrapper around a figure into a column (see the
+// page-local <style> block).
+html`<div class="sperner-compare" style="display: flex; gap: 1rem;">
+  <div><p><b>Sperner's condition satisfied</b></p>${plotValid}</div>
+  <div><p><b>Sperner's condition violated</b></p>${plotInvalid}</div>
+</div>`
+```
+
 </div>
 
 ```{ojs}
@@ -304,11 +329,6 @@ colorMapInvalid = {
 morphedInvalid = morpherInvalid.interpolatePoints(t, colorMapInvalid)
 trianglesInvalid = morpherInvalid.generateSubTriangles(morphedInvalid.morphedMap)
 plotInvalid = plotTriangles(trianglesInvalid, morphedInvalid, N)
-
-html`<div style="display: flex; gap: 1rem;">
-  <div><p><b>Sperner's condition satisfied</b></p>${plotValid}</div>
-  <div><p><b>Sperner's condition violated</b></p>${plotInvalid}</div>
-</div>`
 ```
 
 

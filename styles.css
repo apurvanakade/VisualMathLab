@@ -594,6 +594,105 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   min-height: 0;
 }
 
+/* ── SVG chart blocks ────────────────────────────────────────────── */
+/* A block that draws inline SVG (Observable Plot, a hand-built <svg>)
+ * instead of a Plotly chart: `<div class="ojs-chart-block ojs-svg-block">`.
+ * It has no modebar, so js/plotting/svg-fullscreen-button.js gives it a
+ * fullscreen button of its own -- one <button class="vm-fullscreen-toggle">
+ * as a direct child of the block, positioned by that script at the figure's
+ * top-right corner (top/right are set inline from a measured rect, since
+ * the figure is not the block: a fixed-width Plot SVG sits left-aligned in
+ * a wider column, and in fullscreen it is letterboxed into the middle).
+ * Same pill as the Plotly modebar, and hidden at rest the same way, so
+ * nothing sits over the picture until the reader hovers the block. The
+ * hover trigger is the block, not the picture's own cell -- the cell is
+ * rebuilt on every slider move, and a pill fading in from nothing on each
+ * step of a playback sweep flickers. */
+.vm-fullscreen-toggle {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
+  color: var(--vm-text-soft);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ojs-svg-block:hover > .vm-fullscreen-toggle,
+.vm-fullscreen-toggle:focus-visible {
+  opacity: 1;
+}
+
+.vm-fullscreen-toggle:hover {
+  background: var(--vm-surface-hover);
+  color: var(--vm-text);
+}
+
+.vm-fullscreen-toggle:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: -2px;
+}
+
+/* A touch device never fires hover, so a hover-only button would be
+ * permanently invisible there. */
+@media (hover: none) {
+  .vm-fullscreen-toggle {
+    opacity: 1;
+  }
+}
+
+/* Fullscreen: the same letterbox chain as the Plotly block above, keyed on
+ * the figure SVG (tagged .vm-fs-figure by the script) instead of the graph
+ * div. Every wrapper between the block and the figure fills and centers its
+ * child; the outermost takes the height the controls bar leaves and is the
+ * size container the figure measures against. A column rather than a row,
+ * for a page that captions each figure with a <p> above it (the geometric
+ * proof's side-by-side pair): the caption then stays above, and the figure
+ * shrinks by the caption's height instead of running off the bottom. */
+.ojs-svg-block:fullscreen div:has(.vm-fs-figure) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  /* Two figures side by side are each `width: 100%` of a row; min-width:
+   * auto would refuse to shrink them to share it. */
+  min-width: 0;
+}
+
+.ojs-svg-block:fullscreen > div:has(.vm-fs-figure) {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  container-type: size;
+}
+
+/* The ratio comes from the SVG's viewBox (or width/height attributes),
+ * written as --vm-svg-aspect by the script; a viewBox'd SVG also centers its
+ * own drawing inside whatever box it gets, so a slightly-off ratio costs a
+ * sliver of margin, not a distorted picture. max-width/max-height are
+ * cleared because Observable Plot sets `max-width: 100%; height: auto` on
+ * its own SVG. */
+.ojs-svg-block:fullscreen .vm-fs-figure {
+  width: min(100%, calc(100cqh * var(--vm-svg-aspect, 1)));
+  height: min(100%, calc(100cqw / var(--vm-svg-aspect, 1)));
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  flex: 0 1 auto;
+}
+
 /* Floating legend/checkbox hybrid, positioned atop a Plotly chart by
  * VM.ui.legendOverlay (js/ui/legend-overlay.js) in place of a separate
  * checkbox row -- each item is both this trace's legend entry and its

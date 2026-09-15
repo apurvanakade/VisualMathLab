@@ -24,7 +24,9 @@ This picture is a combinatorial proof of [Sperner's Lemma](../sperners-lemma-sta
 VM = window.VM
 ```
 
-<div class="ojs-panel ojs-row">
+<div class="ojs-chart-block ojs-svg-block">
+
+<div class="ojs-chart-controls ojs-row">
 
 ```{ojs}
 viewof N = {
@@ -43,6 +45,43 @@ viewof regenerate = {
   button.classList.add("ojs-auto")
   return button
 }
+```
+
+</div>
+
+```{ojs}
+// === Main Plot ===
+viewof mainPlot = Plot.plot({
+  width: 800,
+  height: 800,
+  x: { label: "x", domain: [0, 1] },
+  y: { label: "y", domain: [0, Math.sqrt(3) / 2] },
+  marks: [
+    Plot.geo(
+      { type: "FeatureCollection", features: triangleFeatures(triangles.all, cpMap) },
+      { fill: d => d.properties.fillColor, stroke: "black", strokeWidth: 1 }
+    ),
+    Plot.link(mixedEdgeFeatures(N, cpMap), {
+      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
+      stroke: "color",
+      strokeWidth: 3
+    }),
+    ...makeEdgeLines(triangles.rg),
+    ...makeEdgeLines(triangles.rgb),
+    Plot.dot(
+      coloredPointsWithTitle,
+      {
+        x: "x",
+        y: "y",
+        fill: "color",
+        r: 4,
+        title: "title"
+      }
+    ),
+    ...makeSpecialPoints(triangles.rg),
+    ...makeSpecialPoints(triangles.rgb)
+  ]
+});
 ```
 
 </div>
@@ -298,40 +337,6 @@ generateAllTriangles = (N, cpMap) => {
 triangles = generateAllTriangles(N, cpMap);
 ```
 
-```{ojs}
-// === Main Plot ===
-viewof mainPlot = Plot.plot({
-  width: 800,
-  height: 800,
-  x: { label: "x", domain: [0, 1] },
-  y: { label: "y", domain: [0, Math.sqrt(3) / 2] },
-  marks: [
-    Plot.geo(
-      { type: "FeatureCollection", features: triangleFeatures(triangles.all, cpMap) },
-      { fill: d => d.properties.fillColor, stroke: "black", strokeWidth: 1 }
-    ),
-    Plot.link(mixedEdgeFeatures(N, cpMap), {
-      x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-      stroke: "color",
-      strokeWidth: 3
-    }),
-    ...makeEdgeLines(triangles.rg),
-    ...makeEdgeLines(triangles.rgb),
-    Plot.dot(
-      coloredPointsWithTitle,
-      {
-        x: "x",
-        y: "y",
-        fill: "color",
-        r: 4,
-        title: "title"
-      }
-    ),
-    ...makeSpecialPoints(triangles.rg),
-    ...makeSpecialPoints(triangles.rgb)
-  ]
-});
-```
 
 Imagine each small triangle as a **room with three walls**. Treat each `RG` edge as a **door**. Here's what we observe:
 
@@ -487,7 +492,9 @@ Prove the [conjecture above](#bottom-conjecture): the bottom edge is a sequence 
 
 Try it below: click **Regenerate colors** a few times and check that the count is always odd, no matter how the interior points are colored.
 
-<div class="ojs-panel ojs-row">
+<div class="ojs-chart-block ojs-svg-block">
+
+<div class="ojs-chart-controls ojs-row">
 
 ```{ojs}
 viewof M = {
@@ -506,6 +513,28 @@ viewof boundaryRegenerate = {
   button.classList.add("ojs-auto")
   return button
 }
+```
+
+</div>
+
+```{ojs}
+viewof boundaryPlot = Plot.plot({
+  width: 600,
+  height: 100,
+  margin: 20,
+  x: { domain: [0, M], axis: null },
+  y: { domain: [0, 1], axis: null },
+  marks: [
+    Plot.link(boundaryEdges.segments, {
+      x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
+      stroke: "black", strokeWidth: d => d.bold ? 6 : 1
+    }),
+    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: "color", stroke: "black", r: 5 }),
+    Plot.text([{ x: M / 2, y: 0.9, text: `Number of RG edges: ${boundaryEdges.boldCount}` }], {
+      x: "x", y: "y", text: "text", fontSize: 16
+    })
+  ]
+})
 ```
 
 </div>
@@ -542,25 +571,6 @@ boundaryEdges = {
 }
 ```
 
-```{ojs}
-viewof boundaryPlot = Plot.plot({
-  width: 600,
-  height: 100,
-  margin: 20,
-  x: { domain: [0, M], axis: null },
-  y: { domain: [0, 1], axis: null },
-  marks: [
-    Plot.link(boundaryEdges.segments, {
-      x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
-      stroke: "black", strokeWidth: d => d.bold ? 6 : 1
-    }),
-    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: "color", stroke: "black", r: 5 }),
-    Plot.text([{ x: M / 2, y: 0.9, text: `Number of RG edges: ${boundaryEdges.boldCount}` }], {
-      x: "x", y: "y", text: "text", fontSize: 16
-    })
-  ]
-})
-```
 
 ## Questions
 

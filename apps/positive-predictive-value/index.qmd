@@ -70,6 +70,15 @@ Authors: Apurva Nakade
   line-height: 1.35;
   white-space: pre-line;
 }
+/* The grid's holder (see drawGrid): the SVG scales to the column's full
+   width. The block is an .ojs-svg-block, so the fullscreen button and the
+   fullscreen letterboxing come from styles.css and
+   js/plotting/svg-fullscreen-button.js -- nothing page-local. */
+.ppv-grid svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 .ppv-flow {
   margin: 1rem 0 1.25rem;
 }
@@ -313,7 +322,12 @@ function personTooltip(person, rounds) {
 
 // tooltipElement: the page's single tooltip node, created on first use and
 // appended to <body> rather than inside a cell -- looked up by id each
-// time, since cells re-run and must not create a second one.
+// time, since cells re-run and must not create a second one. While the
+// chart block is fullscreened it is moved inside that block instead: the
+// Fullscreen API paints only the fullscreened element's own subtree on
+// top, so a body-level tooltip -- whatever its z-index -- would sit
+// underneath the picture it annotates. Moved back to <body> on the first
+// hover after leaving fullscreen.
 function tooltipElement() {
   let tip = document.getElementById("ppv-tooltip")
   if (tip === null) {
@@ -321,8 +335,10 @@ function tooltipElement() {
     tip.id = "ppv-tooltip"
     tip.setAttribute("role", "tooltip")
     tip.hidden = true
-    document.body.appendChild(tip)
   }
+  let host = document.body
+  if (document.fullscreenElement !== null) host = document.fullscreenElement
+  if (tip.parentNode !== host) host.appendChild(tip)
   return tip
 }
 
@@ -419,11 +435,9 @@ function drawGrid(people, options = {}) {
   // inspects a bare SVGSVGElement as a value ("SVGSVGElement {}") instead
   // of inserting it, whereas an HTMLElement is inserted as a node.
   const holder = document.createElement("div")
+  holder.className = "ppv-grid"
   holder.innerHTML = `<svg viewBox="0 0 ${width} ${height.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" role="img">${circles}</svg>`
   const svg = holder.firstElementChild
-  svg.style.display = "block"
-  svg.style.width = "100%"
-  svg.style.height = "auto"
   // A hollow ring has fill="none", and by default only its painted stroke
   // is hoverable -- the hole in the middle would show no tooltip. "all"
   // (inherited by every circle) makes the whole disc a target either way.
@@ -563,7 +577,7 @@ people = {
 }
 ```
 
-<div class="ojs-chart-block">
+<div class="ojs-chart-block ojs-svg-block">
 
 <div class="ojs-chart-controls ojs-row">
 

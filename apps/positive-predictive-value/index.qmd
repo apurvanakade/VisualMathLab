@@ -113,9 +113,9 @@ Authors: Apurva Nakade
 }
 </style>
 
-A screening mammogram in U.S. community practice (digital breast tomosynthesis, the 3D mammogram now in routine use) has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time; if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened have breast cancer. You test positive. What are the odds you have it?
+A screening mammogram in U.S. community practice has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time, and if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened have breast cancer. Below, each dot is one of 1,000 people screened: red has the condition, dark doesn't. A test hollows out everyone it clears, and each further test is given only to whoever is still solid, so the solid dots are the people who have tested positive every time so far.
 
-Each dot below is one of 1,000 people screened: red has the condition, dark doesn't. The sliders start at the real numbers. Sensitivity is the share of red dots a test catches; specificity is the share of dark dots it clears. A test hollows out everyone it clears, and each further test is given only to whoever is still solid -- so the solid dots are the people who have tested positive every time so far.
+If you test positive, what are the chances you have the condition? This number is the test's **positive predictive value** (PPV).
 
 ```{ojs}
 //| output: false
@@ -718,32 +718,21 @@ summaryTable = {
 
 Even a highly accurate test gives a weak positive result when the condition is rare: the healthy population is so much larger that a small false-positive rate among them outnumbers the true positives among the few who are sick. That is what the solid dots show: a handful of red in a crowd of dark.
 
-Retesting works because each repeat test starts from a population whose prevalence is the previous round's PPV, so the same sensitivity and specificity give a much sharper result, and the chance of missing the condition shrinks just as fast. Bayes' theorem is this update:
+Retesting works because each repeat test starts from a population whose prevalence is the previous round's PPV, so the same sensitivity and specificity give a much sharper result. Bayes' rule is this update, with the denominator split into the two ways a test can come back positive:
 
 $$
-P(\text{condition} \mid \text{positive}) = \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})}.
+\begin{aligned}
+P(\text{condition} \mid \text{positive})
+&= \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})} \\[0.6em]
+&= \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}
+        {P(\text{positive} \mid \text{condition})\, P(\text{condition}) + P(\text{positive} \mid \text{no condition})\, P(\text{no condition})} \\[0.6em]
+&= \frac{\text{true positives}}{\text{true positives} + \text{false positives}}.
+\end{aligned}
 $$
 
-## What this means for a real mammogram
+## Screening in practice
 
-The sliders start at the real numbers: sensitivity 87%, specificity 92%, and a prevalence of 7 in 1,000. (Lee et al. found 5.8 cancers plus 0.8 missed per 1,000 screens, i.e. 0.66%; the slider rounds that to 7.) At those settings 85 of the 1,000 people in the picture test positive, and 6 of them have cancer: a PPV of about 7%. Lee et al. measured 6.9% across 458,175 screens.
-
-### High sensitivity, low PPV
-
-Mammography is a fine-meshed safety net: its job is to miss as few cancers as possible, and the price is false alarms.
-
-- **Sensitivity is high (75–90%).** Of 100 women with undetected breast cancer, the test flags 75 to 90. The accepted floor for a radiologist is 75%; the U.S. average is 87%.
-- **PPV₁ is low (3–8%).** Of 100 women flagged for a second look, 3 to 8 have cancer. The rest are cysts, dense tissue, and harmless calcifications that a cautious reader flags rather than risk missing.
-
-Both ranges are the American College of Radiology's acceptable-performance bands (Carney et al.); a radiologist outside them is considered for additional training.
-
-### The role of the base rate
-
-The PPV is set less by the test than by how rare the condition is. Only 6 or 7 of every 1,000 women screened have breast cancer. A radiologist who recalls 83 of them to be sure of catching those 6 lands at a PPV₁ of about 7% no matter how carefully each image is read: the other 77 recalls are the 8% false-positive rate applied to 993 healthy women.
-
-### How the detection process works
-
-A positive screen starts a process; it is not a diagnosis. Each stage is one round of the retesting picture above: the PPV coming out of one stage is the prevalence going into the next.
+A positive mammogram is not a diagnosis; it starts a three-round process. Each round is one row of the retesting table above: the PPV coming out of one round is the prevalence going into the next.
 
 ::: {.ppv-flow}
 ::: {.ppv-flow-step}
@@ -756,14 +745,12 @@ additional views, ultrasound or MRI clear about four in five of those recalled
 :::
 ::: {.ppv-flow-step}
 [Biopsy]{.ppv-flow-label}
-confirms cancer in 20–40% of the remaining cases (PPV₂)
+confirms cancer in about a third of the remaining cases
 :::
 :::
 
-Per 1,000 women screened in Lee et al.'s data: 83 are recalled, about 18 are recommended for biopsy, 6 have cancer (5.8 found, 0.8 missed). PPV₁ is 6.9%, PPV₂ is 32%, and NPV is about 99.9%.
+Per 1,000 women screened in Lee et al.'s data: 83 are recalled, about 18 go on to biopsy, and 6 have cancer. The PPV rises from 7% after the screening mammogram to 32% after biopsy.
 
 ## References
 
-- Lee, C. I., Abraham, L., Miglioretti, D. L., Stout, N. K., Kerlikowske, K., Henderson, L. M., Tosteson, A. N. A., Bissell, M. C. S., Onega, T., Sprague, B. L., Sabatino, S. A., Lawson, M. B., Lowry, K. P., Buist, D. S. M., & Breast Cancer Surveillance Consortium (2023). National Performance Benchmarks for Screening Digital Breast Tomosynthesis: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 307(4), e222499. [https://doi.org/10.1148/radiol.222499](https://doi.org/10.1148/radiol.222499). Source of this page's sensitivity (87.4%), specificity (92.2%) and prevalence (5.8 cancers detected plus 0.8 missed per 1,000 screens) figures, plus the recall rate (8.3%), PPV₁ (6.9%) and PPV₂ (32.2%), from 458,175 U.S. screening DBT examinations, 2011–2018.
-- Lehman, C. D., Arao, R. F., Sprague, B. L., Lee, J. M., Buist, D. S. M., Kerlikowske, K., Henderson, L. M., Onega, T., Tosteson, A. N. A., Rauscher, G. H., & Miglioretti, D. L. (2017). National Performance Benchmarks for Modern Screening Digital Mammography: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 283(1), 49–58. [https://doi.org/10.1148/radiol.2016161174](https://doi.org/10.1148/radiol.2016161174). The previous benchmark, for 2D digital mammography (sensitivity 86.9%, specificity 88.9%, recall rate 11.6%, PPV₁ 4.4%, 5.1 cancers detected plus 0.8 missed per 1,000 screens), from 1,682,504 U.S. screening mammograms, 2007–2013; cited for comparison.
-- Carney, P. A., Sickles, E. A., Monsees, B. S., Bassett, L. W., Brenner, R. J., Feig, S. A., Smith, R. A., Rosenberg, R. D., Bogart, T. A., Browning, S., Barry, J. W., Kelly, M. M., Tran, K. A., & Miglioretti, D. L. (2010). Identifying Minimally Acceptable Interpretive Performance Criteria for Screening Mammography. *Radiology*, 255(2), 354–361. [https://doi.org/10.1148/radiol.10091636](https://doi.org/10.1148/radiol.10091636). Source of the acceptable-performance ranges: sensitivity at least 75%, specificity 88–95%, recall rate 5–12%, PPV₁ 3–8%, PPV₂ 20–40%.
+- Lee, C. I., Abraham, L., Miglioretti, D. L., Stout, N. K., Kerlikowske, K., Henderson, L. M., Tosteson, A. N. A., Bissell, M. C. S., Onega, T., Sprague, B. L., Sabatino, S. A., Lawson, M. B., Lowry, K. P., Buist, D. S. M., & Breast Cancer Surveillance Consortium (2023). National Performance Benchmarks for Screening Digital Breast Tomosynthesis: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 307(4), e222499. [https://doi.org/10.1148/radiol.222499](https://doi.org/10.1148/radiol.222499). Source of this page's sensitivity (87.4%), specificity (92.2%) and prevalence (5.8 cancers detected plus 0.8 missed per 1,000 screens), plus the recall rate (8.3%) and the PPV after screening (6.9%) and after biopsy (32.2%), from 458,175 U.S. screening examinations, 2011–2018.

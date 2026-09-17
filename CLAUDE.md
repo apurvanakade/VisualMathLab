@@ -23,6 +23,23 @@ There is no lint command. `package.json` is dev-only (Playwright for `npm run ve
 - **Releasing (`develop` → `main`): fast-forward only.** `develop` is where work lands; `main` is a pointer to the last published state, and pushing it deploys (see below). Release with `git checkout main && git merge --ff-only develop && git push origin main`, then `git checkout develop`. Do **not** squash-merge into `main`: a squash commit records no parent link back to `develop`, so the merge base between the branches never advances — every later merge re-diffs the entire branch from an ancient base and conflicts with content `main` already has (13 squash-merges had frozen the base at a commit 52 commits back, and the last one conflicted across 8 files with zero real divergence). If `--ff-only` is ever refused, the histories have diverged again; reconcile once with `git merge -s ours main` on `develop` (records `main` as an ancestor without changing `develop`'s tree) rather than force-pushing `main`.
 - `.github/workflows/publish.yml` renders the site and publishes `docs/` to the `gh-pages` branch automatically on every push to `main`. `.github/workflows/deploy.yml` then deploys whatever is on `gh-pages` to GitHub Pages (triggered by pushes to that branch) — the two are separate workflows because `actions/deploy-pages` needs the already-rendered output as its own checkout ref.
 
+## Branches and preview: one worktree per branch
+
+**Never `git checkout` a branch inside a folder with a running `quarto preview`.** The preview's watcher treats a change to `_quarto.yml`, `styles.css`, or anything under `_includes/`/`_theme/` as invalidating every page (correctly -- the sidebar and `<head>` are baked into each one), and almost every feature branch touches at least one of those. A checkout rewrites them, so the watcher kicks off a full-site re-render (minutes) on every switch. Per-page laziness applies only to `.qmd` edits.
+
+The fix is to not switch branches in place. `~/Github/VisualMath` is the long-lived **`develop`** checkout and stays on `develop`; every other branch gets its own sibling folder via `git worktree`, with its own untracked `docs/`, `.quarto/`, and preview server on its own port. `git worktree list` shows which folder holds which branch.
+
+There is a second, separate trigger with the same symptom: **on startup, `quarto preview` renders every input whose output in `docs/` is missing or older than the input** (`serveFiles` in Quarto's `serve.ts` compares mtimes; the `--render none` default only means "don't re-execute code", not "don't render"). So a brand-new worktree, whose `docs/` is empty, pays one full-site render the first time its preview starts -- expected, and once per worktree, not per switch. After that, startups only re-render what is stale. This is also why killing the preview *before* a checkout doesn't help much: the checkout still bumps the mtime of every `.qmd` that differs, and the next startup re-renders all of them.
+
+1. **New feature branch**: `git worktree add -b app/<slug> ../VisualMath-<slug> develop`, then in that folder `quarto preview --port <unused port> --no-browser`. Use `4200` for develop and count up from `4201` for features -- one preview per worktree, never two in the same folder.
+2. **Existing branch**: same command without `-b`. A branch can be checked out in only one worktree at a time; if git refuses, `git worktree list` shows where it already lives.
+3. **Switching branches**: `cd` to the other folder (or switch browser tabs to its port). Nothing is rewritten, so nothing re-renders.
+4. **Tests in a worktree**: `node_modules/` is per-folder, so run `npm install` once there (or `ln -s ~/Github/VisualMath/node_modules node_modules` -- `package.json` is identical across branches) before `npm test`/`npm run verify`.
+5. **Landing**: merge into `develop` from the develop folder (or merge the PR and `git pull` there). Its preview will do one full re-render if the merge touched the project-level files above -- once per merge, not per switch.
+6. **Cleanup**: stop that worktree's preview, then `git worktree remove ../VisualMath-<slug>` and `git branch -d app/<slug>`. Without stopping the preview first, `remove` complains about the untracked `docs/`.
+
+If you ever must checkout or pull in a folder that has a preview, kill the preview first and restart it afterwards. That avoids the watcher's reaction to the project-level files, but the restart will still re-render every page whose `.qmd` the checkout touched (see above) -- there is no way to switch branches in place without paying for what changed.
+
 ## Analytics and consent
 
 Usage analytics only — no ads signals, no remarketing, no Google Signals.

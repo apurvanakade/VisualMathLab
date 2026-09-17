@@ -98,9 +98,13 @@ async function shootOne(browser, base, pageInfo) {
   const allow = page.locator('button:has-text("Allow"), button:has-text("No thanks")').first()
   if (await allow.count()) await allow.click().catch(() => {})
 
-  const chart = page.locator('.plotly-box-large').first()
+  // A page whose best card image isn't its main chart tags the div it wants
+  // shot with .vm-thumbnail (apps/hypothesis-tests: the data panel, not the
+  // null-distribution curve); otherwise the main chart is the thumbnail.
+  let chart = page.locator('.vm-thumbnail').first()
+  if ((await chart.count()) === 0) chart = page.locator('.plotly-box-large').first()
   if ((await chart.count()) === 0) {
-    console.log(`SKIP  ${relHtml} (no .plotly-box-large -- not a Plotly-chart page)`)
+    console.log(`SKIP  ${relHtml} (no .vm-thumbnail or .plotly-box-large -- not a Plotly-chart page)`)
     await page.close()
     return false
   }

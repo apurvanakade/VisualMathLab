@@ -35,6 +35,9 @@ const repoRoot = path.resolve(__dirname, '..')
 
 const analyticsHtml = fs.readFileSync(path.join(repoRoot, '_includes/analytics.html'), 'utf8')
 const consentHtml = fs.readFileSync(path.join(repoRoot, '_includes/consent.html'), 'utf8')
+const headScriptsHtml = fs.readFileSync(path.join(repoRoot, '_includes/head-scripts.html'), 'utf8')
+const fontsCss = fs.readFileSync(path.join(repoRoot, 'fonts/fonts.css'), 'utf8')
+const privacyQmd = fs.readFileSync(path.join(repoRoot, 'privacy.qmd'), 'utf8')
 
 function extractScript(html) {
   // Matched narrowly (not just <script ...>) because this file's own header
@@ -87,6 +90,65 @@ test('analytics.html: sets no cookies', () => {
 
 test('consent.html: sets no cookies either', () => {
   assert.doesNotMatch(consentHtml, /document\.cookie/)
+})
+
+// privacy.qmd's "Third-party resources" section is a factual claim about
+// head-scripts.html and fonts/; these pin the facts it states.
+
+test('head-scripts.html: no request to Google Fonts', () => {
+  // Self-hosted from /fonts instead -- see fonts/fonts.css for why.
+  assert.doesNotMatch(headScriptsHtml, /fonts\.googleapis\.com|fonts\.gstatic\.com/)
+  assert.match(headScriptsHtml, /<link rel="stylesheet" href="\/fonts\/fonts\.css">/)
+})
+
+test('head-scripts.html: sends no referrer to other origins', () => {
+  // A page's query string is the visitor's math input; this is what keeps
+  // it from reaching the script CDNs, including the MathJax/polyfill tags
+  // Quarto injects later in <head>.
+  assert.match(headScriptsHtml, /<meta name="referrer" content="same-origin">/)
+})
+
+test('fonts/fonts.css: every font file it references is in the repo', () => {
+  // Comments stripped first: the header comment mentions `url(...)` in prose.
+  const cssOnly = fontsCss.replace(/\/\*[\s\S]*?\*\//g, '')
+  const urls = [...cssOnly.matchAll(/url\(([^)]+)\)/g)].map((m) => m[1].replace(/^["']|["']$/g, ''))
+  assert.ok(urls.length >= 2, 'expected @font-face src urls')
+  for (const file of urls) {
+    // Bare file names, relative to the stylesheet. A root-relative
+    // `/fonts/x.woff2` is what Quarto mangles into `..fonts/x.woff2` when it
+    // copies the file into docs/ -- a 404 on every page, so no font loaded
+    // and the site silently fell back to system fonts (see the header
+    // comment in fonts/fonts.css).
+    assert.doesNotMatch(file, /^\/|^\.\.?\//, `font url must be a bare file name, got ${file}`)
+    assert.ok(fs.existsSync(path.join(repoRoot, 'fonts', file)), `missing fonts/${file}`)
+  }
+  assert.doesNotMatch(fontsCss, /https?:\/\//, 'a font must not be fetched from a third party')
+})
+
+test('privacy.qmd: names every third-party host a page loads from', () => {
+  // Quarto's own MathJax/polyfill tags are not in head-scripts.html, so the
+  // jsdelivr/cdnjs hosts are asserted directly rather than derived.
+  const hosts = [...headScriptsHtml.matchAll(/src="https:\/\/([^/"]+)/g)].map((m) => m[1])
+  for (const host of new Set([...hosts, 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com'])) {
+    assert.ok(privacyQmd.includes('`' + host + '`'), `privacy.qmd does not mention ${host}`)
+  }
+})
+
+test('privacy.qmd: lists every localStorage key the site writes', () => {
+  // One bullet per key. The analytics snippet's own keys (cid_v4, _ga_*) are
+  // described in prose as the identifier and its related values.
+  const expected = [
+    ['vml-analytics-consent', /answer to the analytics question/],
+    ['cid_v4', /random identifier/i],
+    ['quarto-color-scheme', /light or dark theme/],
+    ['vml-sidebar-pinned', /pinned the navigation sidebar/],
+    ['vml-overlay-pos', /dragged the legend/],
+    ['vm-playback', /speed and mode/],
+    ['vml-mobile-warning-dismissed', /dismissed the one-time notice/],
+  ]
+  for (const [key, re] of expected) {
+    assert.match(privacyQmd, re, `privacy.qmd does not describe the ${key} entry`)
+  }
 })
 
 test('consent.html: banner makes no false ads/personalization claims', () => {

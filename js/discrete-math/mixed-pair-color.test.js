@@ -12,9 +12,14 @@ const VM = loadVM()
 const { pairColor } = VM.discreteMath
 
 test('pairColor returns the correct shared color for each mixed pair, order-independent', () => {
-  const gold = 'rgba(255, 215, 0, 0.7)'
-  const teal = 'rgba(0, 150, 136, 0.7)'
-  const orchid = 'rgba(186, 85, 211, 0.7)'
+  // Light-theme values (the test stub has no body, so isDark() is false):
+  // warn, accent3 and accent2 from js/plotting/chart-theme.js at 0.8.
+  const gold = 'rgba(245, 158, 11, 0.8)'
+  const teal = 'rgba(13, 148, 136, 0.8)'
+  const orchid = 'rgba(147, 51, 234, 0.8)'
+  assert.equal(gold, VM.plotting.alpha('warn', 0.8))
+  assert.equal(teal, VM.plotting.alpha('accent3', 0.8))
+  assert.equal(orchid, VM.plotting.alpha('accent2', 0.8))
   const cases = [
     ['red', 'green', gold],
     ['green', 'red', gold],
@@ -25,6 +30,14 @@ test('pairColor returns the correct shared color for each mixed pair, order-inde
   ]
   for (const [a, b, expected] of cases) {
     assert.equal(pairColor(a, b), expected, `pairColor(${a}, ${b})`)
+  }
+})
+
+test('pairColor uses hues distinct from the three vertex colors', () => {
+  const vertexColors = new Set([VM.discreteMath.vertexColor('red'), VM.discreteMath.vertexColor('green'), VM.discreteMath.vertexColor('blue')])
+  for (const [a, b] of [['red', 'green'], ['green', 'blue'], ['red', 'blue']]) {
+    const rgb = pairColor(a, b).replace(/rgba\((\d+), (\d+), (\d+), [\d.]+\)/, (m, r, g, bl) => '#' + [r, g, bl].map(v => Number(v).toString(16).padStart(2, '0')).join(''))
+    assert.ok(!vertexColors.has(rgb), `pairColor(${a}, ${b}) collides with a vertex color`)
   }
 })
 

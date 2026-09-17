@@ -10,7 +10,6 @@ image: recursive-filters-1d.png
 # this page" panel holding a single link. Every other interactive page has no
 # headings and renders no TOC at all; apps/sperners-lemma-statement/index.qmd sets
 # this for the same reason.
-toc: false
 categories:
   - Probability
   - Kalman Filter
@@ -152,27 +151,27 @@ initialQ = {
 examples = [
   {
     title: "Sudden regime change",
-    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05}
   },
   {
     title: "Fast oscillation exposes lag",
-    params: {f: "sin(3*x)", sigma: "0.3", b: "10", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "sin(3*x)", sigma: "0.3", b: "10", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05}
   },
   {
     title: "Zero process noise stops tracking",
-    params: {f: "sin(x)", sigma: "0.3", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+    params: {f: "sin(x)", sigma: "0.3", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0}
   },
   {
     title: "Overconfident sensor model",
-    params: {f: "sin(x)", sigma: "0.6", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: ["True Signal", "Noisy measurements", "Kalman Filter"]}
+    params: {f: "sin(x)", sigma: "0.6", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05}
   },
   {
     title: "Estimating a hidden constant",
-    params: {f: "5", sigma: "1", b: "20", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: ["True Signal", "Noisy measurements", "Kalman Filter", "Exponential Moving Average"]}
+    params: {f: "5", sigma: "1", b: "20", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0}
   },
   {
     title: "Noisy sine wave",
-    params: {f: "sin(x)", sigma: "0.4", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]}
+    params: {f: "sin(x)", sigma: "0.4", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05}
   }
 ]
 ```
@@ -244,8 +243,7 @@ exampleFieldSelectors = ({
   alpha: '[data-example-field="alpha"]',
   k: '[data-example-field="k"]',
   R: '[data-example-field="R"]',
-  Q: '[data-example-field="Q"]',
-  show: '[data-example-field="show"]'
+  Q: '[data-example-field="Q"]'
 })
 ```
 
@@ -565,7 +563,7 @@ mainPlot = {
 }
 ```
 
-<div class="ojs-plot-overlay">
+<div class="ojs-chart-block">
 
 ```{ojs}
 mainPlot(result.rows, setup, showTrueSignal, showNoisy, showSMA, showEMA, showKalman)
@@ -581,7 +579,7 @@ viewof methods = {
 }
 ```
 
-<div class="ojs-step-overlay ojs-grid">
+<div class="ojs-chart-controls ojs-grid">
 
 ```{ojs}
 viewof alpha = {

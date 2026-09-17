@@ -44,7 +44,7 @@ test('VM.plotting.colors covers every palette name with a distinct value', () =>
   stubDocument(false)
   const VM = loadVM()
   const colors = VM.plotting.colors()
-  const names = ['fn', 'alt', 'ok', 'muted', 'ink', 'warn', 'accent2', 'halo']
+  const names = ['fn', 'alt', 'ok', 'muted', 'ink', 'warn', 'accent2', 'accent3', 'halo']
   for (const name of names) assert.ok(colors[name], `missing color for ${name}`)
   assert.equal(new Set(Object.values(colors)).size, names.length, 'expected every color to be distinct')
 })

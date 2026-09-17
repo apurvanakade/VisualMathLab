@@ -7,7 +7,7 @@
 (function attachVM(globalThis) {
   // Renders a small floating panel of clickable legend items (colored
   // swatch + label) that toggle which traces a chart shows -- meant to sit
-  // absolutely-positioned on top of a Plotly chart (see .ojs-plot-overlay /
+  // absolutely-positioned on top of a Plotly chart (see .ojs-chart-block /
   // .ojs-legend-overlay in styles.css) in place of a separate checkbox row
   // in the controls panel.
   //

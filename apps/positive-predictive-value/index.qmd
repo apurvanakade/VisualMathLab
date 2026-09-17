@@ -19,21 +19,117 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-A standard mammogram has 80% sensitivity and 90% specificity: if you have cancer, it comes back positive 80% of the time; if you don't, it comes back negative 90% of the time. You test positive. What are the odds you actually have cancer? Drag the sliders below — the dots are a simulated population, red for the fraction with the condition, dark for the fraction without. 
+<style>
+/* Page-local styles: the inline swatches in the explanation panels under
+   each grid, and the three-stage detection flow in the closing section --
+   markup only this page emits, so it lives here rather than in styles.css
+   (see CLAUDE.md's page-local CSS convention). Colors are the --vm-*
+   tokens, so it re-themes with the site. */
+.ppv-swatch {
+  display: inline-block;
+  width: 0.8em;
+  height: 0.8em;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  box-sizing: border-box;
+  vertical-align: -0.05em;
+}
+.ppv-swatch.filled { background: currentColor; }
+/* The legend under each grid: one row per kind of dot -- swatch, count,
+   what it means -- so a reader matches a mark in the picture to a number
+   without parsing a paragraph. */
+.ppv-legend-rows {
+  display: grid;
+  grid-template-columns: max-content max-content 1fr;
+  gap: 0.2em 0.6em;
+  align-items: baseline;
+  margin-top: 0.35em;
+}
+.ppv-legend-rows .ppv-swatch { justify-self: center; }
+.ppv-legend-count {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-weight: 600;
+}
+.ppv-legend-note { margin-top: 0.5em; }
+/* The hover tooltip on a grid dot. One element for the whole page, appended
+   to <body> (see tooltipElement), and position: fixed -- so it sits outside
+   every OJS cell wrapper and Quarto's overflow: auto on those can't clip it,
+   the trap CLAUDE.md's chart-controls notes describe. */
+#ppv-tooltip {
+  position: fixed;
+  z-index: 2000;
+  pointer-events: none;
+  padding: 0.35em 0.6em;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  box-shadow: var(--vm-shadow);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  white-space: pre-line;
+}
+/* The grid's holder (see drawGrid): the SVG scales to the column's full
+   width. The block is an .ojs-svg-block, so the fullscreen button and the
+   fullscreen letterboxing come from styles.css and
+   js/plotting/svg-fullscreen-button.js -- nothing page-local. */
+.ppv-grid svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.ppv-flow {
+  margin: 1rem 0 1.25rem;
+}
+/* Pandoc emits each stage as one <p> holding the label span and its text;
+   a two-column grid puts the loose text in its own column (anonymous grid
+   item), so a wrapped description hangs beside the chip, not under it. */
+.ppv-flow-step p {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: 0.6em;
+  margin: 0;
+}
+/* The arrow between stages, indented so it hangs under the label chip. */
+.ppv-flow-step + .ppv-flow-step::before {
+  content: "\25BC";
+  display: block;
+  margin: 0.45rem 0 0.45rem 1.1em;
+  color: var(--vm-text-soft);
+  font-size: 0.75em;
+  line-height: 1;
+}
+.ppv-flow-label {
+  display: inline-block;
+  padding: 0.2em 0.7em;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+</style>
+
+A screening mammogram in U.S. community practice has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time, and if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened have breast cancer. Below, each dot is one of 1,000 people screened: red has the condition, dark doesn't. A test hollows out everyone it clears, and each further test is given only to whoever is still solid, so the solid dots are the people who have tested positive every time so far.
+
+If you test positive, what are the chances you have the condition? This number is the test's **positive predictive value** (PPV).
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.ui.renderTable.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.ui.renderTable and VM.sampling.seededRandom.
 VM = window.VM
 ```
 
 ```{ojs}
 //| output: false
-// This page draws on a plain <canvas>, not Plotly, so it gets none of the
-// automatic re-theming the fullscreen-button patch gives every
+// This page draws its grids as inline SVG, not Plotly, so it gets none of
+// the automatic re-theming the fullscreen-button patch gives every
 // .js-plotly-plot. Depending on vmTheme is what makes it re-theme anyway:
 // the generator emits on each toggle, so chartColors recomputes and every
-// canvas-drawing cell downstream redraws with the new palette. See
+// grid-drawing cell downstream redraws with the new palette. See
 // VM.plotting.onThemeChange for why it fires a couple of frames after the
 // toggle rather than inline.
 vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
@@ -43,97 +139,96 @@ chartColors = VM.plotting.colors(vmTheme)
 config = ({
   colors: {
     infected: chartColors.alt,
-    healthy: chartColors.ink,
-    outline: chartColors.ink,
-    background: "rgba(0, 0, 0, 0.45)",
-    // zoomStep1/zoomStep2: mark the "positive test" box in one canvas and
-    // the border of the *next* canvas in the same color, so it's visually
-    // obvious that canvas is exactly that box, zoomed in — canvas 1 boxes
-    // in zoomStep1 (canvas 2's border), canvas 2 boxes in zoomStep2
-    // (canvas 3's border). #f97316 (orange) has no VM.plotting.colors()
-    // token -- left as a literal, same as elsewhere on the site.
-    zoomStep1: chartColors.fn,
-    zoomStep2: "#f97316"
+    healthy: chartColors.ink
   },
-  canvas: {
+  grid: {
+    // 1,000 people, not 6,000 dots: at the real 0.7% prevalence the seven
+    // people who have the condition have to be seven individually visible
+    // marks, which they can't be as 0.7% of a 720px-wide point cloud. This
+    // is why natural-frequency pictures (Gigerenzer) are "per 1,000" --
+    // small enough for the rarest group to be a countable handful, large
+    // enough to hold a 0.7% prevalence at all.
+    population: 1000,
+    columns: 50,
+    // The SVG's coordinate width; it scales to the column's full width via
+    // CSS, so this only sets the aspect ratio and the dot size relative to it.
     width: 720,
-    height: 260,
-    pointRadius: 2.2,
-    pointCount: 6000
-  }
+    // A negative result is drawn as a faded hollow ring, so the solid
+    // positives -- the people the page is about -- stand out from a crowd
+    // of 900-odd cleared ones instead of competing with it. Full-strength
+    // rings read as a second, equally busy pattern on top of the first.
+    // Each further test fades the already-cleared people by this factor
+    // again (see fadeOpacity), so the picture layers: still solid, cleared
+    // by the latest test, cleared before that.
+    negativeOpacity: 0.3
+  },
+  // How many tests the "Tests" slider runs to. Every round's split
+  // is computed up front (see splits), so raising this is a one-line
+  // change; the fade steps get faint fast, though, so past three the
+  // earliest cleared people are effectively invisible.
+  maxTests: 3
 })
 ```
 
 ```{ojs}
 //| output: false
-// points: a fixed population, generated once at load. Sliders below only
-// change which of these same points fall in each category and which
-// region is shaded — the point cloud itself never regenerates, so the
-// picture stays visually stable as you drag.
-points = {
-  const pts = []
-  for (let i = 0; i < config.canvas.pointCount; i++) {
-    pts.push({x: Math.random() * config.canvas.width, y: Math.random() * config.canvas.height})
-  }
-  return pts
+// shuffleKeys: one random number per person, generated once at load. The
+// shuffled layout places people in order of this key, so a person keeps the
+// same slot as the sliders move -- raising prevalence adds red dots without
+// reshuffling the ones already there -- and a subset (everyone who tested
+// positive) keeps its members' relative positions. Seeded from the current
+// time rather than a fixed constant: unlike the other URL-shareable inputs
+// on this page, which layout a person happens to land in isn't part of the
+// picture worth reproducing from a shared link, so each visit (and each
+// reload) draws its own layout instead.
+shuffleKeys = {
+  const random = VM.sampling.seededRandom(Date.now())
+  const keys = []
+  for (let i = 0; i < config.grid.population; i++) keys.push(random())
+  return keys
 }
 ```
 
 ```{ojs}
 //| output: false
-// calculateTestMetrics: splits points into infected/healthy by the
-// prevalence line, then each of those into true/false positive/negative by
-// the sensitivity/specificity lines, and reports the resulting PPV/NPV.
-function calculateTestMetrics(points, prevalence, sensitivity, specificity, width) {
-  const prevalenceLinePosition = prevalence * width
-  const sensitivityLinePosition = prevalenceLinePosition * (1 - sensitivity)
-  const specificityLinePosition = prevalenceLinePosition + (width - prevalenceLinePosition) * (1 - specificity)
-
-  const infected = []
-  const healthy = []
-  for (const point of points) {
-    if (point.x < prevalenceLinePosition) infected.push(point)
-    else healthy.push(point)
-  }
-
-  const truePositives = []
-  const falseNegatives = []
-  for (const point of infected) {
-    if (point.x >= sensitivityLinePosition) truePositives.push(point)
-    else falseNegatives.push(point)
-  }
-
-  const trueNegatives = []
-  const falsePositives = []
-  for (const point of healthy) {
-    if (point.x >= specificityLinePosition) trueNegatives.push(point)
-    else falsePositives.push(point)
-  }
-
+// splitByTest: the four outcomes as whole people, given how many of the
+// group have the condition and how many don't. Rounded at each split -- a
+// grid draws people, not fractions -- so the counts always sum exactly.
+function splitByTest(infected, healthy, sensitivity, specificity) {
+  const truePositives = Math.round(infected * sensitivity)
+  const falseNegatives = infected - truePositives
+  const falsePositives = Math.round(healthy * (1 - specificity))
+  const trueNegatives = healthy - falsePositives
   return {
-    linePositions: {prevalenceLinePosition, sensitivityLinePosition, specificityLinePosition},
-    classifications: {truePositives, falseNegatives, trueNegatives, falsePositives},
-    ppv: truePositives.length / (truePositives.length + falsePositives.length),
-    npv: trueNegatives.length / (trueNegatives.length + falseNegatives.length)
+    infected, healthy, truePositives, falseNegatives, falsePositives, trueNegatives,
+    positives: truePositives + falsePositives,
+    negatives: falseNegatives + trueNegatives
   }
 }
 
-// stretchPoints: rescales the current positive-region points back out to
-// the full canvas width, so "zooming in" on a repeat test reuses the same
-// point cloud instead of drawing a fresh one.
-function stretchPoints(points, sourceStart, sourceEnd, targetStart, targetEnd) {
-  const scale = (targetEnd - targetStart) / (sourceEnd - sourceStart)
-  const stretched = []
-  for (const point of points) {
-    stretched.push({x: targetStart + (point.x - sourceStart) * scale, y: point.y})
-  }
-  return stretched
+// ppvOf/npvOf: the exact values, from the probabilities rather than from
+// the rounded counts in the picture. Those are the products Bayes' theorem
+// multiplies -- P(positive and infected) = prevalence x sensitivity, and so
+// on -- whereas "6 of 85" is those products rounded to whole people, and
+// can differ from the exact value by a rounding (at 0.6% prevalence, the
+// old 2D-mammography default, the picture gave 5/114 = 4.4% against an
+// exact 4.6%); the closing section quotes the exact one.
+function ppvOf(prevalence, sensitivity, specificity) {
+  const truePositive = prevalence * sensitivity
+  const falsePositive = (1 - prevalence) * (1 - specificity)
+  return truePositive / (truePositive + falsePositive)
 }
 
-// formatPct: PPV/NPV are 0/0 when a region is empty (e.g. prevalence or
-// sensitivity dragged to an extreme) — guard against rendering "NaN%".
+function npvOf(prevalence, sensitivity, specificity) {
+  const trueNegative = (1 - prevalence) * specificity
+  const falseNegative = prevalence * (1 - sensitivity)
+  return trueNegative / (trueNegative + falseNegative)
+}
+
+// formatPct: PPV/NPV are 0/0 when a group is empty (e.g. prevalence or
+// sensitivity dragged to an extreme) -- guard against rendering "NaN%".
 function formatPct(value) {
-  if (!Number.isFinite(value)) return "—"
+  if (!Number.isFinite(value)) return "n/a"
   return (value * 100).toFixed(1) + "%"
 }
 
@@ -148,111 +243,261 @@ function paramNumber(params, key, fallback) {
   return parsed
 }
 
-// zoomBorderWidth: a canvas's border, when it represents a previous
-// canvas's highlighted box stretched to fill the whole width, should look
-// like that same box's edge blown up by the same zoom factor — so its
-// thickness scales linearly with `scale` (the same factor stretchPoints
-// uses to stretch the points themselves), not a fixed value. Capped at 10
-// so a large zoom (e.g. a narrow first-round box) doesn't turn into an
-// overwhelming border once fully visible (see the strokeRect inset below).
-function zoomBorderWidth(scale) {
-  return Math.max(4, Math.min(3 * scale, 10))
+// makePeople: one record per person, in category order -- everyone with
+// the condition first (caught cases, then missed ones), then everyone
+// without (false alarms, then correct negatives). `keys[i]` is person i's
+// fixed shuffle key. `clearedRound` is the test that returned this
+// person's first negative result -- 1 here, for the first test -- or null
+// while they are still testing positive; applyRetest fills in the later
+// rounds.
+function makePeople(split, keys) {
+  const people = []
+  const add = (count, infected, clearedRound) => {
+    for (let i = 0; i < count; i++) {
+      people.push({infected, clearedRound, key: keys[people.length]})
+    }
+  }
+  add(split.truePositives, true, null)
+  add(split.falseNegatives, true, 1)
+  add(split.falsePositives, false, null)
+  add(split.trueNegatives, false, 1)
+  return people
+}
+
+// applyRetest: gives everyone still positive after round `round - 1` their
+// result from test `round`, in place. The same people stay in the same
+// slots -- nobody is re-laid out -- and among each group (the true
+// positives, the false positives) the first `split.truePositives` /
+// `split.falsePositives` of them in category order stay positive; the
+// rest are cleared in this round.
+function applyRetest(people, split, round) {
+  let infectedKept = 0
+  let healthyKept = 0
+  for (const person of people) {
+    if (person.clearedRound !== null) continue
+    if (person.infected) {
+      infectedKept++
+      if (infectedKept > split.truePositives) person.clearedRound = round
+    } else {
+      healthyKept++
+      if (healthyKept > split.falsePositives) person.clearedRound = round
+    }
+  }
+  return people
+}
+
+// fadeOpacity: how faded a person cleared in `clearedRound` is drawn after
+// `rounds` tests -- one step of negativeOpacity per test since they were
+// cleared, so the latest test's negatives are the most visible rings and
+// earlier ones recede behind them. A missed case (`infected` and cleared)
+// never fades: the fade is there to push the crowd of correctly cleared
+// people into the background, and the one the test got wrong is exactly
+// the dot the reader should still be able to find.
+function fadeOpacity(rounds, clearedRound, infected) {
+  if (infected) return 1
+  return Math.pow(config.grid.negativeOpacity, rounds - clearedRound + 1)
 }
 ```
 
 ```{ojs}
 //| output: false
-// drawDiagnosticCanvas: shades the two false-result regions, draws every
-// point colored by its true condition, and marks the sensitivity/
-// specificity lines. Called fresh (new canvas each time) rather than
-// reused/patched, since HTML5 canvas has no equivalent of Plotly's
-// `react`-onto-existing-node update.
+// personTooltip: the text a dot shows on hover -- the person's condition,
+// then one line per test they have taken so far. After `rounds` tests a
+// person cleared in an earlier round wasn't retested (only positives are),
+// so their later lines say so instead of inventing a result.
+function personTooltip(person, rounds) {
+  let lines = ["Does not have the condition"]
+  if (person.infected) lines = ["Has the condition"]
+  for (let round = 1; round <= rounds; round++) {
+    if (person.clearedRound !== null && person.clearedRound < round) {
+      lines.push(`Test ${round}: not retested`)
+      break
+    }
+    let outcome = "positive"
+    if (person.clearedRound === round) outcome = "negative"
+    lines.push(`Test ${round}: ${outcome}`)
+  }
+  return lines.join("\n")
+}
+
+// tooltipElement: the page's single tooltip node, created on first use and
+// appended to <body> rather than inside a cell -- looked up by id each
+// time, since cells re-run and must not create a second one. While the
+// chart block is fullscreened it is moved inside that block instead: the
+// Fullscreen API paints only the fullscreened element's own subtree on
+// top, so a body-level tooltip -- whatever its z-index -- would sit
+// underneath the picture it annotates. Moved back to <body> on the first
+// hover after leaving fullscreen.
+function tooltipElement() {
+  let tip = document.getElementById("ppv-tooltip")
+  if (tip === null) {
+    tip = document.createElement("div")
+    tip.id = "ppv-tooltip"
+    tip.setAttribute("role", "tooltip")
+    tip.hidden = true
+  }
+  let host = document.body
+  if (document.fullscreenElement !== null) host = document.fullscreenElement
+  if (tip.parentNode !== host) host.appendChild(tip)
+  return tip
+}
+
+// attachTooltip: shows each circle's data-tip text beside the pointer while
+// it is over that circle, and hides it in the gaps between dots and when
+// the pointer leaves the grid. Delegated on the <svg>, one listener set per
+// grid instead of three per circle; pointer events cover mouse and touch
+// (a tap fires pointerover) alike. The tooltip is offset down-right of the
+// pointer and flipped to the other side near the viewport's right or
+// bottom edge so it never runs off screen.
+function attachTooltip(svg) {
+  const offset = 12
+  const show = (event) => {
+    const text = event.target.dataset?.tip
+    const tip = tooltipElement()
+    if (text === undefined) {
+      tip.hidden = true
+      return
+    }
+    tip.textContent = text
+    tip.hidden = false
+    move(event)
+  }
+  const move = (event) => {
+    const tip = tooltipElement()
+    if (tip.hidden) return
+    let left = event.clientX + offset
+    let top = event.clientY + offset
+    if (left + tip.offsetWidth > window.innerWidth) left = event.clientX - offset - tip.offsetWidth
+    if (top + tip.offsetHeight > window.innerHeight) top = event.clientY - offset - tip.offsetHeight
+    tip.style.left = `${left}px`
+    tip.style.top = `${top}px`
+  }
+  const hide = () => { tooltipElement().hidden = true }
+  svg.addEventListener("pointerover", show)
+  svg.addEventListener("pointermove", move)
+  svg.addEventListener("pointerleave", hide)
+}
+
+// drawGrid: one dot per person, laid out column-major on a grid. Hue is the
+// person's true condition; a solid dot is still testing positive, a hollow
+// one has been cleared, faded by how many tests ago (fadeOpacity).
+// options.rounds is how many tests have been applied: 0 draws the bare
+// population with every dot solid -- the test is what hollows out the
+// people it clears, so whoever is still solid afterwards is a positive
+// result. Every slider position draws the same people in the same slots,
+// so the reader can follow one dot as the tests are applied. Hovering a
+// dot shows personTooltip's text (attachTooltip) -- not via an SVG <title>,
+// which the browser only surfaces after the pointer has sat still on the
+// element for about a second, a delay any drift across a grid of 1,000
+// tiny dots keeps resetting, so it almost never actually appeared.
 //
-// options.borderColor: colors this canvas's own outer border, so it can be
-// made to match the highlightColor box drawn in the *previous* canvas —
-// that's the visual cue that this whole canvas is that box, zoomed in.
-// options.highlightColor: if given, draws a colored box around this
-// canvas's positive-test region, in the color the *next* canvas's border
-// will use.
-function drawDiagnosticCanvas(points, prevalence, sensitivity, specificity, options = {}) {
-  const width = options.width ?? config.canvas.width
-  const height = options.height ?? config.canvas.height
-  const pointRadius = options.pointRadius ?? config.canvas.pointRadius
-  const borderColor = options.borderColor ?? config.colors.outline
-  const highlightColor = options.highlightColor ?? null
+// Returns an inline SVG with a viewBox, stretched to the column's full
+// width by CSS -- so the grid is always page-wide, whatever the column
+// width, rather than a fixed 720px block sitting left-aligned in it.
+function drawGrid(people, options = {}) {
+  const rounds = options.rounds ?? 1
+  const width = config.grid.width
+  const count = people.length
+  const columns = config.grid.columns
+  const rows = Math.ceil(count / columns)
+  const pitch = width / columns
+  const height = rows * pitch
+  const radius = pitch * 0.36
+  const ringWidth = Math.max(1.2, radius * 0.28)
 
-  const canvas = DOM.canvas(width, height)
-  // The canvas's pixel buffer stays fixed at `width`x`height` (every
-  // coordinate above is computed in that space), but its on-page box
-  // scales to fill the column via CSS -- otherwise it renders at its
-  // fixed 720px intrinsic size, left-aligned and narrower than the
-  // full-width explanation panel below it, so the two never share a
-  // right edge.
-  canvas.style.display = "block"
-  canvas.style.width = "100%"
-  canvas.style.height = "auto"
-  const ctx = canvas.getContext("2d")
-
-  const {linePositions} = calculateTestMetrics(points, prevalence, sensitivity, specificity, width)
-  const {sensitivityLinePosition, specificityLinePosition} = linePositions
-  const prevalenceLinePosition = prevalence * width
-
-  ctx.fillStyle = config.colors.background
-  ctx.fillRect(0, 0, sensitivityLinePosition, height)
-  ctx.fillRect(specificityLinePosition, 0, width - specificityLinePosition, height)
-
-  // Inset by half the line width — strokeRect centers its path on the
-  // rectangle's own edge, so an uninset stroke at (0,0,width,height) gets
-  // half its thickness clipped off-canvas, which mattered little at the
-  // old flat 2-4px but silently halved the visible effect of a scaled-up
-  // borderWidth.
-  const outerBorderWidth = options.borderWidth ?? (borderColor === config.colors.outline ? 2 : 4)
-  ctx.strokeStyle = borderColor
-  ctx.lineWidth = outerBorderWidth
-  ctx.strokeRect(outerBorderWidth / 2, outerBorderWidth / 2, width - outerBorderWidth, height - outerBorderWidth)
-
-  for (const point of points) {
-    ctx.fillStyle = point.x < prevalenceLinePosition ? config.colors.infected : config.colors.healthy
-    ctx.beginPath()
-    ctx.arc(point.x, point.y, pointRadius, 0, 2 * Math.PI)
-    ctx.fill()
+  // Slot order: by fixed shuffle key, or by category (the order people
+  // arrive in from makePeople).
+  const order = []
+  for (let i = 0; i < count; i++) order.push(i)
+  if (layout === "shuffled") {
+    order.sort((a, b) => people[a].key - people[b].key)
   }
 
-  // The sensitivity/specificity thresholds no longer need their own
-  // neutral marker lines — the shaded background regions already show
-  // them, and the highlightColor box below (when present) traces the
-  // same boundary in color.
-  if (highlightColor) {
-    ctx.strokeStyle = highlightColor
-    ctx.lineWidth = 3
-    ctx.strokeRect(sensitivityLinePosition + 1.5, 1.5, specificityLinePosition - sensitivityLinePosition - 3, height - 3)
+  let circles = ""
+  for (let slot = 0; slot < count; slot++) {
+    const person = people[order[slot]]
+    const cx = (Math.floor(slot / rows) + 0.5) * pitch
+    const cy = ((slot % rows) + 0.5) * pitch
+    let color = config.colors.healthy
+    if (person.infected) color = config.colors.infected
+    // A literal newline inside a quoted attribute is kept as-is by the HTML
+    // parser; the tooltip's white-space: pre-line turns it into a line break.
+    const tip = `data-tip="${personTooltip(person, rounds)}"`
+    if (rounds > 0 && person.clearedRound !== null && person.clearedRound <= rounds) {
+      const opacity = fadeOpacity(rounds, person.clearedRound, person.infected)
+      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${(radius - ringWidth / 2).toFixed(2)}" fill="none" stroke="${color}" stroke-width="${ringWidth.toFixed(2)}" opacity="${opacity.toFixed(3)}" ${tip}/>`
+    } else {
+      circles += `<circle cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" r="${radius.toFixed(2)}" fill="${color}" ${tip}/>`
+    }
   }
 
-  return canvas
+  // Returned inside a <div>, not as the bare <svg>: Quarto's OJS output
+  // inspects a bare SVGSVGElement as a value ("SVGSVGElement {}") instead
+  // of inserting it, whereas an HTMLElement is inserted as a node.
+  const holder = document.createElement("div")
+  holder.className = "ppv-grid"
+  holder.innerHTML = `<svg viewBox="0 0 ${width} ${height.toFixed(2)}" xmlns="http://www.w3.org/2000/svg" role="img">${circles}</svg>`
+  const svg = holder.firstElementChild
+  // A hollow ring has fill="none", and by default only its painted stroke
+  // is hoverable -- the hole in the middle would show no tooltip. "all"
+  // (inherited by every circle) makes the whole disc a target either way.
+  svg.style.pointerEvents = "all"
+  attachTooltip(svg)
+  return holder
+}
+
+// swatch: the inline legend mark used in the explanation panels -- a solid
+// dot, or a hollow ring at the given fade -- matching how the grids draw
+// people.
+function swatch(color, filled, opacity = 1) {
+  let cls = "ppv-swatch"
+  if (filled) cls += " filled"
+  return html`<i class="${cls}" style="color: ${color}; opacity: ${opacity}"></i>`
+}
+
+// legendPanel: the panel under the grid -- a title, then one row per kind of
+// dot in the picture (`rows` is [{color, filled, opacity, count, label}]),
+// and an optional closing note (PPV and so on). Two rows may share a
+// swatch: the picture draws a person missed by the first test and one
+// missed by the second identically, and the legend lists them apart
+// rather than summing them into one number the picture can't show.
+function legendPanel(title, rows, note) {
+  const cells = []
+  for (const row of rows) {
+    cells.push(swatch(row.color, row.filled, row.opacity ?? 1))
+    cells.push(html`<span class="ppv-legend-count">${row.count}</span>`)
+    cells.push(html`<span>${row.label}</span>`)
+  }
+  let noteNode = ""
+  if (note) noteNode = html`<div class="ppv-legend-note">${note}</div>`
+  return html`<div class="ojs-panel"><strong>${title}</strong><div class="ppv-legend-rows">${cells}</div>${noteNode}</div>`
 }
 ```
 
 <div class="ojs-panel ojs-grid">
 
+```{ojs}
+viewof prevalence = {
+  const params = new URLSearchParams(window.location.search)
+  // Step 0.001 is one person in the 1,000, and the real 6.6 per 1,000
+  // (see References) rounds to the default of 7 -- the grid can show seven
+  // people, where the old point cloud had to start at 1% to show anything
+  // at all.
+  return Inputs.range([0, 1], {step: 0.001, value: paramNumber(params, "prevalence", 0.007), label: "Prevalence"})
+}
+```
 
 ```{ojs}
 viewof sensitivity = {
   const params = new URLSearchParams(window.location.search)
-  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "sensitivity", 0.8), label: "Sensitivity"})
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "sensitivity", 0.87), label: "Sensitivity"})
 }
 ```
 
 ```{ojs}
 viewof specificity = {
   const params = new URLSearchParams(window.location.search)
-  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "specificity", 0.9), label: "Specificity"})
-}
-```
-
-```{ojs}
-viewof prevalence = {
-  const params = new URLSearchParams(window.location.search)
-  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "prevalence", 0.11), label: "Prevalence"})
+  return Inputs.range([0, 1], {step: 0.01, value: paramNumber(params, "specificity", 0.92), label: "Specificity"})
 }
 ```
 
@@ -260,108 +505,252 @@ viewof prevalence = {
 
 ```{ojs}
 //| output: false
-// urlSync: mirrors the current slider values into the URL's query string on
-// every change, so the address bar stays a shareable link. Runs directly
-// off the reactive slider values (no "Plot" commit step, unlike the
-// text-expression fields on other pages) since reclassifying the point
-// cloud is cheap enough to redo on every drag tick.
+// urlSync: mirrors the current control values into the URL's query string
+// on every change, so the address bar stays a shareable link. Runs
+// directly off the reactive values (no "Plot" commit step, unlike the
+// text-expression fields on other pages) since redrawing a thousand
+// circles is cheap enough to redo on every drag tick.
 urlSync = {
   const params = new URLSearchParams(window.location.search)
   params.set("prevalence", String(prevalence))
   params.set("sensitivity", String(sensitivity))
   params.set("specificity", String(specificity))
+  params.set("layout", layout)
+  params.set("tests", String(tests))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 }
 ```
 
 ```{ojs}
 //| output: false
-initialResults = calculateTestMetrics(points, prevalence, sensitivity, specificity, config.canvas.width)
+// infectedCount: how many of the 1,000 have the condition -- prevalence
+// rounded to whole people, so at zero tests the grid shows exactly this
+// many red.
+infectedCount = Math.round(prevalence * config.grid.population)
+
+// splits[r]: how the people going into test r split under it, for r from
+// 1 to maxTests (splits[0] is unused, so the index is the round number).
+// Test 1 is given to the whole population; each later test only to the
+// previous round's positives, whose split by condition is exact (they
+// *are* the true and false positives), so only that test's outcome is
+// rounded again.
+splits = {
+  const list = [null]
+  list.push(splitByTest(infectedCount, config.grid.population - infectedCount, sensitivity, specificity))
+  for (let round = 2; round <= config.maxTests; round++) {
+    const previous = list[round - 1]
+    list.push(splitByTest(previous.truePositives, previous.falsePositives, sensitivity, specificity))
+  }
+  return list
+}
+
+// ppvs[r]: the exact PPV after r positive tests, with ppvs[0] the raw
+// prevalence -- so ppvs[r - 1] is also the effective prevalence going into
+// test r, which is what makes each repeat test start from a sharper
+// population than the last. npvs[r] likewise, for a negative on test r.
+ppvs = {
+  const list = [prevalence]
+  for (let round = 1; round <= config.maxTests; round++) {
+    list.push(ppvOf(list[round - 1], sensitivity, specificity))
+  }
+  return list
+}
+
+npvs = {
+  const list = [null]
+  for (let round = 1; round <= config.maxTests; round++) {
+    list.push(npvOf(ppvs[round - 1], sensitivity, specificity))
+  }
+  return list
+}
+
+// people: every person's result from every test, in one array -- the grid
+// draws it with rounds: tests, so every slider position is the same people
+// in the same slots. Built without depending on `tests`, so scrubbing the
+// slider only redraws; it doesn't recompute anyone's results.
+people = {
+  const list = makePeople(splits[1], shuffleKeys)
+  for (let round = 2; round <= config.maxTests; round++) {
+    applyRetest(list, splits[round], round)
+  }
+  return list
+}
+```
+
+<div class="ojs-chart-block ojs-svg-block">
+
+<div class="ojs-chart-controls ojs-row">
+
+```{ojs}
+viewof tests = {
+  const params = new URLSearchParams(window.location.search)
+  let initial = paramNumber(params, "tests", 1)
+  initial = Math.min(config.maxTests, Math.max(0, Math.round(initial)))
+  // 0 is the bare population, every dot solid; each step applies one more
+  // test to whoever is still positive. Lives in the chart-controls bar
+  // (see CLAUDE.md) so it sits directly above the picture it scrubs, and
+  // so slider-play.js gives it a play button that sweeps the tests.
+  const slider = Inputs.range([0, config.maxTests], {step: 1, value: initial, label: "Tests"})
+  // .ojs-fill lifts Observable's 360px cap on the form so the track takes
+  // the width the layout toggle leaves, as every other page's step slider
+  // does; without it the label, play button and readout leave ~90px of track.
+  slider.classList.add("ojs-fill")
+  return slider
+}
 ```
 
 ```{ojs}
-drawDiagnosticCanvas(points, prevalence, sensitivity, specificity, {highlightColor: config.colors.zoomStep1})
+viewof layout = {
+  const params = new URLSearchParams(window.location.search)
+  let initial = "shuffled"
+  if (params.get("layout") === "sorted") initial = "sorted"
+  // Shuffled is the honest default -- in a real population you can't tell
+  // who has the condition by where they're standing. Sorted groups each
+  // category into a block, which is easier to count. Unlabelled, and in
+  // the bar beside the tests slider (the .ojs-row's last div, so it keeps
+  // its natural width while the slider fills the rest): the two options
+  // name themselves, and it changes only how the picture is drawn.
+  return Inputs.radio(new Map([["Shuffled", "shuffled"], ["Sorted", "sorted"]]), {value: initial})
+}
 ```
 
+</div>
+
 ```{ojs}
-html`<div class="ojs-panel"><strong>Original population.</strong> The <strong style="color: ${config.colors.zoomStep1}">blue box</strong> marks everyone who tests positive — that's exactly the population the next canvas (matching blue border) zooms into. Positive predictive value (chance you have the condition, given a positive test): <strong>${formatPct(initialResults.ppv)}</strong>. Negative predictive value: <strong>${formatPct(initialResults.npv)}</strong>.</div>`
+drawGrid(people, {rounds: tests})
 ```
+
+</div>
 
 ```{ojs}
 //| output: false
-// positiveResults1: everyone whose first test was positive (true and false
-// positives together) — this is the population a repeat test is drawn from.
-positiveResults1 = {
-  const combined = []
-  for (const point of initialResults.classifications.truePositives) combined.push(point)
-  for (const point of initialResults.classifications.falsePositives) combined.push(point)
-  return combined
+// legendTitle / legendRows / legendNote: the legend under the grid for the
+// current slider position. It is cumulative: after `tests` tests it lists
+// the people still positive, then everyone cleared in each round so far,
+// latest round first -- the picture still shows all of them (fainter the
+// earlier they were cleared), so the legend still counts all of them.
+ordinal = ["zero", "one", "two", "three", "four", "five"]
+
+function legendTitle(rounds) {
+  if (rounds === 0) return "The population, before any test"
+  if (rounds === 1) return "After one test"
+  return `After ${ordinal[rounds]} tests, each given to the previous test's positives`
 }
-stretchedPoints1 = stretchPoints(positiveResults1, initialResults.linePositions.sensitivityLinePosition, initialResults.linePositions.specificityLinePosition, 0, config.canvas.width)
-// zoomScale1: how much wider the blue box got when stretched to fill this
-// canvas — drives this canvas's border thickness below.
-zoomScale1 = config.canvas.width / (initialResults.linePositions.specificityLinePosition - initialResults.linePositions.sensitivityLinePosition)
-newPrevalence1 = initialResults.ppv
-results1 = calculateTestMetrics(stretchedPoints1, newPrevalence1, sensitivity, specificity, config.canvas.width)
-```
 
-```{ojs}
-drawDiagnosticCanvas(stretchedPoints1, newPrevalence1, sensitivity, specificity, {pointRadius: 3, borderColor: config.colors.zoomStep1, borderWidth: zoomBorderWidth(zoomScale1), highlightColor: config.colors.zoomStep2})
-```
+function legendRows(rounds) {
+  const red = config.colors.infected
+  const dark = config.colors.healthy
+  const rows = []
+  if (rounds === 0) {
+    rows.push({color: red, filled: true, count: infectedCount, label: `with the condition (${formatPct(prevalence)})`})
+    rows.push({color: dark, filled: true, count: config.grid.population - infectedCount, label: "without the condition"})
+    return rows
+  }
 
-```{ojs}
-html`<div class="ojs-panel"><strong>After a second positive test</strong> — this is the blue box above, stretched to fill the canvas. The <strong style="color: ${config.colors.zoomStep2}">orange box</strong> is this round's positive-test population, which becomes the next (orange-bordered) canvas. Effective prevalence is now ${formatPct(newPrevalence1)} — PPV jumps to <strong>${formatPct(results1.ppv)}</strong>.</div>`
-```
+  let positive = "tested positive"
+  if (rounds === 2) positive = "positive on both tests"
+  if (rounds >= 3) positive = `positive on all ${ordinal[rounds]} tests`
+  const last = splits[rounds]
+  rows.push({color: red, filled: true, count: last.truePositives, label: `with the condition, ${positive}`})
+  rows.push({color: dark, filled: true, count: last.falsePositives, label: `without the condition, ${positive} (false alarm)`})
 
-```{ojs}
-//| output: false
-positiveResults2 = {
-  const combined = []
-  for (const point of results1.classifications.truePositives) combined.push(point)
-  for (const point of results1.classifications.falsePositives) combined.push(point)
-  return combined
+  // The cleared people, one row per round, latest first -- matching the
+  // picture, where the latest round's rings are the most visible.
+  for (let round = rounds; round >= 1; round--) {
+    let missed = `missed by test ${round}`
+    if (rounds === 1) missed = "tested negative (missed)"
+    if (round < rounds) missed += " (not retested)"
+    rows.push({color: red, filled: false, count: splits[round].falseNegatives, label: `with the condition, ${missed}`})
+  }
+  for (let round = rounds; round >= 1; round--) {
+    let cleared = `cleared by test ${round}`
+    if (rounds === 1) cleared = "tested negative (cleared)"
+    if (round < rounds) cleared += " (not retested)"
+    rows.push({color: dark, filled: false, opacity: fadeOpacity(rounds, round, false), count: splits[round].trueNegatives, label: `without the condition, ${cleared}`})
+  }
+  return rows
 }
-stretchedPoints2 = stretchPoints(positiveResults2, results1.linePositions.sensitivityLinePosition, results1.linePositions.specificityLinePosition, 0, config.canvas.width)
-zoomScale2 = config.canvas.width / (results1.linePositions.specificityLinePosition - results1.linePositions.sensitivityLinePosition)
-newPrevalence2 = results1.ppv
-results2 = calculateTestMetrics(stretchedPoints2, newPrevalence2, sensitivity, specificity, config.canvas.width)
+
+function legendNote(rounds) {
+  if (rounds === 0) {
+    return html`Move the <em>Tests</em> slider to give everyone a test.`
+  }
+  const last = splits[rounds]
+  if (rounds === 1) {
+    return html`${last.positives} tested positive. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(ppvs[1])}</strong>. Negative predictive value: <strong>${formatPct(npvs[1])}</strong>.`
+  }
+  const previous = splits[rounds - 1]
+  return html`Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(ppvs[rounds - 1])}. Positive predictive value after ${ordinal[rounds]} positive tests: <strong>${formatPct(ppvs[rounds])}</strong>. Negative predictive value of test ${rounds}: <strong>${formatPct(npvs[rounds])}</strong>.`
+}
 ```
 
 ```{ojs}
-drawDiagnosticCanvas(stretchedPoints2, newPrevalence2, sensitivity, specificity, {pointRadius: 4, borderColor: config.colors.zoomStep2, borderWidth: zoomBorderWidth(zoomScale2)})
-```
-
-```{ojs}
-html`<div class="ojs-panel"><strong>After a third positive test</strong> — the orange box above, stretched to fill the canvas. Effective prevalence ${formatPct(newPrevalence2)} — PPV: <strong>${formatPct(results2.ppv)}</strong>.</div>`
+legendPanel(legendTitle(tests), legendRows(tests), legendNote(tests))
 ```
 
 ::: {.callout-note collapse="true" title="Summary table"}
 
 ```{ojs}
 summaryTable = {
-  const row = (step, effectivePrevalence, ppv, npv) => [step, formatPct(effectivePrevalence), formatPct(ppv), formatPct(npv)]
+  const rows = []
+  for (let round = 1; round <= config.maxTests; round++) {
+    let step = `${round} positive tests`
+    if (round === 1) step = "1 positive test"
+    rows.push([
+      step,
+      formatPct(ppvs[round - 1]),
+      `${splits[round].truePositives} of ${splits[round].positives}`,
+      formatPct(ppvs[round]),
+      formatPct(npvs[round])
+    ])
+  }
 
   return VM.ui.renderTable({
     html,
-    headers: ["Round", "Effective prevalence", "PPV", "NPV"],
+    headers: ["Round", "Effective prevalence", "Positives who have it (in the picture)", "PPV", "NPV"],
     filename: "bayes-theorem-summary.csv",
-    rows: [
-      row("1 positive test", prevalence, initialResults.ppv, initialResults.npv),
-      row("2 positive tests", newPrevalence1, results1.ppv, results1.npv),
-      row("3 positive tests", newPrevalence2, results2.ppv, results2.npv)
-    ]
+    rows
   })
 }
 ```
 
 :::
 
+Even a highly accurate test gives a weak positive result when the condition is rare: the healthy population is so much larger that a small false-positive rate among them outnumbers the true positives among the few who are sick. That is what the solid dots show: a handful of red in a crowd of dark.
 
-
-Even with a highly accurate test, a positive result is far less conclusive than it sounds when the condition is rare: there are so many more healthy people that a small false-positive rate among them can outnumber the true positives among the few who are actually sick. That's what the shaded regions above show — the region between the lines mixes true and false positives, and at low prevalence the false ones dominate.
-
-This is also why retesting works so well. Each repeat test is applied to a population where the *effective* prevalence has already jumped to the previous round's PPV, so the same sensitivity and specificity produce a much sharper result — and the chance of missing the condition across repeated tests (the false-negative rate, compounding each round) shrinks just as fast. These updates are exactly what Bayes' theorem formalizes:
+Retesting works because each repeat test starts from a population whose prevalence is the previous round's PPV, so the same sensitivity and specificity give a much sharper result. Bayes' rule is this update, with the denominator split into the two ways a test can come back positive:
 
 $$
-P(\text{condition} \mid \text{positive}) = \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})}.
+\begin{aligned}
+P(\text{condition} \mid \text{positive})
+&= \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}{P(\text{positive})} \\[0.6em]
+&= \frac{P(\text{positive} \mid \text{condition})\, P(\text{condition})}
+        {P(\text{positive} \mid \text{condition})\, P(\text{condition}) + P(\text{positive} \mid \text{no condition})\, P(\text{no condition})} \\[0.6em]
+&= \frac{\text{true positives}}{\text{true positives} + \text{false positives}}.
+\end{aligned}
 $$
+
+## Screening in practice
+
+A positive mammogram is not a diagnosis; it starts a three-round process. Each round is one row of the retesting table above: the PPV coming out of one round is the prevalence going into the next.
+
+::: {.ppv-flow}
+::: {.ppv-flow-step}
+[Screening mammogram]{.ppv-flow-label}
+flags about 8% of women for a closer look (recall)
+:::
+::: {.ppv-flow-step}
+[Diagnostic imaging]{.ppv-flow-label}
+additional views, ultrasound or MRI clear about four in five of those recalled
+:::
+::: {.ppv-flow-step}
+[Biopsy]{.ppv-flow-label}
+confirms cancer in about a third of the remaining cases
+:::
+:::
+
+Per 1,000 women screened in Lee et al.'s data: 83 are recalled, about 18 go on to biopsy, and 6 have cancer. The PPV rises from 7% after the screening mammogram to 32% after biopsy.
+
+## References
+
+- Lee, C. I., Abraham, L., Miglioretti, D. L., Stout, N. K., Kerlikowske, K., Henderson, L. M., Tosteson, A. N. A., Bissell, M. C. S., Onega, T., Sprague, B. L., Sabatino, S. A., Lawson, M. B., Lowry, K. P., Buist, D. S. M., & Breast Cancer Surveillance Consortium (2023). National Performance Benchmarks for Screening Digital Breast Tomosynthesis: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 307(4), e222499. [https://doi.org/10.1148/radiol.222499](https://doi.org/10.1148/radiol.222499). Source of this page's sensitivity (87.4%), specificity (92.2%) and prevalence (5.8 cancers detected plus 0.8 missed per 1,000 screens), plus the recall rate (8.3%) and the PPV after screening (6.9%) and after biopsy (32.2%), from 458,175 U.S. screening examinations, 2011–2018.

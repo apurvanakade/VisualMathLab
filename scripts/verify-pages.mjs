@@ -136,7 +136,7 @@ async function checkSliderControls(page, errors) {
     const MIN_TRACK_PX = 100
     const MIN_TRACK_RATIO = 0.35
     const bad = []
-    for (const input of document.querySelectorAll('.ojs-panel input[type="range"], .ojs-step-overlay input[type="range"]')) {
+    for (const input of document.querySelectorAll('.ojs-panel input[type="range"], .ojs-chart-controls input[type="range"]')) {
       const form = input.closest('form') || input
       // Skip anything not actually laid out: a collapsed callout, or a panel
       // hidden at this viewport. offsetParent is null for display:none

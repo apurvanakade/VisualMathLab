@@ -1,5 +1,6 @@
 ---
 title: "Privacy & Cookies"
+toc: true
 ---
 
 <!--
@@ -13,24 +14,30 @@ in your browser: the functions you type, the parameters you set, and the
 numbers that come out of them are computed locally and never sent anywhere.
 There is no backend, no account system, and no database.
 
-The only data that leaves your browser is anonymous usage analytics, and only
-if you agree to it.
+The only data that leaves your browser *about you* is anonymous usage
+analytics, and only if you agree to it. The one other thing a page fetches
+from outside this site is a few open-source libraries, described under
+[Third-party resources](#third-party-resources) below.
 
 ## What is collected
 
 If you accept analytics, the site sends a small event to
 [Google Analytics](https://policies.google.com/privacy) when you open a page,
 when you scroll to the bottom of one, when you follow a link to another site,
-and when you leave a page. Each event carries:
+and when the page goes out of view (you close it, navigate away, or switch to
+another tab). Each event carries:
 
 - the address of the page you are on, and its title
 - the address of the page that referred you, if any
 - your screen size and browser language
 - a randomly generated identifier, described below
 - how long you spent on the page
+- a per-browser count of visits and of events within the current visit,
+  used to tell a returning visitor from a new one
 
 Google derives an approximate location (typically city-level) from your IP
-address. The IP address itself is not stored by Google Analytics 4.
+address; Google states that the IP address itself is not logged or stored by
+Google Analytics 4.
 
 ## What is *not* collected
 
@@ -45,12 +52,34 @@ address. The IP address itself is not stored by Google Analytics 4.
   address recorded in analytics is stripped of that query string before it is
   sent.
 
+## Third-party resources
+
+Each page loads three open-source libraries from public content-delivery
+networks: [Plotly](https://plotly.com/javascript/) from `cdn.plot.ly`,
+[math.js](https://mathjs.org/) and [MathJax](https://www.mathjax.org/) from
+`cdn.jsdelivr.net`, and a small compatibility script from
+`cdnjs.cloudflare.com`. This happens whether or not you allow analytics,
+because the visualizations cannot run without them.
+
+Like any web request, fetching a file from one of those hosts shows it your
+IP address, and at most that the request came from this site. It does not
+show it which page you are on or what you typed: the site tells your browser
+to send no referrer to any other origin, and the one exception — MathJax
+fetches its own math fonts with a referrer of its choosing — carries only the
+site's domain, never the page. Nothing is stored by those hosts on your
+device, and once your browser has cached a library it does not ask for it
+again.
+
+Fonts are served from this site directly, not from Google Fonts, so no font
+request goes to Google.
+
 ## Cookies and local storage
 
 **This site sets no cookies.** Not for analytics, not for remembering your
 choice about analytics, not for anything else.
 
-A small number of values are kept in your browser's local storage instead:
+A small number of values are kept in your browser's local storage instead.
+Two of them concern analytics:
 
 - **Your answer to the analytics question**, so you are not asked again on
   every page. Stored whether you say yes or no — declining is worth
@@ -61,12 +90,17 @@ A small number of values are kept in your browser's local storage instead:
   generated on your device, is not derived from anything about you, and is
   not linked to any other service. A few related values record whether the
   current visit continues a recent one.
-- **Whether you pinned the navigation sidebar open**, regardless of your
-  answer, so it stays as you left it from page to page.
-- **Where you dragged the controls on an interactive chart**, regardless of
-  your answer — a legend or slider panel you moved off the curve stays where
-  you put it. One small entry per panel you actually move; nothing is stored
-  for panels you leave alone.
+
+The rest are viewing preferences, stored regardless of your answer so the
+site stays as you left it from page to page:
+
+- **Whether you chose the light or dark theme.**
+- **Whether you pinned the navigation sidebar open.**
+- **Where you dragged the legend on an interactive chart** — a legend you
+  moved off the curve stays where you put it. One small entry per chart whose
+  legend you actually move; nothing is stored for the ones you leave alone.
+- **The speed and mode you picked for the play button** that sweeps a slider.
+- **That you have dismissed the one-time notice** shown on small screens.
 
 All of it stays on your device. Clearing your browser's site data for this
 domain erases every one of these values, and you become an unrecognized
@@ -85,7 +119,9 @@ becomes a running script if you say yes.
 
 If your browser sends a Global Privacy Control or Do Not Track signal, that is
 taken as an answer already given: analytics stays off and you are not asked.
-You can still turn it on deliberately through the footer link.
+The browser signal wins even over the footer link — the reopened banner says
+so, and its Allow button is disabled — so to turn analytics on you would have
+to switch the signal off in your browser first.
 
 ## Why collect anything
 

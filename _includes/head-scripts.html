@@ -4,9 +4,28 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!--
+Third-party requests are a privacy surface, and privacy.qmd describes it, so
+keep that page in step with anything added here.
+
+- Send no Referer to any other origin. Every page's query string is the
+  visitor's own math input (see the URL-shareable inputs section of
+  CLAUDE.md); without this, a CDN could see it on every request. Browsers'
+  default policy already trims cross-origin referrers to the bare origin,
+  but a document-wide policy makes privacy.qmd's claim independent of
+  browser defaults, and it also covers the MathJax and polyfill scripts
+  Quarto injects further down <head>, which no per-tag attribute could
+  reach. Outbound links (GitHub) carry no referrer either; nothing here
+  relies on one. (Measured: the only cross-origin requests that still carry
+  a Referer are MathJax's own font fetches, which it issues with its own
+  policy, and they carry the bare origin -- never the path or query string.)
+- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
+  only third-party origins a page loads from are the script CDNs below plus
+  Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+-->
+<meta name="referrer" content="same-origin">
+
+<link rel="stylesheet" href="/fonts/fonts.css">
 
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
@@ -19,6 +38,7 @@ Authors: Apurva Nakade
 <script src="/js/plotting/padded-range.js"></script>
 <script src="/js/plotting/chart-theme.js"></script>
 <script src="/js/plotting/plotly-fullscreen-button.js"></script>
+<script src="/js/plotting/svg-fullscreen-button.js"></script>
 <script src="/js/numerical/linear-regression.js"></script>
 <script src="/js/numerical/l1-regression.js"></script>
 <script src="/js/numerical/polynomial-fit.js"></script>
@@ -34,6 +54,25 @@ Authors: Apurva Nakade
 <script src="/js/stats/f-dist.js"></script>
 <script src="/js/sampling/seeded-random.js"></script>
 <script src="/js/sampling/gaussian-random.js"></script>
+<script src="/js/distributions/log-gamma.js"></script>
+<script src="/js/distributions/sample-curve.js"></script>
+<script src="/js/distributions/histogram-bins.js"></script>
+<script src="/js/distributions/bernoulli-pmf.js"></script>
+<script src="/js/distributions/binomial-pmf.js"></script>
+<script src="/js/distributions/poisson-pmf.js"></script>
+<script src="/js/distributions/geometric-pmf.js"></script>
+<script src="/js/distributions/exponential-pdf.js"></script>
+<script src="/js/distributions/normal-pdf.js"></script>
+<script src="/js/distributions/gamma-pdf.js"></script>
+<script src="/js/distributions/chi-squared-pdf.js"></script>
+<script src="/js/distributions/beta-pdf.js"></script>
+<script src="/js/distributions/student-t-pdf.js"></script>
+<script src="/js/distributions/f-pdf.js"></script>
+<script src="/js/distributions/negative-binomial-pmf.js"></script>
+<script src="/js/distributions/hypergeometric-pmf.js"></script>
+<script src="/js/distributions/lognormal-pdf.js"></script>
+<script src="/js/distributions/cauchy-pdf.js"></script>
+<script src="/js/distributions/weibull-pdf.js"></script>
 <script src="/js/filters/moving-average-filter.js"></script>
 <script src="/js/filters/ema-filter.js"></script>
 <script src="/js/filters/kalman-1d-filter.js"></script>
@@ -49,5 +88,6 @@ Authors: Apurva Nakade
 <script src="/js/discrete-math/triangulation-edges.js"></script>
 <script src="/js/discrete-math/sperner-color.js"></script>
 <script src="/js/discrete-math/random-color.js"></script>
+<script src="/js/discrete-math/vertex-color.js"></script>
 <script src="/js/discrete-math/mixed-pair-color.js"></script>
 <script src="/js/discrete-math/triangle-fill-color.js"></script>

@@ -7,7 +7,6 @@ author: Apurva Nakade
 order: 1
 image: barycentric-coordinates.png
 categories: [Discrete Math, Triangles, Barycentric Coordinates]
-toc: false
 ---
 
 <!--
@@ -24,7 +23,26 @@ P = iA + jB + kC
 $$
 where $i$, $j$, and $k$ are the barycentric coordinates, satisfying $i + j + k = 1$ and $i, j, k \geq 0$. The barycentric coordinates can be interpreted as the relative areas of the sub-triangles formed with the point $P$ and the vertices of the triangle.
 
-Move the blue point around the triangle below and watch how the barycentric coordinates change. You can also move the vertices of the red triangle and observe how the coordinates adapt.
+Move the <span class="vm-swatch vm-swatch-accent">blue</span> point around the triangle below and watch how the barycentric coordinates change. You can also move the vertices of the <span class="vm-swatch vm-swatch-alt">red</span> triangle and observe how the coordinates adapt.
+
+<style>
+/* Page-local: the canvas is drawn at a fixed 800x300 resolution; this
+   centers it in the column and lets it shrink on a narrow viewport (the
+   mouse handlers below rescale client coordinates to match). The only
+   canvas on the site, so the rule lives here (see CLAUDE.md). */
+.barycentric-canvas {
+  display: block;
+  margin-inline: auto;
+  max-width: 100%;
+  height: auto;
+}
+</style>
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page reads VM.plotting.colors() and VM.plotting.alpha() on every frame of its own draw loop, which is what keeps the canvas on the site palette across a dark-mode toggle without re-running the cell (that would leave the old animation loop running on a detached canvas).
+VM = window.VM
+```
 
 ```{ojs}
 // === Class Definitions ===
@@ -71,7 +89,7 @@ class Triangle {
     return this.canvasObj.fromCanvas(p);
   }
 
-  draw({ fillStyle = null, strokeStyle = "black", vertexColor = null } = {}) {
+  draw({ fillStyle = null, strokeStyle = null, vertexColor = null } = {}) {
     const { CanvasA, CanvasB, CanvasC, ctx } = this;
     ctx.beginPath();
     ctx.moveTo(...CanvasA);
@@ -97,7 +115,7 @@ class Triangle {
     }
   }
 
-  drawGrid(spacing = 0.1, color = "rgba(200,200,200,0.5)") {
+  drawGrid(spacing = 0.1, color = VM.plotting.alpha("muted", 0.5)) {
     // Steps through integer grid indices (rather than repeatedly adding
     // `spacing`) to avoid floating-point drift at the boundary.
     const { ctx } = this;
@@ -215,7 +233,7 @@ class Canvas {
     return [(x - this.offset[0]) / this.scale, (this.offset[1] - y) / this.scale];
   }
 
-  drawPoint([x, y], color = "black") {
+  drawPoint([x, y], color) {
     const [canvasX, canvasY] = this.toCanvas([x, y]);
     this.ctx.beginPath();
     this.ctx.arc(canvasX, canvasY, 5, 0, 2 * Math.PI);
@@ -224,9 +242,8 @@ class Canvas {
   }
 
   newTriangle(A, B, C, draggable = false) {
-    return draggable
-      ? new DraggableTriangle(A, B, C, this)
-      : new Triangle(A, B, C, this);
+    if (draggable) return new DraggableTriangle(A, B, C, this);
+    return new Triangle(A, B, C, this);
   }
 }
 
@@ -236,7 +253,18 @@ viewof canvas = {
   const scale = 200, offset = [50, 250];
   const canvasInstance = new Canvas(width, height, scale, offset);
   const canvas = canvasInstance.getCanvas();
+  canvas.classList.add("barycentric-canvas");
   const ctx = canvasInstance.getContext();
+
+  // The canvas is CSS-scaled on narrow viewports (see the page-local
+  // <style> above), so a pointer position in client pixels has to be
+  // mapped back to the fixed 800x300 drawing resolution.
+  function canvasPoint(e) {
+    const rect = canvas.getBoundingClientRect();
+    const sx = width / rect.width;
+    const sy = height / rect.height;
+    return [(e.clientX - rect.left) * sx, (e.clientY - rect.top) * sy];
+  }
 
   const A = [0, 0], B = [1, 0], C = [0, 1];
   const redTri = canvasInstance.newTriangle([1.5, 0], [3, 0], [2, 1], true);
@@ -247,22 +275,25 @@ viewof canvas = {
   function draw() {
     ctx.clearRect(0, 0, width, height);
 
+    // Read fresh each frame so a theme toggle repaints on the next frame.
+    const colors = VM.plotting.colors();
+
     const blackTri = canvasInstance.newTriangle(A, B, C);
     blackTri.drawGrid();
-    blackTri.draw({ fillStyle: "rgba(0,0,0,0.2)", strokeStyle: "black" });
+    blackTri.draw({ fillStyle: VM.plotting.alpha("ink", 0.12), strokeStyle: colors.ink });
 
     redTri.drawGrid();
-    redTri.draw({ strokeStyle: "red", vertexColor: "red" });
+    redTri.draw({ strokeStyle: colors.alt, vertexColor: colors.alt });
 
     const k = 1 - current.i - current.j;
     const [x, y] = blackTri.barycentricToCartesian(current.i, current.j);
-    canvasInstance.drawPoint([x, y], "blue");
+    canvasInstance.drawPoint([x, y], colors.fn);
 
     const [gx, gy] = redTri.barycentricToCartesian(current.i, current.j);
-    canvasInstance.drawPoint([gx, gy], "green");
+    canvasInstance.drawPoint([gx, gy], colors.ok);
 
-    ctx.fillStyle = "black";
-    ctx.font = "14px sans-serif";
+    ctx.fillStyle = colors.ink;
+    ctx.font = "14px Inter, system-ui, -apple-system, sans-serif";
     ctx.fillText(`i = ${current.i.toFixed(2)}, j = ${current.j.toFixed(2)}, k = ${k.toFixed(2)}`, 75, height - 100);
     ctx.fillText(`x = ${gx.toFixed(2)}, y = ${gy.toFixed(2)}`, 420, height - 100);
   }
@@ -276,15 +307,11 @@ viewof canvas = {
   }
 
   canvas.addEventListener("mousedown", e => {
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+    const [mx, my] = canvasPoint(e);
 
     if (redTri.startDrag([mx, my])) {
       const move = e => {
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-        redTri.dragTo([mx, my]);
+        redTri.dragTo(canvasPoint(e));
         draw();
       };
       const up = () => {
@@ -297,9 +324,7 @@ viewof canvas = {
     } else {
       // Start tracking movement to update target continuously
       const move = e => {
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-        const [x, y] = canvasInstance.fromCanvas([mx, my]);
+        const [x, y] = canvasInstance.fromCanvas(canvasPoint(e));
         const blackTri = canvasInstance.newTriangle(A, B, C);
         const [bi, bj] = blackTri.cartesianToBarycentric(x, y);
         const snapped = nearestVertex(bi, bj, [[1, 0], [0, 1], [0, 0]], 0.05);

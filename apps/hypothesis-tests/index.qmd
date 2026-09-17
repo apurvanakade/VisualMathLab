@@ -22,9 +22,83 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dhruv Azad
 -->
 
+<style>
+/* Page-local chrome for this app (see the CSS-colocation rule in CLAUDE.md):
+ * nothing here is reused by another page, so it lives with the page rather
+ * than in styles.css. Every color is a --vm-* token, so it re-themes with
+ * the site. */
+
+/* The "what the data looks like" panel that sits above the main
+ * distribution chart -- shorter than .plotly-box-large since it's the
+ * secondary visual. */
+.htest-data-box {
+  width: 100%;
+  height: 320px;
+  min-height: 260px;
+}
+
+/* "Step 1 / Step 2" labels that tie the data panel to the distribution. */
+.htest-steplabel {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.htest-steplabel strong { color: var(--vm-accent); }
+
+/* Muted plain-language helper text under a control or chart. */
+.htest-explain {
+  margin: 0.45rem 0 0.2rem;
+  font-size: 0.85rem;
+  color: var(--vm-text-soft);
+  line-height: 1.55;
+}
+
+/* The live "boil it down to one number" line between the two charts. */
+.htest-bridge {
+  margin: 0.7rem 0;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-surface);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+.htest-bridge code {
+  font-size: 0.95em;
+  background: var(--vm-surface-hover);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+/* One-line plain-language readout of the test decision, under the chart.
+ * The left edge takes the chart's own "reject" / "keep" hues (the same
+ * alt / ok tokens the data panel colors its two groups with). */
+.htest-verdict {
+  margin: 0.6rem 0 0.25rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--vm-border);
+  border-left-width: 4px;
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-surface);
+  line-height: 1.5;
+}
+
+.htest-verdict--reject { border-left-color: var(--vm-alt); }
+.htest-verdict--keep { border-left-color: var(--vm-ok); }
+.htest-verdict--none { border-left-color: var(--vm-border); color: var(--vm-text-soft); }
+
+.htest-verdict-plain { line-height: 1.55; }
+.htest-verdict-formal {
+  margin-top: 0.45rem;
+  font-size: 0.82rem;
+  color: var(--vm-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+</style>
+
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.stats.studentTDist / fDist / chiSquareDist, VM.expressions.makeNumber, VM.plotting.paddedRange / colors / alpha / layout / config / emptyState / autoResize, VM.sampling.seededRandom / gaussianRandom, VM.ui.renderTable / applyExampleParams.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.distributions.studentTPdf / studentTCdf / fPdf / fCdf / chiSquaredPdf / chiSquaredCdf, VM.expressions.makeNumber, VM.plotting.paddedRange / colors / alpha / layout / config / emptyState / autoResize, VM.sampling.seededRandom / gaussianRandom, VM.ui.renderTable / applyExampleParams.
 VM = window.VM
 ```
 
@@ -42,7 +116,7 @@ chartColors = VM.plotting.colors(vmTheme)
 //| output: false
 // The three tests differ only in which sampling distribution the statistic
 // is compared against and in the shape of their input data. testMeta holds
-// the per-test display strings and example presets; result/setup/distPlot
+// the per-test display strings and example presets; result/setup/mainPlot
 // switch on `activeTest` for the math.
 testMeta = ({
   t: {
@@ -85,57 +159,31 @@ testMeta = ({
 })
 ```
 
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
 ```{ojs}
-// The test toggle. A small segmented control implementing Observable
-// Inputs' view contract (a `value` property + an "input" event on change),
-// so `viewof activeTest` works like any other input -- including
-// URL-restore on load and applyExampleParams's set-and-dispatch protocol.
+// The test toggle. A stock radio (the same control the PPV page uses for
+// its Shuffled/Sorted switch) rather than a bespoke widget, so it wears the
+// site's chrome and needs no page-local CSS. Always-live: switching it
+// swaps which field group below is shown and which null distribution the
+// statistic is compared against.
 viewof activeTest = {
   const params = new URLSearchParams(window.location.search)
-  const ids = ["t", "F", "chi"]
-  let current = ids.includes(params.get("test")) ? params.get("test") : "t"
-
-  const root = document.createElement("div")
-  root.className = "htest-segmented"
-  root.setAttribute("role", "tablist")
-
-  const buttons = new Map()
-  for (const id of ids) {
-    const button = document.createElement("button")
-    button.type = "button"
-    button.className = "htest-seg-btn"
-    button.textContent = testMeta[id].label
-    button.addEventListener("click", () => {
-      if (current === id) return
-      current = id
-      paint()
-      root.dispatchEvent(new Event("input", {bubbles: true}))
-    })
-    buttons.set(id, button)
-    root.append(button)
-  }
-
-  const paint = () => {
-    for (const [id, button] of buttons) {
-      if (id === current) button.setAttribute("aria-current", "true")
-      else button.removeAttribute("aria-current")
-    }
-  }
-  paint()
-
-  Object.defineProperty(root, "value", {
-    get() { return current },
-    set(next) { if (buttons.has(next)) { current = next; paint() } }
-  })
-  return root
+  let value = "t"
+  if (["t", "F", "chi"].includes(params.get("test"))) value = params.get("test")
+  const options = new Map()
+  for (const id of ["t", "F", "chi"]) options.set(testMeta[id].label, id)
+  return Inputs.radio(options, {label: "Test", value})
 }
 ```
+
+</div>
 
 ```{ojs}
 md`${testMeta[activeTest].blurb}`
 ```
-
-<div class="ojs-panel">
 
 <div id="htest-group-tf">
 
@@ -424,8 +472,8 @@ result = {
       const pooledVar = ((n1 - 1) * sd1 * sd1 + (n2 - 1) * sd2 * sd2) / df
       const se = Math.sqrt(pooledVar * (1 / n1 + 1 / n2))
       const statistic = (mean1 - mean2) / se
-      const cdf = x => VM.stats.studentTDist(x, df).cdf
-      const pdf = x => VM.stats.studentTDist(x, df).pdf
+      const cdf = x => VM.distributions.studentTCdf(x, df)
+      const pdf = x => VM.distributions.studentTPdf(x, df)
       const Q = p => quantile(cdf, p, -1e4, 1e4)
 
       let pValue, critLines, pValueTails, critAbs
@@ -458,8 +506,8 @@ result = {
     const df1 = n1 - 1
     const df2 = n2 - 1
     const statistic = (sd1 * sd1) / (sd2 * sd2)
-    const cdf = x => VM.stats.fDist(x, df1, df2).cdf
-    const pdf = x => VM.stats.fDist(x, df1, df2).pdf
+    const cdf = x => VM.distributions.fCdf(x, df1, df2)
+    const pdf = x => VM.distributions.fPdf(x, df1, df2)
     const Q = p => quantile(cdf, p, 0, 1e7)
     const cprob = cdf(statistic)
 
@@ -536,8 +584,8 @@ result = {
     statistic += contrib
     categories.push({label: `${i + 1}`, o: obs[i], e: exp[i], contrib})
   }
-  const cdf = x => VM.stats.chiSquareDist(x, df).cdf
-  const pdf = x => VM.stats.chiSquareDist(x, df).pdf
+  const cdf = x => VM.distributions.chiSquaredCdf(x, df)
+  const pdf = x => VM.distributions.chiSquaredPdf(x, df)
   const critValue = quantile(cdf, 1 - alphaVal, 0, 1e7)
   const pValue = 1 - cdf(statistic)
 
@@ -661,12 +709,12 @@ dataPlot = {
         contribText.push(cat.contrib.toFixed(2))
       }
       data.push({
-        x: xs, y: exp, type: "bar", name: "Expected",
+        x: xs, y: exp, type: "bar", name: "Expected", showlegend: false,
         marker: {color: VM.plotting.alpha("muted", 0.45), line: {color: colors.muted, width: 1}},
         hovertemplate: "category %{x}<br>expected %{y:.2f}<extra></extra>"
       })
       data.push({
-        x: xs, y: obs, type: "bar", name: "Observed",
+        x: xs, y: obs, type: "bar", name: "Observed", showlegend: false,
         marker: {color: colors.fn},
         text: contribText, textposition: "outside",
         hovertemplate: "category %{x}<br>observed %{y}<extra></extra>"
@@ -680,8 +728,7 @@ dataPlot = {
         barmode: "group",
         xaxis: {title: "category", type: "category"},
         yaxis: {title: "count", rangemode: "tozero"},
-        showlegend: true,
-        legend: {orientation: "h", y: -0.2},
+        showlegend: false,
         margin: {t: 44},
         annotations
       })
@@ -772,10 +819,10 @@ dataPlot = {
 
 ```{ojs}
 //| output: false
-// distPlot: the null sampling distribution, with the observed statistic
+// mainPlot: the null sampling distribution, with the observed statistic
 // marked, the critical value(s) at the current alpha dashed in, and the
 // p-value tail(s) shaded.
-distPlot = {
+mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
@@ -793,7 +840,7 @@ distPlot = {
       })
       if (!_plotDiv) {
         _plotDiv = document.createElement("div")
-        _plotDiv.className = "htest-dist-box"
+        _plotDiv.className = "plotly-box-large"
         Plotly.newPlot(_plotDiv, [], layout, VM.plotting.config())
         VM.plotting.autoResize(_plotDiv)
       } else {
@@ -865,7 +912,7 @@ distPlot = {
 
     if (!_plotDiv) {
       _plotDiv = document.createElement("div")
-      _plotDiv.className = "htest-dist-box"
+      _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, data, layout, VM.plotting.config())
       VM.plotting.autoResize(_plotDiv)
     } else {
@@ -926,19 +973,23 @@ A perfect fit would give 0. Now see how large χ² usually gets from noise alone
 
 <div class="htest-steplabel"><strong>Step 2 · Compare it to chance</strong> — the curve is every value the statistic could take if H₀ (no real difference) were true. Your value is the solid vertical line; the shaded tail is the p-value.</div>
 
-<div class="ojs-plot-overlay">
+<div class="ojs-chart-block">
 
 ```{ojs}
-distPlot(setup, result, chartColors)
+mainPlot(setup, result, chartColors)
 ```
 
-<div class="ojs-step-overlay">
+<div class="ojs-chart-controls">
 
 ```{ojs}
+// Always-live, so it sits in the slider bar attached to the chart rather
+// than in the controls panel: dragging it moves the critical value(s) and
+// re-reads the decision without a Run test click.
 viewof alpha = {
   const params = new URLSearchParams(window.location.search)
   const parsed = Number(params.get("alpha"))
-  const value = parsed >= 0.005 && parsed <= 0.2 ? parsed : 0.05
+  let value = 0.05
+  if (parsed >= 0.005 && parsed <= 0.2) value = parsed
   const input = Inputs.range([0.005, 0.2], {step: 0.005, value, label: "α (significance level)"})
   input.classList.add("ojs-fill")
   return input

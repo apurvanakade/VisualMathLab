@@ -137,19 +137,6 @@ The sidebar (`#quarto-sidebar`) is forced off-canvas at *every* width (not just 
 - `js/numerical/simpson-estimate.js` → `VM.numerical.simpsonEstimate(f, lo, hi, n)` — composite Simpson's rule quadrature (`n` must be even).
 - `js/numerical/lagrange-quadratic.js` → `VM.numerical.lagrangeQuadratic(x0, y0, x1, y1, x2, y2, sampleCount)` — samples the quadratic interpolant through three points, returning `{xs, ys}`.
 
-**`VM.stats`**
-
-The special-function and sampling-distribution machinery behind the hypothesis-testing app (`apps/hypothesis-tests/index.qmd`). math.js has none of this. The three helper files are load-order-sensitive — `log-gamma.js` first, then the two `regularized-*` files, then the distributions — and `_includes/head-scripts.html` loads them in that order.
-
-- `js/stats/log-gamma.js` → `VM.stats.logGamma(x)` — `ln Γ(x)` via the Lanczos approximation, with the reflection formula for `x < 0.5`. Everything else here works in log space through this so the `Γ(n/2)` normalizers stay finite for the large degrees of freedom a big sample produces.
-- `js/stats/regularized-gamma.js` → `VM.stats.regularizedGammaP(s, x)` — the regularized lower incomplete gamma `P(s, x)`; a power series for `x < s + 1` and the continued fraction for `Q = 1 − P` otherwise. This *is* the chi-square CDF (`P(df/2, x/2)`).
-- `js/stats/regularized-beta.js` → `VM.stats.regularizedBetaI(x, a, b)` — the regularized incomplete beta `I_x(a, b)` via the Lentz continued fraction, with the `I_x(a,b) = 1 − I_{1−x}(b,a)` reflection to keep `x` in the fast-converging region. Both the t and F CDFs reduce to it.
-- `js/stats/student-t-dist.js` → `VM.stats.studentTDist(t, df)` → `{pdf, cdf}` — Student's t density and left-tail probability `P(T ≤ t)`.
-- `js/stats/chi-square-dist.js` → `VM.stats.chiSquareDist(x, df)` → `{pdf, cdf}` — chi-square density and `P(X ≤ x)`; the goodness-of-fit p-value is the right tail `1 − cdf`.
-- `js/stats/f-dist.js` → `VM.stats.fDist(x, df1, df2)` → `{pdf, cdf}` — F density and `P(F ≤ x)`.
-
-There is no `VM.stats` test-runner (`tTest`/`fTest`/`chiSquareTest`) — turning summary stats into a statistic, p-value, and critical value is page-specific arithmetic and lives in the app's `result` cell, the same way each method page's `result` cell owns its method. A quantile (inverse-CDF) is a small bisection helper cell in that page, not a shared function.
-
 **`VM.sampling`**
 
 - `js/sampling/seeded-random.js` → `VM.sampling.seededRandom(seed)` — mulberry32 PRNG factory; returns `() => number` in `[0, 1)`. Deterministic (same seed → same sequence), which is what makes a URL-shared seed reproduce the same noisy demo data.
@@ -168,6 +155,7 @@ Closed-form densities for the standard families, plus the two helpers that turn 
 - `js/distributions/log-gamma.js` → `VM.distributions.logGamma(x)` — Lanczos log-Γ, the shared building block every factorial/Beta-function normalizing constant below is computed through (in log space, so `binomialPmf(k, 500, p)` doesn't overflow on the way to a perfectly ordinary answer).
 - Discrete masses: `bernoulliPmf(k, p)`, `binomialPmf(k, n, p)`, `poissonPmf(k, lambda)`, `geometricPmf(k, p)`.
 - Continuous densities: `exponentialPdf(x, rate)`, `normalPdf(x, mean, variance)` (variance, not sd), `gammaPdf(x, shape, rate)` (rate, not scale), `chiSquaredPdf(x, k)`, `betaPdf(x, a, b)`, `studentTPdf(x, k)`, `fPdf(x, d1, d2)`.
+- Cumulative distribution functions for the three sampling distributions a hypothesis test compares its statistic against (`apps/hypothesis-tests/index.qmd`): `studentTCdf(x, k)`, `chiSquaredCdf(x, k)`, `fCdf(x, d1, d2)` — each the left-tail probability `P(X ≤ x)`, paired with the matching `*Pdf` above (same argument order, same parameterization). They are written through two special functions that live here too: `js/distributions/regularized-gamma.js` → `regularizedGammaP(s, x)`, the regularized lower incomplete gamma (a power series for `x < s + 1`, the continued fraction for `Q = 1 − P` otherwise; the chi-squared CDF is `P(k/2, x/2)`), and `js/distributions/regularized-beta.js` → `regularizedBetaI(x, a, b)`, the regularized incomplete beta via the Lentz continued fraction, reflected through `I_x(a,b) = 1 − I_{1−x}(b,a)` to stay in its fast-converging region (both the t and F CDFs reduce to it). Load-order-sensitive: `log-gamma.js`, then the two `regularized-*` files, then the CDFs — `_includes/head-scripts.html` keeps that order. There is no shared test-runner (`tTest`/`fTest`/`chiSquareTest`): turning summary stats into a statistic, p-value and critical value is page-specific arithmetic and lives in that app's `result` cell, the same way each method page's `result` cell owns its method; the quantile (inverse-CDF) it needs is a small bisection cell on that page, not a shared function.
 - `js/distributions/sample-curve.js` → `VM.distributions.sampleCurve(fn, lo, hi, opts)` — samples `fn` across `[lo, hi]` into `{xs, ys}`. With `opts.discrete: true` it evaluates only at the integers in range instead of on a fine grid, which is what a PMF actually has support on.
 - `js/distributions/histogram-bins.js` → `VM.distributions.histogramBins(samples, binCount, range)` — bins an array of draws, for the pages that do sample.
 

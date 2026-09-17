@@ -23,3 +23,9 @@ test('logGamma stays finite well past the point Gamma itself overflows', () => {
   assert.ok(Number.isFinite(logGamma(500)))
   assert.ok(Number.isFinite(logGamma(2000)))
 })
+
+test('logGamma satisfies the recurrence Gamma(x+1) = x * Gamma(x)', () => {
+  for (const x of [0.3, 1.5, 4.2, 9.9, 40]) {
+    assert.ok(Math.abs(logGamma(x + 1) - (logGamma(x) + Math.log(x))) < 1e-10, `failed at x=${x}`)
+  }
+})

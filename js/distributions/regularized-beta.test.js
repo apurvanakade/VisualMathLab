@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
 
 const VM = loadVM()
-const { regularizedBetaI } = VM.stats
+const { regularizedBetaI } = VM.distributions
 
 test('regularizedBetaI(x, 1, 1) = x (Beta(1,1) is Uniform(0,1))', () => {
   for (const x of [0, 0.2, 0.5, 0.75, 1]) {

@@ -9,7 +9,7 @@ import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
 
 const VM = loadVM()
-const { regularizedGammaP } = VM.stats
+const { regularizedGammaP } = VM.distributions
 
 // erf via the s = 1/2 special case, for the chi-square df = 1 checks below.
 const erf = (z) => regularizedGammaP(0.5, z * z)

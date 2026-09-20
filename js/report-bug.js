@@ -95,19 +95,25 @@
     document.body.appendChild(popup)
   }
 
+  // Not in embed mode: an app framed by another site is that site's content,
+  // and a "Report bug" button pointing at this repository would be noise there.
+  const embedded = document.documentElement?.classList?.contains("vm-embed")
+
   let debounceId = null
-  document.addEventListener("selectionchange", () => {
-    clearTimeout(debounceId)
-    debounceId = setTimeout(() => {
-      const selection = document.getSelection()
-      const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : ""
-      if (!selectedText) {
-        removePopup()
-        return
-      }
-      showPopup(selection, selectedText)
-    }, 200)
-  })
+  if (!embedded) {
+    document.addEventListener("selectionchange", () => {
+      clearTimeout(debounceId)
+      debounceId = setTimeout(() => {
+        const selection = document.getSelection()
+        const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : ""
+        if (!selectedText) {
+          removePopup()
+          return
+        }
+        showPopup(selection, selectedText)
+      }, 200)
+    })
+  }
 
   globalThis.VM = {...globalThis.VM, ui: {...globalThis.VM?.ui, qmdSourcePath, buildReportBugUrl}}
 })(window)

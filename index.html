@@ -85,9 +85,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-e265136418212787de4385a111a6ccb0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-1903b153c1be581501575e3219f8ea4f.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-e265136418212787de4385a111a6ccb0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-d8e5d2e296c1376ab816a4fa0c5d1bf0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-915984ac919c176397e0a28cfbff40f7.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-d8e5d2e296c1376ab816a4fa0c5d1bf0.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<meta name="referrer" content="same-origin">
+<script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="site_libs/quarto-contrib/mathviz-0.1.0/mathviz.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-0.1.0/mathviz.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -152,85 +157,66 @@ Authors: Apurva Nakade
 
 <!--
 Third-party requests are a privacy surface, and privacy.qmd describes it, so
-keep that page in step with anything added here.
+keep that page in step with anything added here or to the mathviz block in
+_quarto.yml.
 
-- Send no Referer to any other origin. Every page's query string is the
-  visitor's own math input (see the URL-shareable inputs section of
-  CLAUDE.md); without this, a CDN could see it on every request. Browsers'
-  default policy already trims cross-origin referrers to the bare origin,
-  but a document-wide policy makes privacy.qmd's claim independent of
-  browser defaults, and it also covers the MathJax and polyfill scripts
-  Quarto injects further down <head>, which no per-tag attribute could
-  reach. Outbound links (GitHub) carry no referrer either; nothing here
-  relies on one. (Measured: the only cross-origin requests that still carry
-  a Referer are MathJax's own font fetches, which it issues with its own
-  policy, and they carry the bare origin -- never the path or query string.)
+- The <meta name="referrer" content="same-origin"> that used to sit here is
+  now emitted by the mathviz extension (`mathviz: {referrer: same-origin}` in
+  _quarto.yml), because the extension's own CDN tags (math.js, Plotly) land
+  in <head> *above* everything in include-in-header -- a meta here would come
+  too late to cover them. Every page's query string is the visitor's own math
+  input (see the URL-shareable inputs section of CLAUDE.md); the policy makes
+  privacy.qmd's "no third party sees it" claim independent of browser
+  defaults, and covers the MathJax and polyfill scripts Quarto injects too.
+  scripts/analytics.test.js asserts the option is set;
+  scripts/verify-analytics.mjs asserts the rendered order.
 - Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
-  only third-party origins a page loads from are the script CDNs below plus
-  Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+  only third-party origins a page loads from are the two script CDNs the
+  extension adds plus Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+- The shared VM.* library, its CSS and the two CDN scripts are all injected
+  by the mathviz extension -- nothing here loads them. Only site-specific
+  scripts belong below.
 -->
-<meta name="referrer" content="same-origin">
 
 <link rel="stylesheet" href="./fonts/fonts.css">
 
-<script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="./js/expressions/make-function.js"></script>
-<script src="./js/expressions/make-derivative.js"></script>
-<script src="./js/expressions/make-number.js"></script>
-<script src="./js/expressions/make-rational.js"></script>
-<script src="./js/expressions/make-ode-function.js"></script>
-<script src="./js/expressions/make-function-of-t.js"></script>
-<script src="./js/plotting/padded-range.js"></script>
-<script src="./js/plotting/chart-theme.js"></script>
-<script src="./js/plotting/plotly-fullscreen-button.js"></script>
-<script src="./js/plotting/svg-fullscreen-button.js"></script>
-<script src="./js/numerical/linear-regression.js"></script>
-<script src="./js/numerical/l1-regression.js"></script>
-<script src="./js/numerical/polynomial-fit.js"></script>
-<script src="./js/numerical/euler-solve.js"></script>
-<script src="./js/numerical/rk4-solve.js"></script>
-<script src="./js/numerical/simpson-estimate.js"></script>
-<script src="./js/numerical/lagrange-quadratic.js"></script>
-<script src="./js/sampling/seeded-random.js"></script>
-<script src="./js/sampling/gaussian-random.js"></script>
-<script src="./js/distributions/log-gamma.js"></script>
-<script src="./js/distributions/sample-curve.js"></script>
-<script src="./js/distributions/histogram-bins.js"></script>
-<script src="./js/distributions/bernoulli-pmf.js"></script>
-<script src="./js/distributions/binomial-pmf.js"></script>
-<script src="./js/distributions/poisson-pmf.js"></script>
-<script src="./js/distributions/geometric-pmf.js"></script>
-<script src="./js/distributions/exponential-pdf.js"></script>
-<script src="./js/distributions/normal-pdf.js"></script>
-<script src="./js/distributions/gamma-pdf.js"></script>
-<script src="./js/distributions/chi-squared-pdf.js"></script>
-<script src="./js/distributions/beta-pdf.js"></script>
-<script src="./js/distributions/student-t-pdf.js"></script>
-<script src="./js/distributions/f-pdf.js"></script>
-<script src="./js/distributions/negative-binomial-pmf.js"></script>
-<script src="./js/distributions/hypergeometric-pmf.js"></script>
-<script src="./js/distributions/lognormal-pdf.js"></script>
-<script src="./js/distributions/cauchy-pdf.js"></script>
-<script src="./js/distributions/weibull-pdf.js"></script>
-<script src="./js/filters/moving-average-filter.js"></script>
-<script src="./js/filters/ema-filter.js"></script>
-<script src="./js/filters/kalman-1d-filter.js"></script>
-<script src="./js/ui/render-table.js"></script>
-<script src="./js/ui/range-progress.js"></script>
-<script src="./js/ui/slider-play.js"></script>
-<script src="./js/ui/apply-example.js"></script>
-<script src="./js/ui/legend-overlay.js"></script>
-<script src="./js/ui/draggable-overlay.js"></script>
-<script src="./js/ui/report-bug.js"></script>
-<script src="./js/discrete-math/barycentric-triples.js"></script>
-<script src="./js/discrete-math/sub-triangles.js"></script>
-<script src="./js/discrete-math/triangulation-edges.js"></script>
-<script src="./js/discrete-math/sperner-color.js"></script>
-<script src="./js/discrete-math/random-color.js"></script>
-<script src="./js/discrete-math/vertex-color.js"></script>
-<script src="./js/discrete-math/mixed-pair-color.js"></script>
-<script src="./js/discrete-math/triangle-fill-color.js"></script>
+<!-- Embed mode: another site frames one of these apps with
+     <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
+     and gets the app alone -- styles.css hides the navbar, sidebar, rail,
+     title block, footer and page navigation on html.vm-embed, and
+     consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
+     each skip themselves. This runs in <head>, so the class goes on <html>
+     (<body> doesn't exist yet) and the chrome never paints at all -- no
+     flash of navbar before the CSS applies.
+
+     history.replaceState is wrapped because every app rewrites the URL with
+     its current inputs (the `committed`/`urlSyncControls` cells) -- most start
+     from location.search and so would keep embed=1, but a page that builds
+     its query string from scratch (distribution-relationships does) would
+     drop it, and the next reactive rerender would flash the chrome back in.
+     Same-origin URLs only; a page never passes anything else. -->
+<script>
+(function () {
+  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  document.documentElement.classList.add("vm-embed")
+  var replaceState = history.replaceState.bind(history)
+  history.replaceState = function (state, title, url) {
+    if (url != null) {
+      var next = new URL(String(url), location.href)
+      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
+        next.searchParams.set("embed", "1")
+      }
+      url = next.pathname + next.search + next.hash
+    }
+    return replaceState(state, title, url)
+  }
+})()
+</script>
+
+<!-- Site-specific: the "Report bug" popup on text selection, which is
+     hardcoded to this repository and to this site's URL-to-.qmd layout, so it
+     is not part of the mathviz library. -->
+<script src="./js/report-bug.js"></script>
 <script type="module" src="site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
 <link href="site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
 
@@ -1595,7 +1581,7 @@ Updating beliefs from new evidence, and smoothing noisy signals over time.</a></
 <h2 class="anchored" data-anchor-id="latest">Latest</h2>
 <div id="listing-latest-listing" class="quarto-listing quarto-listing-container-grid">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1789926041582" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16339">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1789933074254" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16339">
 <a href="./apps/distribution-relationships/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1611,7 +1597,7 @@ Distribution Relationships
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1789926041587" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3930">
+<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1789933074258" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3930">
 <a href="./apps/recursive-filters-1d/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1627,7 +1613,7 @@ Distribution Relationships
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1789926041586" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="25" data-listing-word-count-sort="4918">
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1789933074258" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="25" data-listing-word-count-sort="4918">
 <a href="./apps/positive-predictive-value/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1643,7 +1629,7 @@ Positive Predictive Value
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1789926041584" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
+<div class="g-col-1" data-index="3" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1789933074256" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2309">
 <a href="./apps/l1-vs-l2-regression/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1659,7 +1645,7 @@ L1 vs.&nbsp;L2 Regression
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="4" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1789926041585" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
+<div class="g-col-1" data-index="4" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1789933074257" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3215">
 <a href="./apps/polynomial-fits/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1675,7 +1661,7 @@ Polynomial Fits
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="5" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041579" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4022">
+<div class="g-col-1" data-index="5" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074252" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4022">
 <a href="./apps/adaptive-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1691,7 +1677,7 @@ Adaptive Integration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="6" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041580" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4110">
+<div class="g-col-1" data-index="6" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074252" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4110">
 <a href="./apps/adaptive-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1707,7 +1693,7 @@ Adaptive Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041581" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5297">
+<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074253" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5297">
 <a href="./apps/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1723,7 +1709,7 @@ Butcher Tableau Explorer
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041583" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3957">
+<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074255" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3957">
 <a href="./apps/explicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1739,7 +1725,7 @@ Explicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041584" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3405">
+<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074256" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3405">
 <a href="./apps/implicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1755,7 +1741,7 @@ Implicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041585" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5004">
+<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074256" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5004">
 <a href="./apps/numerical-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1771,7 +1757,7 @@ Numerical Integration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aA==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789926041586" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4323">
+<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aA==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789933074258" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4323">
 <a href="./apps/polynomial-interpolation/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1787,7 +1773,7 @@ Polynomial Interpolation
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789926041580" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3868">
+<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789933074253" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3868">
 <a href="./apps/bisection-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1803,7 +1789,7 @@ Bisection Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789926041584" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2871">
+<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789933074255" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="15" data-listing-word-count-sort="2871">
 <a href="./apps/fixed-point-iteration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1819,7 +1805,7 @@ Fixed Point Iteration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789926041585" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3902">
+<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789933074256" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3902">
 <a href="./apps/newton-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1835,7 +1821,7 @@ Newton’s Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789926041589" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4038">
+<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1789933074260" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4038">
 <a href="./apps/secant-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1851,7 +1837,7 @@ Secant Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="16" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1789926041590" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2783">
+<div class="g-col-1" data-index="16" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1789933074261" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2783">
 <a href="./apps/sperners-lemma-geometric-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1867,7 +1853,7 @@ Sperner’s Lemma - Geometric Proof
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="17" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1789926041590" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3570">
+<div class="g-col-1" data-index="17" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1789933074260" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3570">
 <a href="./apps/sperners-lemma-combinatorial-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1883,7 +1869,7 @@ Sperner’s Lemma - Combinatorial Proof
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1789926041591" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1262">
+<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1789933074261" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1262">
 <a href="./apps/sperners-lemma-statement/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1899,7 +1885,7 @@ Sperner’s Lemma - Statement
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1789926041580" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2535">
+<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1789933074253" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2535">
 <a href="./apps/barycentric-coordinates/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -2284,6 +2270,12 @@ localStorage, so this site sets no cookies at all.
     }
   }
 
+  /* Embed mode (?embed=1, see _includes/head-scripts.html): the app is
+     framed by another site, so this site neither asks nor measures -- no
+     banner, and no analytics even for a visitor who granted them here
+     earlier. privacy.qmd states this. */
+  if (document.documentElement.classList.contains("vm-embed")) return;
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", wireReopeners);
   } else {
@@ -2406,6 +2398,9 @@ granted/denied choice.
   const BREAKPOINT = "(max-width: 991.98px)"
   const banner = document.getElementById("vml-mobile-warning")
   if (!banner) return
+  // Embed mode (?embed=1): the framing site decides how much room the app
+  // gets; a warning about this site's layout would be about the wrong page.
+  if (document.documentElement.classList.contains("vm-embed")) return
 
   function dismissed() {
     try {
@@ -2461,6 +2456,8 @@ body's own left margin is narrower than the rail.
 <script>
 (function () {
   function init() {
+    // Embed mode (?embed=1): the sidebar is hidden, so no rail to open it.
+    if (document.documentElement.classList.contains("vm-embed")) return
     var sidebar = document.getElementById("quarto-sidebar")
     if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
 
@@ -2996,7 +2993,7 @@ window._ojs.runtime.interpretFromScriptTags();
       &nbsp;
     </div>   
     <div class="nav-footer-center">
-<p>Copyright © 2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="./privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a>.</p>
+<p>Copyright © 2026 Apurva Nakade. Released under the <a href="https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE">Apache 2.0 license</a>. <a href="./privacy.html">Privacy</a> · <a href="#analytics-preferences">Analytics preferences</a> · <a href="./embed.html">Embed an app</a>.</p>
 </div>
     <div class="nav-footer-right">
       &nbsp;

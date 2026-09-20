@@ -13,7 +13,7 @@ listing:
 <!--
 Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
+Authors: Apurva Nakade, Dhruv Azad
 -->
 
 <style>
@@ -22,100 +22,865 @@ Authors: Apurva Nakade
    Math Lab" -- hide it here. Scoped to this page only: the id is
    page-local to the compiled index.html. */
 #title-block-header { display: none; }
+
+/* Hero: centered title, kicker and call-to-action around the looping SVG
+   illustration below. Homepage-only, so it lives here rather than in
+   styles.css. */
+.vm-hero {
+  margin: 1rem 0 2.5rem;
+  text-align: center;
+}
+
+.vm-hero-title {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.vm-hero-kicker {
+  margin: 0.5rem 0 0;
+  color: var(--vm-text-soft);
+  font-size: 1.1rem;
+}
+
+.hero-visual {
+  max-width: 460px;
+  margin: 1.25rem auto;
+}
+
+.hero-visual-plot {
+  width: 100%;
+  height: 260px;
+}
+
+.vm-hero-cta {
+  display: inline-block;
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-accent);
+  color: var(--vm-bg);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.vm-hero-cta:hover {
+  background: var(--vm-accent-hover);
+  color: var(--vm-bg);
+  text-decoration: none;
+}
+
+/* Browse-by-topic tiles. */
+.vm-topic-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0 2.5rem;
+}
+
+.vm-topic-tile {
+  display: block;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  color: var(--vm-text);
+  text-decoration: none !important;
+  line-height: 1.45;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.vm-topic-tile:hover {
+  background: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
+}
+
+.vm-topic-tile strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--vm-accent);
+  font-weight: 600;
+}
+
+/* Rotation between the hero's three illustration scenes. Each scene's own
+   internal animations keep their independent 12s duration/keyframes
+   unchanged; because 36s / 12s = 3 exactly, every scene's internal loop
+   is always back at its own phase 0 the instant the wrapper reveals it,
+   so no rescaling of any scene's internal percentages is needed. */
+.hero-scene {
+  opacity: 0;
+  animation-duration: 36s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.hero-scene-newton { animation-name: hero-scene-newton; }
+.hero-scene-kalman { animation-name: hero-scene-kalman; }
+.hero-scene-sperner { animation-name: hero-scene-sperner; }
+
+@keyframes hero-scene-newton {
+  0%, 32% { opacity: 1; }
+  33% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes hero-scene-kalman {
+  0%, 33% { opacity: 0; }
+  34%, 65% { opacity: 1; }
+  66% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+@keyframes hero-scene-sperner {
+  0%, 66% { opacity: 0; }
+  67%, 99% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Newton's-method loop: exactly one stage is visible at a time (point0,
+   then each tangent+point group), crossfading into the next on a shared
+   12s cycle so they stay in phase forever without any JS driving them.
+   Within each group, the tangent/guide lines "draw" in via a moving
+   stroke-dashoffset and the new point pops in with a small scale
+   overshoot, layered on top of the parent group's opacity crossfade.
+   A plain opacity crossfade is low-risk motion, so it's left running
+   even under prefers-reduced-motion. */
+.hero-newton-point0,
+.hero-newton-group1,
+.hero-newton-group2,
+.hero-newton-group3 {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-newton-point0 { animation-name: hero-newton-point0; transform-box: fill-box; transform-origin: center; }
+.hero-newton-group1 { animation-name: hero-newton-group1; }
+.hero-newton-group2 { animation-name: hero-newton-group2; }
+.hero-newton-group3 { animation-name: hero-newton-group3; }
+
+.hero-newton-draw1, .hero-newton-draw2, .hero-newton-draw3 {
+  animation-duration: 12s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-newton-pop1, .hero-newton-pop2, .hero-newton-pop3 {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 12s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation-iteration-count: infinite;
+}
+
+.hero-newton-draw1 { animation-name: hero-newton-draw1; }
+.hero-newton-draw2 { animation-name: hero-newton-draw2; }
+.hero-newton-draw3 { animation-name: hero-newton-draw3; }
+.hero-newton-pop1 { animation-name: hero-newton-pop1; }
+.hero-newton-pop2 { animation-name: hero-newton-pop2; }
+.hero-newton-pop3 { animation-name: hero-newton-pop3; }
+
+@keyframes hero-newton-point0 {
+  0%, 100% { opacity: 0; transform: scale(0.3); }
+  5% { opacity: 1; transform: scale(1.15); }
+  8%, 17% { opacity: 1; transform: scale(1); }
+  23% { opacity: 0; transform: scale(1); }
+}
+
+@keyframes hero-newton-group1 {
+  0%, 17%, 100% { opacity: 0; }
+  23%, 35% { opacity: 1; }
+  41% { opacity: 0; }
+}
+
+@keyframes hero-newton-group2 {
+  0%, 35%, 100% { opacity: 0; }
+  41%, 53% { opacity: 1; }
+  59% { opacity: 0; }
+}
+
+@keyframes hero-newton-group3 {
+  0%, 53%, 100% { opacity: 0; }
+  59%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes hero-newton-draw1 {
+  0%, 23% { stroke-dashoffset: 160; }
+  29%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hero-newton-draw2 {
+  0%, 41% { stroke-dashoffset: 160; }
+  47%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hero-newton-draw3 {
+  0%, 59% { stroke-dashoffset: 160; }
+  65%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hero-newton-pop1 {
+  0%, 27% { transform: scale(0.3); }
+  32% { transform: scale(1.18); }
+  35%, 100% { transform: scale(1); }
+}
+
+@keyframes hero-newton-pop2 {
+  0%, 45% { transform: scale(0.3); }
+  50% { transform: scale(1.18); }
+  53%, 100% { transform: scale(1); }
+}
+
+@keyframes hero-newton-pop3 {
+  0%, 63% { transform: scale(0.3); }
+  69% { transform: scale(1.25); }
+  73%, 100% { transform: scale(1); }
+}
+
+/* Noisy-to-smooth filter loop: the scattered measurements fade in first,
+   then the filtered estimate draws itself across left to right via a
+   moving stroke-dashoffset, holds, then everything fades out together.
+   Same 12s internal duration as the Newton scene, for the same reason. */
+.hero-kalman-dots, .hero-kalman-smooth {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-kalman-dots { animation-name: hero-kalman-dots; }
+.hero-kalman-smooth { animation-name: hero-kalman-smooth; }
+
+@keyframes hero-kalman-dots {
+  0%, 100% { opacity: 0; }
+  8%, 83% { opacity: 1; }
+  92% { opacity: 0; }
+}
+
+@keyframes hero-kalman-smooth {
+  0%, 100% { opacity: 0; stroke-dashoffset: 680; }
+  8% { opacity: 1; stroke-dashoffset: 680; }
+  13% { stroke-dashoffset: 680; }
+  55% { stroke-dashoffset: 0; }
+  83% { opacity: 1; stroke-dashoffset: 0; }
+  92% { opacity: 0; stroke-dashoffset: 0; }
+}
+
+/* Sperner's-lemma loop: the triangle assembles itself piece by piece
+   (outer edges, corner colors, inner subdivision, midpoint colors, then
+   the trichromatic triangle highlight), holds the complete picture, then
+   fades out together. Same 12s internal duration as the other scenes. */
+.hero-sperner-outer, .hero-sperner-corners, .hero-sperner-inner, .hero-sperner-mid-dots, .hero-sperner-highlight {
+  opacity: 0;
+  animation-duration: 12s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-sperner-draw-outer, .hero-sperner-draw-inner {
+  animation-duration: 12s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-sperner-pop-outer, .hero-sperner-pop-inner {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: 12s;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation-iteration-count: infinite;
+}
+
+.hero-sperner-highlight { transform-box: fill-box; transform-origin: center; }
+
+.hero-sperner-outer { animation-name: hero-sperner-outer; }
+.hero-sperner-corners { animation-name: hero-sperner-corners; }
+.hero-sperner-inner { animation-name: hero-sperner-inner; }
+.hero-sperner-mid-dots { animation-name: hero-sperner-mid-dots; }
+.hero-sperner-highlight { animation-name: hero-sperner-highlight, hero-sperner-highlight-pop; }
+.hero-sperner-draw-outer { animation-name: hero-sperner-draw-outer; }
+.hero-sperner-draw-inner { animation-name: hero-sperner-draw-inner; }
+.hero-sperner-pop-outer { animation-name: hero-sperner-pop-outer; }
+.hero-sperner-pop-inner { animation-name: hero-sperner-pop-inner; }
+
+@keyframes hero-sperner-outer {
+  0%, 100% { opacity: 0; }
+  1%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes hero-sperner-draw-outer {
+  0%, 1% { stroke-dashoffset: 220; }
+  15%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hero-sperner-corners {
+  0%, 10%, 100% { opacity: 0; }
+  13%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes hero-sperner-pop-outer {
+  0%, 10% { transform: scale(0.3); }
+  15% { transform: scale(1.2); }
+  18%, 100% { transform: scale(1); }
+}
+
+@keyframes hero-sperner-inner {
+  0%, 15%, 100% { opacity: 0; }
+  17%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes hero-sperner-draw-inner {
+  0%, 17% { stroke-dashoffset: 110; }
+  30%, 100% { stroke-dashoffset: 0; }
+}
+
+@keyframes hero-sperner-mid-dots {
+  0%, 28%, 100% { opacity: 0; }
+  31%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes hero-sperner-pop-inner {
+  0%, 28% { transform: scale(0.3); }
+  34% { transform: scale(1.2); }
+  37%, 100% { transform: scale(1); }
+}
+
+@keyframes hero-sperner-highlight {
+  0%, 33%, 100% { opacity: 0; }
+  40%, 83% { opacity: 1; }
+  90% { opacity: 0; }
+}
+
+@keyframes hero-sperner-highlight-pop {
+  0%, 33% { transform: scale(0.5); }
+  40% { transform: scale(1.15); }
+  44%, 100% { transform: scale(1); }
+}
 </style>
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This hero uses VM.plotting.config.
+// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). The mini plotter below uses VM.expressions.makeFunctionOfT, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.applyExampleParams.
 VM = window.VM
+```
+
+::: {.vm-hero}
+<h1 class="vm-hero-title">Visual Math Lab</h1>
+<p class="vm-hero-kicker">A picture is worth a thousand equations.</p>
+<div class="hero-visual">
+<svg class="hero-visual-plot" viewBox="0 0 460 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looping rotation of three animated illustrations: Newton's method converging on a root, a filter smoothing a noisy signal into a clean estimate, and Sperner's lemma coloring a triangulated triangle to reveal a trichromatic triangle.">
+  <defs>
+    <filter id="hero-newton-glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <linearGradient id="hero-sperner-rainbow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ca8a04" />
+      <stop offset="50%" stop-color="#0d9488" />
+      <stop offset="100%" stop-color="#c026d3" />
+    </linearGradient>
+  </defs>
+  <!-- scene 1/3: Newton's method finding a root of f(x) = x^2 - 2, starting from x = 2.2 -->
+  <g class="hero-scene hero-scene-newton">
+    <line x1="20" y1="172.8" x2="440" y2="172.8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
+    <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+      points="20.0,226.3 26.0,227.5 32.0,228.7 38.0,229.8 44.0,230.7 50.0,231.5 56.0,232.2 62.0,232.8 68.0,233.2 74.0,233.6 80.0,233.8 86.0,233.9 92.0,233.9 98.0,233.7 104.0,233.4 110.0,233.1 116.0,232.6 122.0,231.9 128.0,231.2 134.0,230.3 140.0,229.3 146.0,228.2 152.0,227.0 158.0,225.7 164.0,224.2 170.0,222.6 176.0,220.9 182.0,219.1 188.0,217.2 194.0,215.1 200.0,212.9 206.0,210.6 212.0,208.2 218.0,205.6 224.0,203.0 230.0,200.2 236.0,197.3 242.0,194.3 248.0,191.1 254.0,187.9 260.0,184.5 266.0,181.0 272.0,177.4 278.0,173.6 284.0,169.8 290.0,165.8 296.0,161.7 302.0,157.5 308.0,153.1 314.0,148.7 320.0,144.1 326.0,139.4 332.0,134.6 338.0,129.6 344.0,124.6 350.0,119.4 356.0,114.1 362.0,108.7 368.0,103.1 374.0,97.5 380.0,91.7 386.0,85.8 392.0,79.8 398.0,73.7 404.0,67.4 410.0,61.0 416.0,54.5 422.0,47.9 428.0,41.2 434.0,34.3 440.0,27.3" />
+    <circle class="hero-newton-point0" cx="385.8" cy="86.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+    <g class="hero-newton-group1">
+      <line class="hero-newton-draw1" x1="385.8" y1="86.0" x2="298.4" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)" />
+      <line x1="298.4" y1="172.8" x2="298.4" y2="160.0" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4" />
+      <circle class="hero-newton-pop1" cx="298.4" cy="160.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+    </g>
+    <g class="hero-newton-group2">
+      <line class="hero-newton-draw2" x1="298.4" y1="160.0" x2="280.2" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)" />
+      <line x1="280.2" y1="172.8" x2="280.2" y2="172.2" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4" />
+      <circle class="hero-newton-pop2" cx="280.2" cy="172.2" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+    </g>
+    <g class="hero-newton-group3">
+      <line class="hero-newton-draw3" x1="280.2" y1="172.2" x2="279.3" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)" />
+      <circle class="hero-newton-pop3" cx="279.3" cy="172.8" r="7" fill="#16a34a" stroke="white" stroke-width="1.5" filter="url(#hero-newton-glow)" />
+    </g>
+  </g>
+  <!-- scene 2/3: a filter smoothing a noisy signal into a clean estimate -->
+  <g class="hero-scene hero-scene-kalman">
+    <g class="hero-kalman-dots">
+      <circle cx="33.1" cy="77.7" r="4" fill="#94a3b8" />
+      <circle cx="59.4" cy="69.1" r="4" fill="#94a3b8" />
+      <circle cx="85.6" cy="42.6" r="4" fill="#94a3b8" />
+      <circle cx="111.9" cy="52.0" r="4" fill="#94a3b8" />
+      <circle cx="138.1" cy="60.0" r="4" fill="#94a3b8" />
+      <circle cx="164.4" cy="67.1" r="4" fill="#94a3b8" />
+      <circle cx="190.6" cy="99.9" r="4" fill="#94a3b8" />
+      <circle cx="216.9" cy="175.0" r="4" fill="#94a3b8" />
+      <circle cx="243.1" cy="215.3" r="4" fill="#94a3b8" />
+      <circle cx="269.4" cy="230.1" r="4" fill="#94a3b8" />
+      <circle cx="295.6" cy="225.9" r="4" fill="#94a3b8" />
+      <circle cx="321.9" cy="175.0" r="4" fill="#94a3b8" />
+      <circle cx="348.1" cy="162.6" r="4" fill="#94a3b8" />
+      <circle cx="374.4" cy="137.4" r="4" fill="#94a3b8" />
+      <circle cx="400.6" cy="96.6" r="4" fill="#94a3b8" />
+      <circle cx="426.9" cy="41.8" r="4" fill="#94a3b8" />
+    </g>
+    <polyline class="hero-kalman-smooth" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="680" filter="url(#hero-newton-glow)"
+      points="20.0,119.8 25.3,107.7 30.5,96.4 35.8,86.1 41.0,77.0 46.3,69.3 51.5,62.8 56.8,57.8 62.0,54.0 67.3,51.4 72.5,49.8 77.8,49.1 83.0,49.1 88.3,49.6 93.5,50.3 98.8,51.2 104.0,52.1 109.3,52.9 114.5,53.6 119.8,54.1 125.0,54.5 130.3,54.9 135.5,55.4 140.8,56.1 146.0,57.3 151.3,59.1 156.5,61.7 161.8,65.3 167.0,70.0 172.3,75.8 177.5,83.0 182.8,91.3 188.0,100.8 193.3,111.4 198.5,122.9 203.8,135.0 209.0,147.6 214.3,160.3 219.5,172.8 224.8,184.8 230.0,196.0 235.3,206.2 240.5,215.1 245.8,222.4 251.0,228.2 256.3,232.3 261.5,234.6 266.8,235.2 272.0,234.3 277.3,231.9 282.5,228.3 287.8,223.7 293.0,218.2 298.3,212.3 303.5,206.0 308.8,199.6 314.0,193.3 319.3,187.2 324.5,181.4 329.8,176.0 335.0,171.0 340.3,166.3 345.5,161.8 350.8,157.5 356.0,153.1 361.3,148.6 366.5,143.7 371.8,138.3 377.0,132.4 382.3,125.7 387.5,118.3 392.8,110.2 398.0,101.5 403.3,92.2 408.5,82.5 413.8,72.7 419.0,62.8 424.3,53.3 429.5,44.4 434.8,36.4 440.0,29.5" />
+  </g>
+  <!-- scene 3/3: Sperner's lemma — a triangulated triangle colored so one small triangle must show all three colors -->
+  <g class="hero-scene hero-scene-sperner">
+    <g class="hero-sperner-outer">
+      <line class="hero-sperner-draw-outer" x1="230" y1="40" x2="140" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220" />
+      <line class="hero-sperner-draw-outer" x1="230" y1="40" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220" />
+      <line class="hero-sperner-draw-outer" x1="140" y1="210" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220" />
+    </g>
+    <g class="hero-sperner-corners">
+      <circle class="hero-sperner-pop-outer" cx="230" cy="40" r="7" fill="#dc2626" stroke="white" stroke-width="1.5" />
+      <circle class="hero-sperner-pop-outer" cx="140" cy="210" r="7" fill="#16a34a" stroke="white" stroke-width="1.5" />
+      <circle class="hero-sperner-pop-outer" cx="320" cy="210" r="7" fill="#2563eb" stroke="white" stroke-width="1.5" />
+    </g>
+    <g class="hero-sperner-inner">
+      <line class="hero-sperner-draw-inner" x1="185" y1="125" x2="275" y2="125" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110" />
+      <line class="hero-sperner-draw-inner" x1="185" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110" />
+      <line class="hero-sperner-draw-inner" x1="275" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110" />
+    </g>
+    <polygon class="hero-sperner-highlight" points="185,125 275,125 230,210" fill="url(#hero-sperner-rainbow)" fill-opacity="0.4" stroke="url(#hero-sperner-rainbow)" stroke-width="2" filter="url(#hero-newton-glow)" />
+    <g class="hero-sperner-mid-dots">
+      <circle class="hero-sperner-pop-inner" cx="185" cy="125" r="6" fill="#ca8a04" stroke="white" stroke-width="1.5" />
+      <circle class="hero-sperner-pop-inner" cx="275" cy="125" r="6" fill="#c026d3" stroke="white" stroke-width="1.5" />
+      <circle class="hero-sperner-pop-inner" cx="230" cy="210" r="6" fill="#0d9488" stroke="white" stroke-width="1.5" />
+    </g>
+  </g>
+</svg>
+</div>
+<a class="vm-hero-cta" href="#browse-topics">Start exploring ↓</a>
+:::
+
+Mathematics is full of ideas that come alive the moment you can see them move. Visual Math Lab makes them touchable. It is designed to accompany introductory courses in applied mathematics and numerical methods: explore on your own, use a page as a lecture demo, or hand one to your students as a lab. Everything here is open source, so it is yours to fork, adapt, and extend.
+
+
+
+
+
+## See it in action
+
+Here is a small taste of what most pages on the site look like.
+
+
+```{ojs}
+//| output: false
+// plotterExamples backs the "Try an example" dropdown below -- each one is a
+// named curve, and between them they demonstrate the ways a parametric
+// expression can be phrased.
+plotterExamples = [
+  {
+    title: "Butterfly curve",
+    params: {x: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", y: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    // A parametric path doesn't have to be smooth -- ternaries let one
+    // formula switch between pieces, here tracing the four sides of a
+    // square as t runs 0 -> 4.
+    title: "Piecewise: square path",
+    params: {x: "t < 1 ? t : (t < 2 ? 1 : (t < 3 ? 3 - t : 0))", y: "t < 1 ? 0 : (t < 2 ? t - 1 : (t < 3 ? 1 : 4 - t))", tmin: "0", tmax: "4"}
+  },
+  {
+    title: "Lissajous curve (3:4)",
+    params: {x: "sin(3*t)", y: "sin(4*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Rose (five petals)",
+    params: {x: "cos(5*t) * cos(t)", y: "cos(5*t) * sin(t)", tmin: "0", tmax: "pi"}
+  },
+  {
+    title: "Cardioid",
+    params: {x: "(1 - cos(t)) * cos(t)", y: "(1 - cos(t)) * sin(t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Astroid",
+    params: {x: "cos(t)^3", y: "sin(t)^3", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Lemniscate of Bernoulli",
+    params: {x: "cos(t) / (1 + sin(t)^2)", y: "sin(t) * cos(t) / (1 + sin(t)^2)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Spirograph (epitrochoid)",
+    params: {x: "6*cos(t) - 3*cos(6*t)", y: "6*sin(t) - 3*sin(6*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Deltoid",
+    params: {x: "2*cos(t) + cos(2*t)", y: "2*sin(t) - sin(2*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Archimedean spiral",
+    params: {x: "t * cos(t)", y: "t * sin(t)", tmin: "0", tmax: "8*pi"}
+  },
+  {
+    title: "Cycloid",
+    params: {x: "t - sin(t)", y: "1 - cos(t)", tmin: "0", tmax: "6*pi"}
+  },
+  {
+    title: "Heart curve",
+    params: {x: "16*sin(t)^3", y: "13*cos(t) - 5*cos(2*t) - 2*cos(3*t) - cos(4*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Squircle (superellipse)",
+    params: {x: "sign(cos(t)) * abs(cos(t))^0.5", y: "sign(sin(t)) * abs(sin(t))^0.5", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Ordinary graph y = f(x)",
+    params: {x: "t", y: "t^3 - 3*t", tmin: "-2.2", tmax: "2.2"}
+  }
+]
 ```
 
 ```{ojs}
 //| output: false
-// A fixed, non-editable decorative curve -- unlike every method page's
-// plotter, nothing here is user input, so this skips the expression
-// parser and math.js entirely and just samples plain JS closures. A
-// Lissajous figure traces out a closed loop that's visually busy enough to
-// read as "a live simulation" at a glance, and cheap enough to resample
-// every frame with no caching.
-// A closure over _plotDiv, called (not referenced bare) from the display
-// cell below as heroPlot() -- matching every other page's mainPlot(setup)
-// convention. A bare `heroPlot` reference, without the call, renders as
-// Observable's generic object inspector instead of embedding the DOM node
-// (verified the hard way: it dumped the div's internal Plotly properties
-// as inspectable object keys instead of showing the chart).
-heroPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
+plotterTraceOptions = ["Curve", "Point at t"]
 
-  const SAMPLES = 720
+// Matches the colors plotterMainPlot draws each trace in, so the overlay
+// legend's swatches double as a color key.
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+plotterTraceColors = new Map([
+  ["Curve", chartColors.fn],
+  ["Point at t", chartColors.alt]
+])
+```
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof plotterXText = {
+  const input = Inputs.text({label: "x(t)", value: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: cos(t), t - sin(t)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "plotter-x"
+  return input
+}
+```
+
+```{ojs}
+viewof plotterYText = {
+  const input = Inputs.text({label: "y(t)", value: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: sin(t), 1 - cos(t)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "plotter-y"
+  return input
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof plotterTMin = {
+  const input = Inputs.text({label: "t from", value: "0", placeholder: "Example: 0, -pi"})
+  input.dataset.exampleField = "plotter-tmin"
+  return input
+}
+```
+
+```{ojs}
+viewof plotterTMax = {
+  const input = Inputs.text({label: "t to", value: "2*pi", placeholder: "Example: 2*pi, 10"})
+  input.dataset.exampleField = "plotter-tmax"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof plotterExampleSelect = {
+  const options = [null, ...plotterExamples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+plotterFieldSelectors = ({
+  x: '[data-example-field="plotter-x"]',
+  y: '[data-example-field="plotter-y"]',
+  tmin: '[data-example-field="plotter-tmin"]',
+  tmax: '[data-example-field="plotter-tmax"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place. A plain "change" listener attached once to the stable
+// native <select> (rather than an OJS cell reactive on
+// plotterExampleSelect's value) -- a <select> fires both "input" and
+// "change" per selection, and a reactive cell would run twice, with the
+// two overlapping calls racing each other.
+applyPlotterExampleFromSelect = {
+  const nativeSelect = (viewof plotterExampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof plotterExampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(plotterFieldSelectors, example.params, viewof plotterTrigger)
+  })
+}
+```
+
+```{ojs}
+// Plot commits the current formula/parameter-range fields -- edits above
+// don't take effect until this is clicked.
+viewof plotterTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto", "ojs-end")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the formula/parameter-range fields clicks Plot instead
+// of submitting the field's own (invisible) form.
+enterToPlotterPlot = {
+  for (const view of [viewof plotterXText, viewof plotterYText, viewof plotterTMin, viewof plotterTMax]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotterTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// plotterCommitted snapshots the fields only when Plot is clicked -- it
+// reads the stable `viewof` DOM views, not the reactive values, so it does
+// not rerun on every keystroke.
+plotterCommitted = {
+  plotterTrigger
+  const math = window.math
+  return {
+    xText: (viewof plotterXText).value,
+    yText: (viewof plotterYText).value,
+    tMin: VM.expressions.makeNumber(math, (viewof plotterTMin).value),
+    tMax: VM.expressions.makeNumber(math, (viewof plotterTMax).value)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// plotterSetup samples (x(t), y(t)) across the committed t-range. `key`
+// changes whenever a new curve is committed, and is used as the plot's
+// uirevision so a fresh curve autoscales instead of inheriting the
+// previous curve's zoom.
+plotterSetup = {
+  const math = window.math
+  const x = VM.expressions.makeFunctionOfT(math, plotterCommitted.xText)
+  const y = VM.expressions.makeFunctionOfT(math, plotterCommitted.yText)
+
+  let tMin = plotterCommitted.tMin
+  let tMax = plotterCommitted.tMax
+  const key = JSON.stringify(plotterCommitted)
+
+  if (!x || !y || !Number.isFinite(tMin) || !Number.isFinite(tMax) || tMin === tMax) {
+    return {ts: [], xs: [], ys: [], tMin: 0, tMax: 1, xRange: {lo: -1, hi: 1}, yRange: {lo: -1, hi: 1}, key}
+  }
+  if (tMin > tMax) { const temp = tMin; tMin = tMax; tMax = temp }
+
+  // Parametric curves double back on themselves, so they need a good deal
+  // more samples than a graph over an interval before the polyline stops
+  // looking faceted.
+  const sampleCount = 2400
   const ts = []
   const xs = []
   const ys = []
-  for (let i = 0; i <= SAMPLES; i++) {
-    const t = (i / SAMPLES) * 2 * Math.PI
+  for (let i = 0; i < sampleCount; i++) {
+    const t = tMin + (tMax - tMin) * i / (sampleCount - 1)
+    const xValue = x(t)
+    const yValue = y(t)
     ts.push(t)
-    xs.push(Math.sin(3 * t))
-    ys.push(Math.sin(4 * t))
+    if (Number.isFinite(xValue) && Number.isFinite(yValue) && Math.abs(xValue) < 1e8 && Math.abs(yValue) < 1e8) {
+      xs.push(xValue)
+      ys.push(yValue)
+    } else {
+      // A null in both coordinates breaks the trace here instead of
+      // drawing a spurious segment across a pole or a gap in the domain.
+      xs.push(null)
+      ys.push(null)
+    }
   }
 
-  const layout = {
-    margin: {l: 0, r: 0, t: 0, b: 0},
-    xaxis: {visible: false, range: [-1.2, 1.2], fixedrange: true},
-    yaxis: {visible: false, range: [-1.2, 1.2], scaleanchor: "x", scaleratio: 1, fixedrange: true},
-    showlegend: false,
-    paper_bgcolor: "rgba(0,0,0,0)",
-    plot_bgcolor: "rgba(0,0,0,0)",
-    hovermode: false
-  }
-  const config = VM.plotting.config({staticPlot: true, displayModeBar: false})
+  // Padded explicitly rather than left to Plotly's autorange: an axis pair
+  // tied together by scaleanchor (see plotterMainPlot) autoranges with no
+  // padding at all on the constraining axis, which put the square path
+  // example's two vertical sides exactly on the plot's edges.
+  const xRange = VM.plotting.paddedRange(xs, {relativePadding: 0.06, minPadding: 0.1})
+  const yRange = VM.plotting.paddedRange(ys, {relativePadding: 0.06, minPadding: 0.1})
+  return {ts, xs, ys, tMin, tMax, xRange, yRange, key}
+}
+```
 
-  return () => {
+```{ojs}
+//| output: false
+// plotterMainPlot is a closure over a _plotDiv variable so the same DOM
+// node is reused across reactive re-renders, preserving zoom/pan.
+plotterMainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({ts, xs, ys, xRange, yRange, key}, cursorIndex, showCurve, showCursor) => {
+    const data = []
+
+    if (showCurve) {
+      data.push({
+        x: xs, y: ys, type: "scatter", mode: "lines", name: "Curve", showlegend: false,
+        line: {color: chartColors.fn, width: 2.5, shape: "spline"},
+        customdata: ts,
+        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
+      })
+    }
+
+    // The cursor reads straight out of the sampled arrays rather than
+    // re-evaluating x(t)/y(t), so the marker always sits exactly on the
+    // polyline that's drawn, never a hair off it.
+    const i = cursorIndex
+    if (showCursor && i !== null && i >= 0 && i < xs.length && xs[i] !== null) {
+      data.push({
+        x: [xs[i]], y: [ys[i]], type: "scatter", mode: "markers", name: "Point at t", showlegend: false,
+        marker: {color: chartColors.alt, size: 12, line: {color: chartColors.halo, width: 2}},
+        customdata: [ts[i]],
+        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
+      })
+    }
+    const layout = {
+      xaxis: {title: "x", zeroline: true, range: [xRange.lo, xRange.hi], constrain: "domain"},
+      // scaleanchor keeps one unit of y the same length on screen as one
+      // unit of x -- without it a circle plots as an ellipse, which ruins
+      // every curve below.
+      //
+      // constrain: "domain" -- on both axes, or the unconstrained one still
+      // gets widened -- makes Plotly satisfy that by shrinking the drawn
+      // plot area to the curve's own aspect ratio, leaving the ranges above
+      // exactly as asked for. The default ("range") instead widens
+      // whichever range is too tight for the box -- and since newPlot runs
+      // on a still-detached div (Plotly measures its 700x450 default) while
+      // every later react runs at the real size, the two widened by
+      // different amounts and the first slider nudge visibly jumped the
+      // zoom. Pinning the ranges removes the discrepancy at the source.
+      yaxis: {title: "y", zeroline: true, range: [yRange.lo, yRange.hi], scaleanchor: "x", scaleratio: 1, constrain: "domain"},
+      hovermode: "closest",
+      uirevision: key,
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
     if (!_plotDiv) {
       _plotDiv = document.createElement("div")
-      _plotDiv.className = "vm-hero-plot"
-      Plotly.newPlot(_plotDiv, [
-        {x: xs, y: ys, type: "scatter", mode: "lines", line: {color: "#8ab4ff", width: 2.5, shape: "spline"}, opacity: 0.85},
-        {x: [xs[0]], y: [ys[0]], type: "scatter", mode: "markers", marker: {color: "#f87171", size: 11, line: {color: "#171b29", width: 2}}}
-      ], layout, config)
-
-      // _plotDiv is created detached (document.createElement, not yet in
-      // the page), so it measures 0x0 at the moment newPlot runs --
-      // Plotly's autosize falls back to its hardcoded 700x450 default
-      // instead of the real (947-ish px wide) container, which left the
-      // curve sitting left-aligned instead of centered/filling the hero
-      // panel. Every mainPlot cell on the site works around exactly this
-      // with the same ResizeObserver once the div is actually attached and
-      // has a real size.
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
       VM.plotting.autoResize(_plotDiv)
-
-      // Advances the marker one sample per tick and keeps it running for
-      // the life of the page -- this cell has no reactive inputs, so it
-      // only ever runs once, and the interval is what keeps the curve
-      // moving after that.
-      let frame = 0
-      setInterval(() => {
-        frame = (frame + 1) % (SAMPLES + 1)
-        Plotly.restyle(_plotDiv, {x: [[xs[frame]]], y: [[ys[frame]]]}, [1])
-      }, 30)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
     }
     return _plotDiv
   }
 }
 ```
 
-::: {.vm-hero}
-<div class="vm-hero-plot-wrap">
 ```{ojs}
-heroPlot()
+//| output: false
+// The slider steps by one sample of plotterSetup, so its value doubles as
+// an index into the sampled arrays -- see plotterMainPlot's cursor trace.
+plotterCursorIndex = {
+  if (plotterSetup.ts.length === 0) return null
+  const span = plotterSetup.tMax - plotterSetup.tMin
+  const index = Math.round((plotterT - plotterSetup.tMin) / span * (plotterSetup.ts.length - 1))
+  return index
+}
 ```
+
+```{ojs}
+//| output: false
+plotterShowCurve = plotterTraces.includes("Curve")
+```
+
+```{ojs}
+//| output: false
+plotterShowCursor = plotterTraces.includes("Point at t")
+```
+
+<div class="ojs-chart-block">
+
+```{ojs}
+plotterMainPlot(plotterSetup, plotterCursorIndex, plotterShowCurve, plotterShowCursor)
+```
+
+```{ojs}
+viewof plotterTraces = {
+  const items = []
+  for (const label of plotterTraceOptions) items.push({label, color: plotterTraceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: plotterTraceOptions})
+}
+```
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+// Always-live: the cursor moves as the slider is dragged, no Plot click
+// needed. Recreated whenever a new curve is committed, so its range always
+// spans that curve's own t interval.
+viewof plotterT = {
+  const {tMin, tMax} = plotterSetup
+
+  // Round the step to the nearest 1/2/5 x 10^k below span/500, so the
+  // slider's own number readout stays short (0.05, not 0.0157145109...)
+  // whatever t-range the current curve happens to span.
+  const raw = (tMax - tMin) / 500
+  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)))
+  const normalized = raw / magnitude
+  let nice
+  if (normalized <= 1) nice = 1
+  else if (normalized <= 2) nice = 2
+  else if (normalized <= 5) nice = 5
+  else nice = 10
+  const step = nice * magnitude
+
+  const slider = Inputs.range([tMin, tMax], {label: "t", step, value: tMin})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
 </div>
-<div class="vm-hero-overlay">
-<h1 class="vm-hero-title">Visual Math Lab</h1>
-<p class="vm-hero-kicker">A picture is worth a thousand equations.</p>
-<a class="vm-hero-cta" href="#latest">Start exploring ↓</a>
+
 </div>
-:::
 
 ## Browse by topic {#browse-topics}
 
@@ -140,3 +905,10 @@ Updating beliefs from new evidence, and smoothing noisy signals over time.](topi
 :::
 
 ## Latest
+
+::: {#latest-listing}
+:::
+
+## Built with
+
+[Quarto](https://quarto.org), [Observable JS](https://observablehq.com), [Plotly.js](https://plotly.com/javascript/), and [math.js](https://mathjs.org) — no backend, no build step beyond rendering.

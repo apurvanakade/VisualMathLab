@@ -9,9 +9,11 @@
 // Visual Math Lab light theme. Token values are duplicated (not computed
 // from Sass variables) into the --vm-* custom properties in scss:rules
 // below, because those tokens also have to exist as *runtime* CSS custom
-// properties that JS (js/plotting/chart-theme.js) reads via
-// getComputedStyle to theme Plotly/Observable Plot charts -- Sass
-// variables are compile-time only and don't survive into the page.
+// properties that JS (mathviz's chart-theme.js) reads via getComputedStyle
+// to theme Plotly/Observable Plot charts -- Sass variables are compile-time
+// only and don't survive into the page. The --vm-* block overrides the
+// :where()-wrapped defaults in mathviz's tokens.css, so every value here is
+// a deliberate site choice, not a copy the library needs.
 
 $vm-bg:            #fdfdfd;
 $vm-surface:       #f6f7f9;
@@ -22,16 +24,6 @@ $vm-border:        rgba(27, 31, 36, 0.15);
 $vm-accent:        #2563eb;
 $vm-accent-hover:  #1d4ed8;
 $vm-grid:          rgba(20, 22, 26, 0.08);
-// Error/invalid state. Matches VM.plotting.colors().alt so a flagged field
-// and a red trace are the same red.
-$vm-alt:           #dc2626;
-// The other chart-palette hues prose needs to name (a colored swatch in a
-// sentence -- see .vm-swatch in styles.css). Same pairing rule as $vm-alt:
-// each matches VM.plotting.colors().<name> on this theme, so a swatch and
-// the dot it describes are the same color.
-$vm-ok:            #16a34a;
-$vm-warn:          #f59e0b;
-$vm-accent2:       #9333ea;
 
 $font-family-sans-serif: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 $font-family-monospace:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -72,15 +64,24 @@ $code-bg:    $vm-surface;
   --vm-accent: #{$vm-accent};
   --vm-accent-hover: #{$vm-accent-hover};
   --vm-grid: #{$vm-grid};
-  --vm-alt: #{$vm-alt};
-  --vm-ok: #{$vm-ok};
-  --vm-warn: #{$vm-warn};
-  --vm-accent2: #{$vm-accent2};
   --vm-radius: 8px;
   --vm-radius-sm: 6px;
   --vm-shadow: 0 1px 2px rgba(27, 31, 36, 0.08);
   --vm-font-weight-body: 400;
   --vm-font-weight-display: 300;
+  // The face mathviz sets chart text in -- the same stack as
+  // $font-family-sans-serif above, so a chart's labels match the page.
+  --vm-font-sans: #{$font-family-sans-serif};
+  // The chart palette itself (--vm-color-fn/alt/ok/...) is mathviz's, declared
+  // in its tokens.css with the values this site was designed around, so it is
+  // not redeclared here. These four aliases exist for page-local CSS that
+  // names a palette hue in prose or chrome (a swatch in a sentence, a graph
+  // node's stroke) under the older --vm-alt spelling. vml-dark.scss repeats
+  // them under body.quarto-dark -- see the note there for why it has to.
+  --vm-alt: var(--vm-color-alt);
+  --vm-ok: var(--vm-color-ok);
+  --vm-warn: var(--vm-color-warn);
+  --vm-accent2: var(--vm-color-accent2);
 }
 
 h1, h1.title {

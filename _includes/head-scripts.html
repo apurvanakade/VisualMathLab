@@ -6,82 +6,63 @@ Authors: Apurva Nakade
 
 <!--
 Third-party requests are a privacy surface, and privacy.qmd describes it, so
-keep that page in step with anything added here.
+keep that page in step with anything added here or to the mathviz block in
+_quarto.yml.
 
-- Send no Referer to any other origin. Every page's query string is the
-  visitor's own math input (see the URL-shareable inputs section of
-  CLAUDE.md); without this, a CDN could see it on every request. Browsers'
-  default policy already trims cross-origin referrers to the bare origin,
-  but a document-wide policy makes privacy.qmd's claim independent of
-  browser defaults, and it also covers the MathJax and polyfill scripts
-  Quarto injects further down <head>, which no per-tag attribute could
-  reach. Outbound links (GitHub) carry no referrer either; nothing here
-  relies on one. (Measured: the only cross-origin requests that still carry
-  a Referer are MathJax's own font fetches, which it issues with its own
-  policy, and they carry the bare origin -- never the path or query string.)
+- The <meta name="referrer" content="same-origin"> that used to sit here is
+  now emitted by the mathviz extension (`mathviz: {referrer: same-origin}` in
+  _quarto.yml), because the extension's own CDN tags (math.js, Plotly) land
+  in <head> *above* everything in include-in-header -- a meta here would come
+  too late to cover them. Every page's query string is the visitor's own math
+  input (see the URL-shareable inputs section of CLAUDE.md); the policy makes
+  privacy.qmd's "no third party sees it" claim independent of browser
+  defaults, and covers the MathJax and polyfill scripts Quarto injects too.
+  scripts/analytics.test.js asserts the option is set;
+  scripts/verify-analytics.mjs asserts the rendered order.
 - Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
-  only third-party origins a page loads from are the script CDNs below plus
-  Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+  only third-party origins a page loads from are the two script CDNs the
+  extension adds plus Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
+- The shared VM.* library, its CSS and the two CDN scripts are all injected
+  by the mathviz extension -- nothing here loads them. Only site-specific
+  scripts belong below.
 -->
-<meta name="referrer" content="same-origin">
 
 <link rel="stylesheet" href="/fonts/fonts.css">
 
-<script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="/js/expressions/make-function.js"></script>
-<script src="/js/expressions/make-derivative.js"></script>
-<script src="/js/expressions/make-number.js"></script>
-<script src="/js/expressions/make-rational.js"></script>
-<script src="/js/expressions/make-ode-function.js"></script>
-<script src="/js/expressions/make-function-of-t.js"></script>
-<script src="/js/plotting/padded-range.js"></script>
-<script src="/js/plotting/chart-theme.js"></script>
-<script src="/js/plotting/plotly-fullscreen-button.js"></script>
-<script src="/js/plotting/svg-fullscreen-button.js"></script>
-<script src="/js/numerical/linear-regression.js"></script>
-<script src="/js/numerical/l1-regression.js"></script>
-<script src="/js/numerical/polynomial-fit.js"></script>
-<script src="/js/numerical/euler-solve.js"></script>
-<script src="/js/numerical/rk4-solve.js"></script>
-<script src="/js/numerical/simpson-estimate.js"></script>
-<script src="/js/numerical/lagrange-quadratic.js"></script>
-<script src="/js/sampling/seeded-random.js"></script>
-<script src="/js/sampling/gaussian-random.js"></script>
-<script src="/js/distributions/log-gamma.js"></script>
-<script src="/js/distributions/sample-curve.js"></script>
-<script src="/js/distributions/histogram-bins.js"></script>
-<script src="/js/distributions/bernoulli-pmf.js"></script>
-<script src="/js/distributions/binomial-pmf.js"></script>
-<script src="/js/distributions/poisson-pmf.js"></script>
-<script src="/js/distributions/geometric-pmf.js"></script>
-<script src="/js/distributions/exponential-pdf.js"></script>
-<script src="/js/distributions/normal-pdf.js"></script>
-<script src="/js/distributions/gamma-pdf.js"></script>
-<script src="/js/distributions/chi-squared-pdf.js"></script>
-<script src="/js/distributions/beta-pdf.js"></script>
-<script src="/js/distributions/student-t-pdf.js"></script>
-<script src="/js/distributions/f-pdf.js"></script>
-<script src="/js/distributions/negative-binomial-pmf.js"></script>
-<script src="/js/distributions/hypergeometric-pmf.js"></script>
-<script src="/js/distributions/lognormal-pdf.js"></script>
-<script src="/js/distributions/cauchy-pdf.js"></script>
-<script src="/js/distributions/weibull-pdf.js"></script>
-<script src="/js/filters/moving-average-filter.js"></script>
-<script src="/js/filters/ema-filter.js"></script>
-<script src="/js/filters/kalman-1d-filter.js"></script>
-<script src="/js/ui/render-table.js"></script>
-<script src="/js/ui/range-progress.js"></script>
-<script src="/js/ui/slider-play.js"></script>
-<script src="/js/ui/apply-example.js"></script>
-<script src="/js/ui/legend-overlay.js"></script>
-<script src="/js/ui/draggable-overlay.js"></script>
-<script src="/js/ui/report-bug.js"></script>
-<script src="/js/discrete-math/barycentric-triples.js"></script>
-<script src="/js/discrete-math/sub-triangles.js"></script>
-<script src="/js/discrete-math/triangulation-edges.js"></script>
-<script src="/js/discrete-math/sperner-color.js"></script>
-<script src="/js/discrete-math/random-color.js"></script>
-<script src="/js/discrete-math/vertex-color.js"></script>
-<script src="/js/discrete-math/mixed-pair-color.js"></script>
-<script src="/js/discrete-math/triangle-fill-color.js"></script>
+<!-- Embed mode: another site frames one of these apps with
+     <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
+     and gets the app alone -- styles.css hides the navbar, sidebar, rail,
+     title block, footer and page navigation on html.vm-embed, and
+     consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
+     each skip themselves. This runs in <head>, so the class goes on <html>
+     (<body> doesn't exist yet) and the chrome never paints at all -- no
+     flash of navbar before the CSS applies.
+
+     history.replaceState is wrapped because every app rewrites the URL with
+     its current inputs (the `committed`/`urlSyncControls` cells) -- most start
+     from location.search and so would keep embed=1, but a page that builds
+     its query string from scratch (distribution-relationships does) would
+     drop it, and the next reactive rerender would flash the chrome back in.
+     Same-origin URLs only; a page never passes anything else. -->
+<script>
+(function () {
+  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  document.documentElement.classList.add("vm-embed")
+  var replaceState = history.replaceState.bind(history)
+  history.replaceState = function (state, title, url) {
+    if (url != null) {
+      var next = new URL(String(url), location.href)
+      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
+        next.searchParams.set("embed", "1")
+      }
+      url = next.pathname + next.search + next.hash
+    }
+    return replaceState(state, title, url)
+  }
+})()
+</script>
+
+<!-- Site-specific: the "Report bug" popup on text selection, which is
+     hardcoded to this repository and to this site's URL-to-.qmd layout, so it
+     is not part of the mathviz library. -->
+<script src="/js/report-bug.js"></script>

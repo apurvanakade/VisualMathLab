@@ -296,6 +296,12 @@ localStorage, so this site sets no cookies at all.
     }
   }
 
+  /* Embed mode (?embed=1, see _includes/head-scripts.html): the app is
+     framed by another site, so this site neither asks nor measures -- no
+     banner, and no analytics even for a visitor who granted them here
+     earlier. privacy.qmd states this. */
+  if (document.documentElement.classList.contains("vm-embed")) return;
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", wireReopeners);
   } else {

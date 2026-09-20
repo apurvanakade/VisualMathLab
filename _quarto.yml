@@ -22,6 +22,20 @@ execute:
   warning: false
   message: false
 
+# The shared chart/control/numerics library (window.VM, the ojs-* design
+# system, the --vm-* tokens) is the mathviz Quarto extension, vendored under
+# _extensions/ by `quarto add apurvanakade/mathviz` and updated with
+# `quarto update apurvanakade/mathviz@vX.Y.Z`. Its filter puts math.js,
+# Plotly, mathviz.js and mathviz.css into every page's <head>, in that order
+# -- ahead of everything in include-in-header. See CLAUDE.md.
+filters:
+  - mathviz
+mathviz:
+  # Emitted as <meta name="referrer"> ahead of the CDN tags the filter adds,
+  # so no third-party origin sees a page's path or query string (which is
+  # the visitor's own math input). privacy.qmd states this; keep them in step.
+  referrer: same-origin
+
 format:
   html:
     theme:
@@ -77,7 +91,7 @@ website:
   # personalized content and targeted ads, which is false. _includes/consent.html
   # is a small replacement with accurate copy. See CLAUDE.md.
   page-footer:
-    center: "Copyright © 2026 Apurva Nakade. Released under the [Apache 2.0 license](https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE). [Privacy](/privacy.qmd) · [Analytics preferences](#analytics-preferences)."
+    center: "Copyright © 2026 Apurva Nakade. Released under the [Apache 2.0 license](https://github.com/apurvanakade/VisualMathLab/blob/main/LICENSE). [Privacy](/privacy.qmd) · [Analytics preferences](#analytics-preferences) · [Embed an app](/embed.qmd)."
 
   # One level of topic sections, in reading order. Every app is listed by its
   # full apps/<slug>/index.qmd path rather than a glob: apps/ is flat, so

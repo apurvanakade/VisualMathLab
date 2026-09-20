@@ -102,6 +102,9 @@ granted/denied choice.
   const BREAKPOINT = "(max-width: 991.98px)"
   const banner = document.getElementById("vml-mobile-warning")
   if (!banner) return
+  // Embed mode (?embed=1): the framing site decides how much room the app
+  // gets; a warning about this site's layout would be about the wrong page.
+  if (document.documentElement.classList.contains("vm-embed")) return
 
   function dismissed() {
     try {

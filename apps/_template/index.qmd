@@ -1,0 +1,446 @@
+---
+# TODO: fill in the front matter. `topic` must equal a topics/<topic>/index.qmd
+# title exactly; `order` is one higher than the topic's current last app;
+# `description` is one plain-text sentence (it is excerpted onto the listing
+# card verbatim, so no math markup); `image` is a screenshot, which
+# `npm run thumbs` can take for you once the page renders.
+title: "TODO Method Name"
+topic: "Root Finding"
+description: "TODO: one sentence saying what the method does and how it converges."
+author:
+  - TODO Your Name
+date: 2026-01-01
+order: 99
+categories:
+  - Computational Math
+  - TODO
+---
+
+<!--
+Copyright (c) 2026 TODO Your Name. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: TODO Your Name
+-->
+
+<!--
+STARTER PAGE. Copy this folder to apps/<slug>/, rename nothing inside, and
+work through the TODOs top to bottom. It is a working page as it stands (a
+fixed-point iteration x -> g(x)), so you can preview it before changing a line:
+
+  cp -r apps/_template apps/my-method
+  quarto preview --no-browser      # then open /apps/my-method/
+
+Quarto ignores this _template folder itself (underscore-prefixed), so it is
+never rendered or listed. Two things do NOT happen automatically once your copy
+exists -- add the page to its topic's `listing.contents` in
+topics/<topic>/index.qmd and to the sidebar in _quarto.yml.
+
+The cells are the same, in the same order and with the same names, as every
+other app page (apps/newton-method/index.qmd is the fully worked reference).
+Keep the names: CLAUDE.md and the mathviz README describe the page in terms of
+them. Everything named VM.* and every ojs-* class comes from the mathviz
+extension -- nothing to load.
+-->
+
+```{ojs}
+//| output: false
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// TODO: one label per trace mainPlot can draw, in legend order, and the color
+// each is drawn in (so the legend swatches double as a color key). Every
+// trace pushed in mainPlot carries showlegend: false -- this floating legend
+// replaces Plotly's own.
+traceOptions = ["g(x)", "y = x", "Iterates"]
+
+// Re-runs on a light/dark toggle, which is what repaints trace colors: chart
+// chrome re-themes itself, but a color baked into a trace only changes when
+// this cell (and everything downstream) runs again.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+chartColors = VM.plotting.colors(vmTheme)
+
+traceColors = new Map([
+  ["g(x)", chartColors.fn],
+  ["y = x", chartColors.muted],
+  ["Iterates", chartColors.alt]
+])
+```
+
+```{ojs}
+//| output: false
+// TODO: presets for the "Try an example" dropdown. Every key in `params` must
+// appear in exampleFieldSelectors below, and a field another field's bounds
+// depend on (a "max" before its slider) must come first.
+examples = [
+  {title: "cos(x), from 1", params: {g: "cos(x)", x0: "1"}},
+  {title: "sqrt(2 + x), from 0", params: {g: "sqrt(2 + x)", x0: "0"}},
+  {title: "Diverges: 3*x*(1 - x) from 0.4", params: {g: "3*x*(1 - x)", x0: "0.4"}}
+]
+```
+
+<div class="ojs-panel">
+
+```{ojs}
+// TODO: the commit-gated inputs -- what to compute. Each reads its default
+// from the URL (so a shared link reproduces the run) and tags itself with
+// data-example-field so the example dropdown can find it.
+viewof gText = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Function g(x)", value: params.get("g") ?? "cos(x)", placeholder: "Example: cos(x), sqrt(2 + x)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "g"
+  return input
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof x0 = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1", placeholder: "Example: 1.5, pi/4"})
+  input.dataset.exampleField = "x0"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof exampleSelect = {
+  const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- a cell that names a
+// view whose identity is reactively recreated would re-trigger itself.
+exampleFieldSelectors = ({g: '[data-example-field="g"]', x0: '[data-example-field="x0"]'})
+```
+
+```{ojs}
+//| output: false
+// A one-time native "change" listener, not a cell reactive on exampleSelect:
+// a <select> fires input AND change per pick, and two overlapping applies race.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+viewof plotTrigger = {
+  const button = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto", "ojs-end")
+  return button
+}
+```
+
+<div class="ojs-grid">
+
+```{ojs}
+// Always-live, but a text field, so it lives here rather than in the slider
+// bar (that bar holds sliders and nothing else).
+viewof maxIterationsInput = Inputs.text({value: "20", label: "Max n", placeholder: "Example: 20, 5*4"})
+```
+
+</div>
+
+</div>
+
+```{ojs}
+//| output: false
+// Enter in a text field clicks Plot instead of submitting the field's form.
+enterToPlot = {
+  for (const view of [viewof gText, viewof x0]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// Snapshots the fields when Plot is clicked (reads the stable views, not the
+// reactive values, so it doesn't rerun per keystroke) and writes them back
+// into the URL. Start from location.search, not an empty URLSearchParams, so
+// parameters this page doesn't own (embed=1) survive.
+committed = {
+  plotTrigger
+  const gVal = (viewof gText).value
+  const x0Text = (viewof x0).value
+  const params = new URLSearchParams(window.location.search)
+  params.set("g", gVal)
+  params.set("x0", x0Text)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return {gText: gVal, x0: VM.expressions.makeNumber(window.math, x0Text)}
+}
+```
+
+```{ojs}
+//| output: false
+showG = traces.includes("g(x)")
+```
+
+```{ojs}
+//| output: false
+showDiagonal = traces.includes("y = x")
+```
+
+```{ojs}
+//| output: false
+showIterates = traces.includes("Iterates")
+```
+
+```{ojs}
+//| output: false
+// TODO: the method. Returns {rows, ...}: `rows` is the full iteration history,
+// one object per step, plus whatever the plots need (the parsed function).
+// Plain imperative code -- a while loop with explicit early returns -- reads
+// best for this site's audience. Invalid input returns empty rows; the chart
+// shows an empty-state message for that.
+result = {
+  const g = VM.expressions.makeFunction(window.math, committed.gText)
+  if (!g) return {rows: [], g: x => NaN}
+  if (!Number.isFinite(committed.x0)) return {rows: [], g}
+
+  const rows = []
+  let x = committed.x0
+  let i = 0
+  while (i < maxIterations) {
+    const gx = g(x)
+    if (!Number.isFinite(gx)) {
+      rows.push({i, x, gx: NaN, error: NaN})
+      return {rows, g}
+    }
+    rows.push({i, x, gx, error: Math.abs(gx - x)})
+    x = gx
+    i++
+  }
+  return {rows, g}
+}
+```
+
+```{ojs}
+//| output: false
+// TODO: what the plots share -- the rows visible at the current step, axis
+// ranges from ALL rows (so axes hold still while stepping), a sampled curve.
+setup = {
+  const visibleRows = result.rows.slice(0, Math.min(Number(stepControl), result.rows.length) + 1)
+  const xValues = [committed.x0]
+  for (const row of result.rows) xValues.push(row.x, row.gx)
+  const xRange = VM.plotting.paddedRange(xValues, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: 0.5})
+  const sampleXs = []
+  const sampleYs = []
+  for (let k = 0; k <= 400; k++) {
+    const x = xRange.lo + (xRange.hi - xRange.lo) * k / 400
+    sampleXs.push(x)
+    sampleYs.push(result.g(x))
+  }
+  const yRange = VM.plotting.paddedRange([...sampleYs, ...xValues], {emptyRange: [-3, 3], relativePadding: 0.15, minPadding: 0.5})
+  return {visibleRows, xRange, yRange, sampleXs, sampleYs}
+}
+```
+
+```{ojs}
+//| output: false
+// TODO: the main chart. _plotDiv is a closure so the same DOM node is reused
+// (Plotly.react after the first render) -- that is what keeps the reader's
+// zoom/pan when the step slider moves. A hidden trace is not pushed at all.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({visibleRows, xRange, yRange, sampleXs, sampleYs}, showG, showDiagonal, showIterates) => {
+    const data = []
+    if (showG) {
+      data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "g(x)", showlegend: false,
+        line: {color: chartColors.fn, width: 3}, hovertemplate: "g(x) = %{y:.4g}<extra></extra>"})
+    }
+    if (showDiagonal) {
+      data.push({x: [xRange.lo, xRange.hi], y: [xRange.lo, xRange.hi], type: "scatter", mode: "lines", name: "y = x", showlegend: false,
+        line: {color: chartColors.muted, width: 1.5, dash: "dash"}, hoverinfo: "skip"})
+    }
+    if (showIterates) {
+      // The cobweb: (x_n, x_n) -> (x_n, g(x_n)) -> (g(x_n), g(x_n)).
+      const xs = [], ys = [], labels = []
+      for (const r of visibleRows) {
+        if (!Number.isFinite(r.gx)) continue
+        xs.push(r.x, r.x, r.gx)
+        ys.push(r.x, r.gx, r.gx)
+        labels.push("", "x" + VM.plotting.subscript(r.i + 1), "")
+      }
+      data.push({x: xs, y: ys, type: "scatter", mode: "lines+markers+text", name: "Iterates", showlegend: false,
+        text: labels, textposition: "top left",
+        line: {color: chartColors.alt, width: 2},
+        marker: {color: chartColors.alt, size: 7, line: {color: chartColors.halo, width: 1}},
+        hovertemplate: "x = %{x:.5g}<br>y = %{y:.5g}<extra></extra>"})
+    }
+
+    let hasCurve = false
+    for (const y of sampleYs) {
+      if (Number.isFinite(y)) { hasCurve = true; break }
+    }
+
+    const layout = {
+      xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
+      yaxis: {title: "g(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      annotations: hasCurve ? [] : VM.plotting.emptyState("Couldn't read that function — check the formula for g(x)."),
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// Declared above the chart block, not inside it: an output:false cell inside
+// an .ojs-row/.ojs-grid still emits a zero-size node that takes a grid slot.
+maxIterations = {
+  const parsed = VM.expressions.makeNumber(window.math, maxIterationsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 20
+  return Math.max(1, Math.round(parsed))
+}
+```
+
+<div class="ojs-chart-block">
+
+```{ojs}
+mainPlot(setup, showG, showDiagonal, showIterates)
+```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+// The step scrubber. It gets a play button automatically.
+viewof stepControl = {
+  const slider = Inputs.range([0, maxIterations - 1], {step: 1, value: 0, label: "n"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// TODO: the whole run, not just the current step -- iterate value against n.
+iteratesPlot = {
+  const points = []
+  for (const r of result.rows) if (Number.isFinite(r.x)) points.push({n: r.i, x: r.x})
+  return Plot.plot(VM.plotting.plotOptions({
+    height: 260,
+    x: {label: "n"},
+    y: {label: "xₙ"},
+    marks: [Plot.line(points, {x: "n", y: "x", stroke: chartColors.fn}), Plot.dot(points, {x: "n", y: "x", fill: chartColors.fn})]
+  }))
+}
+```
+
+```{ojs}
+// TODO: error against n on a log scale, with the least-squares slope as the
+// observed convergence rate.
+convergencePlot = {
+  const points = []
+  for (const r of result.rows) if (Number.isFinite(r.error) && r.error > 0) points.push({n: r.i, error: r.error})
+  const fitInput = []
+  for (const p of points) fitInput.push({x: p.n, y: Math.log10(p.error)})
+  const fit = VM.numerical.linearRegression(fitInput)
+  const marks = [Plot.line(points, {x: "n", y: "error", stroke: chartColors.alt}), Plot.dot(points, {x: "n", y: "error", fill: chartColors.alt})]
+  if (fit) {
+    marks.push(Plot.line([{n: fit.xlo, error: 10 ** (fit.slope * fit.xlo + fit.intercept)}, {n: fit.xhi, error: 10 ** (fit.slope * fit.xhi + fit.intercept)}],
+      {x: "n", y: "error", stroke: chartColors.muted, strokeDasharray: "4 3"}))
+  }
+  return Plot.plot(VM.plotting.plotOptions({
+    height: 260,
+    x: {label: "n"},
+    y: {label: "|xₙ₊₁ − xₙ|", type: "log"},
+    marks
+  }))
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// TODO: the raw run. Always return a Node, even when empty, so Quarto's OJS
+// runtime never latches this cell as hidden.
+iterationTable = {
+  if (result.rows.length === 0) return document.createElement("div")
+  const formattedRows = []
+  for (const row of result.rows) {
+    let xCell = "NaN"
+    if (Number.isFinite(row.x)) xCell = row.x.toPrecision(10)
+    let gxCell = "NaN"
+    if (Number.isFinite(row.gx)) gxCell = row.gx.toPrecision(10)
+    let errorCell = "NaN"
+    if (Number.isFinite(row.error)) errorCell = row.error.toExponential(4)
+    formattedRows.push([row.i, xCell, gxCell, errorCell])
+  }
+  return VM.ui.renderTable({
+    html,
+    headers: ["n", tex`x_n`, tex`g(x_n)`, tex`|x_{n+1} - x_n|`],
+    csvHeaders: ["n", "x_n", "g(x_n)", "|x_{n+1} - x_n|"],
+    filename: "TODO-method-iterations.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+TODO: the explanation. What the method does, the update rule as a display
+equation, when it converges and how fast, and what to try in the app above.
+Fixed-point iteration solves $x = g(x)$ by repeating
+
+$$
+x_{n+1} = g(x_n),
+$$
+
+which converges to a fixed point $x^*$ whenever $|g'(x^*)| < 1$ and $x_0$ is
+close enough -- linearly, with ratio $|g'(x^*)|$.

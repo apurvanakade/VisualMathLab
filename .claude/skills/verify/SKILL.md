@@ -1,6 +1,6 @@
 ---
 name: verify
-description: This skill should be used to verify changes to Visual Math Lab (Quarto site, OJS cells, js/** shared utilities) actually work, before committing. Covers both pure-function regressions and browser-runtime errors that quarto render can't catch.
+description: This skill should be used to verify changes to Visual Math Lab (Quarto site, OJS cells, site includes, the vendored mathviz extension) actually work, before committing. Covers both pure-function regressions and browser-runtime errors that quarto render can't catch.
 version: 0.1.0
 ---
 
@@ -15,19 +15,17 @@ npm install
 npx playwright install chromium
 ```
 
-Dev-only tooling (`package.json`, Playwright, mathjs for testing `js/expressions/*`) — nothing here ships to `docs/` or affects the site's runtime.
+Dev-only tooling (`package.json`, Playwright) — nothing here ships to `docs/` or affects the site's runtime. The shared `VM.*` library and its unit tests live in the mathviz repo (`../mathviz`, vendored here under `_extensions/`); its `npm test` is that library's Tier 1.
 
-## Tier 1: `npm test` — pure `js/**` function regressions
+## Tier 1: `npm test` — structural and pure-logic regressions
 
-`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `js/**/*.test.js` file automatically. Each source file has a colocated test file (e.g. `js/discrete-math/pairColor.js` → `js/discrete-math/mixed-pair-color.test.js`).
-
-Tests import `scripts/load-vm.mjs`'s `loadVM()`, which loads the **actual** `js/**/*.js` files (in the same order as `_includes/head-scripts.html`) into the current process's real global realm — not a re-implementation, and not a separate `vm.createContext` realm (a separate realm makes `assert.deepStrictEqual` fail on a cross-realm prototype check even when structurally identical — learned this the hard way, see the file's comment). This means a wiring bug (wrong category, typo'd function name, broken cross-file reference) shows up as a real `TypeError`, not a false pass.
+`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically. Here that is two files: `js/report-bug.test.js` (the one site-specific script left in `js/`, loaded the way a `<script>` tag would via indirect `eval`) and `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`head-scripts.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM).
 
 ```bash
 npm test
 ```
 
-Only pure, DOM-free functions get a `.test.js` — `js/ui/render-table.js` (needs Observable's `html` tagged template + real DOM) and `js/plotting/plotly-fullscreen-button.js` (a Plotly modebar-button config object, not really "testable" in isolation) are intentionally left to Tier 2 instead.
+The `VM.*` unit tests (51 files, one per function) moved to the mathviz repo with the code. After editing a shared function there, run `npm test` **in that repo** — its `scripts/load-vm.mjs` loads the real `src/js/**` files in manifest order into the current realm, so a wiring bug (wrong category, typo'd name, broken cross-file reference) shows up as a real `TypeError`, not a false pass. Then `npm run build` there and `quarto add /path/to/mathviz --no-prompt` here to try the change on real pages before tagging a release.
 
 ## Tier 2: `npm run verify` — full browser pass over every page
 
@@ -83,15 +81,14 @@ script fails to execute there, not in a stubbed sandbox.
 
 ## When to run which
 
-- Editing a `js/**` shared utility (adding a math function, renaming, refactoring): `npm test` first (fast), then `npm run verify` before considering it done — a function can pass its own unit tests and still be wired wrong at a call site.
+- Editing a shared utility in mathviz (adding a math function, renaming, refactoring): `npm test` there first (fast), rebuild, re-`quarto add` it here, then `npm run verify` before considering it done — a function can pass its own unit tests and still be wired wrong at a call site on one of these pages.
 - Editing a `.qmd` page only (new page, new OJS cells, no shared-utility changes): `npm run verify` is what actually exercises it; `npm test` won't see it.
 - Editing `_includes/analytics.html` or `_includes/consent.html`: `npm test` first (fast, catches a dropped local patch or a re-broken gate expression), then `npm run verify:analytics` — the full `npm run verify` crawl doesn't exercise the consent flow at all, since it never accepts or declines the banner on any page.
-- Adding a new shared utility function: add its `.test.js` alongside it (same pattern as the existing files), covering the properties that actually matter mathematically where possible (e.g. `sperner-color.test.js` doesn't just check "is a function" — it verifies the *end-to-end Sperner's-lemma property* that a colored triangulation always has an odd number of rainbow triangles, which is a far stronger regression guard than checking individual return values).
+- Adding a new shared utility function (in mathviz): add its `.test.js` alongside it (same pattern as the existing files) and list it in `src/manifest.mjs`, covering the properties that actually matter mathematically where possible (e.g. `sperner-color.test.js` doesn't just check "is a function" — it verifies the *end-to-end Sperner's-lemma property* that a colored triangulation always has an odd number of rainbow triangles, which is a far stronger regression guard than checking individual return values).
 
 ## Gotchas learned building this
 
 - `node --test <directory>` (a bare path argument) fails oddly on some Node versions ("Cannot find module"). `node --test` with **no** path argument works reliably (auto-discovers `*.test.js` recursively from cwd) — that's what `npm test` uses.
-- `assert.deepStrictEqual` on objects/arrays returned from code loaded via `vm.createContext` fails even when structurally identical, because that API creates a separate JS realm with its own `Object.prototype`. `load-vm.mjs` avoids this by running scripts in the current realm via indirect `eval` instead.
-- `js/plotting/plotly-fullscreen-button.js` runs code (patches `Plotly.newPlot`/`react`, registers a `document` listener) at load time, not inside a callable — `load-vm.mjs` stubs `document`/`Plotly` before loading scripts so this doesn't throw outside a browser.
+- `assert.deepStrictEqual` on objects/arrays returned from code loaded via `vm.createContext` fails even when structurally identical, because that API creates a separate JS realm with its own `Object.prototype`. Both `js/report-bug.test.js` here and mathviz's `load-vm.mjs` avoid this by running scripts in the current realm via indirect `eval` instead.
 - `verify-pages.mjs` spawns `quarto preview` with `detached: true` and kills it via `process.kill(-pid, 'SIGTERM')` (the whole process group), not a plain `proc.kill()` — the `quarto` CLI forks its own renderer/server subprocess, and killing only the immediate child leaves that subprocess (and the port) orphaned. It also passes `--timeout 120` to `quarto preview` itself as a belt-and-suspenders fallback in case the script's own cleanup is ever skipped (e.g. a hard crash).
 - Do **not** pass `--no-watch-inputs` to `quarto preview` here — it disables the mtime-based re-render-on-change that keeps served pages current. Without the watcher, `verify-pages.mjs` would silently test whatever was last rendered instead of the current source, defeating the point of verification.

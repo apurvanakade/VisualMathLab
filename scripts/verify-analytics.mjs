@@ -220,6 +220,49 @@ async function main() {
       check('console errors', errors.length, 0)
       await ctx.close()
     }
+
+    console.log('\n--- 6. referrer policy precedes every cross-origin script in the rendered <head> ---')
+    {
+      // The meta is emitted by the mathviz extension (mathviz.referrer in
+      // _quarto.yml), which also adds the math.js/Plotly CDN tags -- ahead of
+      // include-in-header, which is why the meta can't live there any more.
+      // This is the claim privacy.qmd makes ("no other origin sees the
+      // page"); the structural test only checks the option is set.
+      const html = fs.readFileSync(path.join(docsRoot, 'apps/newton-method/index.html'), 'utf8')
+      const head = html.slice(0, html.indexOf('</head>'))
+      const metaAt = head.indexOf('<meta name="referrer" content="same-origin">')
+      const firstCdn = head.search(/<script[^>]+src="https:\/\//)
+      check('meta present in <head>', metaAt >= 0, true)
+      check('meta before first CDN script', metaAt >= 0 && firstCdn > metaAt, true)
+      const { ctx, page } = await newSession(browser)
+      await page.goto(`${base}/apps/newton-method/`, { waitUntil: 'networkidle' })
+      check('document.referrer policy applied', await page.evaluate(() => document.querySelector('meta[name=referrer]')?.content), 'same-origin')
+      await ctx.close()
+    }
+
+    console.log('\n--- 7. embed mode (?embed=1): no banner, nothing measured, even after a prior Allow ---')
+    {
+      const { ctx, page } = await newSession(browser)
+      const hits = [], errors = []
+      instrument(page, hits, errors)
+      // Grant first, on a normal page, so the stored "yes" exists...
+      await page.goto(`${base}/privacy.html`, { waitUntil: 'networkidle' })
+      await page.click('[data-consent-choice="granted"]')
+      await page.waitForTimeout(400)
+      check('measured after Allow (sanity)', hits.length >= 1, true)
+      // ...then load an app framed-style: the stored yes must not measure.
+      await page.goto(`${base}/apps/newton-method/?embed=1&f=x%5E3-2`, { waitUntil: 'networkidle' })
+      await page.waitForTimeout(400)
+      check('html.vm-embed set', await page.evaluate(() => document.documentElement.classList.contains('vm-embed')), true)
+      check('banner hidden', await page.locator('#vml-consent').isVisible(), false)
+      check('navbar hidden', await page.locator('#quarto-header').isVisible(), false)
+      // The privacy page itself sends a user_engagement beacon as it is left
+      // (visibilitychange -> hidden), so count by the page each hit reports.
+      const fromEmbed = hits.filter((u) => /dl=[^&]*newton-method/.test(u))
+      check('no GA request from the embedded page', fromEmbed.length, 0)
+      check('console errors', errors.length, 0)
+      await ctx.close()
+    }
   } finally {
     await browser.close()
     server.close()

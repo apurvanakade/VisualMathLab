@@ -49,6 +49,9 @@ function findQmdPages(dir, base = '') {
     if (entry.name.startsWith('.')) continue
     if (entry.isDirectory()) {
       if (skipDirs.has(entry.name)) continue
+      // Quarto never renders an underscore-prefixed folder (apps/_template,
+      // _extensions, _includes), so there is no page to load for one.
+      if (entry.name.startsWith('_')) continue
       pages.push(...findQmdPages(path.join(dir, entry.name), base + entry.name + '/'))
     } else if (entry.name === 'index.qmd') {
       pages.push(base + 'index.html')

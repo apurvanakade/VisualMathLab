@@ -36,6 +36,17 @@ const repoRoot = path.resolve(__dirname, '..')
 const analyticsHtml = fs.readFileSync(path.join(repoRoot, '_includes/analytics.html'), 'utf8')
 const consentHtml = fs.readFileSync(path.join(repoRoot, '_includes/consent.html'), 'utf8')
 const headScriptsHtml = fs.readFileSync(path.join(repoRoot, '_includes/head-scripts.html'), 'utf8')
+const quartoYml = fs.readFileSync(path.join(repoRoot, '_quarto.yml'), 'utf8')
+// head-scripts.html's own comments quote the referrer meta and an example
+// embed URL in prose, so the markup assertions below run on the tags alone.
+const headScriptsTags = headScriptsHtml.replace(/<!--[\s\S]*?-->/g, '')
+// The mathviz extension's Lua filter is what adds the math.js and Plotly CDN
+// tags to every page; its URLs are third-party hosts privacy.qmd must name.
+// Installed under _extensions/<owner>/mathviz or _extensions/mathviz.
+const mathvizLua = fs.readdirSync(path.join(repoRoot, '_extensions'), { recursive: true })
+  .filter((f) => f.endsWith('mathviz.lua'))
+  .map((f) => fs.readFileSync(path.join(repoRoot, '_extensions', f), 'utf8'))
+  .join('\n')
 const fontsCss = fs.readFileSync(path.join(repoRoot, 'fonts/fonts.css'), 'utf8')
 const privacyQmd = fs.readFileSync(path.join(repoRoot, 'privacy.qmd'), 'utf8')
 
@@ -93,7 +104,8 @@ test('consent.html: sets no cookies either', () => {
 })
 
 // privacy.qmd's "Third-party resources" section is a factual claim about
-// head-scripts.html and fonts/; these pin the facts it states.
+// head-scripts.html, the mathviz extension's CDN tags, and fonts/; these pin
+// the facts it states.
 
 test('head-scripts.html: no request to Google Fonts', () => {
   // Self-hosted from /fonts instead -- see fonts/fonts.css for why.
@@ -101,11 +113,16 @@ test('head-scripts.html: no request to Google Fonts', () => {
   assert.match(headScriptsHtml, /<link rel="stylesheet" href="\/fonts\/fonts\.css">/)
 })
 
-test('head-scripts.html: sends no referrer to other origins', () => {
+test('_quarto.yml: the mathviz extension emits the referrer policy ahead of its CDN tags', () => {
   // A page's query string is the visitor's math input; this is what keeps
   // it from reaching the script CDNs, including the MathJax/polyfill tags
-  // Quarto injects later in <head>.
-  assert.match(headScriptsHtml, /<meta name="referrer" content="same-origin">/)
+  // Quarto injects later in <head>. The meta used to live in
+  // head-scripts.html, but the extension's math.js/Plotly tags land above
+  // everything in include-in-header, so it has to come from the extension
+  // (its filter puts it first). scripts/verify-analytics.mjs checks the
+  // rendered order in a real page.
+  assert.match(quartoYml, /^mathviz:\n(?:  .*\n)*?  referrer: same-origin$/m)
+  assert.doesNotMatch(headScriptsTags, /<meta name="referrer"/, 'the meta belongs to the extension now')
 })
 
 test('fonts/fonts.css: every font file it references is in the repo', () => {
@@ -126,9 +143,13 @@ test('fonts/fonts.css: every font file it references is in the repo', () => {
 })
 
 test('privacy.qmd: names every third-party host a page loads from', () => {
-  // Quarto's own MathJax/polyfill tags are not in head-scripts.html, so the
-  // jsdelivr/cdnjs hosts are asserted directly rather than derived.
-  const hosts = [...headScriptsHtml.matchAll(/src="https:\/\/([^/"]+)/g)].map((m) => m[1])
+  // The script CDNs come from the mathviz filter (math.js, Plotly) plus
+  // whatever head-scripts.html adds itself. Quarto's own MathJax/polyfill
+  // tags are in neither file, so the jsdelivr/cdnjs hosts are asserted
+  // directly rather than derived.
+  assert.ok(mathvizLua.length > 0, 'the mathviz extension is not installed under _extensions/')
+  const hosts = [...(headScriptsTags + mathvizLua).matchAll(/https:\/\/([^/"]+)\//g)].map((m) => m[1])
+  assert.ok(hosts.includes('cdn.plot.ly'), 'expected the Plotly CDN host in the extension')
   for (const host of new Set([...hosts, 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com'])) {
     assert.ok(privacyQmd.includes('`' + host + '`'), `privacy.qmd does not mention ${host}`)
   }

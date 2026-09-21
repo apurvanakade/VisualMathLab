@@ -10,8 +10,9 @@ Authors: Apurva Nakade
 
 Every interactive app on this site can be dropped into another web page --
 lecture notes, a course site, a blog post -- as an `<iframe>`. Add `embed=1`
-to the app's URL and the page renders the app alone: no navigation bar, no
-sidebar, no title, no footer.
+to the app's URL and the page renders the app alone -- its controls and its
+chart, with none of the page's explanation, none of the diagnostic plots and
+tables under the chart, and no navigation bar, sidebar, title or footer.
 
 ```html
 <iframe
@@ -30,12 +31,31 @@ readers to first see them, copy the URL, and append `&embed=1`. Readers can
 still change everything once the app has loaded; the URL only sets the
 starting point.
 
+## Pages with more than one app
+
+A few pages hold several interactive figures, one per step of an argument.
+`embed=1` gives the first; to frame a later one, name it instead of `1`.
+[Sperner's Lemma -- Combinatorial Proof](apps/sperners-lemma-combinatorial-proof/index.qmd)
+has three: `embed=triangulation` (the colored triangulation at the top, the
+same as `embed=1`), `embed=doors` (the three kinds of room) and
+`embed=boundary` (the bottom edge on its own). A name no figure on the page
+carries falls back to the first.
+
+```html
+<iframe
+  src="https://www.visualmathlab.com/apps/sperners-lemma-combinatorial-proof/?embed=boundary"
+  width="100%" height="480" loading="lazy"
+  title="Sperner's lemma on the bottom edge">
+</iframe>
+```
+
 ## Size
 
 An app's chart is sized to the frame it is given, so pick a `height` that
 suits the page around it -- `720` pixels leaves room for the controls panel
 and a comfortable chart on a laptop screen; `900` if the app has a long
-controls panel. `width="100%"` lets the frame follow your column. Below about
+controls panel. Nothing below the chart is shown, so the frame never needs
+to be taller than the controls and the chart together. `width="100%"` lets the frame follow your column. Below about
 600 pixels of width the controls stack vertically, which works but is
 cramped; on a narrow layout consider linking to the app instead.
 

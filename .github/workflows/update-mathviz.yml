@@ -3,15 +3,24 @@
 # Authors: Apurva Nakade
 
 # Keeps the vendored mathviz extension (_extensions/apurvanakade/mathviz/)
-# on the newest tag of apurvanakade/mathviz. Runs on every push to develop:
-# if a newer vX.Y.Z tag exists than the version recorded in _extension.yml,
-# it runs `quarto update` and commits the result straight back to develop.
-# A push made with GITHUB_TOKEN does not re-trigger this workflow, and a
-# no-op run leaves the tree untouched, so there is no loop either way.
+# on the newest tag of apurvanakade/mathviz. If a newer vX.Y.Z tag exists
+# than the version recorded in _extension.yml, it runs `quarto update` and
+# commits the result straight back to develop.
+#
+# The primary trigger is a `repository_dispatch` sent by mathviz's own
+# .github/workflows/notify-consumers.yml the moment a v* tag is pushed
+# there (it authenticates with a fine-grained PAT stored in that repo as
+# VISUALMATHLAB_DISPATCH_TOKEN, contents: read+write on this repo). A push
+# to develop is kept as a fallback, and a no-op run leaves the tree
+# untouched. A push made with GITHUB_TOKEN does not re-trigger workflows,
+# so there is no loop either way.
 
 name: Update mathviz to the latest tag
 
 on:
+  repository_dispatch:
+    types:
+      - mathviz-release
   push:
     branches:
       - develop

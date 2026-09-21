@@ -1,0 +1,66 @@
+# Copyright (c) 2026 Apurva Nakade. All rights reserved.
+# Released under Apache 2.0 license as described in the file LICENSE.
+# Authors: Apurva Nakade
+
+# Keeps the vendored mathviz extension (_extensions/apurvanakade/mathviz/)
+# on the newest tag of apurvanakade/mathviz. Runs on every push to develop:
+# if a newer vX.Y.Z tag exists than the version recorded in _extension.yml,
+# it runs `quarto update` and commits the result straight back to develop.
+# A push made with GITHUB_TOKEN does not re-trigger this workflow, and a
+# no-op run leaves the tree untouched, so there is no loop either way.
+
+name: Update mathviz to the latest tag
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-mathviz
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v5
+        with:
+          ref: develop
+
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Compare vendored version with the latest mathviz tag
+        id: versions
+        run: |
+          current="$(sed -n 's/^version:[[:space:]]*//p' _extensions/apurvanakade/mathviz/_extension.yml)"
+          latest="$(git ls-remote --tags --refs https://github.com/apurvanakade/mathviz.git 'v[0-9]*' \
+                    | sed 's|.*refs/tags/v||' | sort -V | tail -n 1)"
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          echo "vendored: $current, latest tag: $latest"
+
+      - name: Update the extension
+        if: steps.versions.outputs.latest != '' && steps.versions.outputs.latest != steps.versions.outputs.current
+        run: quarto update "apurvanakade/mathviz@v${{ steps.versions.outputs.latest }}" --no-prompt
+
+      - name: Commit and push
+        if: steps.versions.outputs.latest != '' && steps.versions.outputs.latest != steps.versions.outputs.current
+        run: |
+          git add _extensions
+          if git diff --cached --quiet; then
+            echo "quarto update left the tree unchanged; nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update mathviz to v${{ steps.versions.outputs.latest }}"
+          # develop may have moved while this ran; replay the commit on top.
+          git pull --rebase origin develop
+          git push origin develop

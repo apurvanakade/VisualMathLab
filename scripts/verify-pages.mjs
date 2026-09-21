@@ -189,6 +189,73 @@ async function checkSliderControls(page, errors) {
   }
 }
 
+// Embed mode (CLAUDE.md, "Embed mode"): ?embed=1 must show the page's tagged
+// app and nothing else in the content column, and ?embed=<id> must show the
+// block with that id. Rendered-outcome assertions, like checkSliderControls:
+// a page that forgot its <div class="vm-app"> renders fine and throws
+// nothing, it just embeds as the whole page. Everything in
+// #quarto-document-content that is neither the active .vm-app, inside it nor
+// an ancestor of it must lay out to zero height; only app pages are checked,
+// since the tag is an app-page convention (a listing or the privacy page has
+// no app to show).
+function embedProblems(expectedId) {
+  const main = document.getElementById('quarto-document-content')
+  if (!main) return ['no #quarto-document-content']
+  const problems = []
+  const apps = main.querySelectorAll('.vm-app')
+  if (apps.length === 0) problems.push('no .vm-app block on the page (wrap the app in <div class="vm-app">)')
+  let active = null
+  for (const app of apps) {
+    if (app.classList.contains('vm-app-active')) active = app
+  }
+  if (active === null) {
+    problems.push('no .vm-app-active block')
+    return problems
+  }
+  if (expectedId !== null && active.id !== expectedId) {
+    problems.push(`active .vm-app is #${active.id || '(no id)'}, expected #${expectedId}`)
+  }
+  if (active.getBoundingClientRect().height === 0) problems.push('the active .vm-app has zero height')
+  for (const el of main.querySelectorAll('*')) {
+    if (el === active || active.contains(el) || el.contains(active)) continue
+    if (el.getBoundingClientRect().height > 0) {
+      const label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + (el.className ? '.' + String(el.className).split(' ').join('.') : '')
+      problems.push(`non-app content visible in embed mode: ${label}`)
+    }
+  }
+  return problems
+}
+
+async function checkEmbedMode(browser, base, relPath, errors) {
+  const page = await browser.newPage()
+  page.on('pageerror', err => errors.push(`embed pageerror: ${err.message}`))
+  page.on('console', msg => {
+    if (msg.type() === 'error') errors.push(`embed console.error: ${msg.text()}`)
+  })
+  try {
+    await page.goto(`${base}${relPath}?embed=1`, { waitUntil: 'networkidle', timeout: 30000 })
+    await page.waitForTimeout(1500)
+    if (!(await page.evaluate(() => document.documentElement.classList.contains('vm-embed')))) {
+      errors.push('embed: html.vm-embed not set')
+    }
+    for (const problem of await page.evaluate(embedProblems, null)) errors.push(`embed=1: ${problem}`)
+
+    // Every id-tagged block must be selectable on its own.
+    const ids = await page.evaluate(() => {
+      const found = []
+      for (const app of document.querySelectorAll('#quarto-document-content .vm-app[id]')) found.push(app.id)
+      return found
+    })
+    for (const id of ids) {
+      await page.goto(`${base}${relPath}?embed=${encodeURIComponent(id)}`, { waitUntil: 'networkidle', timeout: 30000 })
+      await page.waitForTimeout(1500)
+      for (const problem of await page.evaluate(embedProblems, id)) errors.push(`embed=${id}: ${problem}`)
+    }
+  } finally {
+    await page.close()
+  }
+}
+
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
   const errors = []
@@ -230,6 +297,8 @@ async function checkPage(browser, base, relPath) {
 
   await page.waitForTimeout(300)
   await page.close()
+
+  if (relPath.startsWith('apps/')) await checkEmbedMode(browser, base, relPath, errors)
   return errors
 }
 

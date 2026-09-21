@@ -29,7 +29,9 @@ headless-browser pass over every rendered page.
    template is a working fixed-point-iteration page with every cell the site
    expects (`result`, `setup`, `mainPlot`, the URL-synced inputs, the example
    dropdown, the step slider, the convergence plots, the table), so it renders
-   before you change a line.
+   before you change a line. Keep the `<div class="vm-app">` wrapper around
+   the controls panel and the chart: it marks what `?embed=1` shows on its
+   own.
 2. Add `apps/<slug>/index.qmd` to its topic's `listing.contents` in
    `topics/<topic>/index.qmd` and to the sidebar in `_quarto.yml`.
 3. `quarto preview`, open the page, and iterate.
@@ -39,7 +41,9 @@ headless-browser pass over every rendered page.
 
 ## Embed an app elsewhere
 
-Any app can be framed into another site with `?embed=1` on its URL — see
+Any app can be framed into another site with `?embed=1` on its URL, which
+shows the app alone — its controls and chart, none of the page's text. A page
+with several figures takes `?embed=<id>` to pick one. See
 [Embedding an app](https://www.visualmathlab.com/embed.html).
 
 ## Where the shared code lives

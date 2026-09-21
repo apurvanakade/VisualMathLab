@@ -6,12 +6,14 @@ Thank you for your interest in contributing to `Visual Math Lab`! We welcome con
 
 ```sh
 git clone https://github.com/apurvanakade/VisualMathLab && cd VisualMathLab
-quarto preview        # http://localhost:4200, renders each page as you open it
+quarto preview        # http://localhost:4200
 ```
+
+The first `quarto preview` renders the whole site once -- about a minute, the same one-time cost as an `npm install`, not a hang. After that it re-renders only the page you open or the file you save, so a new app page is the only thing that renders while you work on it.
 
 **A new app** starts as a copy of the starter page: `cp -r apps/_template apps/<slug>`, then work through its `TODO`s. It is a complete, working page (a fixed-point iteration) with every cell the site's pages share, so it renders before you change anything. Keep its `<div class="vm-app">` wrapper around the controls panel and the chart: that is the part another site gets when it embeds the page with `?embed=1` (the callouts and prose below the chart stay outside it). Then list the page in its topic's `listing.contents` (`topics/<topic>/index.qmd`) and in `_quarto.yml`'s sidebar -- neither is discovered automatically. Give it a `topic:` that matches the topic page's `title:` exactly, an `order:` one higher than the topic's current last app, a one-sentence plain-text `description:`, and an `image:` (`npm run thumbs` takes the screenshots).
 
-**Checking your work**: open the page in `quarto preview` and use it -- `quarto render` only catches parse errors, not a cell that throws at runtime. Before a pull request, `npm install` once and run `npm run verify`, which renders the whole site and drives every page in a headless browser, failing on any console error.
+**Checking your work**: open the page in `quarto preview` and use it -- `quarto render` only catches parse errors, not a cell that throws at runtime. For a scripted check of just your page, `npm install` once and run `npm run verify -- apps/<slug>/index.qmd`, which drives that one page in a headless browser and fails on any console error. You do not need to run the full-site crawl (`npm run verify` with no arguments, several minutes) yourself: every pull request to `develop` runs it on GitHub Actions (`.github/workflows/pr-check.yml`), and the check has to be green before the page is merged.
 
 **The shared code** -- `VM.*` helpers, the `ojs-*` panel and chart classes, the `--vm-*` design tokens -- is the [mathviz](https://github.com/apurvanakade/mathviz) library, vendored under `_extensions/`. A change every page should get belongs there, not here (and `_extensions/` itself is never edited by hand: it is what `quarto add apurvanakade/mathviz` copied in).
 

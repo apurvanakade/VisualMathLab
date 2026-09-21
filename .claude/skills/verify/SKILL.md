@@ -43,6 +43,8 @@ Prints `OK`/`FAIL` per page; a `FAIL` includes the exact console error (which OJ
 
 Using `quarto preview` instead of `quarto render` means only files that actually changed since the last run get re-rendered (`quarto preview`'s file watcher does this on its own, based on mtimes) — `quarto render` unconditionally re-renders the whole site every single invocation, which is wasted work in the common edit-then-verify loop. The first run in a session (or after `docs/` is deleted) still pays a full-site render up front, same as `quarto render` would — `quarto preview` needs the whole project's metadata to build navigation/search regardless of how many pages actually changed.
 
+The same crawl (plus `npm test` and `npm run verify:analytics`) runs on GitHub Actions for every pull request to `develop` — `.github/workflows/pr-check.yml` — so a contributor only needs the single-page form locally.
+
 ## `npm run verify:analytics` — the analytics consent flow, in a real browser
 
 ```bash

@@ -1,0 +1,63 @@
+# Copyright (c) 2026 Apurva Nakade. All rights reserved.
+# Released under Apache 2.0 license as described in the file LICENSE.
+# Authors: Apurva Nakade
+
+# Renders the site and runs every verification tier on each pull request to
+# develop, so the several-minute full-site browser crawl (`npm run verify`)
+# is a gate that runs on GitHub rather than something a contributor has to
+# run on their own machine -- CONTRIBUTING.md tells them to check just their
+# page locally (`npm run verify -- apps/<slug>/index.qmd`) and leave the
+# rest to this check. It is also the maintainer's green light on a page they
+# did not write.
+#
+# `npm run verify` renders on its own (it spawns `quarto preview`, which on
+# an empty docs/ does the full render), so there is no separate render step;
+# `npm run verify:analytics` reuses the docs/ that leaves behind. Both exit
+# non-zero on any failure.
+
+name: Verify pull request
+
+on:
+  pull_request:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dev tooling
+        run: npm ci
+
+      - name: Install the Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Structural tests
+        run: npm test
+
+      - name: Render and crawl every page
+        run: npm run verify
+
+      - name: Consent flow in a real browser
+        run: npm run verify:analytics

@@ -16,10 +16,12 @@ Observable Plot.
 
 ```sh
 git clone https://github.com/apurvanakade/VisualMathLab && cd VisualMathLab
-quarto preview           # renders each page on demand at http://localhost:4200
+quarto preview           # http://localhost:4200
 ```
 
-That is all a content change needs. `npm install` (once) adds the dev-only
+The first preview renders the whole site once (about a minute); after that
+only the page you open or the file you save is re-rendered. That is all a
+content change needs. `npm install` (once) adds the dev-only
 tooling: `npm test` for the site's structural tests and `npm run verify` for a
 headless-browser pass over every rendered page.
 

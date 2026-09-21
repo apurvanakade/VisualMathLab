@@ -156,28 +156,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -999,14 +1021,15 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+<div class="vm-app">
 <div class="ojs-chart-block ojs-svg-block">
 <div class="ojs-chart-controls ojs-grid">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="298" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 297;"><span id="cb9-298"><a href="#cb9-298" aria-hidden="true" tabindex="-1"></a>viewof N <span class="op">=</span> {</span>
-<span id="cb9-299"><a href="#cb9-299" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">2</span><span class="op">,</span> <span class="dv">15</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">10</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Number of subdivisions"</span>})</span>
-<span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
-<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="300" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 299;"><span id="cb9-300"><a href="#cb9-300" aria-hidden="true" tabindex="-1"></a>viewof N <span class="op">=</span> {</span>
+<span id="cb9-301"><a href="#cb9-301" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">2</span><span class="op">,</span> <span class="dv">15</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">10</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Number of subdivisions"</span>})</span>
+<span id="cb9-302"><a href="#cb9-302" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb9-303"><a href="#cb9-303" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
+<span id="cb9-304"><a href="#cb9-304" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-9" data-nodetype="declaration">
 
@@ -1014,11 +1037,11 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="306" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 305;"><span id="cb10-306"><a href="#cb10-306" aria-hidden="true" tabindex="-1"></a>viewof t <span class="op">=</span> {</span>
-<span id="cb10-307"><a href="#cb10-307" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fl">0.15</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Time"</span>})</span>
-<span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb10-309"><a href="#cb10-309" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
-<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="308" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 307;"><span id="cb10-308"><a href="#cb10-308" aria-hidden="true" tabindex="-1"></a>viewof t <span class="op">=</span> {</span>
+<span id="cb10-309"><a href="#cb10-309" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fl">0.15</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Time"</span>})</span>
+<span id="cb10-310"><a href="#cb10-310" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb10-311"><a href="#cb10-311" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
+<span id="cb10-312"><a href="#cb10-312" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-10" data-nodetype="declaration">
 
@@ -1026,14 +1049,14 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="314" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 313;"><span id="cb11-314"><a href="#cb11-314" aria-hidden="true" tabindex="-1"></a><span class="co">// Referenced (but otherwise unused) inside colorMapValid/colorMapInvalid</span></span>
-<span id="cb11-315"><a href="#cb11-315" aria-hidden="true" tabindex="-1"></a><span class="co">// below so that clicking the button re-runs both panels' random color</span></span>
-<span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a><span class="co">// assignment together, without moving either slider.</span></span>
-<span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a>viewof comparisonRegenerate <span class="op">=</span> {</span>
-<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate colors"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
-<span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
-<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
-<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="316" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 315;"><span id="cb11-316"><a href="#cb11-316" aria-hidden="true" tabindex="-1"></a><span class="co">// Referenced (but otherwise unused) inside colorMapValid/colorMapInvalid</span></span>
+<span id="cb11-317"><a href="#cb11-317" aria-hidden="true" tabindex="-1"></a><span class="co">// below so that clicking the button re-runs both panels' random color</span></span>
+<span id="cb11-318"><a href="#cb11-318" aria-hidden="true" tabindex="-1"></a><span class="co">// assignment together, without moving either slider.</span></span>
+<span id="cb11-319"><a href="#cb11-319" aria-hidden="true" tabindex="-1"></a>viewof comparisonRegenerate <span class="op">=</span> {</span>
+<span id="cb11-320"><a href="#cb11-320" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate colors"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
+<span id="cb11-321"><a href="#cb11-321" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
+<span id="cb11-322"><a href="#cb11-322" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
+<span id="cb11-323"><a href="#cb11-323" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-11" data-nodetype="declaration">
 
@@ -1042,15 +1065,15 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="327" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 326;"><span id="cb12-327"><a href="#cb12-327" aria-hidden="true" tabindex="-1"></a><span class="co">// Side by side, with each plot captioned above (stacking into one column</span></span>
-<span id="cb12-328"><a href="#cb12-328" aria-hidden="true" tabindex="-1"></a><span class="co">// on a phone-width viewport, where two half-width panels would be too</span></span>
-<span id="cb12-329"><a href="#cb12-329" aria-hidden="true" tabindex="-1"></a><span class="co">// small to read). .sperner-compare is what keeps the pair a row in</span></span>
-<span id="cb12-330"><a href="#cb12-330" aria-hidden="true" tabindex="-1"></a><span class="co">// fullscreen, where styles.css's letterbox chain otherwise turns every</span></span>
-<span id="cb12-331"><a href="#cb12-331" aria-hidden="true" tabindex="-1"></a><span class="co">// wrapper around a figure into a column (see the page-local &lt;style&gt; block).</span></span>
-<span id="cb12-332"><a href="#cb12-332" aria-hidden="true" tabindex="-1"></a><span class="fu">html</span><span class="vs">`&lt;div class="sperner-compare" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;"&gt;</span></span>
-<span id="cb12-333"><a href="#cb12-333" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;div style="flex: 1 1 280px; min-width: 0;"&gt;&lt;p&gt;&lt;b&gt;Sperner's condition satisfied&lt;/b&gt;&lt;/p&gt;</span><span class="sc">${</span>plotValid<span class="sc">}</span><span class="vs">&lt;/div&gt;</span></span>
-<span id="cb12-334"><a href="#cb12-334" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;div style="flex: 1 1 280px; min-width: 0;"&gt;&lt;p&gt;&lt;b&gt;Sperner's condition violated&lt;/b&gt;&lt;/p&gt;</span><span class="sc">${</span>plotInvalid<span class="sc">}</span><span class="vs">&lt;/div&gt;</span></span>
-<span id="cb12-335"><a href="#cb12-335" aria-hidden="true" tabindex="-1"></a><span class="vs">&lt;/div&gt;`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="329" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 328;"><span id="cb12-329"><a href="#cb12-329" aria-hidden="true" tabindex="-1"></a><span class="co">// Side by side, with each plot captioned above (stacking into one column</span></span>
+<span id="cb12-330"><a href="#cb12-330" aria-hidden="true" tabindex="-1"></a><span class="co">// on a phone-width viewport, where two half-width panels would be too</span></span>
+<span id="cb12-331"><a href="#cb12-331" aria-hidden="true" tabindex="-1"></a><span class="co">// small to read). .sperner-compare is what keeps the pair a row in</span></span>
+<span id="cb12-332"><a href="#cb12-332" aria-hidden="true" tabindex="-1"></a><span class="co">// fullscreen, where styles.css's letterbox chain otherwise turns every</span></span>
+<span id="cb12-333"><a href="#cb12-333" aria-hidden="true" tabindex="-1"></a><span class="co">// wrapper around a figure into a column (see the page-local &lt;style&gt; block).</span></span>
+<span id="cb12-334"><a href="#cb12-334" aria-hidden="true" tabindex="-1"></a><span class="fu">html</span><span class="vs">`&lt;div class="sperner-compare" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;"&gt;</span></span>
+<span id="cb12-335"><a href="#cb12-335" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;div style="flex: 1 1 280px; min-width: 0;"&gt;&lt;p&gt;&lt;b&gt;Sperner's condition satisfied&lt;/b&gt;&lt;/p&gt;</span><span class="sc">${</span>plotValid<span class="sc">}</span><span class="vs">&lt;/div&gt;</span></span>
+<span id="cb12-336"><a href="#cb12-336" aria-hidden="true" tabindex="-1"></a><span class="vs">  &lt;div style="flex: 1 1 280px; min-width: 0;"&gt;&lt;p&gt;&lt;b&gt;Sperner's condition violated&lt;/b&gt;&lt;/p&gt;</span><span class="sc">${</span>plotInvalid<span class="sc">}</span><span class="vs">&lt;/div&gt;</span></span>
+<span id="cb12-337"><a href="#cb12-337" aria-hidden="true" tabindex="-1"></a><span class="vs">&lt;/div&gt;`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-12" data-nodetype="expression">
 
@@ -1058,17 +1081,18 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+</div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="342" data-source-offset="-0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 341;"><span id="cb13-342"><a href="#cb13-342" aria-hidden="true" tabindex="-1"></a>morpherValid <span class="op">=</span> <span class="fu">createTriangleMorpher</span>(N<span class="op">,</span> vertices<span class="op">,</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="at">spernerColor</span>)</span>
-<span id="cb13-343"><a href="#cb13-343" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-344"><a href="#cb13-344" aria-hidden="true" tabindex="-1"></a>colorMapValid <span class="op">=</span> {</span>
-<span id="cb13-345"><a href="#cb13-345" aria-hidden="true" tabindex="-1"></a>  comparisonRegenerate<span class="op">;</span></span>
-<span id="cb13-346"><a href="#cb13-346" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> morpherValid<span class="op">.</span><span class="fu">buildColorMap</span>()<span class="op">;</span></span>
-<span id="cb13-347"><a href="#cb13-347" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb13-348"><a href="#cb13-348" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-349"><a href="#cb13-349" aria-hidden="true" tabindex="-1"></a>morphedValid <span class="op">=</span> morpherValid<span class="op">.</span><span class="fu">interpolatePoints</span>(t<span class="op">,</span> colorMapValid)</span>
-<span id="cb13-350"><a href="#cb13-350" aria-hidden="true" tabindex="-1"></a>trianglesValid <span class="op">=</span> morpherValid<span class="op">.</span><span class="fu">generateSubTriangles</span>(morphedValid<span class="op">.</span><span class="at">morphedMap</span>)</span>
-<span id="cb13-351"><a href="#cb13-351" aria-hidden="true" tabindex="-1"></a>plotValid <span class="op">=</span> <span class="fu">plotTriangles</span>(trianglesValid<span class="op">,</span> morphedValid<span class="op">,</span> N<span class="op">,</span> chartColors)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="346" data-source-offset="-0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 345;"><span id="cb13-346"><a href="#cb13-346" aria-hidden="true" tabindex="-1"></a>morpherValid <span class="op">=</span> <span class="fu">createTriangleMorpher</span>(N<span class="op">,</span> vertices<span class="op">,</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="at">spernerColor</span>)</span>
+<span id="cb13-347"><a href="#cb13-347" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-348"><a href="#cb13-348" aria-hidden="true" tabindex="-1"></a>colorMapValid <span class="op">=</span> {</span>
+<span id="cb13-349"><a href="#cb13-349" aria-hidden="true" tabindex="-1"></a>  comparisonRegenerate<span class="op">;</span></span>
+<span id="cb13-350"><a href="#cb13-350" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> morpherValid<span class="op">.</span><span class="fu">buildColorMap</span>()<span class="op">;</span></span>
+<span id="cb13-351"><a href="#cb13-351" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb13-352"><a href="#cb13-352" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-353"><a href="#cb13-353" aria-hidden="true" tabindex="-1"></a>morphedValid <span class="op">=</span> morpherValid<span class="op">.</span><span class="fu">interpolatePoints</span>(t<span class="op">,</span> colorMapValid)</span>
+<span id="cb13-354"><a href="#cb13-354" aria-hidden="true" tabindex="-1"></a>trianglesValid <span class="op">=</span> morpherValid<span class="op">.</span><span class="fu">generateSubTriangles</span>(morphedValid<span class="op">.</span><span class="at">morphedMap</span>)</span>
+<span id="cb13-355"><a href="#cb13-355" aria-hidden="true" tabindex="-1"></a>plotValid <span class="op">=</span> <span class="fu">plotTriangles</span>(trianglesValid<span class="op">,</span> morphedValid<span class="op">,</span> N<span class="op">,</span> chartColors)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <div id="ojs-cell-13-1" data-nodetype="declaration">
@@ -1106,16 +1130,16 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="355" data-source-offset="-0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 354;"><span id="cb14-355"><a href="#cb14-355" aria-hidden="true" tabindex="-1"></a>morpherInvalid <span class="op">=</span> <span class="fu">createTriangleMorpher</span>(N<span class="op">,</span> vertices<span class="op">,</span> simplerAssignColor)</span>
-<span id="cb14-356"><a href="#cb14-356" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-357"><a href="#cb14-357" aria-hidden="true" tabindex="-1"></a>colorMapInvalid <span class="op">=</span> {</span>
-<span id="cb14-358"><a href="#cb14-358" aria-hidden="true" tabindex="-1"></a>  comparisonRegenerate<span class="op">;</span></span>
-<span id="cb14-359"><a href="#cb14-359" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> morpherInvalid<span class="op">.</span><span class="fu">buildColorMap</span>()<span class="op">;</span></span>
-<span id="cb14-360"><a href="#cb14-360" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-361"><a href="#cb14-361" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-362"><a href="#cb14-362" aria-hidden="true" tabindex="-1"></a>morphedInvalid <span class="op">=</span> morpherInvalid<span class="op">.</span><span class="fu">interpolatePoints</span>(t<span class="op">,</span> colorMapInvalid)</span>
-<span id="cb14-363"><a href="#cb14-363" aria-hidden="true" tabindex="-1"></a>trianglesInvalid <span class="op">=</span> morpherInvalid<span class="op">.</span><span class="fu">generateSubTriangles</span>(morphedInvalid<span class="op">.</span><span class="at">morphedMap</span>)</span>
-<span id="cb14-364"><a href="#cb14-364" aria-hidden="true" tabindex="-1"></a>plotInvalid <span class="op">=</span> <span class="fu">plotTriangles</span>(trianglesInvalid<span class="op">,</span> morphedInvalid<span class="op">,</span> N<span class="op">,</span> chartColors)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="359" data-source-offset="-0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 358;"><span id="cb14-359"><a href="#cb14-359" aria-hidden="true" tabindex="-1"></a>morpherInvalid <span class="op">=</span> <span class="fu">createTriangleMorpher</span>(N<span class="op">,</span> vertices<span class="op">,</span> simplerAssignColor)</span>
+<span id="cb14-360"><a href="#cb14-360" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-361"><a href="#cb14-361" aria-hidden="true" tabindex="-1"></a>colorMapInvalid <span class="op">=</span> {</span>
+<span id="cb14-362"><a href="#cb14-362" aria-hidden="true" tabindex="-1"></a>  comparisonRegenerate<span class="op">;</span></span>
+<span id="cb14-363"><a href="#cb14-363" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> morpherInvalid<span class="op">.</span><span class="fu">buildColorMap</span>()<span class="op">;</span></span>
+<span id="cb14-364"><a href="#cb14-364" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-365"><a href="#cb14-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-366"><a href="#cb14-366" aria-hidden="true" tabindex="-1"></a>morphedInvalid <span class="op">=</span> morpherInvalid<span class="op">.</span><span class="fu">interpolatePoints</span>(t<span class="op">,</span> colorMapInvalid)</span>
+<span id="cb14-367"><a href="#cb14-367" aria-hidden="true" tabindex="-1"></a>trianglesInvalid <span class="op">=</span> morpherInvalid<span class="op">.</span><span class="fu">generateSubTriangles</span>(morphedInvalid<span class="op">.</span><span class="at">morphedMap</span>)</span>
+<span id="cb14-368"><a href="#cb14-368" aria-hidden="true" tabindex="-1"></a>plotInvalid <span class="op">=</span> <span class="fu">plotTriangles</span>(trianglesInvalid<span class="op">,</span> morphedInvalid<span class="op">,</span> N<span class="op">,</span> chartColors)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <div id="ojs-cell-14-1" data-nodetype="declaration">

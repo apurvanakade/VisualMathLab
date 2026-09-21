@@ -151,28 +151,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -624,7 +646,7 @@ Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
-<p>Every interactive app on this site can be dropped into another web page – lecture notes, a course site, a blog post – as an <code>&lt;iframe&gt;</code>. Add <code>embed=1</code> to the app’s URL and the page renders the app alone: no navigation bar, no sidebar, no title, no footer.</p>
+<p>Every interactive app on this site can be dropped into another web page – lecture notes, a course site, a blog post – as an <code>&lt;iframe&gt;</code>. Add <code>embed=1</code> to the app’s URL and the page renders the app alone – its controls and its chart, with none of the page’s explanation, none of the diagnostic plots and tables under the chart, and no navigation bar, sidebar, title or footer.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">iframe</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  src</span><span class="op">=</span><span class="st">"https://www.visualmathlab.com/apps/newton-method/?embed=1</span><span class="er">&amp;</span><span class="st">f=x^3-2</span><span class="er">&amp;</span><span class="st">x0=1"</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  width</span><span class="op">=</span><span class="st">"100%"</span><span class="ot"> height</span><span class="op">=</span><span class="st">"720"</span><span class="ot"> loading</span><span class="op">=</span><span class="st">"lazy"</span></span>
@@ -634,9 +656,18 @@ Authors: Apurva Nakade
 <h2 class="anchored" data-anchor-id="choosing-what-the-app-opens-with">Choosing what the app opens with</h2>
 <p>Every input on an app page is mirrored in its URL, so the parameters you see in the address bar after setting up an app are the parameters to put in the <code>src</code>. Set the function, endpoints, step counts and options the way you want readers to first see them, copy the URL, and append <code>&amp;embed=1</code>. Readers can still change everything once the app has loaded; the URL only sets the starting point.</p>
 </section>
+<section id="pages-with-more-than-one-app" class="level2">
+<h2 class="anchored" data-anchor-id="pages-with-more-than-one-app">Pages with more than one app</h2>
+<p>A few pages hold several interactive figures, one per step of an argument. <code>embed=1</code> gives the first; to frame a later one, name it instead of <code>1</code>. <a href="./apps/sperners-lemma-combinatorial-proof/index.html">Sperner’s Lemma – Combinatorial Proof</a> has three: <code>embed=triangulation</code> (the colored triangulation at the top, the same as <code>embed=1</code>), <code>embed=doors</code> (the three kinds of room) and <code>embed=boundary</code> (the bottom edge on its own). A name no figure on the page carries falls back to the first.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">iframe</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  src</span><span class="op">=</span><span class="st">"https://www.visualmathlab.com/apps/sperners-lemma-combinatorial-proof/?embed=boundary"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  width</span><span class="op">=</span><span class="st">"100%"</span><span class="ot"> height</span><span class="op">=</span><span class="st">"480"</span><span class="ot"> loading</span><span class="op">=</span><span class="st">"lazy"</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ot">  title</span><span class="op">=</span><span class="st">"Sperner's lemma on the bottom edge"</span><span class="dt">&gt;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">iframe</span><span class="dt">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
 <section id="size" class="level2">
 <h2 class="anchored" data-anchor-id="size">Size</h2>
-<p>An app’s chart is sized to the frame it is given, so pick a <code>height</code> that suits the page around it – <code>720</code> pixels leaves room for the controls panel and a comfortable chart on a laptop screen; <code>900</code> if the app has a long controls panel. <code>width="100%"</code> lets the frame follow your column. Below about 600 pixels of width the controls stack vertically, which works but is cramped; on a narrow layout consider linking to the app instead.</p>
+<p>An app’s chart is sized to the frame it is given, so pick a <code>height</code> that suits the page around it – <code>720</code> pixels leaves room for the controls panel and a comfortable chart on a laptop screen; <code>900</code> if the app has a long controls panel. Nothing below the chart is shown, so the frame never needs to be taller than the controls and the chart together. <code>width="100%"</code> lets the frame follow your column. Below about 600 pixels of width the controls stack vertically, which works but is cramped; on a narrow layout consider linking to the app instead.</p>
 </section>
 <section id="privacy" class="level2">
 <h2 class="anchored" data-anchor-id="privacy">Privacy</h2>

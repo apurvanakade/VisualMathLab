@@ -422,3 +422,20 @@ html.vm-embed body.nav-fixed {
 html.vm-embed #quarto-content {
   padding-top: 0.5rem;
 }
+
+/* Only the tagged app is the app. Each app page wraps its controls panel,
+ * slider bar and main chart in <div class="vm-app">, and the head script
+ * marks the one to show (embed=<id>, else the first) vm-app-active once the
+ * DOM exists; everything else in the content column -- the explanation,
+ * theorem callouts, the convergence plots and iteration tables under a
+ * chart -- is exposition and goes. Three things survive: the block itself,
+ * what is inside it, and its ancestors, because a hidden ancestor can't have
+ * a visible descendant and Quarto wraps everything under a ## heading in a
+ * <section>, so a block is not always a direct child of the column (the
+ * combinatorial proof's third app isn't). A top-level <style> block is
+ * unaffected (display: none doesn't switch a stylesheet off), and hidden
+ * OJS cells still run, so helper cells may sit on either side of the
+ * wrapper. */
+html.vm-embed #quarto-document-content :not(.vm-app-active):not(.vm-app-active *):not(:has(.vm-app-active)) {
+  display: none !important;
+}

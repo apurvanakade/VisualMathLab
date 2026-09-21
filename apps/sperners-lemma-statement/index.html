@@ -156,28 +156,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -702,14 +724,15 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+<div class="vm-app">
 <div class="ojs-chart-block ojs-svg-block">
 <div class="ojs-chart-controls ojs-row">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb3" data-startfrom="53" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 52;"><span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a>viewof N <span class="op">=</span> {</span>
-<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">2</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">15</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Number of subdivisions"</span>})</span>
-<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
-<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb3" data-startfrom="55" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 54;"><span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a>viewof N <span class="op">=</span> {</span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">2</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">15</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Number of subdivisions"</span>})</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-3" data-nodetype="declaration">
 
@@ -717,14 +740,14 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="61" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 60;"><span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a><span class="co">// Referenced (but otherwise unused) inside coloredPoints below so that</span></span>
-<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a><span class="co">// clicking the button re-runs the random color assignment without moving</span></span>
-<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider.</span></span>
-<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>viewof regenerate <span class="op">=</span> {</span>
-<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate colors"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
-<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
-<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
-<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="63" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 62;"><span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a><span class="co">// Referenced (but otherwise unused) inside coloredPoints below so that</span></span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a><span class="co">// clicking the button re-runs the random color assignment without moving</span></span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider.</span></span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>viewof regenerate <span class="op">=</span> {</span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate colors"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-4" data-nodetype="declaration">
 
@@ -733,68 +756,68 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="74" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 73;"><span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a><span class="co">// A diagram, not a graph: no axes, and a height chosen so the unit-wide</span></span>
-<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a><span class="co">// equilateral triangle is drawn to scale (Plot stretches y to fill</span></span>
-<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a><span class="co">// whatever height it is given otherwise).</span></span>
-<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>viewof mainPlot <span class="op">=</span> {</span>
-<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> width <span class="op">=</span> <span class="dv">800</span><span class="op">;</span></span>
-<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> margin <span class="op">=</span> <span class="dv">20</span><span class="op">;</span></span>
-<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> height <span class="op">=</span> (width <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> margin) <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="dv">3</span>) <span class="op">/</span> <span class="dv">2</span> <span class="op">+</span> <span class="dv">2</span> <span class="op">*</span> margin<span class="op">;</span></span>
-<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> features <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> triangle <span class="kw">of</span> subTriangles) {</span>
-<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ring <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> coord <span class="kw">of</span> triangle<span class="op">.</span><span class="at">coordinates</span>) {</span>
-<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> c <span class="op">=</span> colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(coord<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">.</span><span class="fu">getCoords</span>()<span class="op">;</span></span>
-<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>      ring<span class="op">.</span><span class="fu">push</span>([c<span class="op">.</span><span class="at">x</span><span class="op">,</span> c<span class="op">.</span><span class="at">y</span>])<span class="op">;</span></span>
-<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>    ring<span class="op">.</span><span class="fu">push</span>(ring[<span class="dv">0</span>])<span class="op">;</span></span>
-<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>    features<span class="op">.</span><span class="fu">push</span>({</span>
-<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>      <span class="dt">type</span><span class="op">:</span> <span class="st">"Feature"</span><span class="op">,</span></span>
-<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>      <span class="dt">geometry</span><span class="op">:</span> { <span class="dt">type</span><span class="op">:</span> <span class="st">"Polygon"</span><span class="op">,</span> <span class="dt">coordinates</span><span class="op">:</span> [ring] }<span class="op">,</span></span>
-<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>      <span class="dt">properties</span><span class="op">:</span> { <span class="dt">fillColor</span><span class="op">:</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">triangleFillColor</span>(triangle<span class="op">.</span><span class="at">vertex_colors</span>) }</span>
-<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
-<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>(VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">plotOptions</span>({</span>
-<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>    width<span class="op">,</span></span>
-<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>    height<span class="op">,</span></span>
-<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>    margin<span class="op">,</span></span>
-<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>    <span class="dt">grid</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
-<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> { <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> <span class="dt">axis</span><span class="op">:</span> <span class="kw">null</span> }<span class="op">,</span></span>
-<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> { <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="dv">3</span>) <span class="op">/</span> <span class="dv">2</span>]<span class="op">,</span> <span class="dt">axis</span><span class="op">:</span> <span class="kw">null</span> }<span class="op">,</span></span>
-<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
-<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">line</span>([<span class="op">...</span>vertices<span class="op">,</span> vertices[<span class="dv">0</span>]]<span class="op">,</span> {</span>
-<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>        <span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span></span>
-<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>        <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span></span>
-<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>        <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span></span>
-<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">1</span></span>
-<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>      })<span class="op">,</span></span>
-<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">geo</span>(</span>
-<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>        { <span class="dt">type</span><span class="op">:</span> <span class="st">"FeatureCollection"</span><span class="op">,</span> features }<span class="op">,</span></span>
-<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>        {</span>
-<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>          <span class="dt">fill</span><span class="op">:</span> d <span class="kw">=&gt;</span> d<span class="op">.</span><span class="at">properties</span><span class="op">.</span><span class="at">fillColor</span><span class="op">,</span></span>
-<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>          <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span></span>
-<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>          <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">1</span></span>
-<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>      )<span class="op">,</span></span>
-<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">link</span>(mixedEdges<span class="op">,</span> {</span>
-<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>        <span class="dt">x1</span><span class="op">:</span> <span class="st">"x1"</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> <span class="st">"y1"</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> <span class="st">"x2"</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> <span class="st">"y2"</span><span class="op">,</span></span>
-<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>        <span class="dt">stroke</span><span class="op">:</span> <span class="st">"color"</span><span class="op">,</span></span>
-<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">3</span></span>
-<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a>      })<span class="op">,</span></span>
-<span id="cb5-124"><a href="#cb5-124" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(</span>
-<span id="cb5-125"><a href="#cb5-125" aria-hidden="true" tabindex="-1"></a>        colored<span class="op">.</span><span class="at">points</span><span class="op">,</span></span>
-<span id="cb5-126"><a href="#cb5-126" aria-hidden="true" tabindex="-1"></a>        {</span>
-<span id="cb5-127"><a href="#cb5-127" aria-hidden="true" tabindex="-1"></a>          <span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span></span>
-<span id="cb5-128"><a href="#cb5-128" aria-hidden="true" tabindex="-1"></a>          <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span></span>
-<span id="cb5-129"><a href="#cb5-129" aria-hidden="true" tabindex="-1"></a>          <span class="dt">fill</span><span class="op">:</span> d <span class="kw">=&gt;</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">vertexColor</span>(d<span class="op">.</span><span class="at">color</span>)<span class="op">,</span></span>
-<span id="cb5-130"><a href="#cb5-130" aria-hidden="true" tabindex="-1"></a>          <span class="dt">r</span><span class="op">:</span> <span class="dv">4</span></span>
-<span id="cb5-131"><a href="#cb5-131" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb5-132"><a href="#cb5-132" aria-hidden="true" tabindex="-1"></a>      )</span>
-<span id="cb5-133"><a href="#cb5-133" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb5-134"><a href="#cb5-134" aria-hidden="true" tabindex="-1"></a>  }))<span class="op">;</span></span>
-<span id="cb5-135"><a href="#cb5-135" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="76" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 75;"><span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a><span class="co">// A diagram, not a graph: no axes, and a height chosen so the unit-wide</span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a><span class="co">// equilateral triangle is drawn to scale (Plot stretches y to fill</span></span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a><span class="co">// whatever height it is given otherwise).</span></span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>viewof mainPlot <span class="op">=</span> {</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> width <span class="op">=</span> <span class="dv">800</span><span class="op">;</span></span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> margin <span class="op">=</span> <span class="dv">20</span><span class="op">;</span></span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> height <span class="op">=</span> (width <span class="op">-</span> <span class="dv">2</span> <span class="op">*</span> margin) <span class="op">*</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="dv">3</span>) <span class="op">/</span> <span class="dv">2</span> <span class="op">+</span> <span class="dv">2</span> <span class="op">*</span> margin<span class="op">;</span></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> features <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> triangle <span class="kw">of</span> subTriangles) {</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ring <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> coord <span class="kw">of</span> triangle<span class="op">.</span><span class="at">coordinates</span>) {</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> c <span class="op">=</span> colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(coord<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">.</span><span class="fu">getCoords</span>()<span class="op">;</span></span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>      ring<span class="op">.</span><span class="fu">push</span>([c<span class="op">.</span><span class="at">x</span><span class="op">,</span> c<span class="op">.</span><span class="at">y</span>])<span class="op">;</span></span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>    ring<span class="op">.</span><span class="fu">push</span>(ring[<span class="dv">0</span>])<span class="op">;</span></span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>    features<span class="op">.</span><span class="fu">push</span>({</span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>      <span class="dt">type</span><span class="op">:</span> <span class="st">"Feature"</span><span class="op">,</span></span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a>      <span class="dt">geometry</span><span class="op">:</span> { <span class="dt">type</span><span class="op">:</span> <span class="st">"Polygon"</span><span class="op">,</span> <span class="dt">coordinates</span><span class="op">:</span> [ring] }<span class="op">,</span></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>      <span class="dt">properties</span><span class="op">:</span> { <span class="dt">fillColor</span><span class="op">:</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">triangleFillColor</span>(triangle<span class="op">.</span><span class="at">vertex_colors</span>) }</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>    })<span class="op">;</span></span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>(VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">plotOptions</span>({</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a>    width<span class="op">,</span></span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>    height<span class="op">,</span></span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>    margin<span class="op">,</span></span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>    <span class="dt">grid</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span></span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> { <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> <span class="dt">axis</span><span class="op">:</span> <span class="kw">null</span> }<span class="op">,</span></span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> { <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="dv">3</span>) <span class="op">/</span> <span class="dv">2</span>]<span class="op">,</span> <span class="dt">axis</span><span class="op">:</span> <span class="kw">null</span> }<span class="op">,</span></span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">line</span>([<span class="op">...</span>vertices<span class="op">,</span> vertices[<span class="dv">0</span>]]<span class="op">,</span> {</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>        <span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span></span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>        <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span></span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>        <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span></span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">1</span></span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>      })<span class="op">,</span></span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">geo</span>(</span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>        { <span class="dt">type</span><span class="op">:</span> <span class="st">"FeatureCollection"</span><span class="op">,</span> features }<span class="op">,</span></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a>          <span class="dt">fill</span><span class="op">:</span> d <span class="kw">=&gt;</span> d<span class="op">.</span><span class="at">properties</span><span class="op">.</span><span class="at">fillColor</span><span class="op">,</span></span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>          <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span></span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>          <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">1</span></span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>      )<span class="op">,</span></span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">link</span>(mixedEdges<span class="op">,</span> {</span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>        <span class="dt">x1</span><span class="op">:</span> <span class="st">"x1"</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> <span class="st">"y1"</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> <span class="st">"x2"</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> <span class="st">"y2"</span><span class="op">,</span></span>
+<span id="cb5-123"><a href="#cb5-123" aria-hidden="true" tabindex="-1"></a>        <span class="dt">stroke</span><span class="op">:</span> <span class="st">"color"</span><span class="op">,</span></span>
+<span id="cb5-124"><a href="#cb5-124" aria-hidden="true" tabindex="-1"></a>        <span class="dt">strokeWidth</span><span class="op">:</span> <span class="dv">3</span></span>
+<span id="cb5-125"><a href="#cb5-125" aria-hidden="true" tabindex="-1"></a>      })<span class="op">,</span></span>
+<span id="cb5-126"><a href="#cb5-126" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(</span>
+<span id="cb5-127"><a href="#cb5-127" aria-hidden="true" tabindex="-1"></a>        colored<span class="op">.</span><span class="at">points</span><span class="op">,</span></span>
+<span id="cb5-128"><a href="#cb5-128" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb5-129"><a href="#cb5-129" aria-hidden="true" tabindex="-1"></a>          <span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span></span>
+<span id="cb5-130"><a href="#cb5-130" aria-hidden="true" tabindex="-1"></a>          <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span></span>
+<span id="cb5-131"><a href="#cb5-131" aria-hidden="true" tabindex="-1"></a>          <span class="dt">fill</span><span class="op">:</span> d <span class="kw">=&gt;</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">vertexColor</span>(d<span class="op">.</span><span class="at">color</span>)<span class="op">,</span></span>
+<span id="cb5-132"><a href="#cb5-132" aria-hidden="true" tabindex="-1"></a>          <span class="dt">r</span><span class="op">:</span> <span class="dv">4</span></span>
+<span id="cb5-133"><a href="#cb5-133" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb5-134"><a href="#cb5-134" aria-hidden="true" tabindex="-1"></a>      )</span>
+<span id="cb5-135"><a href="#cb5-135" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb5-136"><a href="#cb5-136" aria-hidden="true" tabindex="-1"></a>  }))<span class="op">;</span></span>
+<span id="cb5-137"><a href="#cb5-137" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-5" data-nodetype="declaration">
 
@@ -802,12 +825,13 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+</div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="141" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 140;"><span id="cb6-141"><a href="#cb6-141" aria-hidden="true" tabindex="-1"></a>vertices <span class="op">=</span> [</span>
-<span id="cb6-142"><a href="#cb6-142" aria-hidden="true" tabindex="-1"></a>  {<span class="dt">x</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
-<span id="cb6-143"><a href="#cb6-143" aria-hidden="true" tabindex="-1"></a>  {<span class="dt">x</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="dv">3</span>) <span class="op">/</span> <span class="dv">2</span>}<span class="op">,</span></span>
-<span id="cb6-144"><a href="#cb6-144" aria-hidden="true" tabindex="-1"></a>  {<span class="dt">x</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
-<span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="145" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 144;"><span id="cb6-145"><a href="#cb6-145" aria-hidden="true" tabindex="-1"></a>vertices <span class="op">=</span> [</span>
+<span id="cb6-146"><a href="#cb6-146" aria-hidden="true" tabindex="-1"></a>  {<span class="dt">x</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
+<span id="cb6-147"><a href="#cb6-147" aria-hidden="true" tabindex="-1"></a>  {<span class="dt">x</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(<span class="dv">3</span>) <span class="op">/</span> <span class="dv">2</span>}<span class="op">,</span></span>
+<span id="cb6-148"><a href="#cb6-148" aria-hidden="true" tabindex="-1"></a>  {<span class="dt">x</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="dv">0</span>}<span class="op">,</span></span>
+<span id="cb6-149"><a href="#cb6-149" aria-hidden="true" tabindex="-1"></a>]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-6" data-nodetype="declaration">
 
@@ -815,26 +839,26 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="149" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 148;"><span id="cb7-149"><a href="#cb7-149" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ColoredPoint {</span>
-<span id="cb7-150"><a href="#cb7-150" aria-hidden="true" tabindex="-1"></a>  <span class="fu">constructor</span>(triple<span class="op">,</span> vertices<span class="op">,</span> N) {</span>
-<span id="cb7-151"><a href="#cb7-151" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">barycentricTriple</span> <span class="op">=</span> triple<span class="op">;</span></span>
-<span id="cb7-152"><a href="#cb7-152" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> [A<span class="op">,</span> B<span class="op">,</span> C] <span class="op">=</span> vertices<span class="op">;</span></span>
-<span id="cb7-153"><a href="#cb7-153" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-154"><a href="#cb7-154" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">x</span> <span class="op">=</span> (triple[<span class="dv">0</span>] <span class="op">*</span> A<span class="op">.</span><span class="at">x</span> <span class="op">+</span> triple[<span class="dv">1</span>] <span class="op">*</span> B<span class="op">.</span><span class="at">x</span> <span class="op">+</span> triple[<span class="dv">2</span>] <span class="op">*</span> C<span class="op">.</span><span class="at">x</span>) <span class="op">/</span> N<span class="op">;</span></span>
-<span id="cb7-155"><a href="#cb7-155" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">y</span> <span class="op">=</span> (triple[<span class="dv">0</span>] <span class="op">*</span> A<span class="op">.</span><span class="at">y</span> <span class="op">+</span> triple[<span class="dv">1</span>] <span class="op">*</span> B<span class="op">.</span><span class="at">y</span> <span class="op">+</span> triple[<span class="dv">2</span>] <span class="op">*</span> C<span class="op">.</span><span class="at">y</span>) <span class="op">/</span> N<span class="op">;</span></span>
-<span id="cb7-156"><a href="#cb7-156" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-157"><a href="#cb7-157" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> [a<span class="op">,</span> b<span class="op">,</span> c] <span class="op">=</span> triple<span class="op">;</span></span>
-<span id="cb7-158"><a href="#cb7-158" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">color</span> <span class="op">=</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">spernerColor</span>(a<span class="op">,</span> b<span class="op">,</span> c)<span class="op">;</span></span>
-<span id="cb7-159"><a href="#cb7-159" aria-hidden="true" tabindex="-1"></a>  }</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="153" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 152;"><span id="cb7-153"><a href="#cb7-153" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ColoredPoint {</span>
+<span id="cb7-154"><a href="#cb7-154" aria-hidden="true" tabindex="-1"></a>  <span class="fu">constructor</span>(triple<span class="op">,</span> vertices<span class="op">,</span> N) {</span>
+<span id="cb7-155"><a href="#cb7-155" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">barycentricTriple</span> <span class="op">=</span> triple<span class="op">;</span></span>
+<span id="cb7-156"><a href="#cb7-156" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> [A<span class="op">,</span> B<span class="op">,</span> C] <span class="op">=</span> vertices<span class="op">;</span></span>
+<span id="cb7-157"><a href="#cb7-157" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-158"><a href="#cb7-158" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">x</span> <span class="op">=</span> (triple[<span class="dv">0</span>] <span class="op">*</span> A<span class="op">.</span><span class="at">x</span> <span class="op">+</span> triple[<span class="dv">1</span>] <span class="op">*</span> B<span class="op">.</span><span class="at">x</span> <span class="op">+</span> triple[<span class="dv">2</span>] <span class="op">*</span> C<span class="op">.</span><span class="at">x</span>) <span class="op">/</span> N<span class="op">;</span></span>
+<span id="cb7-159"><a href="#cb7-159" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">y</span> <span class="op">=</span> (triple[<span class="dv">0</span>] <span class="op">*</span> A<span class="op">.</span><span class="at">y</span> <span class="op">+</span> triple[<span class="dv">1</span>] <span class="op">*</span> B<span class="op">.</span><span class="at">y</span> <span class="op">+</span> triple[<span class="dv">2</span>] <span class="op">*</span> C<span class="op">.</span><span class="at">y</span>) <span class="op">/</span> N<span class="op">;</span></span>
 <span id="cb7-160"><a href="#cb7-160" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-161"><a href="#cb7-161" aria-hidden="true" tabindex="-1"></a>  <span class="fu">getCoords</span>() {</span>
-<span id="cb7-162"><a href="#cb7-162" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { <span class="dt">x</span><span class="op">:</span> <span class="kw">this</span><span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="kw">this</span><span class="op">.</span><span class="at">y</span> }<span class="op">;</span></span>
+<span id="cb7-161"><a href="#cb7-161" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> [a<span class="op">,</span> b<span class="op">,</span> c] <span class="op">=</span> triple<span class="op">;</span></span>
+<span id="cb7-162"><a href="#cb7-162" aria-hidden="true" tabindex="-1"></a>    <span class="kw">this</span><span class="op">.</span><span class="at">color</span> <span class="op">=</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">spernerColor</span>(a<span class="op">,</span> b<span class="op">,</span> c)<span class="op">;</span></span>
 <span id="cb7-163"><a href="#cb7-163" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb7-164"><a href="#cb7-164" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-165"><a href="#cb7-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">getColor</span>() {</span>
-<span id="cb7-166"><a href="#cb7-166" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">this</span><span class="op">.</span><span class="at">color</span><span class="op">;</span></span>
+<span id="cb7-165"><a href="#cb7-165" aria-hidden="true" tabindex="-1"></a>  <span class="fu">getCoords</span>() {</span>
+<span id="cb7-166"><a href="#cb7-166" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> { <span class="dt">x</span><span class="op">:</span> <span class="kw">this</span><span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="kw">this</span><span class="op">.</span><span class="at">y</span> }<span class="op">;</span></span>
 <span id="cb7-167"><a href="#cb7-167" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-168"><a href="#cb7-168" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb7-168"><a href="#cb7-168" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-169"><a href="#cb7-169" aria-hidden="true" tabindex="-1"></a>  <span class="fu">getColor</span>() {</span>
+<span id="cb7-170"><a href="#cb7-170" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">this</span><span class="op">.</span><span class="at">color</span><span class="op">;</span></span>
+<span id="cb7-171"><a href="#cb7-171" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-172"><a href="#cb7-172" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-7" data-nodetype="declaration">
 
@@ -842,20 +866,20 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="172" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 171;"><span id="cb8-172"><a href="#cb8-172" aria-hidden="true" tabindex="-1"></a>colored <span class="op">=</span> {</span>
-<span id="cb8-173"><a href="#cb8-173" aria-hidden="true" tabindex="-1"></a>  regenerate<span class="op">;</span></span>
-<span id="cb8-174"><a href="#cb8-174" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> points <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb8-175"><a href="#cb8-175" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> triple <span class="kw">of</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">barycentricTriples</span>(N)) {</span>
-<span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a>    points<span class="op">.</span><span class="fu">push</span>(<span class="kw">new</span> <span class="fu">ColoredPoint</span>(triple<span class="op">,</span> vertices<span class="op">,</span> N))<span class="op">;</span></span>
-<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> byKey <span class="op">=</span> <span class="kw">new</span> <span class="bu">Map</span>()<span class="op">;</span></span>
-<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
-<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a>    byKey<span class="op">.</span><span class="fu">set</span>(p<span class="op">.</span><span class="at">barycentricTriple</span><span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>)<span class="op">,</span> p)<span class="op">;</span></span>
-<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> { points<span class="op">,</span> byKey }<span class="op">;</span></span>
-<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="176" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 175;"><span id="cb8-176"><a href="#cb8-176" aria-hidden="true" tabindex="-1"></a>colored <span class="op">=</span> {</span>
+<span id="cb8-177"><a href="#cb8-177" aria-hidden="true" tabindex="-1"></a>  regenerate<span class="op">;</span></span>
+<span id="cb8-178"><a href="#cb8-178" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> points <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb8-179"><a href="#cb8-179" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> triple <span class="kw">of</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">barycentricTriples</span>(N)) {</span>
+<span id="cb8-180"><a href="#cb8-180" aria-hidden="true" tabindex="-1"></a>    points<span class="op">.</span><span class="fu">push</span>(<span class="kw">new</span> <span class="fu">ColoredPoint</span>(triple<span class="op">,</span> vertices<span class="op">,</span> N))<span class="op">;</span></span>
+<span id="cb8-181"><a href="#cb8-181" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-182"><a href="#cb8-182" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-183"><a href="#cb8-183" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> byKey <span class="op">=</span> <span class="kw">new</span> <span class="bu">Map</span>()<span class="op">;</span></span>
+<span id="cb8-184"><a href="#cb8-184" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
+<span id="cb8-185"><a href="#cb8-185" aria-hidden="true" tabindex="-1"></a>    byKey<span class="op">.</span><span class="fu">set</span>(p<span class="op">.</span><span class="at">barycentricTriple</span><span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>)<span class="op">,</span> p)<span class="op">;</span></span>
+<span id="cb8-186"><a href="#cb8-186" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-187"><a href="#cb8-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-188"><a href="#cb8-188" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> { points<span class="op">,</span> byKey }<span class="op">;</span></span>
+<span id="cb8-189"><a href="#cb8-189" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-8" data-nodetype="declaration">
 
@@ -863,17 +887,17 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="189" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 188;"><span id="cb9-189"><a href="#cb9-189" aria-hidden="true" tabindex="-1"></a>subTriangles <span class="op">=</span> {</span>
-<span id="cb9-190"><a href="#cb9-190" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> triangles <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb9-191"><a href="#cb9-191" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> coordinates <span class="kw">of</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">subTriangleTriples</span>(N)) {</span>
-<span id="cb9-192"><a href="#cb9-192" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> vertex_colors <span class="op">=</span> <span class="kw">new</span> <span class="bu">Set</span>()<span class="op">;</span></span>
-<span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> coord <span class="kw">of</span> coordinates) {</span>
-<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>      vertex_colors<span class="op">.</span><span class="fu">add</span>(colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(coord<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">.</span><span class="fu">getColor</span>())<span class="op">;</span></span>
-<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>    triangles<span class="op">.</span><span class="fu">push</span>({ coordinates<span class="op">,</span> vertex_colors })<span class="op">;</span></span>
-<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> triangles<span class="op">;</span></span>
-<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="193" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 192;"><span id="cb9-193"><a href="#cb9-193" aria-hidden="true" tabindex="-1"></a>subTriangles <span class="op">=</span> {</span>
+<span id="cb9-194"><a href="#cb9-194" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> triangles <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb9-195"><a href="#cb9-195" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> coordinates <span class="kw">of</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">subTriangleTriples</span>(N)) {</span>
+<span id="cb9-196"><a href="#cb9-196" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> vertex_colors <span class="op">=</span> <span class="kw">new</span> <span class="bu">Set</span>()<span class="op">;</span></span>
+<span id="cb9-197"><a href="#cb9-197" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> coord <span class="kw">of</span> coordinates) {</span>
+<span id="cb9-198"><a href="#cb9-198" aria-hidden="true" tabindex="-1"></a>      vertex_colors<span class="op">.</span><span class="fu">add</span>(colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(coord<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">.</span><span class="fu">getColor</span>())<span class="op">;</span></span>
+<span id="cb9-199"><a href="#cb9-199" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb9-200"><a href="#cb9-200" aria-hidden="true" tabindex="-1"></a>    triangles<span class="op">.</span><span class="fu">push</span>({ coordinates<span class="op">,</span> vertex_colors })<span class="op">;</span></span>
+<span id="cb9-201"><a href="#cb9-201" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-202"><a href="#cb9-202" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> triangles<span class="op">;</span></span>
+<span id="cb9-203"><a href="#cb9-203" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-9" data-nodetype="declaration">
 
@@ -881,24 +905,24 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="203" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 202;"><span id="cb10-203"><a href="#cb10-203" aria-hidden="true" tabindex="-1"></a><span class="co">// Edges between differently-colored vertices, in the shared amber/teal/</span></span>
-<span id="cb10-204"><a href="#cb10-204" aria-hidden="true" tabindex="-1"></a><span class="co">// purple pair palette (VM.discreteMath.pairColor). Same-color edges are</span></span>
-<span id="cb10-205"><a href="#cb10-205" aria-hidden="true" tabindex="-1"></a><span class="co">// skipped entirely to avoid clutter. chartColors is referenced so the</span></span>
-<span id="cb10-206"><a href="#cb10-206" aria-hidden="true" tabindex="-1"></a><span class="co">// stored colors are recomputed on a theme toggle.</span></span>
-<span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a>mixedEdges <span class="op">=</span> {</span>
-<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a>  chartColors<span class="op">;</span></span>
-<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> edges <span class="op">=</span> []<span class="op">;</span></span>
-<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> { a<span class="op">,</span> b } <span class="kw">of</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">triangulationEdges</span>(N)) {</span>
-<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pa <span class="op">=</span> colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(a<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">;</span></span>
-<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pb <span class="op">=</span> colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(b<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">;</span></span>
-<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> color <span class="op">=</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">pairColor</span>(pa<span class="op">.</span><span class="fu">getColor</span>()<span class="op">,</span> pb<span class="op">.</span><span class="fu">getColor</span>())<span class="op">;</span></span>
-<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>color) <span class="cf">continue</span><span class="op">;</span></span>
-<span id="cb10-215"><a href="#cb10-215" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ca <span class="op">=</span> pa<span class="op">.</span><span class="fu">getCoords</span>()<span class="op">;</span></span>
-<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cb <span class="op">=</span> pb<span class="op">.</span><span class="fu">getCoords</span>()<span class="op">;</span></span>
-<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a>    edges<span class="op">.</span><span class="fu">push</span>({ <span class="dt">x1</span><span class="op">:</span> ca<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> ca<span class="op">.</span><span class="at">y</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> cb<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> cb<span class="op">.</span><span class="at">y</span><span class="op">,</span> color })<span class="op">;</span></span>
-<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-219"><a href="#cb10-219" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> edges<span class="op">;</span></span>
-<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="207" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 206;"><span id="cb10-207"><a href="#cb10-207" aria-hidden="true" tabindex="-1"></a><span class="co">// Edges between differently-colored vertices, in the shared amber/teal/</span></span>
+<span id="cb10-208"><a href="#cb10-208" aria-hidden="true" tabindex="-1"></a><span class="co">// purple pair palette (VM.discreteMath.pairColor). Same-color edges are</span></span>
+<span id="cb10-209"><a href="#cb10-209" aria-hidden="true" tabindex="-1"></a><span class="co">// skipped entirely to avoid clutter. chartColors is referenced so the</span></span>
+<span id="cb10-210"><a href="#cb10-210" aria-hidden="true" tabindex="-1"></a><span class="co">// stored colors are recomputed on a theme toggle.</span></span>
+<span id="cb10-211"><a href="#cb10-211" aria-hidden="true" tabindex="-1"></a>mixedEdges <span class="op">=</span> {</span>
+<span id="cb10-212"><a href="#cb10-212" aria-hidden="true" tabindex="-1"></a>  chartColors<span class="op">;</span></span>
+<span id="cb10-213"><a href="#cb10-213" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> edges <span class="op">=</span> []<span class="op">;</span></span>
+<span id="cb10-214"><a href="#cb10-214" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> { a<span class="op">,</span> b } <span class="kw">of</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">triangulationEdges</span>(N)) {</span>
+<span id="cb10-215"><a href="#cb10-215" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pa <span class="op">=</span> colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(a<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">;</span></span>
+<span id="cb10-216"><a href="#cb10-216" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pb <span class="op">=</span> colored<span class="op">.</span><span class="at">byKey</span><span class="op">.</span><span class="fu">get</span>(b<span class="op">.</span><span class="fu">join</span>(<span class="st">','</span>))<span class="op">;</span></span>
+<span id="cb10-217"><a href="#cb10-217" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> color <span class="op">=</span> VM<span class="op">.</span><span class="at">discreteMath</span><span class="op">.</span><span class="fu">pairColor</span>(pa<span class="op">.</span><span class="fu">getColor</span>()<span class="op">,</span> pb<span class="op">.</span><span class="fu">getColor</span>())<span class="op">;</span></span>
+<span id="cb10-218"><a href="#cb10-218" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>color) <span class="cf">continue</span><span class="op">;</span></span>
+<span id="cb10-219"><a href="#cb10-219" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> ca <span class="op">=</span> pa<span class="op">.</span><span class="fu">getCoords</span>()<span class="op">;</span></span>
+<span id="cb10-220"><a href="#cb10-220" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> cb <span class="op">=</span> pb<span class="op">.</span><span class="fu">getCoords</span>()<span class="op">;</span></span>
+<span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a>    edges<span class="op">.</span><span class="fu">push</span>({ <span class="dt">x1</span><span class="op">:</span> ca<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y1</span><span class="op">:</span> ca<span class="op">.</span><span class="at">y</span><span class="op">,</span> <span class="dt">x2</span><span class="op">:</span> cb<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y2</span><span class="op">:</span> cb<span class="op">.</span><span class="at">y</span><span class="op">,</span> color })<span class="op">;</span></span>
+<span id="cb10-222"><a href="#cb10-222" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> edges<span class="op">;</span></span>
+<span id="cb10-224"><a href="#cb10-224" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-10" data-nodetype="declaration">
 
@@ -906,14 +930,14 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="227" data-source-offset="-55"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 226;"><span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>numRGBTriangles <span class="op">=</span> {</span>
-<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> count <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
-<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> triangle <span class="kw">of</span> subTriangles) {</span>
-<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (triangle<span class="op">.</span><span class="at">vertex_colors</span><span class="op">.</span><span class="at">size</span> <span class="op">===</span> <span class="dv">3</span>) count<span class="op">++;</span></span>
-<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> count<span class="op">;</span></span>
-<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a><span class="fu">html</span><span class="vs">`&lt;b&gt;Number of RGB triangles: </span><span class="sc">${</span>numRGBTriangles<span class="sc">}</span><span class="vs">&lt;/b&gt;`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="231" data-source-offset="-55"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 230;"><span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a>numRGBTriangles <span class="op">=</span> {</span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> count <span class="op">=</span> <span class="dv">0</span><span class="op">;</span></span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> triangle <span class="kw">of</span> subTriangles) {</span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (triangle<span class="op">.</span><span class="at">vertex_colors</span><span class="op">.</span><span class="at">size</span> <span class="op">===</span> <span class="dv">3</span>) count<span class="op">++;</span></span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> count<span class="op">;</span></span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a><span class="fu">html</span><span class="vs">`&lt;b&gt;Number of RGB triangles: </span><span class="sc">${</span>numRGBTriangles<span class="sc">}</span><span class="vs">&lt;/b&gt;`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <div id="ojs-cell-11-1" data-nodetype="declaration">

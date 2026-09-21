@@ -151,28 +151,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -678,7 +700,7 @@ Authors: Apurva Nakade
 
 <div class="quarto-listing quarto-listing-container-grid" id="listing-listing">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789934285680" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3957">
+<div class="g-col-1" data-index="0" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789953370055" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="20" data-listing-word-count-sort="3958">
 <a href="../../apps/explicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -694,7 +716,7 @@ Explicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789934285681" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3405">
+<div class="g-col-1" data-index="1" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789953370056" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3406">
 <a href="../../apps/implicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -710,7 +732,7 @@ Implicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789934285677" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4110">
+<div class="g-col-1" data-index="2" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789953370052" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4111">
 <a href="../../apps/adaptive-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -726,7 +748,7 @@ Adaptive Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789934285678" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5297">
+<div class="g-col-1" data-index="3" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1789953370053" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5298">
 <a href="../../apps/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">

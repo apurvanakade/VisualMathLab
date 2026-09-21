@@ -156,28 +156,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -1240,16 +1262,17 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+<div class="vm-app">
 <div class="ojs-panel ojs-grid">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="479" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 478;"><span id="cb6-479"><a href="#cb6-479" aria-hidden="true" tabindex="-1"></a>viewof prevalence <span class="op">=</span> {</span>
-<span id="cb6-480"><a href="#cb6-480" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
-<span id="cb6-481"><a href="#cb6-481" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Step 0.001 is one person in the 1,000, and the real 6.6 per 1,000</span></span>
-<span id="cb6-482"><a href="#cb6-482" aria-hidden="true" tabindex="-1"></a>  <span class="co">// (see References) rounds to the default of 7 -- the grid can show seven</span></span>
-<span id="cb6-483"><a href="#cb6-483" aria-hidden="true" tabindex="-1"></a>  <span class="co">// people, where the old point cloud had to start at 1% to show anything</span></span>
-<span id="cb6-484"><a href="#cb6-484" aria-hidden="true" tabindex="-1"></a>  <span class="co">// at all.</span></span>
-<span id="cb6-485"><a href="#cb6-485" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.001</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"prevalence"</span><span class="op">,</span> <span class="fl">0.007</span>)<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Prevalence"</span>})</span>
-<span id="cb6-486"><a href="#cb6-486" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="481" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 480;"><span id="cb6-481"><a href="#cb6-481" aria-hidden="true" tabindex="-1"></a>viewof prevalence <span class="op">=</span> {</span>
+<span id="cb6-482"><a href="#cb6-482" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
+<span id="cb6-483"><a href="#cb6-483" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Step 0.001 is one person in the 1,000, and the real 6.6 per 1,000</span></span>
+<span id="cb6-484"><a href="#cb6-484" aria-hidden="true" tabindex="-1"></a>  <span class="co">// (see References) rounds to the default of 7 -- the grid can show seven</span></span>
+<span id="cb6-485"><a href="#cb6-485" aria-hidden="true" tabindex="-1"></a>  <span class="co">// people, where the old point cloud had to start at 1% to show anything</span></span>
+<span id="cb6-486"><a href="#cb6-486" aria-hidden="true" tabindex="-1"></a>  <span class="co">// at all.</span></span>
+<span id="cb6-487"><a href="#cb6-487" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.001</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"prevalence"</span><span class="op">,</span> <span class="fl">0.007</span>)<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Prevalence"</span>})</span>
+<span id="cb6-488"><a href="#cb6-488" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-6" data-nodetype="declaration">
 
@@ -1257,10 +1280,10 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="490" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 489;"><span id="cb7-490"><a href="#cb7-490" aria-hidden="true" tabindex="-1"></a>viewof sensitivity <span class="op">=</span> {</span>
-<span id="cb7-491"><a href="#cb7-491" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
-<span id="cb7-492"><a href="#cb7-492" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"sensitivity"</span><span class="op">,</span> <span class="fl">0.87</span>)<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Sensitivity"</span>})</span>
-<span id="cb7-493"><a href="#cb7-493" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="492" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 491;"><span id="cb7-492"><a href="#cb7-492" aria-hidden="true" tabindex="-1"></a>viewof sensitivity <span class="op">=</span> {</span>
+<span id="cb7-493"><a href="#cb7-493" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
+<span id="cb7-494"><a href="#cb7-494" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"sensitivity"</span><span class="op">,</span> <span class="fl">0.87</span>)<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Sensitivity"</span>})</span>
+<span id="cb7-495"><a href="#cb7-495" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-7" data-nodetype="declaration">
 
@@ -1268,10 +1291,10 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="497" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 496;"><span id="cb8-497"><a href="#cb8-497" aria-hidden="true" tabindex="-1"></a>viewof specificity <span class="op">=</span> {</span>
-<span id="cb8-498"><a href="#cb8-498" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
-<span id="cb8-499"><a href="#cb8-499" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"specificity"</span><span class="op">,</span> <span class="fl">0.92</span>)<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Specificity"</span>})</span>
-<span id="cb8-500"><a href="#cb8-500" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="499" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 498;"><span id="cb8-499"><a href="#cb8-499" aria-hidden="true" tabindex="-1"></a>viewof specificity <span class="op">=</span> {</span>
+<span id="cb8-500"><a href="#cb8-500" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
+<span id="cb8-501"><a href="#cb8-501" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.01</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"specificity"</span><span class="op">,</span> <span class="fl">0.92</span>)<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Specificity"</span>})</span>
+<span id="cb8-502"><a href="#cb8-502" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-8" data-nodetype="declaration">
 
@@ -1280,20 +1303,20 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="507" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 506;"><span id="cb9-507"><a href="#cb9-507" aria-hidden="true" tabindex="-1"></a><span class="co">// urlSync: mirrors the current control values into the URL's query string</span></span>
-<span id="cb9-508"><a href="#cb9-508" aria-hidden="true" tabindex="-1"></a><span class="co">// on every change, so the address bar stays a shareable link. Runs</span></span>
-<span id="cb9-509"><a href="#cb9-509" aria-hidden="true" tabindex="-1"></a><span class="co">// directly off the reactive values (no "Plot" commit step, unlike the</span></span>
-<span id="cb9-510"><a href="#cb9-510" aria-hidden="true" tabindex="-1"></a><span class="co">// text-expression fields on other pages) since redrawing a thousand</span></span>
-<span id="cb9-511"><a href="#cb9-511" aria-hidden="true" tabindex="-1"></a><span class="co">// circles is cheap enough to redo on every drag tick.</span></span>
-<span id="cb9-512"><a href="#cb9-512" aria-hidden="true" tabindex="-1"></a>urlSync <span class="op">=</span> {</span>
-<span id="cb9-513"><a href="#cb9-513" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
-<span id="cb9-514"><a href="#cb9-514" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"prevalence"</span><span class="op">,</span> <span class="bu">String</span>(prevalence))</span>
-<span id="cb9-515"><a href="#cb9-515" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"sensitivity"</span><span class="op">,</span> <span class="bu">String</span>(sensitivity))</span>
-<span id="cb9-516"><a href="#cb9-516" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"specificity"</span><span class="op">,</span> <span class="bu">String</span>(specificity))</span>
-<span id="cb9-517"><a href="#cb9-517" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"layout"</span><span class="op">,</span> layout)</span>
-<span id="cb9-518"><a href="#cb9-518" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"tests"</span><span class="op">,</span> <span class="bu">String</span>(tests))</span>
-<span id="cb9-519"><a href="#cb9-519" aria-hidden="true" tabindex="-1"></a>  history<span class="op">.</span><span class="fu">replaceState</span>(<span class="kw">null</span><span class="op">,</span> <span class="st">""</span><span class="op">,</span> <span class="vs">`</span><span class="sc">${</span><span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">pathname</span><span class="sc">}</span><span class="vs">?</span><span class="sc">${</span>params<span class="sc">}</span><span class="vs">`</span>)</span>
-<span id="cb9-520"><a href="#cb9-520" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="509" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 508;"><span id="cb9-509"><a href="#cb9-509" aria-hidden="true" tabindex="-1"></a><span class="co">// urlSync: mirrors the current control values into the URL's query string</span></span>
+<span id="cb9-510"><a href="#cb9-510" aria-hidden="true" tabindex="-1"></a><span class="co">// on every change, so the address bar stays a shareable link. Runs</span></span>
+<span id="cb9-511"><a href="#cb9-511" aria-hidden="true" tabindex="-1"></a><span class="co">// directly off the reactive values (no "Plot" commit step, unlike the</span></span>
+<span id="cb9-512"><a href="#cb9-512" aria-hidden="true" tabindex="-1"></a><span class="co">// text-expression fields on other pages) since redrawing a thousand</span></span>
+<span id="cb9-513"><a href="#cb9-513" aria-hidden="true" tabindex="-1"></a><span class="co">// circles is cheap enough to redo on every drag tick.</span></span>
+<span id="cb9-514"><a href="#cb9-514" aria-hidden="true" tabindex="-1"></a>urlSync <span class="op">=</span> {</span>
+<span id="cb9-515"><a href="#cb9-515" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
+<span id="cb9-516"><a href="#cb9-516" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"prevalence"</span><span class="op">,</span> <span class="bu">String</span>(prevalence))</span>
+<span id="cb9-517"><a href="#cb9-517" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"sensitivity"</span><span class="op">,</span> <span class="bu">String</span>(sensitivity))</span>
+<span id="cb9-518"><a href="#cb9-518" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"specificity"</span><span class="op">,</span> <span class="bu">String</span>(specificity))</span>
+<span id="cb9-519"><a href="#cb9-519" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"layout"</span><span class="op">,</span> layout)</span>
+<span id="cb9-520"><a href="#cb9-520" aria-hidden="true" tabindex="-1"></a>  params<span class="op">.</span><span class="fu">set</span>(<span class="st">"tests"</span><span class="op">,</span> <span class="bu">String</span>(tests))</span>
+<span id="cb9-521"><a href="#cb9-521" aria-hidden="true" tabindex="-1"></a>  history<span class="op">.</span><span class="fu">replaceState</span>(<span class="kw">null</span><span class="op">,</span> <span class="st">""</span><span class="op">,</span> <span class="vs">`</span><span class="sc">${</span><span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">pathname</span><span class="sc">}</span><span class="vs">?</span><span class="sc">${</span>params<span class="sc">}</span><span class="vs">`</span>)</span>
+<span id="cb9-522"><a href="#cb9-522" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-9" data-nodetype="declaration">
 
@@ -1301,55 +1324,55 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="529" data-source-offset="-159"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 528;"><span id="cb10-529"><a href="#cb10-529" aria-hidden="true" tabindex="-1"></a>infectedCount <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(prevalence <span class="op">*</span> config<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">population</span>)</span>
-<span id="cb10-530"><a href="#cb10-530" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-531"><a href="#cb10-531" aria-hidden="true" tabindex="-1"></a><span class="co">// splits[r]: how the people going into test r split under it, for r from</span></span>
-<span id="cb10-532"><a href="#cb10-532" aria-hidden="true" tabindex="-1"></a><span class="co">// 1 to maxTests (splits[0] is unused, so the index is the round number).</span></span>
-<span id="cb10-533"><a href="#cb10-533" aria-hidden="true" tabindex="-1"></a><span class="co">// Test 1 is given to the whole population; each later test only to the</span></span>
-<span id="cb10-534"><a href="#cb10-534" aria-hidden="true" tabindex="-1"></a><span class="co">// previous round's positives, whose split by condition is exact (they</span></span>
-<span id="cb10-535"><a href="#cb10-535" aria-hidden="true" tabindex="-1"></a><span class="co">// *are* the true and false positives), so only that test's outcome is</span></span>
-<span id="cb10-536"><a href="#cb10-536" aria-hidden="true" tabindex="-1"></a><span class="co">// rounded again.</span></span>
-<span id="cb10-537"><a href="#cb10-537" aria-hidden="true" tabindex="-1"></a>splits <span class="op">=</span> {</span>
-<span id="cb10-538"><a href="#cb10-538" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> [<span class="kw">null</span>]</span>
-<span id="cb10-539"><a href="#cb10-539" aria-hidden="true" tabindex="-1"></a>  list<span class="op">.</span><span class="fu">push</span>(<span class="fu">splitByTest</span>(infectedCount<span class="op">,</span> config<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">population</span> <span class="op">-</span> infectedCount<span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
-<span id="cb10-540"><a href="#cb10-540" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">2</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
-<span id="cb10-541"><a href="#cb10-541" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> previous <span class="op">=</span> list[round <span class="op">-</span> <span class="dv">1</span>]</span>
-<span id="cb10-542"><a href="#cb10-542" aria-hidden="true" tabindex="-1"></a>    list<span class="op">.</span><span class="fu">push</span>(<span class="fu">splitByTest</span>(previous<span class="op">.</span><span class="at">truePositives</span><span class="op">,</span> previous<span class="op">.</span><span class="at">falsePositives</span><span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
-<span id="cb10-543"><a href="#cb10-543" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-544"><a href="#cb10-544" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
-<span id="cb10-545"><a href="#cb10-545" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-546"><a href="#cb10-546" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-547"><a href="#cb10-547" aria-hidden="true" tabindex="-1"></a><span class="co">// ppvs[r]: the exact PPV after r positive tests, with ppvs[0] the raw</span></span>
-<span id="cb10-548"><a href="#cb10-548" aria-hidden="true" tabindex="-1"></a><span class="co">// prevalence -- so ppvs[r - 1] is also the effective prevalence going into</span></span>
-<span id="cb10-549"><a href="#cb10-549" aria-hidden="true" tabindex="-1"></a><span class="co">// test r, which is what makes each repeat test start from a sharper</span></span>
-<span id="cb10-550"><a href="#cb10-550" aria-hidden="true" tabindex="-1"></a><span class="co">// population than the last. npvs[r] likewise, for a negative on test r.</span></span>
-<span id="cb10-551"><a href="#cb10-551" aria-hidden="true" tabindex="-1"></a>ppvs <span class="op">=</span> {</span>
-<span id="cb10-552"><a href="#cb10-552" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> [prevalence]</span>
-<span id="cb10-553"><a href="#cb10-553" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
-<span id="cb10-554"><a href="#cb10-554" aria-hidden="true" tabindex="-1"></a>    list<span class="op">.</span><span class="fu">push</span>(<span class="fu">ppvOf</span>(list[round <span class="op">-</span> <span class="dv">1</span>]<span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
-<span id="cb10-555"><a href="#cb10-555" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-556"><a href="#cb10-556" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
-<span id="cb10-557"><a href="#cb10-557" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-558"><a href="#cb10-558" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-559"><a href="#cb10-559" aria-hidden="true" tabindex="-1"></a>npvs <span class="op">=</span> {</span>
-<span id="cb10-560"><a href="#cb10-560" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> [<span class="kw">null</span>]</span>
-<span id="cb10-561"><a href="#cb10-561" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
-<span id="cb10-562"><a href="#cb10-562" aria-hidden="true" tabindex="-1"></a>    list<span class="op">.</span><span class="fu">push</span>(<span class="fu">npvOf</span>(ppvs[round <span class="op">-</span> <span class="dv">1</span>]<span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
-<span id="cb10-563"><a href="#cb10-563" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-564"><a href="#cb10-564" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
-<span id="cb10-565"><a href="#cb10-565" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-566"><a href="#cb10-566" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-567"><a href="#cb10-567" aria-hidden="true" tabindex="-1"></a><span class="co">// people: every person's result from every test, in one array -- the grid</span></span>
-<span id="cb10-568"><a href="#cb10-568" aria-hidden="true" tabindex="-1"></a><span class="co">// draws it with rounds: tests, so every slider position is the same people</span></span>
-<span id="cb10-569"><a href="#cb10-569" aria-hidden="true" tabindex="-1"></a><span class="co">// in the same slots. Built without depending on `tests`, so scrubbing the</span></span>
-<span id="cb10-570"><a href="#cb10-570" aria-hidden="true" tabindex="-1"></a><span class="co">// slider only redraws; it doesn't recompute anyone's results.</span></span>
-<span id="cb10-571"><a href="#cb10-571" aria-hidden="true" tabindex="-1"></a>people <span class="op">=</span> {</span>
-<span id="cb10-572"><a href="#cb10-572" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> <span class="fu">makePeople</span>(splits[<span class="dv">1</span>]<span class="op">,</span> shuffleKeys)</span>
-<span id="cb10-573"><a href="#cb10-573" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">2</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
-<span id="cb10-574"><a href="#cb10-574" aria-hidden="true" tabindex="-1"></a>    <span class="fu">applyRetest</span>(list<span class="op">,</span> splits[round]<span class="op">,</span> round)</span>
-<span id="cb10-575"><a href="#cb10-575" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb10-576"><a href="#cb10-576" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
-<span id="cb10-577"><a href="#cb10-577" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="531" data-source-offset="-159"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 530;"><span id="cb10-531"><a href="#cb10-531" aria-hidden="true" tabindex="-1"></a>infectedCount <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(prevalence <span class="op">*</span> config<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">population</span>)</span>
+<span id="cb10-532"><a href="#cb10-532" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-533"><a href="#cb10-533" aria-hidden="true" tabindex="-1"></a><span class="co">// splits[r]: how the people going into test r split under it, for r from</span></span>
+<span id="cb10-534"><a href="#cb10-534" aria-hidden="true" tabindex="-1"></a><span class="co">// 1 to maxTests (splits[0] is unused, so the index is the round number).</span></span>
+<span id="cb10-535"><a href="#cb10-535" aria-hidden="true" tabindex="-1"></a><span class="co">// Test 1 is given to the whole population; each later test only to the</span></span>
+<span id="cb10-536"><a href="#cb10-536" aria-hidden="true" tabindex="-1"></a><span class="co">// previous round's positives, whose split by condition is exact (they</span></span>
+<span id="cb10-537"><a href="#cb10-537" aria-hidden="true" tabindex="-1"></a><span class="co">// *are* the true and false positives), so only that test's outcome is</span></span>
+<span id="cb10-538"><a href="#cb10-538" aria-hidden="true" tabindex="-1"></a><span class="co">// rounded again.</span></span>
+<span id="cb10-539"><a href="#cb10-539" aria-hidden="true" tabindex="-1"></a>splits <span class="op">=</span> {</span>
+<span id="cb10-540"><a href="#cb10-540" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> [<span class="kw">null</span>]</span>
+<span id="cb10-541"><a href="#cb10-541" aria-hidden="true" tabindex="-1"></a>  list<span class="op">.</span><span class="fu">push</span>(<span class="fu">splitByTest</span>(infectedCount<span class="op">,</span> config<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">population</span> <span class="op">-</span> infectedCount<span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
+<span id="cb10-542"><a href="#cb10-542" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">2</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
+<span id="cb10-543"><a href="#cb10-543" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> previous <span class="op">=</span> list[round <span class="op">-</span> <span class="dv">1</span>]</span>
+<span id="cb10-544"><a href="#cb10-544" aria-hidden="true" tabindex="-1"></a>    list<span class="op">.</span><span class="fu">push</span>(<span class="fu">splitByTest</span>(previous<span class="op">.</span><span class="at">truePositives</span><span class="op">,</span> previous<span class="op">.</span><span class="at">falsePositives</span><span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
+<span id="cb10-545"><a href="#cb10-545" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-546"><a href="#cb10-546" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
+<span id="cb10-547"><a href="#cb10-547" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-548"><a href="#cb10-548" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-549"><a href="#cb10-549" aria-hidden="true" tabindex="-1"></a><span class="co">// ppvs[r]: the exact PPV after r positive tests, with ppvs[0] the raw</span></span>
+<span id="cb10-550"><a href="#cb10-550" aria-hidden="true" tabindex="-1"></a><span class="co">// prevalence -- so ppvs[r - 1] is also the effective prevalence going into</span></span>
+<span id="cb10-551"><a href="#cb10-551" aria-hidden="true" tabindex="-1"></a><span class="co">// test r, which is what makes each repeat test start from a sharper</span></span>
+<span id="cb10-552"><a href="#cb10-552" aria-hidden="true" tabindex="-1"></a><span class="co">// population than the last. npvs[r] likewise, for a negative on test r.</span></span>
+<span id="cb10-553"><a href="#cb10-553" aria-hidden="true" tabindex="-1"></a>ppvs <span class="op">=</span> {</span>
+<span id="cb10-554"><a href="#cb10-554" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> [prevalence]</span>
+<span id="cb10-555"><a href="#cb10-555" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
+<span id="cb10-556"><a href="#cb10-556" aria-hidden="true" tabindex="-1"></a>    list<span class="op">.</span><span class="fu">push</span>(<span class="fu">ppvOf</span>(list[round <span class="op">-</span> <span class="dv">1</span>]<span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
+<span id="cb10-557"><a href="#cb10-557" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-558"><a href="#cb10-558" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
+<span id="cb10-559"><a href="#cb10-559" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-560"><a href="#cb10-560" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-561"><a href="#cb10-561" aria-hidden="true" tabindex="-1"></a>npvs <span class="op">=</span> {</span>
+<span id="cb10-562"><a href="#cb10-562" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> [<span class="kw">null</span>]</span>
+<span id="cb10-563"><a href="#cb10-563" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
+<span id="cb10-564"><a href="#cb10-564" aria-hidden="true" tabindex="-1"></a>    list<span class="op">.</span><span class="fu">push</span>(<span class="fu">npvOf</span>(ppvs[round <span class="op">-</span> <span class="dv">1</span>]<span class="op">,</span> sensitivity<span class="op">,</span> specificity))</span>
+<span id="cb10-565"><a href="#cb10-565" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-566"><a href="#cb10-566" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
+<span id="cb10-567"><a href="#cb10-567" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-568"><a href="#cb10-568" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-569"><a href="#cb10-569" aria-hidden="true" tabindex="-1"></a><span class="co">// people: every person's result from every test, in one array -- the grid</span></span>
+<span id="cb10-570"><a href="#cb10-570" aria-hidden="true" tabindex="-1"></a><span class="co">// draws it with rounds: tests, so every slider position is the same people</span></span>
+<span id="cb10-571"><a href="#cb10-571" aria-hidden="true" tabindex="-1"></a><span class="co">// in the same slots. Built without depending on `tests`, so scrubbing the</span></span>
+<span id="cb10-572"><a href="#cb10-572" aria-hidden="true" tabindex="-1"></a><span class="co">// slider only redraws; it doesn't recompute anyone's results.</span></span>
+<span id="cb10-573"><a href="#cb10-573" aria-hidden="true" tabindex="-1"></a>people <span class="op">=</span> {</span>
+<span id="cb10-574"><a href="#cb10-574" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> list <span class="op">=</span> <span class="fu">makePeople</span>(splits[<span class="dv">1</span>]<span class="op">,</span> shuffleKeys)</span>
+<span id="cb10-575"><a href="#cb10-575" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">2</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
+<span id="cb10-576"><a href="#cb10-576" aria-hidden="true" tabindex="-1"></a>    <span class="fu">applyRetest</span>(list<span class="op">,</span> splits[round]<span class="op">,</span> round)</span>
+<span id="cb10-577"><a href="#cb10-577" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb10-578"><a href="#cb10-578" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> list</span>
+<span id="cb10-579"><a href="#cb10-579" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div>
 <div id="ojs-cell-10-1" data-nodetype="declaration">
@@ -1389,21 +1412,21 @@ Authors: Apurva Nakade
 <div class="ojs-chart-block ojs-svg-block">
 <div class="ojs-chart-controls ojs-row">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="584" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 583;"><span id="cb11-584"><a href="#cb11-584" aria-hidden="true" tabindex="-1"></a>viewof tests <span class="op">=</span> {</span>
-<span id="cb11-585"><a href="#cb11-585" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
-<span id="cb11-586"><a href="#cb11-586" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> initial <span class="op">=</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"tests"</span><span class="op">,</span> <span class="dv">0</span>)</span>
-<span id="cb11-587"><a href="#cb11-587" aria-hidden="true" tabindex="-1"></a>  initial <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(config<span class="op">.</span><span class="at">maxTests</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="dv">0</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(initial)))</span>
-<span id="cb11-588"><a href="#cb11-588" aria-hidden="true" tabindex="-1"></a>  <span class="co">// 0 is the bare population, every dot solid; each step applies one more</span></span>
-<span id="cb11-589"><a href="#cb11-589" aria-hidden="true" tabindex="-1"></a>  <span class="co">// test to whoever is still positive. Lives in the chart-controls bar</span></span>
-<span id="cb11-590"><a href="#cb11-590" aria-hidden="true" tabindex="-1"></a>  <span class="co">// (see CLAUDE.md) so it sits directly above the picture it scrubs, and</span></span>
-<span id="cb11-591"><a href="#cb11-591" aria-hidden="true" tabindex="-1"></a>  <span class="co">// so slider-play.js gives it a play button that sweeps the tests.</span></span>
-<span id="cb11-592"><a href="#cb11-592" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> config<span class="op">.</span><span class="at">maxTests</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> initial<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Tests"</span>})</span>
-<span id="cb11-593"><a href="#cb11-593" aria-hidden="true" tabindex="-1"></a>  <span class="co">// .ojs-fill lifts Observable's 360px cap on the form so the track takes</span></span>
-<span id="cb11-594"><a href="#cb11-594" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the width the layout toggle leaves, as every other page's step slider</span></span>
-<span id="cb11-595"><a href="#cb11-595" aria-hidden="true" tabindex="-1"></a>  <span class="co">// does; without it the label, play button and readout leave ~90px of track.</span></span>
-<span id="cb11-596"><a href="#cb11-596" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb11-597"><a href="#cb11-597" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
-<span id="cb11-598"><a href="#cb11-598" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="586" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 585;"><span id="cb11-586"><a href="#cb11-586" aria-hidden="true" tabindex="-1"></a>viewof tests <span class="op">=</span> {</span>
+<span id="cb11-587"><a href="#cb11-587" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
+<span id="cb11-588"><a href="#cb11-588" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> initial <span class="op">=</span> <span class="fu">paramNumber</span>(params<span class="op">,</span> <span class="st">"tests"</span><span class="op">,</span> <span class="dv">0</span>)</span>
+<span id="cb11-589"><a href="#cb11-589" aria-hidden="true" tabindex="-1"></a>  initial <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(config<span class="op">.</span><span class="at">maxTests</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">max</span>(<span class="dv">0</span><span class="op">,</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">round</span>(initial)))</span>
+<span id="cb11-590"><a href="#cb11-590" aria-hidden="true" tabindex="-1"></a>  <span class="co">// 0 is the bare population, every dot solid; each step applies one more</span></span>
+<span id="cb11-591"><a href="#cb11-591" aria-hidden="true" tabindex="-1"></a>  <span class="co">// test to whoever is still positive. Lives in the chart-controls bar</span></span>
+<span id="cb11-592"><a href="#cb11-592" aria-hidden="true" tabindex="-1"></a>  <span class="co">// (see CLAUDE.md) so it sits directly above the picture it scrubs, and</span></span>
+<span id="cb11-593"><a href="#cb11-593" aria-hidden="true" tabindex="-1"></a>  <span class="co">// so slider-play.js gives it a play button that sweeps the tests.</span></span>
+<span id="cb11-594"><a href="#cb11-594" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> slider <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="dv">0</span><span class="op">,</span> config<span class="op">.</span><span class="at">maxTests</span>]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="dv">1</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> initial<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Tests"</span>})</span>
+<span id="cb11-595"><a href="#cb11-595" aria-hidden="true" tabindex="-1"></a>  <span class="co">// .ojs-fill lifts Observable's 360px cap on the form so the track takes</span></span>
+<span id="cb11-596"><a href="#cb11-596" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the width the layout toggle leaves, as every other page's step slider</span></span>
+<span id="cb11-597"><a href="#cb11-597" aria-hidden="true" tabindex="-1"></a>  <span class="co">// does; without it the label, play button and readout leave ~90px of track.</span></span>
+<span id="cb11-598"><a href="#cb11-598" aria-hidden="true" tabindex="-1"></a>  slider<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb11-599"><a href="#cb11-599" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> slider</span>
+<span id="cb11-600"><a href="#cb11-600" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-11" data-nodetype="declaration">
 
@@ -1411,18 +1434,18 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="602" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 601;"><span id="cb12-602"><a href="#cb12-602" aria-hidden="true" tabindex="-1"></a>viewof layout <span class="op">=</span> {</span>
-<span id="cb12-603"><a href="#cb12-603" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
-<span id="cb12-604"><a href="#cb12-604" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> initial <span class="op">=</span> <span class="st">"shuffled"</span></span>
-<span id="cb12-605"><a href="#cb12-605" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (params<span class="op">.</span><span class="fu">get</span>(<span class="st">"layout"</span>) <span class="op">===</span> <span class="st">"sorted"</span>) initial <span class="op">=</span> <span class="st">"sorted"</span></span>
-<span id="cb12-606"><a href="#cb12-606" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Shuffled is the honest default -- in a real population you can't tell</span></span>
-<span id="cb12-607"><a href="#cb12-607" aria-hidden="true" tabindex="-1"></a>  <span class="co">// who has the condition by where they're standing. Sorted groups each</span></span>
-<span id="cb12-608"><a href="#cb12-608" aria-hidden="true" tabindex="-1"></a>  <span class="co">// category into a block, which is easier to count. Unlabelled, and in</span></span>
-<span id="cb12-609"><a href="#cb12-609" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the bar beside the tests slider (the .ojs-row's last div, so it keeps</span></span>
-<span id="cb12-610"><a href="#cb12-610" aria-hidden="true" tabindex="-1"></a>  <span class="co">// its natural width while the slider fills the rest): the two options</span></span>
-<span id="cb12-611"><a href="#cb12-611" aria-hidden="true" tabindex="-1"></a>  <span class="co">// name themselves, and it changes only how the picture is drawn.</span></span>
-<span id="cb12-612"><a href="#cb12-612" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">radio</span>(<span class="kw">new</span> <span class="bu">Map</span>([[<span class="st">"Shuffled"</span><span class="op">,</span> <span class="st">"shuffled"</span>]<span class="op">,</span> [<span class="st">"Sorted"</span><span class="op">,</span> <span class="st">"sorted"</span>]])<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> initial})</span>
-<span id="cb12-613"><a href="#cb12-613" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="604" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 603;"><span id="cb12-604"><a href="#cb12-604" aria-hidden="true" tabindex="-1"></a>viewof layout <span class="op">=</span> {</span>
+<span id="cb12-605"><a href="#cb12-605" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> params <span class="op">=</span> <span class="kw">new</span> <span class="fu">URLSearchParams</span>(<span class="bu">window</span><span class="op">.</span><span class="at">location</span><span class="op">.</span><span class="at">search</span>)</span>
+<span id="cb12-606"><a href="#cb12-606" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> initial <span class="op">=</span> <span class="st">"shuffled"</span></span>
+<span id="cb12-607"><a href="#cb12-607" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (params<span class="op">.</span><span class="fu">get</span>(<span class="st">"layout"</span>) <span class="op">===</span> <span class="st">"sorted"</span>) initial <span class="op">=</span> <span class="st">"sorted"</span></span>
+<span id="cb12-608"><a href="#cb12-608" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Shuffled is the honest default -- in a real population you can't tell</span></span>
+<span id="cb12-609"><a href="#cb12-609" aria-hidden="true" tabindex="-1"></a>  <span class="co">// who has the condition by where they're standing. Sorted groups each</span></span>
+<span id="cb12-610"><a href="#cb12-610" aria-hidden="true" tabindex="-1"></a>  <span class="co">// category into a block, which is easier to count. Unlabelled, and in</span></span>
+<span id="cb12-611"><a href="#cb12-611" aria-hidden="true" tabindex="-1"></a>  <span class="co">// the bar beside the tests slider (the .ojs-row's last div, so it keeps</span></span>
+<span id="cb12-612"><a href="#cb12-612" aria-hidden="true" tabindex="-1"></a>  <span class="co">// its natural width while the slider fills the rest): the two options</span></span>
+<span id="cb12-613"><a href="#cb12-613" aria-hidden="true" tabindex="-1"></a>  <span class="co">// name themselves, and it changes only how the picture is drawn.</span></span>
+<span id="cb12-614"><a href="#cb12-614" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Inputs<span class="op">.</span><span class="fu">radio</span>(<span class="kw">new</span> <span class="bu">Map</span>([[<span class="st">"Shuffled"</span><span class="op">,</span> <span class="st">"shuffled"</span>]<span class="op">,</span> [<span class="st">"Sorted"</span><span class="op">,</span> <span class="st">"sorted"</span>]])<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> initial})</span>
+<span id="cb12-615"><a href="#cb12-615" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-12" data-nodetype="declaration">
 
@@ -1431,7 +1454,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="619" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 618;"><span id="cb13-619"><a href="#cb13-619" aria-hidden="true" tabindex="-1"></a><span class="fu">drawGrid</span>(people<span class="op">,</span> {<span class="dt">rounds</span><span class="op">:</span> tests})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="621" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 620;"><span id="cb13-621"><a href="#cb13-621" aria-hidden="true" tabindex="-1"></a><span class="fu">drawGrid</span>(people<span class="op">,</span> {<span class="dt">rounds</span><span class="op">:</span> tests})</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-13" data-nodetype="expression">
 
@@ -1440,59 +1463,59 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="632" data-source-offset="-370"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 631;"><span id="cb14-632"><a href="#cb14-632" aria-hidden="true" tabindex="-1"></a>ordinal <span class="op">=</span> [<span class="st">"zero"</span><span class="op">,</span> <span class="st">"one"</span><span class="op">,</span> <span class="st">"two"</span><span class="op">,</span> <span class="st">"three"</span><span class="op">,</span> <span class="st">"four"</span><span class="op">,</span> <span class="st">"five"</span>]</span>
-<span id="cb14-633"><a href="#cb14-633" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-634"><a href="#cb14-634" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">legendTitle</span>(rounds) {</span>
-<span id="cb14-635"><a href="#cb14-635" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">0</span>) <span class="cf">return</span> <span class="st">"The population, before any test"</span></span>
-<span id="cb14-636"><a href="#cb14-636" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) <span class="cf">return</span> <span class="st">"After one test"</span></span>
-<span id="cb14-637"><a href="#cb14-637" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="vs">`After </span><span class="sc">${</span>ordinal[rounds]<span class="sc">}</span><span class="vs"> tests, each given to the previous test's positives`</span></span>
-<span id="cb14-638"><a href="#cb14-638" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-639"><a href="#cb14-639" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-640"><a href="#cb14-640" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">legendRows</span>(rounds) {</span>
-<span id="cb14-641"><a href="#cb14-641" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> red <span class="op">=</span> config<span class="op">.</span><span class="at">colors</span><span class="op">.</span><span class="at">infected</span></span>
-<span id="cb14-642"><a href="#cb14-642" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> dark <span class="op">=</span> config<span class="op">.</span><span class="at">colors</span><span class="op">.</span><span class="at">healthy</span></span>
-<span id="cb14-643"><a href="#cb14-643" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
-<span id="cb14-644"><a href="#cb14-644" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb14-645"><a href="#cb14-645" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> red<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> infectedCount<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`with the condition (</span><span class="sc">${</span><span class="fu">formatPct</span>(prevalence)<span class="sc">}</span><span class="vs">)`</span>})</span>
-<span id="cb14-646"><a href="#cb14-646" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> dark<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> config<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">population</span> <span class="op">-</span> infectedCount<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"without the condition"</span>})</span>
-<span id="cb14-647"><a href="#cb14-647" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> rows</span>
-<span id="cb14-648"><a href="#cb14-648" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-649"><a href="#cb14-649" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-650"><a href="#cb14-650" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> positive <span class="op">=</span> <span class="st">"tested positive"</span></span>
-<span id="cb14-651"><a href="#cb14-651" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">2</span>) positive <span class="op">=</span> <span class="st">"positive on both tests"</span></span>
-<span id="cb14-652"><a href="#cb14-652" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">&gt;=</span> <span class="dv">3</span>) positive <span class="op">=</span> <span class="vs">`positive on all </span><span class="sc">${</span>ordinal[rounds]<span class="sc">}</span><span class="vs"> tests`</span></span>
-<span id="cb14-653"><a href="#cb14-653" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> last <span class="op">=</span> splits[rounds]</span>
-<span id="cb14-654"><a href="#cb14-654" aria-hidden="true" tabindex="-1"></a>  rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> red<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> last<span class="op">.</span><span class="at">truePositives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`with the condition, </span><span class="sc">${</span>positive<span class="sc">}</span><span class="vs">`</span>})</span>
-<span id="cb14-655"><a href="#cb14-655" aria-hidden="true" tabindex="-1"></a>  rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> dark<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> last<span class="op">.</span><span class="at">falsePositives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`without the condition, </span><span class="sc">${</span>positive<span class="sc">}</span><span class="vs"> (false alarm)`</span>})</span>
-<span id="cb14-656"><a href="#cb14-656" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-657"><a href="#cb14-657" aria-hidden="true" tabindex="-1"></a>  <span class="co">// The cleared people, one row per round, latest first -- matching the</span></span>
-<span id="cb14-658"><a href="#cb14-658" aria-hidden="true" tabindex="-1"></a>  <span class="co">// picture, where the latest round's rings are the most visible.</span></span>
-<span id="cb14-659"><a href="#cb14-659" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> rounds<span class="op">;</span> round <span class="op">&gt;=</span> <span class="dv">1</span><span class="op">;</span> round<span class="op">--</span>) {</span>
-<span id="cb14-660"><a href="#cb14-660" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> missed <span class="op">=</span> <span class="vs">`missed by test </span><span class="sc">${</span>round<span class="sc">}</span><span class="vs">`</span></span>
-<span id="cb14-661"><a href="#cb14-661" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) missed <span class="op">=</span> <span class="st">"tested negative (missed)"</span></span>
-<span id="cb14-662"><a href="#cb14-662" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (round <span class="op">&lt;</span> rounds) missed <span class="op">+=</span> <span class="st">" (not retested)"</span></span>
-<span id="cb14-663"><a href="#cb14-663" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> red<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> splits[round]<span class="op">.</span><span class="at">falseNegatives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`with the condition, </span><span class="sc">${</span>missed<span class="sc">}</span><span class="vs">`</span>})</span>
-<span id="cb14-664"><a href="#cb14-664" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-665"><a href="#cb14-665" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> rounds<span class="op">;</span> round <span class="op">&gt;=</span> <span class="dv">1</span><span class="op">;</span> round<span class="op">--</span>) {</span>
-<span id="cb14-666"><a href="#cb14-666" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> cleared <span class="op">=</span> <span class="vs">`cleared by test </span><span class="sc">${</span>round<span class="sc">}</span><span class="vs">`</span></span>
-<span id="cb14-667"><a href="#cb14-667" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) cleared <span class="op">=</span> <span class="st">"tested negative (cleared)"</span></span>
-<span id="cb14-668"><a href="#cb14-668" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (round <span class="op">&lt;</span> rounds) cleared <span class="op">+=</span> <span class="st">" (not retested)"</span></span>
-<span id="cb14-669"><a href="#cb14-669" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> dark<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">opacity</span><span class="op">:</span> <span class="fu">fadeOpacity</span>(rounds<span class="op">,</span> round<span class="op">,</span> <span class="kw">false</span>)<span class="op">,</span> <span class="dt">count</span><span class="op">:</span> splits[round]<span class="op">.</span><span class="at">trueNegatives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`without the condition, </span><span class="sc">${</span>cleared<span class="sc">}</span><span class="vs">`</span>})</span>
-<span id="cb14-670"><a href="#cb14-670" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-671"><a href="#cb14-671" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> rows</span>
-<span id="cb14-672"><a href="#cb14-672" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb14-673"><a href="#cb14-673" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-674"><a href="#cb14-674" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">legendNote</span>(rounds) {</span>
-<span id="cb14-675"><a href="#cb14-675" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb14-676"><a href="#cb14-676" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">html</span><span class="vs">`Move the &lt;em&gt;Tests&lt;/em&gt; slider to give everyone a test.`</span></span>
-<span id="cb14-677"><a href="#cb14-677" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-678"><a href="#cb14-678" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> last <span class="op">=</span> splits[rounds]</span>
-<span id="cb14-679"><a href="#cb14-679" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) {</span>
-<span id="cb14-680"><a href="#cb14-680" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">html</span><span class="vs">`</span><span class="sc">${</span>last<span class="op">.</span><span class="at">positives</span><span class="sc">}</span><span class="vs"> tested positive. Positive predictive value, the chance you have the condition given a positive test: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(ppvs[<span class="dv">1</span>])<span class="sc">}</span><span class="vs">&lt;/strong&gt;. Negative predictive value: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(npvs[<span class="dv">1</span>])<span class="sc">}</span><span class="vs">&lt;/strong&gt;.`</span></span>
-<span id="cb14-681"><a href="#cb14-681" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb14-682"><a href="#cb14-682" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> previous <span class="op">=</span> splits[rounds <span class="op">-</span> <span class="dv">1</span>]</span>
-<span id="cb14-683"><a href="#cb14-683" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">html</span><span class="vs">`Only the </span><span class="sc">${</span>previous<span class="op">.</span><span class="at">positives</span><span class="sc">}</span><span class="vs"> still positive after test </span><span class="sc">${</span>rounds <span class="op">-</span> <span class="dv">1</span><span class="sc">}</span><span class="vs"> were retested; </span><span class="sc">${</span>previous<span class="op">.</span><span class="at">truePositives</span><span class="sc">}</span><span class="vs"> of them have the condition, so the effective prevalence going in was </span><span class="sc">${</span><span class="fu">formatPct</span>(ppvs[rounds <span class="op">-</span> <span class="dv">1</span>])<span class="sc">}</span><span class="vs">. Positive predictive value after </span><span class="sc">${</span>ordinal[rounds]<span class="sc">}</span><span class="vs"> positive tests: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(ppvs[rounds])<span class="sc">}</span><span class="vs">&lt;/strong&gt;. Negative predictive value of test </span><span class="sc">${</span>rounds<span class="sc">}</span><span class="vs">: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(npvs[rounds])<span class="sc">}</span><span class="vs">&lt;/strong&gt;.`</span></span>
-<span id="cb14-684"><a href="#cb14-684" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="634" data-source-offset="-370"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 633;"><span id="cb14-634"><a href="#cb14-634" aria-hidden="true" tabindex="-1"></a>ordinal <span class="op">=</span> [<span class="st">"zero"</span><span class="op">,</span> <span class="st">"one"</span><span class="op">,</span> <span class="st">"two"</span><span class="op">,</span> <span class="st">"three"</span><span class="op">,</span> <span class="st">"four"</span><span class="op">,</span> <span class="st">"five"</span>]</span>
+<span id="cb14-635"><a href="#cb14-635" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-636"><a href="#cb14-636" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">legendTitle</span>(rounds) {</span>
+<span id="cb14-637"><a href="#cb14-637" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">0</span>) <span class="cf">return</span> <span class="st">"The population, before any test"</span></span>
+<span id="cb14-638"><a href="#cb14-638" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) <span class="cf">return</span> <span class="st">"After one test"</span></span>
+<span id="cb14-639"><a href="#cb14-639" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="vs">`After </span><span class="sc">${</span>ordinal[rounds]<span class="sc">}</span><span class="vs"> tests, each given to the previous test's positives`</span></span>
+<span id="cb14-640"><a href="#cb14-640" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-641"><a href="#cb14-641" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-642"><a href="#cb14-642" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">legendRows</span>(rounds) {</span>
+<span id="cb14-643"><a href="#cb14-643" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> red <span class="op">=</span> config<span class="op">.</span><span class="at">colors</span><span class="op">.</span><span class="at">infected</span></span>
+<span id="cb14-644"><a href="#cb14-644" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> dark <span class="op">=</span> config<span class="op">.</span><span class="at">colors</span><span class="op">.</span><span class="at">healthy</span></span>
+<span id="cb14-645"><a href="#cb14-645" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
+<span id="cb14-646"><a href="#cb14-646" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb14-647"><a href="#cb14-647" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> red<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> infectedCount<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`with the condition (</span><span class="sc">${</span><span class="fu">formatPct</span>(prevalence)<span class="sc">}</span><span class="vs">)`</span>})</span>
+<span id="cb14-648"><a href="#cb14-648" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> dark<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> config<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">population</span> <span class="op">-</span> infectedCount<span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"without the condition"</span>})</span>
+<span id="cb14-649"><a href="#cb14-649" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> rows</span>
+<span id="cb14-650"><a href="#cb14-650" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-651"><a href="#cb14-651" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-652"><a href="#cb14-652" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> positive <span class="op">=</span> <span class="st">"tested positive"</span></span>
+<span id="cb14-653"><a href="#cb14-653" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">2</span>) positive <span class="op">=</span> <span class="st">"positive on both tests"</span></span>
+<span id="cb14-654"><a href="#cb14-654" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">&gt;=</span> <span class="dv">3</span>) positive <span class="op">=</span> <span class="vs">`positive on all </span><span class="sc">${</span>ordinal[rounds]<span class="sc">}</span><span class="vs"> tests`</span></span>
+<span id="cb14-655"><a href="#cb14-655" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> last <span class="op">=</span> splits[rounds]</span>
+<span id="cb14-656"><a href="#cb14-656" aria-hidden="true" tabindex="-1"></a>  rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> red<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> last<span class="op">.</span><span class="at">truePositives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`with the condition, </span><span class="sc">${</span>positive<span class="sc">}</span><span class="vs">`</span>})</span>
+<span id="cb14-657"><a href="#cb14-657" aria-hidden="true" tabindex="-1"></a>  rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> dark<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">true</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> last<span class="op">.</span><span class="at">falsePositives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`without the condition, </span><span class="sc">${</span>positive<span class="sc">}</span><span class="vs"> (false alarm)`</span>})</span>
+<span id="cb14-658"><a href="#cb14-658" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-659"><a href="#cb14-659" aria-hidden="true" tabindex="-1"></a>  <span class="co">// The cleared people, one row per round, latest first -- matching the</span></span>
+<span id="cb14-660"><a href="#cb14-660" aria-hidden="true" tabindex="-1"></a>  <span class="co">// picture, where the latest round's rings are the most visible.</span></span>
+<span id="cb14-661"><a href="#cb14-661" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> rounds<span class="op">;</span> round <span class="op">&gt;=</span> <span class="dv">1</span><span class="op">;</span> round<span class="op">--</span>) {</span>
+<span id="cb14-662"><a href="#cb14-662" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> missed <span class="op">=</span> <span class="vs">`missed by test </span><span class="sc">${</span>round<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb14-663"><a href="#cb14-663" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) missed <span class="op">=</span> <span class="st">"tested negative (missed)"</span></span>
+<span id="cb14-664"><a href="#cb14-664" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (round <span class="op">&lt;</span> rounds) missed <span class="op">+=</span> <span class="st">" (not retested)"</span></span>
+<span id="cb14-665"><a href="#cb14-665" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> red<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">count</span><span class="op">:</span> splits[round]<span class="op">.</span><span class="at">falseNegatives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`with the condition, </span><span class="sc">${</span>missed<span class="sc">}</span><span class="vs">`</span>})</span>
+<span id="cb14-666"><a href="#cb14-666" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-667"><a href="#cb14-667" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> rounds<span class="op">;</span> round <span class="op">&gt;=</span> <span class="dv">1</span><span class="op">;</span> round<span class="op">--</span>) {</span>
+<span id="cb14-668"><a href="#cb14-668" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> cleared <span class="op">=</span> <span class="vs">`cleared by test </span><span class="sc">${</span>round<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb14-669"><a href="#cb14-669" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) cleared <span class="op">=</span> <span class="st">"tested negative (cleared)"</span></span>
+<span id="cb14-670"><a href="#cb14-670" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (round <span class="op">&lt;</span> rounds) cleared <span class="op">+=</span> <span class="st">" (not retested)"</span></span>
+<span id="cb14-671"><a href="#cb14-671" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>({<span class="dt">color</span><span class="op">:</span> dark<span class="op">,</span> <span class="dt">filled</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">opacity</span><span class="op">:</span> <span class="fu">fadeOpacity</span>(rounds<span class="op">,</span> round<span class="op">,</span> <span class="kw">false</span>)<span class="op">,</span> <span class="dt">count</span><span class="op">:</span> splits[round]<span class="op">.</span><span class="at">trueNegatives</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="vs">`without the condition, </span><span class="sc">${</span>cleared<span class="sc">}</span><span class="vs">`</span>})</span>
+<span id="cb14-672"><a href="#cb14-672" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-673"><a href="#cb14-673" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> rows</span>
+<span id="cb14-674"><a href="#cb14-674" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb14-675"><a href="#cb14-675" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-676"><a href="#cb14-676" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">legendNote</span>(rounds) {</span>
+<span id="cb14-677"><a href="#cb14-677" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb14-678"><a href="#cb14-678" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">html</span><span class="vs">`Move the &lt;em&gt;Tests&lt;/em&gt; slider to give everyone a test.`</span></span>
+<span id="cb14-679"><a href="#cb14-679" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-680"><a href="#cb14-680" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> last <span class="op">=</span> splits[rounds]</span>
+<span id="cb14-681"><a href="#cb14-681" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (rounds <span class="op">===</span> <span class="dv">1</span>) {</span>
+<span id="cb14-682"><a href="#cb14-682" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="fu">html</span><span class="vs">`</span><span class="sc">${</span>last<span class="op">.</span><span class="at">positives</span><span class="sc">}</span><span class="vs"> tested positive. Positive predictive value, the chance you have the condition given a positive test: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(ppvs[<span class="dv">1</span>])<span class="sc">}</span><span class="vs">&lt;/strong&gt;. Negative predictive value: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(npvs[<span class="dv">1</span>])<span class="sc">}</span><span class="vs">&lt;/strong&gt;.`</span></span>
+<span id="cb14-683"><a href="#cb14-683" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb14-684"><a href="#cb14-684" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> previous <span class="op">=</span> splits[rounds <span class="op">-</span> <span class="dv">1</span>]</span>
+<span id="cb14-685"><a href="#cb14-685" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="fu">html</span><span class="vs">`Only the </span><span class="sc">${</span>previous<span class="op">.</span><span class="at">positives</span><span class="sc">}</span><span class="vs"> still positive after test </span><span class="sc">${</span>rounds <span class="op">-</span> <span class="dv">1</span><span class="sc">}</span><span class="vs"> were retested; </span><span class="sc">${</span>previous<span class="op">.</span><span class="at">truePositives</span><span class="sc">}</span><span class="vs"> of them have the condition, so the effective prevalence going in was </span><span class="sc">${</span><span class="fu">formatPct</span>(ppvs[rounds <span class="op">-</span> <span class="dv">1</span>])<span class="sc">}</span><span class="vs">. Positive predictive value after </span><span class="sc">${</span>ordinal[rounds]<span class="sc">}</span><span class="vs"> positive tests: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(ppvs[rounds])<span class="sc">}</span><span class="vs">&lt;/strong&gt;. Negative predictive value of test </span><span class="sc">${</span>rounds<span class="sc">}</span><span class="vs">: &lt;strong&gt;</span><span class="sc">${</span><span class="fu">formatPct</span>(npvs[rounds])<span class="sc">}</span><span class="vs">&lt;/strong&gt;.`</span></span>
+<span id="cb14-686"><a href="#cb14-686" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div>
 <div id="ojs-cell-14-1" data-nodetype="declaration">
@@ -1523,10 +1546,11 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="687" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 686;"><span id="cb15-687"><a href="#cb15-687" aria-hidden="true" tabindex="-1"></a><span class="fu">legendPanel</span>(<span class="fu">legendTitle</span>(tests)<span class="op">,</span> <span class="fu">legendRows</span>(tests)<span class="op">,</span> <span class="fu">legendNote</span>(tests))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="689" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 688;"><span id="cb15-689"><a href="#cb15-689" aria-hidden="true" tabindex="-1"></a><span class="fu">legendPanel</span>(<span class="fu">legendTitle</span>(tests)<span class="op">,</span> <span class="fu">legendRows</span>(tests)<span class="op">,</span> <span class="fu">legendNote</span>(tests))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-15" data-nodetype="expression">
 
+</div>
 </div>
 </div>
 </div>
@@ -1543,27 +1567,27 @@ Authors: Apurva Nakade
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="693" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 692;"><span id="cb16-693"><a href="#cb16-693" aria-hidden="true" tabindex="-1"></a>summaryTable <span class="op">=</span> {</span>
-<span id="cb16-694"><a href="#cb16-694" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
-<span id="cb16-695"><a href="#cb16-695" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
-<span id="cb16-696"><a href="#cb16-696" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> step <span class="op">=</span> <span class="vs">`</span><span class="sc">${</span>round<span class="sc">}</span><span class="vs"> positive tests`</span></span>
-<span id="cb16-697"><a href="#cb16-697" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (round <span class="op">===</span> <span class="dv">1</span>) step <span class="op">=</span> <span class="st">"1 positive test"</span></span>
-<span id="cb16-698"><a href="#cb16-698" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>([</span>
-<span id="cb16-699"><a href="#cb16-699" aria-hidden="true" tabindex="-1"></a>      step<span class="op">,</span></span>
-<span id="cb16-700"><a href="#cb16-700" aria-hidden="true" tabindex="-1"></a>      <span class="fu">formatPct</span>(ppvs[round <span class="op">-</span> <span class="dv">1</span>])<span class="op">,</span></span>
-<span id="cb16-701"><a href="#cb16-701" aria-hidden="true" tabindex="-1"></a>      <span class="vs">`</span><span class="sc">${</span>splits[round]<span class="op">.</span><span class="at">truePositives</span><span class="sc">}</span><span class="vs"> of </span><span class="sc">${</span>splits[round]<span class="op">.</span><span class="at">positives</span><span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
-<span id="cb16-702"><a href="#cb16-702" aria-hidden="true" tabindex="-1"></a>      <span class="fu">formatPct</span>(ppvs[round])<span class="op">,</span></span>
-<span id="cb16-703"><a href="#cb16-703" aria-hidden="true" tabindex="-1"></a>      <span class="fu">formatPct</span>(npvs[round])</span>
-<span id="cb16-704"><a href="#cb16-704" aria-hidden="true" tabindex="-1"></a>    ])</span>
-<span id="cb16-705"><a href="#cb16-705" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb16-706"><a href="#cb16-706" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-707"><a href="#cb16-707" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb16-708"><a href="#cb16-708" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb16-709"><a href="#cb16-709" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Round"</span><span class="op">,</span> <span class="st">"Effective prevalence"</span><span class="op">,</span> <span class="st">"Positives who have it (in the picture)"</span><span class="op">,</span> <span class="st">"PPV"</span><span class="op">,</span> <span class="st">"NPV"</span>]<span class="op">,</span></span>
-<span id="cb16-710"><a href="#cb16-710" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"bayes-theorem-summary.csv"</span><span class="op">,</span></span>
-<span id="cb16-711"><a href="#cb16-711" aria-hidden="true" tabindex="-1"></a>    rows</span>
-<span id="cb16-712"><a href="#cb16-712" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb16-713"><a href="#cb16-713" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="697" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 696;"><span id="cb16-697"><a href="#cb16-697" aria-hidden="true" tabindex="-1"></a>summaryTable <span class="op">=</span> {</span>
+<span id="cb16-698"><a href="#cb16-698" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
+<span id="cb16-699"><a href="#cb16-699" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> round <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> round <span class="op">&lt;=</span> config<span class="op">.</span><span class="at">maxTests</span><span class="op">;</span> round<span class="op">++</span>) {</span>
+<span id="cb16-700"><a href="#cb16-700" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> step <span class="op">=</span> <span class="vs">`</span><span class="sc">${</span>round<span class="sc">}</span><span class="vs"> positive tests`</span></span>
+<span id="cb16-701"><a href="#cb16-701" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (round <span class="op">===</span> <span class="dv">1</span>) step <span class="op">=</span> <span class="st">"1 positive test"</span></span>
+<span id="cb16-702"><a href="#cb16-702" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>([</span>
+<span id="cb16-703"><a href="#cb16-703" aria-hidden="true" tabindex="-1"></a>      step<span class="op">,</span></span>
+<span id="cb16-704"><a href="#cb16-704" aria-hidden="true" tabindex="-1"></a>      <span class="fu">formatPct</span>(ppvs[round <span class="op">-</span> <span class="dv">1</span>])<span class="op">,</span></span>
+<span id="cb16-705"><a href="#cb16-705" aria-hidden="true" tabindex="-1"></a>      <span class="vs">`</span><span class="sc">${</span>splits[round]<span class="op">.</span><span class="at">truePositives</span><span class="sc">}</span><span class="vs"> of </span><span class="sc">${</span>splits[round]<span class="op">.</span><span class="at">positives</span><span class="sc">}</span><span class="vs">`</span><span class="op">,</span></span>
+<span id="cb16-706"><a href="#cb16-706" aria-hidden="true" tabindex="-1"></a>      <span class="fu">formatPct</span>(ppvs[round])<span class="op">,</span></span>
+<span id="cb16-707"><a href="#cb16-707" aria-hidden="true" tabindex="-1"></a>      <span class="fu">formatPct</span>(npvs[round])</span>
+<span id="cb16-708"><a href="#cb16-708" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb16-709"><a href="#cb16-709" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb16-710"><a href="#cb16-710" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-711"><a href="#cb16-711" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb16-712"><a href="#cb16-712" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb16-713"><a href="#cb16-713" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Round"</span><span class="op">,</span> <span class="st">"Effective prevalence"</span><span class="op">,</span> <span class="st">"Positives who have it (in the picture)"</span><span class="op">,</span> <span class="st">"PPV"</span><span class="op">,</span> <span class="st">"NPV"</span>]<span class="op">,</span></span>
+<span id="cb16-714"><a href="#cb16-714" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"bayes-theorem-summary.csv"</span><span class="op">,</span></span>
+<span id="cb16-715"><a href="#cb16-715" aria-hidden="true" tabindex="-1"></a>    rows</span>
+<span id="cb16-716"><a href="#cb16-716" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb16-717"><a href="#cb16-717" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-16" data-nodetype="declaration">
 

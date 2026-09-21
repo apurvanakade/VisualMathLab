@@ -156,28 +156,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -817,16 +839,17 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+<div class="vm-app">
 <div class="ojs-panel">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="128" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 127;"><span id="cb4-128"><a href="#cb4-128" aria-hidden="true" tabindex="-1"></a><span class="co">// regenerateTrigger: clicking "Regenerate points" bumps this, which is the</span></span>
-<span id="cb4-129"><a href="#cb4-129" aria-hidden="true" tabindex="-1"></a><span class="co">// only thing basePoints depends on below — that's what makes a fresh draw</span></span>
-<span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a><span class="co">// happen on click instead of only once at page load.</span></span>
-<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a>viewof regenerateTrigger <span class="op">=</span> {</span>
-<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate points"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
-<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
-<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
-<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb4" data-startfrom="130" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 129;"><span id="cb4-130"><a href="#cb4-130" aria-hidden="true" tabindex="-1"></a><span class="co">// regenerateTrigger: clicking "Regenerate points" bumps this, which is the</span></span>
+<span id="cb4-131"><a href="#cb4-131" aria-hidden="true" tabindex="-1"></a><span class="co">// only thing basePoints depends on below — that's what makes a fresh draw</span></span>
+<span id="cb4-132"><a href="#cb4-132" aria-hidden="true" tabindex="-1"></a><span class="co">// happen on click instead of only once at page load.</span></span>
+<span id="cb4-133"><a href="#cb4-133" aria-hidden="true" tabindex="-1"></a>viewof regenerateTrigger <span class="op">=</span> {</span>
+<span id="cb4-134"><a href="#cb4-134" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> button <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">button</span>(<span class="st">"Regenerate points"</span><span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> <span class="dv">0</span><span class="op">,</span> <span class="dt">reduce</span><span class="op">:</span> v <span class="kw">=&gt;</span> v <span class="op">+</span> <span class="dv">1</span>})</span>
+<span id="cb4-135"><a href="#cb4-135" aria-hidden="true" tabindex="-1"></a>  button<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-auto"</span>)</span>
+<span id="cb4-136"><a href="#cb4-136" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> button</span>
+<span id="cb4-137"><a href="#cb4-137" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-4" data-nodetype="declaration">
 
@@ -835,28 +858,28 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="142" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 141;"><span id="cb5-142"><a href="#cb5-142" aria-hidden="true" tabindex="-1"></a><span class="co">// points: applies the current outlier severity on top of basePoints. Only</span></span>
-<span id="cb5-143"><a href="#cb5-143" aria-hidden="true" tabindex="-1"></a><span class="co">// the outlier indices' y-values change with the slider — each keeps its</span></span>
-<span id="cb5-144"><a href="#cb5-144" aria-hidden="true" tabindex="-1"></a><span class="co">// own noisy y-value from basePoints and is shifted by exactly</span></span>
-<span id="cb5-145"><a href="#cb5-145" aria-hidden="true" tabindex="-1"></a><span class="co">// `outlierSeverity` on top of it (positive pushes it up, negative pushes</span></span>
-<span id="cb5-146"><a href="#cb5-146" aria-hidden="true" tabindex="-1"></a><span class="co">// it down), so severity 0 means "not actually an outlier yet" (identical</span></span>
-<span id="cb5-147"><a href="#cb5-147" aria-hidden="true" tabindex="-1"></a><span class="co">// to its original noisy position) and larger magnitude means "further</span></span>
-<span id="cb5-148"><a href="#cb5-148" aria-hidden="true" tabindex="-1"></a><span class="co">// from where it should be." Shifting each point's own noisy y — rather</span></span>
-<span id="cb5-149"><a href="#cb5-149" aria-hidden="true" tabindex="-1"></a><span class="co">// than recomputing it from the line equation — is what keeps the 4</span></span>
-<span id="cb5-150"><a href="#cb5-150" aria-hidden="true" tabindex="-1"></a><span class="co">// outliers from landing exactly on a second, perfectly straight line as</span></span>
-<span id="cb5-151"><a href="#cb5-151" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider moves. Every other point stays fixed as the slider moves.</span></span>
-<span id="cb5-152"><a href="#cb5-152" aria-hidden="true" tabindex="-1"></a>points <span class="op">=</span> {</span>
-<span id="cb5-153"><a href="#cb5-153" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pts <span class="op">=</span> []</span>
-<span id="cb5-154"><a href="#cb5-154" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">points</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb5-155"><a href="#cb5-155" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> p <span class="op">=</span> basePoints<span class="op">.</span><span class="at">points</span>[i]</span>
-<span id="cb5-156"><a href="#cb5-156" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">.</span><span class="fu">includes</span>(i)) {</span>
-<span id="cb5-157"><a href="#cb5-157" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> p<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> p<span class="op">.</span><span class="at">y</span> <span class="op">+</span> outlierSeverity})</span>
-<span id="cb5-158"><a href="#cb5-158" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb5-159"><a href="#cb5-159" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>(p)</span>
-<span id="cb5-160"><a href="#cb5-160" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb5-161"><a href="#cb5-161" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb5-162"><a href="#cb5-162" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> pts</span>
-<span id="cb5-163"><a href="#cb5-163" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb5" data-startfrom="144" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 143;"><span id="cb5-144"><a href="#cb5-144" aria-hidden="true" tabindex="-1"></a><span class="co">// points: applies the current outlier severity on top of basePoints. Only</span></span>
+<span id="cb5-145"><a href="#cb5-145" aria-hidden="true" tabindex="-1"></a><span class="co">// the outlier indices' y-values change with the slider — each keeps its</span></span>
+<span id="cb5-146"><a href="#cb5-146" aria-hidden="true" tabindex="-1"></a><span class="co">// own noisy y-value from basePoints and is shifted by exactly</span></span>
+<span id="cb5-147"><a href="#cb5-147" aria-hidden="true" tabindex="-1"></a><span class="co">// `outlierSeverity` on top of it (positive pushes it up, negative pushes</span></span>
+<span id="cb5-148"><a href="#cb5-148" aria-hidden="true" tabindex="-1"></a><span class="co">// it down), so severity 0 means "not actually an outlier yet" (identical</span></span>
+<span id="cb5-149"><a href="#cb5-149" aria-hidden="true" tabindex="-1"></a><span class="co">// to its original noisy position) and larger magnitude means "further</span></span>
+<span id="cb5-150"><a href="#cb5-150" aria-hidden="true" tabindex="-1"></a><span class="co">// from where it should be." Shifting each point's own noisy y — rather</span></span>
+<span id="cb5-151"><a href="#cb5-151" aria-hidden="true" tabindex="-1"></a><span class="co">// than recomputing it from the line equation — is what keeps the 4</span></span>
+<span id="cb5-152"><a href="#cb5-152" aria-hidden="true" tabindex="-1"></a><span class="co">// outliers from landing exactly on a second, perfectly straight line as</span></span>
+<span id="cb5-153"><a href="#cb5-153" aria-hidden="true" tabindex="-1"></a><span class="co">// the slider moves. Every other point stays fixed as the slider moves.</span></span>
+<span id="cb5-154"><a href="#cb5-154" aria-hidden="true" tabindex="-1"></a>points <span class="op">=</span> {</span>
+<span id="cb5-155"><a href="#cb5-155" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pts <span class="op">=</span> []</span>
+<span id="cb5-156"><a href="#cb5-156" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">points</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb5-157"><a href="#cb5-157" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> p <span class="op">=</span> basePoints<span class="op">.</span><span class="at">points</span>[i]</span>
+<span id="cb5-158"><a href="#cb5-158" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">.</span><span class="fu">includes</span>(i)) {</span>
+<span id="cb5-159"><a href="#cb5-159" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> p<span class="op">.</span><span class="at">x</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> p<span class="op">.</span><span class="at">y</span> <span class="op">+</span> outlierSeverity})</span>
+<span id="cb5-160"><a href="#cb5-160" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb5-161"><a href="#cb5-161" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>(p)</span>
+<span id="cb5-162"><a href="#cb5-162" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-163"><a href="#cb5-163" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb5-164"><a href="#cb5-164" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> pts</span>
+<span id="cb5-165"><a href="#cb5-165" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-5" data-nodetype="declaration">
 
@@ -864,40 +887,40 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="168" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 167;"><span id="cb6-168"><a href="#cb6-168" aria-hidden="true" tabindex="-1"></a><span class="co">// result: fits both an L2 (ordinary least-squares) and an L1 (least</span></span>
-<span id="cb6-169"><a href="#cb6-169" aria-hidden="true" tabindex="-1"></a><span class="co">// absolute deviations) line to the current points, plus each fit's total</span></span>
-<span id="cb6-170"><a href="#cb6-170" aria-hidden="true" tabindex="-1"></a><span class="co">// squared/absolute residual and how long it took to compute. A single fit</span></span>
-<span id="cb6-171"><a href="#cb6-171" aria-hidden="true" tabindex="-1"></a><span class="co">// is sub-millisecond and too noisy to time meaningfully, so each fit runs</span></span>
-<span id="cb6-172"><a href="#cb6-172" aria-hidden="true" tabindex="-1"></a><span class="co">// `reps` times and we report the average — this is also what makes the</span></span>
-<span id="cb6-173"><a href="#cb6-173" aria-hidden="true" tabindex="-1"></a><span class="co">// timing comparison fair between the two methods (L2 is a closed-form</span></span>
-<span id="cb6-174"><a href="#cb6-174" aria-hidden="true" tabindex="-1"></a><span class="co">// formula; L1 is iterative and does more work per call).</span></span>
-<span id="cb6-175"><a href="#cb6-175" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> {</span>
-<span id="cb6-176"><a href="#cb6-176" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> reps <span class="op">=</span> <span class="dv">200</span></span>
-<span id="cb6-177"><a href="#cb6-177" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-178"><a href="#cb6-178" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t0 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
-<span id="cb6-179"><a href="#cb6-179" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> l2</span>
-<span id="cb6-180"><a href="#cb6-180" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> reps<span class="op">;</span> i<span class="op">++</span>) l2 <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">linearRegression</span>(points)</span>
-<span id="cb6-181"><a href="#cb6-181" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t1 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
-<span id="cb6-182"><a href="#cb6-182" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> l1</span>
-<span id="cb6-183"><a href="#cb6-183" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> reps<span class="op">;</span> i<span class="op">++</span>) l1 <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">l1Regression</span>(points)</span>
-<span id="cb6-184"><a href="#cb6-184" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t2 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
-<span id="cb6-185"><a href="#cb6-185" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-186"><a href="#cb6-186" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> residualStats <span class="op">=</span> fit <span class="kw">=&gt;</span> {</span>
-<span id="cb6-187"><a href="#cb6-187" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> sumSquared <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> sumAbsolute <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb6-188"><a href="#cb6-188" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
-<span id="cb6-189"><a href="#cb6-189" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> residual <span class="op">=</span> p<span class="op">.</span><span class="at">y</span> <span class="op">-</span> (fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> p<span class="op">.</span><span class="at">x</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>)</span>
-<span id="cb6-190"><a href="#cb6-190" aria-hidden="true" tabindex="-1"></a>      sumSquared <span class="op">+=</span> residual <span class="op">*</span> residual</span>
-<span id="cb6-191"><a href="#cb6-191" aria-hidden="true" tabindex="-1"></a>      sumAbsolute <span class="op">+=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(residual)</span>
-<span id="cb6-192"><a href="#cb6-192" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb6-193"><a href="#cb6-193" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {sumSquared<span class="op">,</span> sumAbsolute}</span>
-<span id="cb6-194"><a href="#cb6-194" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb6-195"><a href="#cb6-195" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-196"><a href="#cb6-196" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
-<span id="cb6-197"><a href="#cb6-197" aria-hidden="true" tabindex="-1"></a>    points<span class="op">,</span></span>
-<span id="cb6-198"><a href="#cb6-198" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l2</span><span class="op">:</span> {<span class="op">...</span>l2<span class="op">,</span> <span class="op">...</span><span class="fu">residualStats</span>(l2)<span class="op">,</span> <span class="dt">timeMs</span><span class="op">:</span> (t1 <span class="op">-</span> t0) <span class="op">/</span> reps}<span class="op">,</span></span>
-<span id="cb6-199"><a href="#cb6-199" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l1</span><span class="op">:</span> {<span class="op">...</span>l1<span class="op">,</span> <span class="op">...</span><span class="fu">residualStats</span>(l1)<span class="op">,</span> <span class="dt">timeMs</span><span class="op">:</span> (t2 <span class="op">-</span> t1) <span class="op">/</span> reps}</span>
-<span id="cb6-200"><a href="#cb6-200" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb6-201"><a href="#cb6-201" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb6" data-startfrom="170" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 169;"><span id="cb6-170"><a href="#cb6-170" aria-hidden="true" tabindex="-1"></a><span class="co">// result: fits both an L2 (ordinary least-squares) and an L1 (least</span></span>
+<span id="cb6-171"><a href="#cb6-171" aria-hidden="true" tabindex="-1"></a><span class="co">// absolute deviations) line to the current points, plus each fit's total</span></span>
+<span id="cb6-172"><a href="#cb6-172" aria-hidden="true" tabindex="-1"></a><span class="co">// squared/absolute residual and how long it took to compute. A single fit</span></span>
+<span id="cb6-173"><a href="#cb6-173" aria-hidden="true" tabindex="-1"></a><span class="co">// is sub-millisecond and too noisy to time meaningfully, so each fit runs</span></span>
+<span id="cb6-174"><a href="#cb6-174" aria-hidden="true" tabindex="-1"></a><span class="co">// `reps` times and we report the average — this is also what makes the</span></span>
+<span id="cb6-175"><a href="#cb6-175" aria-hidden="true" tabindex="-1"></a><span class="co">// timing comparison fair between the two methods (L2 is a closed-form</span></span>
+<span id="cb6-176"><a href="#cb6-176" aria-hidden="true" tabindex="-1"></a><span class="co">// formula; L1 is iterative and does more work per call).</span></span>
+<span id="cb6-177"><a href="#cb6-177" aria-hidden="true" tabindex="-1"></a>result <span class="op">=</span> {</span>
+<span id="cb6-178"><a href="#cb6-178" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> reps <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb6-179"><a href="#cb6-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-180"><a href="#cb6-180" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t0 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb6-181"><a href="#cb6-181" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> l2</span>
+<span id="cb6-182"><a href="#cb6-182" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> reps<span class="op">;</span> i<span class="op">++</span>) l2 <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">linearRegression</span>(points)</span>
+<span id="cb6-183"><a href="#cb6-183" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t1 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb6-184"><a href="#cb6-184" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> l1</span>
+<span id="cb6-185"><a href="#cb6-185" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> reps<span class="op">;</span> i<span class="op">++</span>) l1 <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">l1Regression</span>(points)</span>
+<span id="cb6-186"><a href="#cb6-186" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> t2 <span class="op">=</span> <span class="bu">performance</span><span class="op">.</span><span class="fu">now</span>()</span>
+<span id="cb6-187"><a href="#cb6-187" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-188"><a href="#cb6-188" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> residualStats <span class="op">=</span> fit <span class="kw">=&gt;</span> {</span>
+<span id="cb6-189"><a href="#cb6-189" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> sumSquared <span class="op">=</span> <span class="dv">0</span><span class="op">,</span> sumAbsolute <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb6-190"><a href="#cb6-190" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> points) {</span>
+<span id="cb6-191"><a href="#cb6-191" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> residual <span class="op">=</span> p<span class="op">.</span><span class="at">y</span> <span class="op">-</span> (fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> p<span class="op">.</span><span class="at">x</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>)</span>
+<span id="cb6-192"><a href="#cb6-192" aria-hidden="true" tabindex="-1"></a>      sumSquared <span class="op">+=</span> residual <span class="op">*</span> residual</span>
+<span id="cb6-193"><a href="#cb6-193" aria-hidden="true" tabindex="-1"></a>      sumAbsolute <span class="op">+=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(residual)</span>
+<span id="cb6-194"><a href="#cb6-194" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb6-195"><a href="#cb6-195" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {sumSquared<span class="op">,</span> sumAbsolute}</span>
+<span id="cb6-196"><a href="#cb6-196" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-197"><a href="#cb6-197" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-198"><a href="#cb6-198" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb6-199"><a href="#cb6-199" aria-hidden="true" tabindex="-1"></a>    points<span class="op">,</span></span>
+<span id="cb6-200"><a href="#cb6-200" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l2</span><span class="op">:</span> {<span class="op">...</span>l2<span class="op">,</span> <span class="op">...</span><span class="fu">residualStats</span>(l2)<span class="op">,</span> <span class="dt">timeMs</span><span class="op">:</span> (t1 <span class="op">-</span> t0) <span class="op">/</span> reps}<span class="op">,</span></span>
+<span id="cb6-201"><a href="#cb6-201" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l1</span><span class="op">:</span> {<span class="op">...</span>l1<span class="op">,</span> <span class="op">...</span><span class="fu">residualStats</span>(l1)<span class="op">,</span> <span class="dt">timeMs</span><span class="op">:</span> (t2 <span class="op">-</span> t1) <span class="op">/</span> reps}</span>
+<span id="cb6-202"><a href="#cb6-202" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-203"><a href="#cb6-203" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-6" data-nodetype="declaration">
 
@@ -905,7 +928,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="206" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 205;"><span id="cb7-206"><a href="#cb7-206" aria-hidden="true" tabindex="-1"></a>showL2 <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"L2 fit (least squares)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb7" data-startfrom="208" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 207;"><span id="cb7-208"><a href="#cb7-208" aria-hidden="true" tabindex="-1"></a>showL2 <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"L2 fit (least squares)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-7" data-nodetype="declaration">
 
@@ -913,7 +936,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="211" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 210;"><span id="cb8-211"><a href="#cb8-211" aria-hidden="true" tabindex="-1"></a>showL1 <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"L1 fit (least absolute deviations)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb8" data-startfrom="213" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 212;"><span id="cb8-213"><a href="#cb8-213" aria-hidden="true" tabindex="-1"></a>showL1 <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"L1 fit (least absolute deviations)"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-8" data-nodetype="declaration">
 
@@ -921,7 +944,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="216" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 215;"><span id="cb9-216"><a href="#cb9-216" aria-hidden="true" tabindex="-1"></a>showPoints <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Points"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb9" data-startfrom="218" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 217;"><span id="cb9-218"><a href="#cb9-218" aria-hidden="true" tabindex="-1"></a>showPoints <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Points"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-9" data-nodetype="declaration">
 
@@ -929,7 +952,7 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="221" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 220;"><span id="cb10-221"><a href="#cb10-221" aria-hidden="true" tabindex="-1"></a>showOutliers <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Outliers"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb10" data-startfrom="223" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 222;"><span id="cb10-223"><a href="#cb10-223" aria-hidden="true" tabindex="-1"></a>showOutliers <span class="op">=</span> shownFits<span class="op">.</span><span class="fu">includes</span>(<span class="st">"Outliers"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-10" data-nodetype="declaration">
 
@@ -937,37 +960,37 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="226" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 225;"><span id="cb11-226"><a href="#cb11-226" aria-hidden="true" tabindex="-1"></a><span class="co">// setup: axis ranges and line endpoints shared by mainPlot.</span></span>
-<span id="cb11-227"><a href="#cb11-227" aria-hidden="true" tabindex="-1"></a>setup <span class="op">=</span> {</span>
-<span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xs <span class="op">=</span> []</span>
-<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">points</span>) xs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
-<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">11</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.08</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="fl">0.5</span>})</span>
-<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Fixed y-range, sized from the slider's full [-severityMax, severityMax]</span></span>
-<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a>  <span class="co">// reach — not the current outlierSeverity value — so the axis never</span></span>
-<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rescales as the slider moves (see the note on severityMax above).</span></span>
-<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ys <span class="op">=</span> []</span>
-<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">points</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> p <span class="op">=</span> basePoints<span class="op">.</span><span class="at">points</span>[i]</span>
-<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a>    ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
-<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">.</span><span class="fu">includes</span>(i)) {</span>
-<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span> <span class="op">+</span> severityMax)</span>
-<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span> <span class="op">-</span> severityMax)</span>
-<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> yRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(ys<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">2</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.12</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">1</span>})</span>
-<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> lineYs <span class="op">=</span> fit <span class="kw">=&gt;</span> [fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> xRange<span class="op">.</span><span class="at">lo</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span><span class="op">,</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> xRange<span class="op">.</span><span class="at">hi</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>]</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb11" data-startfrom="228" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 227;"><span id="cb11-228"><a href="#cb11-228" aria-hidden="true" tabindex="-1"></a><span class="co">// setup: axis ranges and line endpoints shared by mainPlot.</span></span>
+<span id="cb11-229"><a href="#cb11-229" aria-hidden="true" tabindex="-1"></a>setup <span class="op">=</span> {</span>
+<span id="cb11-230"><a href="#cb11-230" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xs <span class="op">=</span> []</span>
+<span id="cb11-231"><a href="#cb11-231" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> p <span class="kw">of</span> basePoints<span class="op">.</span><span class="at">points</span>) xs<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb11-232"><a href="#cb11-232" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> xRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(xs<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">1</span><span class="op">,</span> <span class="dv">11</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.08</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="fl">0.5</span>})</span>
+<span id="cb11-233"><a href="#cb11-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-234"><a href="#cb11-234" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Fixed y-range, sized from the slider's full [-severityMax, severityMax]</span></span>
+<span id="cb11-235"><a href="#cb11-235" aria-hidden="true" tabindex="-1"></a>  <span class="co">// reach — not the current outlierSeverity value — so the axis never</span></span>
+<span id="cb11-236"><a href="#cb11-236" aria-hidden="true" tabindex="-1"></a>  <span class="co">// rescales as the slider moves (see the note on severityMax above).</span></span>
+<span id="cb11-237"><a href="#cb11-237" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> ys <span class="op">=</span> []</span>
+<span id="cb11-238"><a href="#cb11-238" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> basePoints<span class="op">.</span><span class="at">points</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb11-239"><a href="#cb11-239" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> p <span class="op">=</span> basePoints<span class="op">.</span><span class="at">points</span>[i]</span>
+<span id="cb11-240"><a href="#cb11-240" aria-hidden="true" tabindex="-1"></a>    ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb11-241"><a href="#cb11-241" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">.</span><span class="fu">includes</span>(i)) {</span>
+<span id="cb11-242"><a href="#cb11-242" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span> <span class="op">+</span> severityMax)</span>
+<span id="cb11-243"><a href="#cb11-243" aria-hidden="true" tabindex="-1"></a>      ys<span class="op">.</span><span class="fu">push</span>(p<span class="op">.</span><span class="at">y</span> <span class="op">-</span> severityMax)</span>
+<span id="cb11-244"><a href="#cb11-244" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-245"><a href="#cb11-245" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-246"><a href="#cb11-246" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> yRange <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">paddedRange</span>(ys<span class="op">,</span> {<span class="dt">emptyRange</span><span class="op">:</span> [<span class="op">-</span><span class="dv">2</span><span class="op">,</span> <span class="dv">20</span>]<span class="op">,</span> <span class="dt">relativePadding</span><span class="op">:</span> <span class="fl">0.12</span><span class="op">,</span> <span class="dt">minPadding</span><span class="op">:</span> <span class="dv">1</span>})</span>
 <span id="cb11-247"><a href="#cb11-247" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
-<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a>    <span class="dt">points</span><span class="op">:</span> result<span class="op">.</span><span class="at">points</span><span class="op">,</span></span>
-<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a>    <span class="dt">outlierIndices</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">,</span></span>
-<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a>    xRange<span class="op">,</span> yRange<span class="op">,</span></span>
-<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a>    <span class="dt">lineXs</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span></span>
-<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l2LineYs</span><span class="op">:</span> <span class="fu">lineYs</span>(result<span class="op">.</span><span class="at">l2</span>)<span class="op">,</span></span>
-<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l1LineYs</span><span class="op">:</span> <span class="fu">lineYs</span>(result<span class="op">.</span><span class="at">l1</span>)</span>
-<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb11-248"><a href="#cb11-248" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> lineYs <span class="op">=</span> fit <span class="kw">=&gt;</span> [fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> xRange<span class="op">.</span><span class="at">lo</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span><span class="op">,</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> xRange<span class="op">.</span><span class="at">hi</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>]</span>
+<span id="cb11-249"><a href="#cb11-249" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-250"><a href="#cb11-250" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> {</span>
+<span id="cb11-251"><a href="#cb11-251" aria-hidden="true" tabindex="-1"></a>    <span class="dt">points</span><span class="op">:</span> result<span class="op">.</span><span class="at">points</span><span class="op">,</span></span>
+<span id="cb11-252"><a href="#cb11-252" aria-hidden="true" tabindex="-1"></a>    <span class="dt">outlierIndices</span><span class="op">:</span> basePoints<span class="op">.</span><span class="at">outlierIndices</span><span class="op">,</span></span>
+<span id="cb11-253"><a href="#cb11-253" aria-hidden="true" tabindex="-1"></a>    xRange<span class="op">,</span> yRange<span class="op">,</span></span>
+<span id="cb11-254"><a href="#cb11-254" aria-hidden="true" tabindex="-1"></a>    <span class="dt">lineXs</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span></span>
+<span id="cb11-255"><a href="#cb11-255" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l2LineYs</span><span class="op">:</span> <span class="fu">lineYs</span>(result<span class="op">.</span><span class="at">l2</span>)<span class="op">,</span></span>
+<span id="cb11-256"><a href="#cb11-256" aria-hidden="true" tabindex="-1"></a>    <span class="dt">l1LineYs</span><span class="op">:</span> <span class="fu">lineYs</span>(result<span class="op">.</span><span class="at">l1</span>)</span>
+<span id="cb11-257"><a href="#cb11-257" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-258"><a href="#cb11-258" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-11" data-nodetype="declaration">
 
@@ -975,64 +998,64 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="261" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 260;"><span id="cb12-261"><a href="#cb12-261" aria-hidden="true" tabindex="-1"></a><span class="co">// mainPlot draws the inlier points, the outlier points, and both fitted</span></span>
-<span id="cb12-262"><a href="#cb12-262" aria-hidden="true" tabindex="-1"></a><span class="co">// lines.</span></span>
-<span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
-<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a><span class="co">// _plotDiv is kept in a closure so Plotly reuses the same DOM node across</span></span>
-<span id="cb12-265"><a href="#cb12-265" aria-hidden="true" tabindex="-1"></a><span class="co">// reactive updates — this preserves zoom and pan when the slider or button</span></span>
-<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a><span class="co">// changes.</span></span>
-<span id="cb12-267"><a href="#cb12-267" aria-hidden="true" tabindex="-1"></a>mainPlot <span class="op">=</span> {</span>
-<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> Plotly <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">Plotly</span></span>
-<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> _plotDiv <span class="op">=</span> <span class="kw">null</span></span>
-<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-271"><a href="#cb12-271" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ({points<span class="op">,</span> outlierIndices<span class="op">,</span> xRange<span class="op">,</span> yRange<span class="op">,</span> lineXs<span class="op">,</span> l2LineYs<span class="op">,</span> l1LineYs}<span class="op">,</span> showL2<span class="op">,</span> showL1<span class="op">,</span> showPoints<span class="op">,</span> showOutliers) <span class="kw">=&gt;</span> {</span>
-<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> inlierXs <span class="op">=</span> []<span class="op">,</span> inlierYs <span class="op">=</span> []<span class="op">,</span> outlierXs <span class="op">=</span> []<span class="op">,</span> outlierYs <span class="op">=</span> []</span>
-<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> points<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (outlierIndices<span class="op">.</span><span class="fu">includes</span>(i)) {</span>
-<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a>        outlierXs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">x</span>)</span>
-<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a>        outlierYs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">y</span>)</span>
-<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> {</span>
-<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a>        inlierXs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">x</span>)</span>
-<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a>        inlierYs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">y</span>)</span>
-<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a>      }</span>
-<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> data <span class="op">=</span> []</span>
-<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showL2) {</span>
-<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> lineXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> l2LineYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"L2 fit (least squares)"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">alt</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
-<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showL1) {</span>
-<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> lineXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> l1LineYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"L1 fit (least absolute deviations)"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
-<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showPoints) {</span>
-<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> inlierXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> inlierYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Points"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">8</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">halo</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">1</span>}}})</span>
-<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showOutliers) {</span>
-<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> outlierXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> outlierYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Outliers"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#f97316"</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">13</span><span class="op">,</span> <span class="dt">symbol</span><span class="op">:</span> <span class="st">"diamond"</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">halo</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">1.5</span>}}})</span>
-<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> layout <span class="op">=</span> {</span>
-<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a>      <span class="dt">xaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
-<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a>      <span class="dt">yaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [yRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> yRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
-<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a>      <span class="dt">hovermode</span><span class="op">:</span> <span class="st">"closest"</span><span class="op">,</span></span>
-<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a>      <span class="dt">uirevision</span><span class="op">:</span> <span class="st">"static"</span><span class="op">,</span></span>
-<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>      <span class="dt">autosize</span><span class="op">:</span> <span class="kw">true</span></span>
-<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> config <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">config</span>()</span>
-<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-306"><a href="#cb12-306" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>_plotDiv) {</span>
-<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a>      _plotDiv <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a>      _plotDiv<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"plotly-box-large"</span></span>
-<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">newPlot</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
-<span id="cb12-310"><a href="#cb12-310" aria-hidden="true" tabindex="-1"></a>      <span class="co">// newPlot fires before the div is in the DOM, so Plotly measures 0 width.</span></span>
-<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a>      <span class="co">// A ResizeObserver catches the real size once it's inserted and laid out.</span></span>
-<span id="cb12-312"><a href="#cb12-312" aria-hidden="true" tabindex="-1"></a>      VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">autoResize</span>(_plotDiv)</span>
-<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb12-314"><a href="#cb12-314" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">react</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
-<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-316"><a href="#cb12-316" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _plotDiv</span>
-<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb12" data-startfrom="263" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 262;"><span id="cb12-263"><a href="#cb12-263" aria-hidden="true" tabindex="-1"></a><span class="co">// mainPlot draws the inlier points, the outlier points, and both fitted</span></span>
+<span id="cb12-264"><a href="#cb12-264" aria-hidden="true" tabindex="-1"></a><span class="co">// lines.</span></span>
+<span id="cb12-265"><a href="#cb12-265" aria-hidden="true" tabindex="-1"></a><span class="co">//</span></span>
+<span id="cb12-266"><a href="#cb12-266" aria-hidden="true" tabindex="-1"></a><span class="co">// _plotDiv is kept in a closure so Plotly reuses the same DOM node across</span></span>
+<span id="cb12-267"><a href="#cb12-267" aria-hidden="true" tabindex="-1"></a><span class="co">// reactive updates — this preserves zoom and pan when the slider or button</span></span>
+<span id="cb12-268"><a href="#cb12-268" aria-hidden="true" tabindex="-1"></a><span class="co">// changes.</span></span>
+<span id="cb12-269"><a href="#cb12-269" aria-hidden="true" tabindex="-1"></a>mainPlot <span class="op">=</span> {</span>
+<span id="cb12-270"><a href="#cb12-270" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> Plotly <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">Plotly</span></span>
+<span id="cb12-271"><a href="#cb12-271" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> _plotDiv <span class="op">=</span> <span class="kw">null</span></span>
+<span id="cb12-272"><a href="#cb12-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-273"><a href="#cb12-273" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> ({points<span class="op">,</span> outlierIndices<span class="op">,</span> xRange<span class="op">,</span> yRange<span class="op">,</span> lineXs<span class="op">,</span> l2LineYs<span class="op">,</span> l1LineYs}<span class="op">,</span> showL2<span class="op">,</span> showL1<span class="op">,</span> showPoints<span class="op">,</span> showOutliers) <span class="kw">=&gt;</span> {</span>
+<span id="cb12-274"><a href="#cb12-274" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> inlierXs <span class="op">=</span> []<span class="op">,</span> inlierYs <span class="op">=</span> []<span class="op">,</span> outlierXs <span class="op">=</span> []<span class="op">,</span> outlierYs <span class="op">=</span> []</span>
+<span id="cb12-275"><a href="#cb12-275" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> points<span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb12-276"><a href="#cb12-276" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (outlierIndices<span class="op">.</span><span class="fu">includes</span>(i)) {</span>
+<span id="cb12-277"><a href="#cb12-277" aria-hidden="true" tabindex="-1"></a>        outlierXs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb12-278"><a href="#cb12-278" aria-hidden="true" tabindex="-1"></a>        outlierYs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb12-279"><a href="#cb12-279" aria-hidden="true" tabindex="-1"></a>      } <span class="cf">else</span> {</span>
+<span id="cb12-280"><a href="#cb12-280" aria-hidden="true" tabindex="-1"></a>        inlierXs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">x</span>)</span>
+<span id="cb12-281"><a href="#cb12-281" aria-hidden="true" tabindex="-1"></a>        inlierYs<span class="op">.</span><span class="fu">push</span>(points[i]<span class="op">.</span><span class="at">y</span>)</span>
+<span id="cb12-282"><a href="#cb12-282" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb12-283"><a href="#cb12-283" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-284"><a href="#cb12-284" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-285"><a href="#cb12-285" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> data <span class="op">=</span> []</span>
+<span id="cb12-286"><a href="#cb12-286" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showL2) {</span>
+<span id="cb12-287"><a href="#cb12-287" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> lineXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> l2LineYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"L2 fit (least squares)"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">alt</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
+<span id="cb12-288"><a href="#cb12-288" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-289"><a href="#cb12-289" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showL1) {</span>
+<span id="cb12-290"><a href="#cb12-290" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> lineXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> l1LineYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"lines"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"L1 fit (least absolute deviations)"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">2.5</span>}})</span>
+<span id="cb12-291"><a href="#cb12-291" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-292"><a href="#cb12-292" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showPoints) {</span>
+<span id="cb12-293"><a href="#cb12-293" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> inlierXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> inlierYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Points"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ink</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">8</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">halo</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="dv">1</span>}}})</span>
+<span id="cb12-294"><a href="#cb12-294" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-295"><a href="#cb12-295" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (showOutliers) {</span>
+<span id="cb12-296"><a href="#cb12-296" aria-hidden="true" tabindex="-1"></a>      data<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> outlierXs<span class="op">,</span> <span class="dt">y</span><span class="op">:</span> outlierYs<span class="op">,</span> <span class="dt">type</span><span class="op">:</span> <span class="st">"scatter"</span><span class="op">,</span> <span class="dt">mode</span><span class="op">:</span> <span class="st">"markers"</span><span class="op">,</span> <span class="dt">name</span><span class="op">:</span> <span class="st">"Outliers"</span><span class="op">,</span> <span class="dt">showlegend</span><span class="op">:</span> <span class="kw">false</span><span class="op">,</span> <span class="dt">marker</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> <span class="st">"#f97316"</span><span class="op">,</span> <span class="dt">size</span><span class="op">:</span> <span class="dv">13</span><span class="op">,</span> <span class="dt">symbol</span><span class="op">:</span> <span class="st">"diamond"</span><span class="op">,</span> <span class="dt">line</span><span class="op">:</span> {<span class="dt">color</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">halo</span><span class="op">,</span> <span class="dt">width</span><span class="op">:</span> <span class="fl">1.5</span>}}})</span>
+<span id="cb12-297"><a href="#cb12-297" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-298"><a href="#cb12-298" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-299"><a href="#cb12-299" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> layout <span class="op">=</span> {</span>
+<span id="cb12-300"><a href="#cb12-300" aria-hidden="true" tabindex="-1"></a>      <span class="dt">xaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [xRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> xRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb12-301"><a href="#cb12-301" aria-hidden="true" tabindex="-1"></a>      <span class="dt">yaxis</span><span class="op">:</span> {<span class="dt">title</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">range</span><span class="op">:</span> [yRange<span class="op">.</span><span class="at">lo</span><span class="op">,</span> yRange<span class="op">.</span><span class="at">hi</span>]<span class="op">,</span> <span class="dt">zeroline</span><span class="op">:</span> <span class="kw">true</span>}<span class="op">,</span></span>
+<span id="cb12-302"><a href="#cb12-302" aria-hidden="true" tabindex="-1"></a>      <span class="dt">hovermode</span><span class="op">:</span> <span class="st">"closest"</span><span class="op">,</span></span>
+<span id="cb12-303"><a href="#cb12-303" aria-hidden="true" tabindex="-1"></a>      <span class="dt">uirevision</span><span class="op">:</span> <span class="st">"static"</span><span class="op">,</span></span>
+<span id="cb12-304"><a href="#cb12-304" aria-hidden="true" tabindex="-1"></a>      <span class="dt">autosize</span><span class="op">:</span> <span class="kw">true</span></span>
+<span id="cb12-305"><a href="#cb12-305" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-306"><a href="#cb12-306" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> config <span class="op">=</span> VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">config</span>()</span>
+<span id="cb12-307"><a href="#cb12-307" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-308"><a href="#cb12-308" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>_plotDiv) {</span>
+<span id="cb12-309"><a href="#cb12-309" aria-hidden="true" tabindex="-1"></a>      _plotDiv <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb12-310"><a href="#cb12-310" aria-hidden="true" tabindex="-1"></a>      _plotDiv<span class="op">.</span><span class="at">className</span> <span class="op">=</span> <span class="st">"plotly-box-large"</span></span>
+<span id="cb12-311"><a href="#cb12-311" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">newPlot</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb12-312"><a href="#cb12-312" aria-hidden="true" tabindex="-1"></a>      <span class="co">// newPlot fires before the div is in the DOM, so Plotly measures 0 width.</span></span>
+<span id="cb12-313"><a href="#cb12-313" aria-hidden="true" tabindex="-1"></a>      <span class="co">// A ResizeObserver catches the real size once it's inserted and laid out.</span></span>
+<span id="cb12-314"><a href="#cb12-314" aria-hidden="true" tabindex="-1"></a>      VM<span class="op">.</span><span class="at">plotting</span><span class="op">.</span><span class="fu">autoResize</span>(_plotDiv)</span>
+<span id="cb12-315"><a href="#cb12-315" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb12-316"><a href="#cb12-316" aria-hidden="true" tabindex="-1"></a>      Plotly<span class="op">.</span><span class="fu">react</span>(_plotDiv<span class="op">,</span> data<span class="op">,</span> layout<span class="op">,</span> config)</span>
+<span id="cb12-317"><a href="#cb12-317" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-318"><a href="#cb12-318" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> _plotDiv</span>
+<span id="cb12-319"><a href="#cb12-319" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb12-320"><a href="#cb12-320" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-12" data-nodetype="declaration">
 
@@ -1041,7 +1064,7 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-chart-block">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="324" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 323;"><span id="cb13-324"><a href="#cb13-324" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showL2<span class="op">,</span> showL1<span class="op">,</span> showPoints<span class="op">,</span> showOutliers)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb13" data-startfrom="326" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 325;"><span id="cb13-326"><a href="#cb13-326" aria-hidden="true" tabindex="-1"></a><span class="fu">mainPlot</span>(setup<span class="op">,</span> showL2<span class="op">,</span> showL1<span class="op">,</span> showPoints<span class="op">,</span> showOutliers)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-13" data-nodetype="expression">
 
@@ -1049,11 +1072,11 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="328" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 327;"><span id="cb14-328"><a href="#cb14-328" aria-hidden="true" tabindex="-1"></a>viewof shownFits <span class="op">=</span> {</span>
-<span id="cb14-329"><a href="#cb14-329" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> items <span class="op">=</span> []</span>
-<span id="cb14-330"><a href="#cb14-330" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> label <span class="kw">of</span> fitOptions) items<span class="op">.</span><span class="fu">push</span>({label<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> fitColors<span class="op">.</span><span class="fu">get</span>(label)})</span>
-<span id="cb14-331"><a href="#cb14-331" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">legendOverlay</span>(items<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> fitOptions})</span>
-<span id="cb14-332"><a href="#cb14-332" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb14" data-startfrom="330" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 329;"><span id="cb14-330"><a href="#cb14-330" aria-hidden="true" tabindex="-1"></a>viewof shownFits <span class="op">=</span> {</span>
+<span id="cb14-331"><a href="#cb14-331" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> items <span class="op">=</span> []</span>
+<span id="cb14-332"><a href="#cb14-332" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> label <span class="kw">of</span> fitOptions) items<span class="op">.</span><span class="fu">push</span>({label<span class="op">,</span> <span class="dt">color</span><span class="op">:</span> fitColors<span class="op">.</span><span class="fu">get</span>(label)})</span>
+<span id="cb14-333"><a href="#cb14-333" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">legendOverlay</span>(items<span class="op">,</span> {<span class="dt">value</span><span class="op">:</span> fitOptions})</span>
+<span id="cb14-334"><a href="#cb14-334" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-14" data-nodetype="declaration">
 
@@ -1062,14 +1085,15 @@ Authors: Apurva Nakade
 </div>
 <div class="ojs-chart-controls">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="338" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 337;"><span id="cb15-338"><a href="#cb15-338" aria-hidden="true" tabindex="-1"></a>viewof outlierSeverity <span class="op">=</span> {</span>
-<span id="cb15-339"><a href="#cb15-339" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="op">-</span>severityMax<span class="op">,</span> severityMax]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">5</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Outlier severity"</span>})</span>
-<span id="cb15-340"><a href="#cb15-340" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
-<span id="cb15-341"><a href="#cb15-341" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
-<span id="cb15-342"><a href="#cb15-342" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb15" data-startfrom="340" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 339;"><span id="cb15-340"><a href="#cb15-340" aria-hidden="true" tabindex="-1"></a>viewof outlierSeverity <span class="op">=</span> {</span>
+<span id="cb15-341"><a href="#cb15-341" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> input <span class="op">=</span> Inputs<span class="op">.</span><span class="fu">range</span>([<span class="op">-</span>severityMax<span class="op">,</span> severityMax]<span class="op">,</span> {<span class="dt">step</span><span class="op">:</span> <span class="fl">0.5</span><span class="op">,</span> <span class="dt">value</span><span class="op">:</span> <span class="dv">5</span><span class="op">,</span> <span class="dt">label</span><span class="op">:</span> <span class="st">"Outlier severity"</span>})</span>
+<span id="cb15-342"><a href="#cb15-342" aria-hidden="true" tabindex="-1"></a>  input<span class="op">.</span><span class="at">classList</span><span class="op">.</span><span class="fu">add</span>(<span class="st">"ojs-fill"</span>)</span>
+<span id="cb15-343"><a href="#cb15-343" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> input</span>
+<span id="cb15-344"><a href="#cb15-344" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-15" data-nodetype="declaration">
 
+</div>
 </div>
 </div>
 </div>
@@ -1088,32 +1112,32 @@ Authors: Apurva Nakade
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="352" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 351;"><span id="cb16-352"><a href="#cb16-352" aria-hidden="true" tabindex="-1"></a><span class="co">// comparisonTable reports each fit's slope/intercept, its total squared</span></span>
-<span id="cb16-353"><a href="#cb16-353" aria-hidden="true" tabindex="-1"></a><span class="co">// and absolute residual over the current points, and the average time to</span></span>
-<span id="cb16-354"><a href="#cb16-354" aria-hidden="true" tabindex="-1"></a><span class="co">// compute it. L2 always has the smaller "sum of squared residuals" (it's</span></span>
-<span id="cb16-355"><a href="#cb16-355" aria-hidden="true" tabindex="-1"></a><span class="co">// exactly what it minimizes) and L1 always has the smaller "sum of</span></span>
-<span id="cb16-356"><a href="#cb16-356" aria-hidden="true" tabindex="-1"></a><span class="co">// absolute residuals" (same reason) — the column to watch as the slider</span></span>
-<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a><span class="co">// moves is slope and intercept: L2's drift noticeably further from the</span></span>
-<span id="cb16-358"><a href="#cb16-358" aria-hidden="true" tabindex="-1"></a><span class="co">// underlying (pre-outlier) line — shown in the note below the table —</span></span>
-<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a><span class="co">// than L1's does.</span></span>
-<span id="cb16-360"><a href="#cb16-360" aria-hidden="true" tabindex="-1"></a>comparisonTable <span class="op">=</span> {</span>
-<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> row <span class="op">=</span> (label<span class="op">,</span> fit) <span class="kw">=&gt;</span> [</span>
-<span id="cb16-362"><a href="#cb16-362" aria-hidden="true" tabindex="-1"></a>    label<span class="op">,</span></span>
-<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">intercept</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">sumSquared</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
-<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">sumAbsolute</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
-<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a>    (fit<span class="op">.</span><span class="at">timeMs</span> <span class="op">*</span> <span class="dv">1000</span>)<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)</span>
-<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb16-371"><a href="#cb16-371" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Fit"</span><span class="op">,</span> <span class="st">"Slope"</span><span class="op">,</span> <span class="st">"Intercept"</span><span class="op">,</span> <span class="st">"Sum of squared residuals"</span><span class="op">,</span> <span class="st">"Sum of absolute residuals"</span><span class="op">,</span> <span class="st">"Avg. fit time (μs)"</span>]<span class="op">,</span></span>
-<span id="cb16-373"><a href="#cb16-373" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Fit"</span><span class="op">,</span> <span class="st">"Slope"</span><span class="op">,</span> <span class="st">"Intercept"</span><span class="op">,</span> <span class="st">"Sum of squared residuals"</span><span class="op">,</span> <span class="st">"Sum of absolute residuals"</span><span class="op">,</span> <span class="st">"Avg fit time (microseconds)"</span>]<span class="op">,</span></span>
-<span id="cb16-374"><a href="#cb16-374" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"l1-vs-l2-comparison.csv"</span><span class="op">,</span></span>
-<span id="cb16-375"><a href="#cb16-375" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> [<span class="fu">row</span>(<span class="st">"L2 (least squares)"</span><span class="op">,</span> result<span class="op">.</span><span class="at">l2</span>)<span class="op">,</span> <span class="fu">row</span>(<span class="st">"L1 (least absolute deviations)"</span><span class="op">,</span> result<span class="op">.</span><span class="at">l1</span>)]</span>
-<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb16-377"><a href="#cb16-377" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb16" data-startfrom="356" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 355;"><span id="cb16-356"><a href="#cb16-356" aria-hidden="true" tabindex="-1"></a><span class="co">// comparisonTable reports each fit's slope/intercept, its total squared</span></span>
+<span id="cb16-357"><a href="#cb16-357" aria-hidden="true" tabindex="-1"></a><span class="co">// and absolute residual over the current points, and the average time to</span></span>
+<span id="cb16-358"><a href="#cb16-358" aria-hidden="true" tabindex="-1"></a><span class="co">// compute it. L2 always has the smaller "sum of squared residuals" (it's</span></span>
+<span id="cb16-359"><a href="#cb16-359" aria-hidden="true" tabindex="-1"></a><span class="co">// exactly what it minimizes) and L1 always has the smaller "sum of</span></span>
+<span id="cb16-360"><a href="#cb16-360" aria-hidden="true" tabindex="-1"></a><span class="co">// absolute residuals" (same reason) — the column to watch as the slider</span></span>
+<span id="cb16-361"><a href="#cb16-361" aria-hidden="true" tabindex="-1"></a><span class="co">// moves is slope and intercept: L2's drift noticeably further from the</span></span>
+<span id="cb16-362"><a href="#cb16-362" aria-hidden="true" tabindex="-1"></a><span class="co">// underlying (pre-outlier) line — shown in the note below the table —</span></span>
+<span id="cb16-363"><a href="#cb16-363" aria-hidden="true" tabindex="-1"></a><span class="co">// than L1's does.</span></span>
+<span id="cb16-364"><a href="#cb16-364" aria-hidden="true" tabindex="-1"></a>comparisonTable <span class="op">=</span> {</span>
+<span id="cb16-365"><a href="#cb16-365" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> row <span class="op">=</span> (label<span class="op">,</span> fit) <span class="kw">=&gt;</span> [</span>
+<span id="cb16-366"><a href="#cb16-366" aria-hidden="true" tabindex="-1"></a>    label<span class="op">,</span></span>
+<span id="cb16-367"><a href="#cb16-367" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb16-368"><a href="#cb16-368" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">intercept</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb16-369"><a href="#cb16-369" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">sumSquared</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb16-370"><a href="#cb16-370" aria-hidden="true" tabindex="-1"></a>    fit<span class="op">.</span><span class="at">sumAbsolute</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb16-371"><a href="#cb16-371" aria-hidden="true" tabindex="-1"></a>    (fit<span class="op">.</span><span class="at">timeMs</span> <span class="op">*</span> <span class="dv">1000</span>)<span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)</span>
+<span id="cb16-372"><a href="#cb16-372" aria-hidden="true" tabindex="-1"></a>  ]</span>
+<span id="cb16-373"><a href="#cb16-373" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-374"><a href="#cb16-374" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb16-375"><a href="#cb16-375" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb16-376"><a href="#cb16-376" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Fit"</span><span class="op">,</span> <span class="st">"Slope"</span><span class="op">,</span> <span class="st">"Intercept"</span><span class="op">,</span> <span class="st">"Sum of squared residuals"</span><span class="op">,</span> <span class="st">"Sum of absolute residuals"</span><span class="op">,</span> <span class="st">"Avg. fit time (μs)"</span>]<span class="op">,</span></span>
+<span id="cb16-377"><a href="#cb16-377" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Fit"</span><span class="op">,</span> <span class="st">"Slope"</span><span class="op">,</span> <span class="st">"Intercept"</span><span class="op">,</span> <span class="st">"Sum of squared residuals"</span><span class="op">,</span> <span class="st">"Sum of absolute residuals"</span><span class="op">,</span> <span class="st">"Avg fit time (microseconds)"</span>]<span class="op">,</span></span>
+<span id="cb16-378"><a href="#cb16-378" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"l1-vs-l2-comparison.csv"</span><span class="op">,</span></span>
+<span id="cb16-379"><a href="#cb16-379" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> [<span class="fu">row</span>(<span class="st">"L2 (least squares)"</span><span class="op">,</span> result<span class="op">.</span><span class="at">l2</span>)<span class="op">,</span> <span class="fu">row</span>(<span class="st">"L1 (least absolute deviations)"</span><span class="op">,</span> result<span class="op">.</span><span class="at">l1</span>)]</span>
+<span id="cb16-380"><a href="#cb16-380" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb16-381"><a href="#cb16-381" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-16" data-nodetype="declaration">
 
@@ -1121,9 +1145,9 @@ Authors: Apurva Nakade
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb17" data-startfrom="381" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 380;"><span id="cb17-381"><a href="#cb17-381" aria-hidden="true" tabindex="-1"></a><span class="fu">md</span><span class="vs">`The underlying (pre-outlier) line has slope **</span><span class="sc">${</span>basePoints<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">** and intercept **</span><span class="sc">${</span>basePoints<span class="op">.</span><span class="at">intercept</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">** — compare each fit's slope/intercept above to that as you move the slider.</span></span>
-<span id="cb17-382"><a href="#cb17-382" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-383"><a href="#cb17-383" aria-hidden="true" tabindex="-1"></a><span class="vs">L1's fit took **</span><span class="sc">${</span>result<span class="op">.</span><span class="at">l1</span><span class="op">.</span><span class="at">iterations</span><span class="sc">}</span><span class="vs">** reweighting iterations to converge at the current severity, which is why it's consistently slower than L2's single closed-form solve, even on a dataset this small.`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb17" data-startfrom="385" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 384;"><span id="cb17-385"><a href="#cb17-385" aria-hidden="true" tabindex="-1"></a><span class="fu">md</span><span class="vs">`The underlying (pre-outlier) line has slope **</span><span class="sc">${</span>basePoints<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">** and intercept **</span><span class="sc">${</span>basePoints<span class="op">.</span><span class="at">intercept</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">** — compare each fit's slope/intercept above to that as you move the slider.</span></span>
+<span id="cb17-386"><a href="#cb17-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-387"><a href="#cb17-387" aria-hidden="true" tabindex="-1"></a><span class="vs">L1's fit took **</span><span class="sc">${</span>result<span class="op">.</span><span class="at">l1</span><span class="op">.</span><span class="at">iterations</span><span class="sc">}</span><span class="vs">** reweighting iterations to converge at the current severity, which is why it's consistently slower than L2's single closed-form solve, even on a dataset this small.`</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-17" data-nodetype="expression">
 

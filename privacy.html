@@ -116,28 +116,50 @@ _quarto.yml.
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
      and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, and
+     title block, footer and page navigation on html.vm-embed, plus everything
+     in the content column that is not the page's tagged app (the
+     <div class="vm-app"> each app page wraps its controls and chart in), and
      consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.
 
+     embed=1 shows the page's first .vm-app. A page with several tagged
+     blocks gives each an id, and embed=<id> shows that one instead. Either
+     way, once the DOM exists the chosen block gets vm-app-active, and
+     styles.css shows only that block, what is inside it and its ancestors
+     (Quarto wraps everything under a ## heading in a <section>, so a block
+     is not necessarily a direct child of the content column). Until then
+     the content column is blank -- DOMContentLoaded comes well before OJS
+     draws anything, so nothing visible is ever hidden. An id no block on
+     the page carries falls back to the first block rather than showing
+     nothing.
+
      history.replaceState is wrapped because every app rewrites the URL with
      its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed=1, but a page that builds
+     from location.search and so would keep embed, but a page that builds
      its query string from scratch (distribution-relationships does) would
      drop it, and the next reactive rerender would flash the chrome back in.
      Same-origin URLs only; a page never passes anything else. -->
 <script>
 (function () {
-  if (new URLSearchParams(location.search).get("embed") !== "1") return
+  var embed = new URLSearchParams(location.search).get("embed")
+  if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
+  document.addEventListener("DOMContentLoaded", function () {
+    var block = null
+    if (embed !== "1") block = document.getElementById(embed)
+    if (block === null || !block.classList.contains("vm-app")) {
+      block = document.querySelector(".vm-app")
+    }
+    if (block !== null) block.classList.add("vm-app-active")
+  })
   var replaceState = history.replaceState.bind(history)
   history.replaceState = function (state, title, url) {
     if (url != null) {
       var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && next.searchParams.get("embed") !== "1") {
-        next.searchParams.set("embed", "1")
+      if (next.origin === location.origin && !next.searchParams.has("embed")) {
+        next.searchParams.set("embed", embed)
       }
       url = next.pathname + next.search + next.hash
     }
@@ -605,7 +627,7 @@ Authors: Apurva Nakade
 -->
 <p>Visual Math Lab is a static website. Every visualization on it runs entirely in your browser: the functions you type, the parameters you set, and the numbers that come out of them are computed locally and never sent anywhere. There is no backend, no account system, and no database.</p>
 <p>The only data that leaves your browser <em>about you</em> is anonymous usage analytics, and only if you agree to it. The one other thing a page fetches from outside this site is a few open-source libraries, described under <a href="#third-party-resources">Third-party resources</a> below.</p>
-<p>When one of these apps is shown inside another website (an <code>&lt;iframe&gt;</code> with <code>embed=1</code> in its address – see <a href="./embed.html">Embedding an app</a>), the page never asks about analytics and never measures anything, even if you allowed analytics on a direct visit here.</p>
+<p>When one of these apps is shown inside another website (an <code>&lt;iframe&gt;</code> with <code>embed</code> in its address – see <a href="./embed.html">Embedding an app</a>), the page never asks about analytics and never measures anything, even if you allowed analytics on a direct visit here.</p>
 <section id="what-is-collected" class="level2">
 <h2 class="anchored" data-anchor-id="what-is-collected">What is collected</h2>
 <p>If you accept analytics, the site sends a small event to <a href="https://policies.google.com/privacy">Google Analytics</a> when you open a page, when you scroll to the bottom of one, when you follow a link to another site, and when the page goes out of view (you close it, navigate away, or switch to another tab). Each event carries:</p>

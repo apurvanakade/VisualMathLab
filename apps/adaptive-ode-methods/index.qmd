@@ -478,45 +478,6 @@ mainPlot = {
 ```
 
 ```{ojs}
-// summary reports the headline numbers for the current tolerance: how many
-// steps were accepted and rejected, the resulting y(b), and the actual
-// error against a fine reference solution.
-//
-// Defined (and displayed) right here, rather than as a hidden cell invoked
-// from elsewhere: it already returns the final displayable node, and a
-// `//| output: false` cell still attaches its returned node to its own
-// (hidden) output slot — a later bare reference to it would then find the
-// node already parented elsewhere and fall back to showing an inspector
-// summary instead of the node itself.
-summary = {
-  const container = document.createElement("p")
-
-  if (result.steps.length === 0) {
-    container.textContent = "Enter a valid y', initial condition, and endpoint, then click Plot."
-    return container
-  }
-
-  const stats = [
-    ["Tolerance ε", tolerance.toExponential(2)],
-    ["Steps accepted", String(result.acceptedCount)],
-    ["Steps rejected", String(result.rejectedCount)],
-    ["y(b) estimate", result.finalValue.toPrecision(8)],
-    ["Actual error", result.actualError.toExponential(3)]
-  ]
-
-  for (let i = 0; i < stats.length; i++) {
-    const [label, value] = stats[i]
-    if (i > 0) container.append(document.createTextNode("  ·  "))
-    const strong = document.createElement("strong")
-    strong.textContent = `${label}: `
-    container.append(strong, document.createTextNode(value))
-  }
-
-  return container
-}
-```
-
-```{ojs}
 //| output: false
 // maxSteps parses the Max steps field's expression, falling back to 2000
 // for invalid input so the solver always gets a usable step limit.
@@ -546,7 +507,7 @@ viewof methods = {
 
 ```{ojs}
 viewof tolExponent = {
-  const tolSlider = Inputs.range([1, 10], {step: 0.5, value: 4, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
+  const tolSlider = Inputs.range([0, 10], {step: 0.5, value: 0, label: "Tolerance exponent e (ε = 10⁻ᵉ)"})
   tolSlider.classList.add("ojs-fill")
   return tolSlider
 }
@@ -557,95 +518,6 @@ viewof tolExponent = {
 </div>
 
 </div>
-
-The chart below shows each accepted step's increment $\Delta y_i = y_{i+1}^{(5)} - y_i$ across its time interval $[t_i, t_{i+1}]$, with a semi-transparent overlay of the derivative $y'(t) = f(t, y(t))$ evaluated along the solution. The two live on different scales — $\Delta y_i \approx h_i\, y'(t_i)$, and $h_i$ is usually well below 1 — so the derivative curve is rescaled to the increments' own amplitude before overlaying; only its *shape*, not its absolute value, should be compared against $\Delta y_i$ (hover it for the true value).
-
-```{ojs}
-// incrementsPlot draws the accepted increment Δy_i as a horizontal segment
-// across each step's time interval, with a semi-transparent filled overlay
-// of the derivative y'(t) = f(t, y(t)) evaluated along the adaptive
-// trajectory's own points (so it shares the same time resolution as the
-// increments next to it — sparser where steps are large, denser where
-// they've shrunk).
-//
-// Δy and y' generally live on very different scales (Δy ≈ h·y', and h is
-// usually « 1), so plotting them raw on shared axes lets whichever one is
-// larger swamp the other. The derivative curve is rescaled to match the
-// increments' own peak amplitude before overlaying — only its shape (where
-// it rises/falls/crosses zero), not its absolute height, is meant to be
-// compared against Δy. The true (unscaled) derivative value is kept for the
-// tooltip.
-//
-// Defined (and displayed) right here for the same reason as `summary`
-// above — it already returns the final displayable node.
-incrementsPlot = {
-  if (result.steps.length === 0) {
-    // Always return a Node so Quarto's OJS runtime never latches this
-    // declaration cell as hidden.
-    return document.createElement("div")
-  }
-
-  let maxAbsDy = 0
-  for (const step of result.steps) {
-    const absDy = Math.abs(step.dy)
-    if (absDy > maxAbsDy) maxAbsDy = absDy
-  }
-
-  let maxAbsDeriv = 0
-  const rawDeriv = []
-  for (let i = 0; i < result.ts.length; i++) {
-    const value = result.f(result.ts[i], result.ys[i])
-    rawDeriv.push(value)
-    if (Number.isFinite(value) && Math.abs(value) > maxAbsDeriv) maxAbsDeriv = Math.abs(value)
-  }
-
-  // Scale the derivative so its peak matches the increments' peak — a pure
-  // shape-matching overlay, not a shared-unit axis.
-  let derivScale = 1
-  if (maxAbsDeriv > 0) derivScale = maxAbsDy / maxAbsDeriv
-
-  const derivPoints = []
-  for (let i = 0; i < result.ts.length; i++) {
-    derivPoints.push({t: result.ts[i], trueY: rawDeriv[i], y: rawDeriv[i] * derivScale})
-  }
-
-  const incrementName = "Increment Δy"
-  const derivName = "y′(t) (derivative, rescaled to match)"
-
-  const tooltipOf = step => `[${step.t0.toPrecision(6)}, ${step.t1.toPrecision(6)}]  h=${step.h.toExponential(3)}  Δy=${step.dy.toExponential(3)}`
-  const derivTooltipOf = d => `t=${d.t.toPrecision(6)}  y′(t)=${d.trueY.toExponential(3)}`
-
-  const colorDomain = [derivName, incrementName]
-  const colorRange = [chartColors.fn, chartColors.alt]
-
-  const chart = Plot.plot({
-    width,
-    height: 320,
-    marginLeft: 46,
-    marginBottom: 30,
-    x: {label: "t"},
-    y: {label: "Δy  (y′ rescaled to match)"},
-    color: {domain: colorDomain, range: colorRange},
-    marks: [
-      Plot.areaY(derivPoints, {x: "t", y: "y", fill: () => derivName, fillOpacity: 0.12, title: derivTooltipOf}),
-      Plot.lineY(derivPoints, {x: "t", y: "y", stroke: () => derivName, strokeOpacity: 0.3, strokeWidth: 1.5, title: derivTooltipOf}),
-      Plot.ruleY([0], {stroke: chartColors.muted, strokeWidth: 1}),
-      Plot.ruleY(result.steps, {
-        x1: "t0", x2: "t1", y: "dy",
-        stroke: () => incrementName,
-        strokeWidth: 5,
-        strokeLinecap: "round",
-        title: tooltipOf
-      })
-    ]
-  })
-  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
-
-  const container = document.createElement("div")
-  container.append(chart, legend)
-  return container
-}
-```
 
 :::: {.callout-note collapse="true" title="Step table"}
 
@@ -683,17 +555,21 @@ iterationTable = {
 
 ::::
 
-**RKF45** (Runge–Kutta–Fehlberg) adapts the step size $h$ at every step, instead of the fixed $h=b/n$ used in [Explicit Methods](../explicit-ode-methods/index.qmd). Six slope evaluations $k_1,\dots,k_6$, each of the general Runge-Kutta form
+## How it works
+
+The [explicit methods](../explicit-ode-methods/index.qmd) take every step with the same size $h$. An **adaptive** method instead picks a new $h$ at each step: small where the solution is changing quickly, large where it is nearly straight.
+
+To decide, it needs an estimate of the error a step makes. **RKF45** (Runge–Kutta–Fehlberg) gets one cheaply: from the same six slope evaluations it forms two approximations of $y(t + h)$, one of 4th order and one of 5th order. Their difference
 
 $$
-k_i = f\!\left(t_n + c_i h,\ y_n + h\sum_{j<i} a_{ij}k_j\right),
+E = \bigl|\, y_{\text{5th}} - y_{\text{4th}} \,\bigr|
 $$
 
-combine into two embedded estimates of $y_{n+1}$ of different order, using two different weight sets $b_i$, $b_i^*$ on the same six $k_i$:
+is the error estimate for that step. It is then compared with the tolerance $\varepsilon$ set by the slider:
 
-$$
-y_{n+1}^{(4)} = y_n + h\sum_{i=1}^{6} b_i k_i \qquad\text{(4th order)}, \qquad
-y_{n+1}^{(5)} = y_n + h\sum_{i=1}^{6} b_i^{*} k_i \qquad\text{(5th order)}.
-$$
+- **Accept** if $E \le \varepsilon$: advance to $t + h$ using the 5th-order value.
+- **Reject** if $E > \varepsilon$: stay at $t$ and retry with a smaller $h$.
 
-If $\left|y_{n+1}^{(5)} - y_{n+1}^{(4)}\right|$ exceeds a target tolerance $\varepsilon$, the step is rejected and retried with a smaller $h$; otherwise it's accepted (using $y_{n+1}^{(5)}$) and $h$ grows for the next step.
+Either way the next step size is $h \cdot 0.9\,(\varepsilon / E)^{1/5}$, so a step well inside tolerance grows $h$ and a step outside it shrinks $h$. The factor is capped between $0.1$ and $5$ so a single step can't change $h$ too drastically.
+
+A larger $\varepsilon$ means fewer, bigger steps and a rougher curve; a smaller $\varepsilon$ means more steps and a curve that hugs the reference solution.

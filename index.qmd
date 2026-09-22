@@ -71,6 +71,28 @@ Authors: Apurva Nakade, Dhruv Azad
   text-decoration: none;
 }
 
+/* "Random app": one app in an <iframe>, framed the way embed.qmd
+   tells another site to frame it. In embed mode the chart takes whatever
+   height the controls leave, so the frame's height is the whole app's;
+   900px is that page's recommendation, and gives every app on the site,
+   as of this writing, at least a ~420px chart with no inner scrolling.
+   The script below grows this past 900px, never shrinks it, if a future
+   app's controls panel would otherwise squeeze the chart smaller than
+   that -- see its comment for why that has to be measured rather than
+   just read off scrollHeight. */
+.vm-featured {
+  margin: 1.25rem 0 0;
+}
+
+.vm-featured-frame {
+  display: block;
+  width: 100%;
+  height: 900px;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+}
+
 /* Browse-by-topic tiles. */
 .vm-topic-grid {
   display: grid;
@@ -364,12 +386,6 @@ Authors: Apurva Nakade, Dhruv Azad
 }
 </style>
 
-```{ojs}
-//| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). The mini plotter below uses VM.expressions.makeFunctionOfT, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.applyExampleParams.
-VM = window.VM
-```
-
 ::: {.vm-hero}
 <h1 class="vm-hero-title">Visual Math Lab</h1>
 <p class="vm-hero-kicker">A picture is worth a thousand equations.</p>
@@ -468,419 +484,172 @@ Mathematics is full of ideas that come alive the moment you can see them move. V
 
 
 
-## See it in action
+## Random app
 
-Here is a small taste of what most pages on the site look like.
+<p id="vm-featured-description"></p>
 
-
-```{ojs}
-//| output: false
-// plotterExamples backs the "Try an example" dropdown below -- each one is a
-// named curve, and between them they demonstrate the ways a parametric
-// expression can be phrased.
-plotterExamples = [
-  {
-    title: "Butterfly curve",
-    params: {x: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", y: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    // A parametric path doesn't have to be smooth -- ternaries let one
-    // formula switch between pieces, here tracing the four sides of a
-    // square as t runs 0 -> 4.
-    title: "Piecewise: square path",
-    params: {x: "t < 1 ? t : (t < 2 ? 1 : (t < 3 ? 3 - t : 0))", y: "t < 1 ? 0 : (t < 2 ? t - 1 : (t < 3 ? 1 : 4 - t))", tmin: "0", tmax: "4"}
-  },
-  {
-    title: "Lissajous curve (3:4)",
-    params: {x: "sin(3*t)", y: "sin(4*t)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Rose (five petals)",
-    params: {x: "cos(5*t) * cos(t)", y: "cos(5*t) * sin(t)", tmin: "0", tmax: "pi"}
-  },
-  {
-    title: "Cardioid",
-    params: {x: "(1 - cos(t)) * cos(t)", y: "(1 - cos(t)) * sin(t)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Astroid",
-    params: {x: "cos(t)^3", y: "sin(t)^3", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Lemniscate of Bernoulli",
-    params: {x: "cos(t) / (1 + sin(t)^2)", y: "sin(t) * cos(t) / (1 + sin(t)^2)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Spirograph (epitrochoid)",
-    params: {x: "6*cos(t) - 3*cos(6*t)", y: "6*sin(t) - 3*sin(6*t)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Deltoid",
-    params: {x: "2*cos(t) + cos(2*t)", y: "2*sin(t) - sin(2*t)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Archimedean spiral",
-    params: {x: "t * cos(t)", y: "t * sin(t)", tmin: "0", tmax: "8*pi"}
-  },
-  {
-    title: "Cycloid",
-    params: {x: "t - sin(t)", y: "1 - cos(t)", tmin: "0", tmax: "6*pi"}
-  },
-  {
-    title: "Heart curve",
-    params: {x: "16*sin(t)^3", y: "13*cos(t) - 5*cos(2*t) - 2*cos(3*t) - cos(4*t)", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Squircle (superellipse)",
-    params: {x: "sign(cos(t)) * abs(cos(t))^0.5", y: "sign(sin(t)) * abs(sin(t))^0.5", tmin: "0", tmax: "2*pi"}
-  },
-  {
-    title: "Ordinary graph y = f(x)",
-    params: {x: "t", y: "t^3 - 3*t", tmin: "-2.2", tmax: "2.2"}
-  }
-]
-```
-
-```{ojs}
-//| output: false
-plotterTraceOptions = ["Curve", "Point at t"]
-
-// Matches the colors plotterMainPlot draws each trace in, so the overlay
-// legend's swatches double as a color key.
-// vmTheme is what makes the colors below reactive. The chart's own chrome
-// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
-// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
-// colors are values this page bakes into the traces it builds, so nothing
-// repaints them unless mainPlot re-runs. Depending on vmTheme is what
-// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
-// frames after the toggle rather than inline.
-vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
-
-chartColors = VM.plotting.colors(vmTheme)
-
-plotterTraceColors = new Map([
-  ["Curve", chartColors.fn],
-  ["Point at t", chartColors.alt]
-])
-```
-
-<div class="ojs-panel">
-
-<div class="ojs-grid">
-
-```{ojs}
-viewof plotterXText = {
-  const input = Inputs.text({label: "x(t)", value: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: cos(t), t - sin(t)"})
-  input.classList.add("ojs-fill")
-  input.dataset.exampleField = "plotter-x"
-  return input
-}
-```
-
-```{ojs}
-viewof plotterYText = {
-  const input = Inputs.text({label: "y(t)", value: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: sin(t), 1 - cos(t)"})
-  input.classList.add("ojs-fill")
-  input.dataset.exampleField = "plotter-y"
-  return input
-}
-```
-
+<div class="vm-featured">
+<iframe id="vm-featured-frame" class="vm-featured-frame" title="A Visual Math Lab app" loading="lazy"></iframe>
 </div>
 
-<div class="ojs-grid">
+<script>
+// Picks the app the frame below shows and writes its description above it.
+// An explicit list, like the sidebar in _quarto.yml: the Latest listing
+// further down is paginated by List.js after load, so its DOM isn't a
+// reliable place to read the full set from. Each entry mirrors the app's
+// own title: and description: front matter. Adding an app means adding it
+// here too.
+(function () {
+  var apps = [
+    {slug: "adaptive-integration",
+     title: "Adaptive Integration",
+     description: "Refines a numerical integral by subdividing only the sub-intervals where the estimate is still inaccurate."},
+    {slug: "adaptive-ode-methods",
+     title: "Adaptive Methods for ODEs",
+     description: "Steps an ODE solver with an adaptive step size that shrinks or grows to hold the local error near a tolerance."},
+    {slug: "barycentric-coordinates",
+     title: "Barycentric Coordinates",
+     description: "Introduces barycentric coordinates on a triangle as the setting for Sperner's Lemma."},
+    {slug: "bisection-method",
+     title: "Bisection Method",
+     description: "Finds a root by repeatedly halving a bracketing interval where the function changes sign."},
+    {slug: "butcher-tableau",
+     title: "Butcher Tableau Explorer",
+     description: "Explores how a Runge-Kutta method's Butcher tableau determines its stages and order."},
+    {slug: "distribution-relationships",
+     title: "Distribution Relationships",
+     description: "A clickable map of how the standard probability distributions turn into one another, with each distribution's density plotted from its own formula."},
+    {slug: "explicit-ode-methods",
+     title: "Explicit Methods for ODEs",
+     description: "Compares explicit ODE solvers -- Euler, midpoint, and RK4 -- on the same initial value problem."},
+    {slug: "fixed-point-iteration",
+     title: "Fixed Point Iteration",
+     description: "Solves x = g(x) by repeatedly applying g, and shows when that iteration converges or diverges."},
+    {slug: "implicit-ode-methods",
+     title: "Implicit Methods for ODEs",
+     description: "Compares implicit ODE solvers against explicit ones on a stiff initial value problem."},
+    {slug: "l1-vs-l2-regression",
+     title: "L1 vs. L2 Regression",
+     description: "Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers."},
+    {slug: "newton-method",
+     title: "Newton's Method",
+     description: "Finds roots by repeatedly following the tangent line to its x-intercept, converging quadratically near a simple root."},
+    {slug: "numerical-integration",
+     title: "Numerical Integration",
+     description: "Compares Riemann sums, the trapezoid rule, and Simpson's rule for approximating a definite integral."},
+    {slug: "polynomial-fits",
+     title: "Polynomial Fits",
+     description: "Fits polynomials of increasing degree to noisy data and shows the resulting overfitting."},
+    {slug: "polynomial-interpolation",
+     title: "Polynomial Interpolation",
+     description: "Compares piecewise linear and natural cubic spline interpolation through a set of points."},
+    {slug: "positive-predictive-value",
+     title: "Positive Predictive Value",
+     description: "Shows how a test's positive predictive value depends on disease prevalence, not just its sensitivity and specificity."},
+    {slug: "recursive-filters-1d",
+     title: "1D Recursive Filters",
+     description: "Compares a moving average, an exponential moving average, and a Kalman filter for smoothing a noisy 1D signal."},
+    {slug: "secant-method",
+     title: "Secant Method",
+     description: "Approximates Newton's method without a derivative, using the secant line through the last two iterates."},
+    {slug: "sperners-lemma-combinatorial-proof",
+     title: "Sperner's Lemma - Combinatorial Proof",
+     description: "Proves Sperner's Lemma with the 'doors' argument: a path that must exit through an odd number of bicolored edges."},
+    {slug: "sperners-lemma-geometric-proof",
+     title: "Sperner's Lemma - Geometric Proof",
+     description: "Proves Sperner's Lemma with a discrete degree argument that counts oriented RGB triangles."},
+    {slug: "sperners-lemma-statement",
+     title: "Sperner's Lemma - Statement",
+     description: "States Sperner's Lemma on a triangulated triangle and lets you color vertices to test the condition interactively."}
+  ]
+  var frame = document.getElementById("vm-featured-frame")
+  var description = document.getElementById("vm-featured-description")
+  if (!frame || !description) return
 
-```{ojs}
-viewof plotterTMin = {
-  const input = Inputs.text({label: "t from", value: "0", placeholder: "Example: 0, -pi"})
-  input.dataset.exampleField = "plotter-tmin"
-  return input
-}
-```
+  var app = apps[Math.floor(Math.random() * apps.length)]
+  var href = "apps/" + app.slug + "/index.html"
+  frame.src = href + "?embed=1"
+  frame.title = app.title
 
-```{ojs}
-viewof plotterTMax = {
-  const input = Inputs.text({label: "t to", value: "2*pi", placeholder: "Example: 2*pi, 10"})
-  input.dataset.exampleField = "plotter-tmax"
-  return input
-}
-```
+  var link = document.createElement("a")
+  link.href = href
+  link.textContent = app.title
+  description.append(link, ": " + app.description)
 
-</div>
-
-```{ojs}
-viewof plotterExampleSelect = {
-  const options = [null, ...plotterExamples]
-  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
-  select.classList.add("ojs-fill")
-  return select
-}
-```
-
-```{ojs}
-//| output: false
-// Plain CSS selectors, not direct viewof references -- see
-// js/ui/apply-example.js's comment for why.
-plotterFieldSelectors = ({
-  x: '[data-example-field="plotter-x"]',
-  y: '[data-example-field="plotter-y"]',
-  tmin: '[data-example-field="plotter-tmin"]',
-  tmax: '[data-example-field="plotter-tmax"]'
-})
-```
-
-```{ojs}
-//| output: false
-// Applies the selected example's params to the fields above and clicks
-// Plot, in place. A plain "change" listener attached once to the stable
-// native <select> (rather than an OJS cell reactive on
-// plotterExampleSelect's value) -- a <select> fires both "input" and
-// "change" per selection, and a reactive cell would run twice, with the
-// two overlapping calls racing each other.
-applyPlotterExampleFromSelect = {
-  const nativeSelect = (viewof plotterExampleSelect).querySelector("select")
-  if (!nativeSelect) return
-  nativeSelect.addEventListener("change", () => {
-    const example = (viewof plotterExampleSelect).value
-    if (!example) return
-    VM.ui.applyExampleParams(plotterFieldSelectors, example.params, viewof plotterTrigger)
+  // Grows the frame past its 900px default if this app's controls panel
+  // would otherwise leave the chart shorter than FIT_CHART_HEIGHT. Can't
+  // just read the embedded page's scrollHeight and copy it over -- the
+  // chart is a flex-grow item (see styles.css's "Embed mode" section) that
+  // always expands to fill whatever height the frame gives it, so it has
+  // no natural height of its own to measure; scrollHeight would just echo
+  // the frame's current height back. What does have a natural height is
+  // everything *else* in the app -- the panel, any always-live slider bar
+  // -- since those aren't flex-grow items. Sum those and add the chart
+  // height we actually want, and that total is what the frame needs to be
+  // for the chart to get that much room without inner scrolling.
+  //
+  // Same-origin (this page only ever embeds this site's own pages), so
+  // contentDocument is readable directly; wrapped in try/catch as a
+  // fail-soft in case that ever stops being true. A ResizeObserver rather
+  // than a one-shot measurement on "load", because OJS/Plotly finish
+  // rendering well after that event fires -- the observer re-measures as
+  // the panel settles into its final size. Grows only, never shrinks below
+  // the CSS default, so a short app doesn't visibly collapse the frame it
+  // started in.
+  var FIT_CHART_HEIGHT = 420
+  frame.addEventListener("load", function () {
+    try {
+      var doc = frame.contentDocument
+      var appRoot = doc.querySelector(".vm-app-active")
+      var chartBlock = appRoot ? appRoot.querySelector(".ojs-chart-block") : null
+      if (!appRoot || !chartBlock) return
+      // Only a Plotly chart is the flex-grow, no-natural-height case: the
+      // :has(.js-plotly-plot) rule in styles.css's "Embed mode" section is
+      // what gives .ojs-chart-block flex-grow: 1, so reading it back here
+      // (rather than re-deriving ".js-plotly-plot exists") is what keeps
+      // this in step with that CSS. A page whose chart is Observable
+      // Plot/inline SVG (.ojs-svg-block, e.g. the Sperner pages) never
+      // matches it, so its chart-block sizes to its own content like any
+      // other sibling -- no padding added on top. distribution-relationships
+      // is the case that first caught this: its actual visual is a plain
+      // .cell outside .ojs-chart-block entirely, and its .ojs-chart-block
+      // (a *secondary* chart, empty until a node is clicked) has no Plotly
+      // in it either -- padding it by FIT_CHART_HEIGHT regardless nearly
+      // doubled the frame for no reason.
+      var fit = function () {
+        var isFlexFilled = frame.contentWindow.getComputedStyle(chartBlock).flexGrow !== "0"
+        var siblingsHeight = 0
+        for (var i = 0; i < appRoot.children.length; i++) {
+          var child = appRoot.children[i]
+          if (child === chartBlock && isFlexFilled) continue
+          var style = frame.contentWindow.getComputedStyle(child)
+          if (style.display === "none") continue
+          var rect = child.getBoundingClientRect()
+          siblingsHeight += rect.height + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
+        }
+        var required = Math.ceil(siblingsHeight + (isFlexFilled ? FIT_CHART_HEIGHT : 0))
+        if (required > frame.getBoundingClientRect().height) {
+          frame.style.height = required + "px"
+        }
+      }
+      // chartBlock is observed too, not just skipped in the sum above --
+      // .js-plotly-plot mounts asynchronously well after "load", and until
+      // it does, flexGrow reads "0" and chartBlock is sized like a normal
+      // sibling (harmless: it's empty, so it contributes ~0). Its own
+      // resize when Plotly finally mounts is what re-triggers fit() with
+      // isFlexFilled now true; nothing else on the page necessarily
+      // resizes again on its own.
+      var observer = new ResizeObserver(fit)
+      for (var i = 0; i < appRoot.children.length; i++) {
+        observer.observe(appRoot.children[i])
+      }
+    } catch (e) {
+      // Cross-origin, or the embedded page's markup doesn't match -- keep
+      // the 900px CSS default.
+    }
   })
-}
-```
-
-```{ojs}
-// Plot commits the current formula/parameter-range fields -- edits above
-// don't take effect until this is clicked.
-viewof plotterTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto", "ojs-end")
-  return plotButton
-}
-```
-
-</div>
-
-```{ojs}
-//| output: false
-// Pressing Enter in the formula/parameter-range fields clicks Plot instead
-// of submitting the field's own (invisible) form.
-enterToPlotterPlot = {
-  for (const view of [viewof plotterXText, viewof plotterYText, viewof plotterTMin, viewof plotterTMax]) {
-    const input = view.querySelector("input")
-    if (!input) continue
-    input.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter") return
-      e.preventDefault()
-      viewof plotterTrigger.querySelector("button").click()
-    })
-  }
-}
-```
-
-```{ojs}
-//| output: false
-// plotterCommitted snapshots the fields only when Plot is clicked -- it
-// reads the stable `viewof` DOM views, not the reactive values, so it does
-// not rerun on every keystroke.
-plotterCommitted = {
-  plotterTrigger
-  const math = window.math
-  return {
-    xText: (viewof plotterXText).value,
-    yText: (viewof plotterYText).value,
-    tMin: VM.expressions.makeNumber(math, (viewof plotterTMin).value),
-    tMax: VM.expressions.makeNumber(math, (viewof plotterTMax).value)
-  }
-}
-```
-
-```{ojs}
-//| output: false
-// plotterSetup samples (x(t), y(t)) across the committed t-range. `key`
-// changes whenever a new curve is committed, and is used as the plot's
-// uirevision so a fresh curve autoscales instead of inheriting the
-// previous curve's zoom.
-plotterSetup = {
-  const math = window.math
-  const x = VM.expressions.makeFunctionOfT(math, plotterCommitted.xText)
-  const y = VM.expressions.makeFunctionOfT(math, plotterCommitted.yText)
-
-  let tMin = plotterCommitted.tMin
-  let tMax = plotterCommitted.tMax
-  const key = JSON.stringify(plotterCommitted)
-
-  if (!x || !y || !Number.isFinite(tMin) || !Number.isFinite(tMax) || tMin === tMax) {
-    return {ts: [], xs: [], ys: [], tMin: 0, tMax: 1, xRange: {lo: -1, hi: 1}, yRange: {lo: -1, hi: 1}, key}
-  }
-  if (tMin > tMax) { const temp = tMin; tMin = tMax; tMax = temp }
-
-  // Parametric curves double back on themselves, so they need a good deal
-  // more samples than a graph over an interval before the polyline stops
-  // looking faceted.
-  const sampleCount = 2400
-  const ts = []
-  const xs = []
-  const ys = []
-  for (let i = 0; i < sampleCount; i++) {
-    const t = tMin + (tMax - tMin) * i / (sampleCount - 1)
-    const xValue = x(t)
-    const yValue = y(t)
-    ts.push(t)
-    if (Number.isFinite(xValue) && Number.isFinite(yValue) && Math.abs(xValue) < 1e8 && Math.abs(yValue) < 1e8) {
-      xs.push(xValue)
-      ys.push(yValue)
-    } else {
-      // A null in both coordinates breaks the trace here instead of
-      // drawing a spurious segment across a pole or a gap in the domain.
-      xs.push(null)
-      ys.push(null)
-    }
-  }
-
-  // Padded explicitly rather than left to Plotly's autorange: an axis pair
-  // tied together by scaleanchor (see plotterMainPlot) autoranges with no
-  // padding at all on the constraining axis, which put the square path
-  // example's two vertical sides exactly on the plot's edges.
-  const xRange = VM.plotting.paddedRange(xs, {relativePadding: 0.06, minPadding: 0.1})
-  const yRange = VM.plotting.paddedRange(ys, {relativePadding: 0.06, minPadding: 0.1})
-  return {ts, xs, ys, tMin, tMax, xRange, yRange, key}
-}
-```
-
-```{ojs}
-//| output: false
-// plotterMainPlot is a closure over a _plotDiv variable so the same DOM
-// node is reused across reactive re-renders, preserving zoom/pan.
-plotterMainPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
-
-  return ({ts, xs, ys, xRange, yRange, key}, cursorIndex, showCurve, showCursor) => {
-    const data = []
-
-    if (showCurve) {
-      data.push({
-        x: xs, y: ys, type: "scatter", mode: "lines", name: "Curve", showlegend: false,
-        line: {color: chartColors.fn, width: 2.5, shape: "spline"},
-        customdata: ts,
-        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
-      })
-    }
-
-    // The cursor reads straight out of the sampled arrays rather than
-    // re-evaluating x(t)/y(t), so the marker always sits exactly on the
-    // polyline that's drawn, never a hair off it.
-    const i = cursorIndex
-    if (showCursor && i !== null && i >= 0 && i < xs.length && xs[i] !== null) {
-      data.push({
-        x: [xs[i]], y: [ys[i]], type: "scatter", mode: "markers", name: "Point at t", showlegend: false,
-        marker: {color: chartColors.alt, size: 12, line: {color: chartColors.halo, width: 2}},
-        customdata: [ts[i]],
-        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
-      })
-    }
-    const layout = {
-      xaxis: {title: "x", zeroline: true, range: [xRange.lo, xRange.hi], constrain: "domain"},
-      // scaleanchor keeps one unit of y the same length on screen as one
-      // unit of x -- without it a circle plots as an ellipse, which ruins
-      // every curve below.
-      //
-      // constrain: "domain" -- on both axes, or the unconstrained one still
-      // gets widened -- makes Plotly satisfy that by shrinking the drawn
-      // plot area to the curve's own aspect ratio, leaving the ranges above
-      // exactly as asked for. The default ("range") instead widens
-      // whichever range is too tight for the box -- and since newPlot runs
-      // on a still-detached div (Plotly measures its 700x450 default) while
-      // every later react runs at the real size, the two widened by
-      // different amounts and the first slider nudge visibly jumped the
-      // zoom. Pinning the ranges removes the discrepancy at the source.
-      yaxis: {title: "y", zeroline: true, range: [yRange.lo, yRange.hi], scaleanchor: "x", scaleratio: 1, constrain: "domain"},
-      hovermode: "closest",
-      uirevision: key,
-      autosize: true
-    }
-    const config = VM.plotting.config()
-
-    if (!_plotDiv) {
-      _plotDiv = document.createElement("div")
-      _plotDiv.className = "plotly-box-large"
-      Plotly.newPlot(_plotDiv, data, layout, config)
-      VM.plotting.autoResize(_plotDiv)
-    } else {
-      Plotly.react(_plotDiv, data, layout, config)
-    }
-    return _plotDiv
-  }
-}
-```
-
-```{ojs}
-//| output: false
-// The slider steps by one sample of plotterSetup, so its value doubles as
-// an index into the sampled arrays -- see plotterMainPlot's cursor trace.
-plotterCursorIndex = {
-  if (plotterSetup.ts.length === 0) return null
-  const span = plotterSetup.tMax - plotterSetup.tMin
-  const index = Math.round((plotterT - plotterSetup.tMin) / span * (plotterSetup.ts.length - 1))
-  return index
-}
-```
-
-```{ojs}
-//| output: false
-plotterShowCurve = plotterTraces.includes("Curve")
-```
-
-```{ojs}
-//| output: false
-plotterShowCursor = plotterTraces.includes("Point at t")
-```
-
-<div class="ojs-chart-block">
-
-```{ojs}
-plotterMainPlot(plotterSetup, plotterCursorIndex, plotterShowCurve, plotterShowCursor)
-```
-
-```{ojs}
-viewof plotterTraces = {
-  const items = []
-  for (const label of plotterTraceOptions) items.push({label, color: plotterTraceColors.get(label)})
-  return VM.ui.legendOverlay(items, {value: plotterTraceOptions})
-}
-```
-
-<div class="ojs-chart-controls">
-
-```{ojs}
-// Always-live: the cursor moves as the slider is dragged, no Plot click
-// needed. Recreated whenever a new curve is committed, so its range always
-// spans that curve's own t interval.
-viewof plotterT = {
-  const {tMin, tMax} = plotterSetup
-
-  // Round the step to the nearest 1/2/5 x 10^k below span/500, so the
-  // slider's own number readout stays short (0.05, not 0.0157145109...)
-  // whatever t-range the current curve happens to span.
-  const raw = (tMax - tMin) / 500
-  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)))
-  const normalized = raw / magnitude
-  let nice
-  if (normalized <= 1) nice = 1
-  else if (normalized <= 2) nice = 2
-  else if (normalized <= 5) nice = 5
-  else nice = 10
-  const step = nice * magnitude
-
-  const slider = Inputs.range([tMin, tMax], {label: "t", step, value: tMin})
-  slider.classList.add("ojs-fill")
-  return slider
-}
-```
-
-</div>
-
-</div>
+})()
+</script>
 
 ## Browse by topic {#browse-topics}
 

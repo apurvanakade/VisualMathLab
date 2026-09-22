@@ -405,6 +405,7 @@ html.vm-embed .quarto-secondary-nav,
 html.vm-embed #vm-sidebar-rail,
 html.vm-embed #title-block-header,
 html.vm-embed .nav-footer,
+html.vm-embed .footer,
 html.vm-embed .page-navigation,
 html.vm-embed #quarto-margin-sidebar,
 html.vm-embed .vml-consent,
@@ -421,6 +422,13 @@ html.vm-embed body.nav-fixed {
 
 html.vm-embed #quarto-content {
   padding-top: 0.5rem;
+  /* Quarto's page grid is at least a viewport tall ("allow space for
+   * footer" in quarto-nav.js, which writes it as an inline style, hence the
+   * !important) and reserves a 60px second row for the prev/next
+   * navigation, hidden above. With the app sized to the frame below, both
+   * were a strip of nothing under it that made the frame scroll anyway. */
+  min-height: 0 !important;
+  grid-template-rows: [content-top] minmax(max-content, 1fr) [content-bottom] 0 [page-bottom];
 }
 
 /* Only the tagged app is the app. Each app page wraps its controls panel,
@@ -438,4 +446,61 @@ html.vm-embed #quarto-content {
  * wrapper. */
 html.vm-embed #quarto-document-content :not(.vm-app-active):not(.vm-app-active *):not(:has(.vm-app-active)) {
   display: none !important;
+}
+
+/* The chart takes the height the frame leaves, not 72vh of it.
+ *
+ * On the page, .plotly-box-large is 72vh: the chart is sized to the reader's
+ * screen and the controls above it scroll off. In a frame that never adds
+ * up: the controls are a fixed ~500-600px, the chart is 72% of whatever
+ * height the frame has, and the two only fit together in a frame taller
+ * than ~2000px -- at any sensible height the app scrolls inside the frame,
+ * which is the one thing embed.qmd promises it won't need to. So in embed
+ * mode the app is a column exactly one frame tall, the controls keep their
+ * natural height, and the chart is what is left -- the same division of the
+ * viewport the fullscreen chain in mathviz's chart-block.css makes, minus
+ * the letterboxing (in a frame the chart's aspect ratio is the framing
+ * page's to choose). Quarto/Observable's wrapper divs between the block and
+ * the graph div are matched with :has(), as in that chain, so the rule
+ * doesn't depend on what they are named. Pages whose figure is an SVG
+ * (.ojs-svg-block) draw at their own fixed height and are unaffected: every
+ * rule below is gated on .js-plotly-plot, so nothing there is stretched or
+ * pushed to the bottom of the frame.
+ *
+ * The 300px floor is a frame too short for its app -- the chart holds at
+ * something readable and the frame scrolls, rather than the chart vanishing
+ * under the controls. A frame the size embed.qmd recommends never hits it. */
+html.vm-embed #quarto-document-content {
+  margin: 0;
+  padding: 0;
+}
+
+html.vm-embed .vm-app-active {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 1rem);
+}
+
+html.vm-embed .vm-app-active > .ojs-chart-block:has(.js-plotly-plot) {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+html.vm-embed .vm-app-active > .ojs-chart-block div:has(.js-plotly-plot) {
+  height: 100%;
+  min-height: 0;
+}
+
+/* The outermost link is a flex item of the block's column and takes what the
+ * slider bar leaves; same specificity as the rule above, so it stays after
+ * it. */
+html.vm-embed .vm-app-active > .ojs-chart-block > div:has(.js-plotly-plot) {
+  flex: 1 1 auto;
+  height: auto;
+  margin-bottom: 0;
+}
+
+html.vm-embed .vm-app-active .plotly-box-large {
+  height: 100%;
+  min-height: 300px;
 }

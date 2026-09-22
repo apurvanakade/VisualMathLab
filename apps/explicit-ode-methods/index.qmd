@@ -184,7 +184,17 @@ viewof bEnd = {
 }
 ```
 
-</div>
+```{ojs}
+// Always-live (not gated behind Plot) — it bounds the step slider rather
+// than feeding result, so there's no reason to wait for a commit. Shares
+// this row with the commit-gated fields now that a shorter label leaves
+// room; see urlSyncControls below for how it stays in the URL.
+viewof maxNInput = {
+  const input = Inputs.text({value: initialMax, label: "Max n", placeholder: "Example: 20, 5*4"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
 
 ```{ojs}
 viewof exampleSelect = {
@@ -194,6 +204,20 @@ viewof exampleSelect = {
   return select
 }
 ```
+
+```{ojs}
+// Plot commits the current function/initial-condition/endpoint fields —
+// edits above don't take effect until this is clicked, so result/mainPlot
+// don't recompute on every keystroke. The n slider and the method legend
+// overlaying the chart are unaffected and stay reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
 
 ```{ojs}
 //| output: false
@@ -231,34 +255,6 @@ applyExampleFromSelect = {
   })
 }
 ```
-
-```{ojs}
-// Plot commits the current function/initial-condition/endpoint fields —
-// edits above don't take effect until this is clicked, so result/mainPlot
-// don't recompute on every keystroke. The n slider and the method legend
-// overlaying the chart are unaffected and stay reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto", "ojs-end")
-  return plotButton
-}
-```
-
-<div class="ojs-grid">
-
-```{ojs}
-// Its own group, below the commit-gated fields and the Plot button: these
-// are always-live and describe how the slider sweeps rather than what gets
-// computed. They live here rather than in the chart overlay so that bar
-// holds nothing but the slider itself.
-viewof maxNInput = {
-  const input = Inputs.text({value: initialMax, label: "Max n", placeholder: "Example: 20, 5*4"})
-  input.dataset.exampleField = "max"
-  return input
-}
-```
-
-</div>
 
 </div>
 

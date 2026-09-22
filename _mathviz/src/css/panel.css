@@ -54,22 +54,38 @@
 .ojs-row > div:first-of-type { flex: 1 1 200px; }
 .ojs-row > div:last-of-type { flex: 0 0 auto; }
 
-/* auto-fit so empty tracks collapse instead of pinning real ones to the minmax floor */
+/* auto-fit so empty tracks collapse instead of pinning real ones to the minmax floor.
+ * Floor lowered from 250px to 200px, and the row/column gap widened slightly,
+ * now that shrinking the label (see the form[class^="oi-"] label rule below)
+ * leaves more compact fields -- four fit one row at normal page width instead
+ * of three. */
 .ojs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 0.25rem 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.4rem 0.6rem;
   align-items: end;
+}
+
+/* Vertical rhythm between a panel's own top-level rows (e.g. a full-width
+ * formula field above a .ojs-grid of scalar fields) now that .ojs-panel no
+ * longer relies on each field's own 70px label+gap to create that space.
+ * Excluded when .ojs-panel is itself the grid/row (e.g. the Positive
+ * Predictive Value page's `ojs-panel ojs-grid`), whose children are grid
+ * items spaced by the grid's own `gap`, not stacked block children. */
+.ojs-panel:not(.ojs-grid):not(.ojs-row) > * + * {
+  margin-top: 0.4rem;
 }
 
 /* Skin every native input inside a panel to match its chrome */
 .ojs-panel input {
+  height: var(--vm-control-h);
   border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius-sm);
-  padding: 0.25rem 0.5rem;
-  font-size: 0.9rem;
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
   background: var(--vm-bg);
   color: var(--vm-text);
+  box-sizing: border-box;
 }
 
 /* !important overrides Observable Inputs' own flex-shrink on the number spinner */
@@ -96,6 +112,39 @@
   box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
 }
 
+/* Nothing skinned <select> before this -- Observable Inputs' select()
+ * renders the bare browser default, so "Try an example" showed up as a
+ * square-cornered, full-panel-width box next to rounded 30px inputs.
+ * width: auto + min/max-width lets it size to its own option text instead
+ * of stretching to fill .ojs-fill's 100%, which is still needed on the
+ * wrapping form (see .ojs-fill below) so the field takes its row's full
+ * width for layout purposes while the visible control itself stays compact. */
+.ojs-panel select {
+  height: var(--vm-control-h);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  padding: 0 1.75rem 0 0.5rem;
+  font-size: 0.85rem;
+  background-color: var(--vm-bg);
+  background-image: var(--vm-select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  background-size: 0.75rem;
+  color: var(--vm-text);
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  width: auto;
+  min-width: 12em;
+  max-width: 100%;
+}
+
+.ojs-panel select:focus {
+  outline: none;
+  border-color: var(--vm-accent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
+}
+
 .ojs-panel input[type="range"] {
   border: none;
   padding: 0;
@@ -110,25 +159,33 @@
  * Scoped to Observable Inputs' generated form (class^="oi-", per
  * quarto-ojs.css) so this doesn't also catch Quarto's own per-cell
  * "Copy to Clipboard" button, which lives in the same panel. */
-.ojs-panel form[class^="oi-"] button {
+/* :not(.vm-play-button):not(.vm-play-more) excludes the slider playback
+ * button (js/ui/slider-play.js's <button class="vm-play-button">, inside
+ * this same panel form) -- sliders.css sizes that one 1.5rem square with a
+ * lone class (0,1,0); this selector's three parts (0,3,1) would otherwise
+ * beat it and stretch a round icon button into an oval, the same
+ * runtime-injection-order trap this file's other rules already guard
+ * against. */
+.ojs-panel form[class^="oi-"] button:not(.vm-play-button):not(.vm-play-more) {
+  height: var(--vm-control-h);
   border: 1px solid var(--vm-accent);
   border-radius: var(--vm-radius-sm);
-  padding: 0.25rem 0.75rem;
-  font-size: 0.9rem;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   color: #fff;
   background: var(--vm-accent);
-  box-shadow: rgba(27, 31, 36, 0.1) 0 1px 0 0 inset;
   transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
   cursor: pointer;
+  box-sizing: border-box;
 }
 
-.ojs-panel form[class^="oi-"] button:hover {
+.ojs-panel form[class^="oi-"] button:not(.vm-play-button):not(.vm-play-more):hover {
   background: var(--vm-accent-hover);
   border-color: var(--vm-accent-hover);
 }
 
-.ojs-panel form[class^="oi-"] button:focus {
+.ojs-panel form[class^="oi-"] button:not(.vm-play-button):not(.vm-play-more):focus {
   outline: none;
   box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 35%, transparent);
 }
@@ -169,8 +226,21 @@
  * such row to align, so that fixed 120px just forces labels wider than
  * ~120px (e.g. "Initial condition y(0)") to wrap even when the field has
  * plenty of room. Let each label size to its own content instead. */
+/* padding: 0 and margin: 0 override Observable's own runtime-injected
+ * `form.oi-<hash>-toggle > label { padding: 5px 0 4px }` -- this selector
+ * (class + element/attr + element, i.e. (0,3,1)) beats that injected rule's
+ * (0,2,1), so it wins regardless of load order. That padding reset, plus
+ * shrinking the font from the inherited 17px body-prose size down to
+ * --vm-label-size, is what takes a field from 70px to about 48px: the label
+ * was previously taller than the control it labels. */
 .ojs-panel form[class^="oi-"] label {
   width: auto;
+  padding: 0;
+  margin: 0;
+  font-size: var(--vm-label-size);
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--vm-text-soft);
 }
 
 /* Attach to an Inputs.* wrapper div to make it fill the row, overriding

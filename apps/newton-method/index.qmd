@@ -31,6 +31,16 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// urlParams backs the Max field's default below — every other input on this
+// page is already URL-shareable (f/x0 via committed, the step via its own
+// slider), max was the one exception.
+urlParams = new URLSearchParams(window.location.search)
+
+initialMax = urlParams.get("max") ?? "20"
+```
+
+```{ojs}
+//| output: false
 traceOptions = ["f(x)", "Tangent line", "Newton points", "Tangent x-intercepts"]
 
 // vmTheme is what makes the colors below reactive. The chart's own chrome
@@ -61,27 +71,27 @@ traceColors = new Map([
 examples = [
   {
     title: "Fast quadratic convergence",
-    params: {f: "x^2 - 2", x0: "1.5"}
+    params: {max: "20", f: "x^2 - 2", x0: "1.5"}
   },
   {
     title: "A two-cycle failure",
-    params: {f: "x^3 - 2*x + 2", x0: "0"}
+    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0"}
   },
   {
     title: "Looks unstable, then converges",
-    params: {f: "x^3 - 2*x + 2", x0: "0.95"}
+    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.95"}
   },
   {
     title: "Slow convergence at a multiple root",
-    params: {f: "x^3", x0: "0.2"}
+    params: {max: "20", f: "x^3", x0: "0.2"}
   },
   {
     title: "Nearly flat tangent",
-    params: {f: "x^3 - 2*x + 2", x0: "0.81649658"}
+    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.81649658"}
   },
   {
     title: "Large jumps from shallow slopes",
-    params: {f: "atan(x)", x0: "1.4"}
+    params: {max: "20", f: "atan(x)", x0: "1.4"}
   }
 ]
 ```
@@ -111,7 +121,17 @@ viewof x0 = {
 }
 ```
 
-</div>
+```{ojs}
+// Always-live (not gated behind Plot) — it bounds the step slider rather
+// than feeding result, so there's no reason to wait for a commit. Shares
+// this row with the commit-gated fields now that a shorter label leaves
+// room; see urlSyncControls below for how it stays in the URL.
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: initialMax, label: "Max n", placeholder: "Example: 20, 5*4"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
 
 ```{ojs}
 viewof exampleSelect = {
@@ -123,10 +143,26 @@ viewof exampleSelect = {
 ```
 
 ```{ojs}
+// Plot commits the current function/x₀ fields — edits above don't take
+// effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The step slider overlaid on the plot is unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
 //| output: false
 // Plain CSS selectors, not direct viewof references -- see
-// js/ui/apply-example.js's comment for why.
-exampleFieldSelectors = ({f: '[data-example-field="f"]', x0: '[data-example-field="x0"]'})
+// js/ui/apply-example.js's comment for why. max is listed before nothing
+// here (there's no field downstream of it on this page whose view gets
+// recreated), but it's kept alongside the others per the site-wide
+// contract that every exampleFieldSelectors entry is a real field.
+exampleFieldSelectors = ({f: '[data-example-field="f"]', x0: '[data-example-field="x0"]', max: '[data-example-field="max"]'})
 ```
 
 ```{ojs}
@@ -147,29 +183,6 @@ applyExampleFromSelect = {
   })
 }
 ```
-
-```{ojs}
-// Plot commits the current function/x₀ fields — edits above don't take
-// effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The step slider overlaid on the plot is unaffected and stays reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto", "ojs-end")
-  return plotButton
-}
-```
-
-<div class="ojs-grid">
-
-```{ojs}
-// Its own group, below the commit-gated fields and the Plot button: these
-// are always-live and describe how the slider sweeps rather than what gets
-// computed. They live here rather than in the chart overlay so that bar
-// holds nothing but the slider itself.
-viewof maxIterationsInput = Inputs.text({value: "20", label: "Max n", placeholder: "Example: 20, 5*4"})
-```
-
-</div>
 
 </div>
 
@@ -212,6 +225,19 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, x0: x0Val}
+}
+```
+
+```{ojs}
+//| output: false
+// max is always-live rather than commit-gated, so it gets its own sync cell
+// instead of piggybacking on committed above (which only runs when Plot is
+// clicked).
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("max", maxIterationsInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
 }
 ```
 

@@ -49,6 +49,15 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// urlParams backs the Max field's default below — every other input on this
+// page is already URL-shareable, max was the one exception.
+urlParams = new URLSearchParams(window.location.search)
+
+initialMax = urlParams.get("max") ?? "20"
+```
+
+```{ojs}
+//| output: false
 // TODO: one label per trace mainPlot can draw, in legend order, and the color
 // each is drawn in (so the legend swatches double as a color key). Every
 // trace pushed in mainPlot carries showlegend: false -- this floating legend
@@ -74,9 +83,9 @@ traceColors = new Map([
 // appear in exampleFieldSelectors below, and a field another field's bounds
 // depend on (a "max" before its slider) must come first.
 examples = [
-  {title: "cos(x), from 1", params: {g: "cos(x)", x0: "1"}},
-  {title: "sqrt(2 + x), from 0", params: {g: "sqrt(2 + x)", x0: "0"}},
-  {title: "Diverges: 3*x*(1 - x) from 0.4", params: {g: "3*x*(1 - x)", x0: "0.4"}}
+  {title: "cos(x), from 1", params: {max: "20", g: "cos(x)", x0: "1"}},
+  {title: "sqrt(2 + x), from 0", params: {max: "20", g: "sqrt(2 + x)", x0: "0"}},
+  {title: "Diverges: 3*x*(1 - x) from 0.4", params: {max: "20", g: "3*x*(1 - x)", x0: "0.4"}}
 ]
 ```
 
@@ -113,7 +122,17 @@ viewof x0 = {
 }
 ```
 
-</div>
+```{ojs}
+// Always-live (not gated behind Plot) -- it bounds the step slider rather
+// than feeding result, so it shares this row with the commit-gated fields
+// instead of waiting for one. See urlSyncControls below for how it stays
+// in the URL like every other input on the page.
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: initialMax, label: "Max n", placeholder: "Example: 20, 5*4"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
 
 ```{ojs}
 viewof exampleSelect = {
@@ -124,10 +143,20 @@ viewof exampleSelect = {
 ```
 
 ```{ojs}
+viewof plotTrigger = {
+  const button = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
 //| output: false
 // Plain CSS selectors, not direct viewof references -- a cell that names a
 // view whose identity is reactively recreated would re-trigger itself.
-exampleFieldSelectors = ({g: '[data-example-field="g"]', x0: '[data-example-field="x0"]'})
+exampleFieldSelectors = ({g: '[data-example-field="g"]', x0: '[data-example-field="x0"]', max: '[data-example-field="max"]'})
 ```
 
 ```{ojs}
@@ -144,24 +173,6 @@ applyExampleFromSelect = {
   })
 }
 ```
-
-```{ojs}
-viewof plotTrigger = {
-  const button = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  button.classList.add("ojs-auto", "ojs-end")
-  return button
-}
-```
-
-<div class="ojs-grid">
-
-```{ojs}
-// Always-live, but a text field, so it lives here rather than in the slider
-// bar (that bar holds sliders and nothing else).
-viewof maxIterationsInput = Inputs.text({value: "20", label: "Max n", placeholder: "Example: 20, 5*4"})
-```
-
-</div>
 
 </div>
 
@@ -196,6 +207,18 @@ committed = {
   params.set("x0", x0Text)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
   return {gText: gVal, x0: VM.expressions.makeNumber(window.math, x0Text)}
+}
+```
+
+```{ojs}
+//| output: false
+// max is always-live rather than commit-gated, so it gets its own sync
+// cell instead of piggybacking on committed above.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("max", maxIterationsInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
 }
 ```
 

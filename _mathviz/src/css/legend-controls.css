@@ -82,7 +82,10 @@
   border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius);
   background: var(--vm-surface);
-  box-shadow: var(--vm-shadow);
+  /* No box-shadow: this bar sits directly under the .ojs-panel above it,
+   * which already carries a border of its own -- a second shadowed card
+   * right below the first read as two stacked slabs rather than one quiet
+   * control strip. */
 }
 
 /* The legend is absolutely positioned, and its containing block used to be
@@ -146,6 +149,27 @@
 .ojs-chart-controls input[type="range"] {
   accent-color: var(--vm-accent);
   width: 100%;
+}
+
+/* Skin every native input inside the bar to match .ojs-panel's chrome --
+ * previously only input[type=range] and input[type=text] (below) were
+ * covered, so the number readout beside a slider rendered as a bare,
+ * square-cornered browser spinner next to a rounded, bordered track. */
+.ojs-chart-controls input {
+  height: var(--vm-control-h);
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  background: var(--vm-bg);
+  color: var(--vm-text);
+  box-sizing: border-box;
+}
+
+.ojs-chart-controls input:focus {
+  outline: none;
+  border-color: var(--vm-accent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
 }
 
 /* ...and with the track now fluid, cap the number readout beside it the way
@@ -221,6 +245,27 @@
  * longer need to share a row's height in the first place. */
 .ojs-chart-controls form[class^="oi-"]:not([class$="-checkbox"]) label {
   width: auto;
+  padding: 0;
+  margin: 0;
+  font-size: var(--vm-label-size);
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--vm-text-soft);
+}
+
+/* The [class$="-checkbox"] groups (Inputs.radio()/checkbox(), e.g. the
+ * Positive Predictive Value page's Shuffled/Sorted toggle) are excluded from
+ * the selector above because they get their own row-wrap treatment, but they
+ * still need the same typography -- without this their label kept the
+ * inherited 17px body-prose size while every other control in the bar had
+ * already shrunk. */
+.ojs-chart-controls form[class$="-checkbox"] > label {
+  padding: 0;
+  margin: 0;
+  font-size: var(--vm-label-size);
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--vm-text-soft);
 }
 
 /* A multi-slider chart-controls bar (e.g. recursive-filters-1d' four filter

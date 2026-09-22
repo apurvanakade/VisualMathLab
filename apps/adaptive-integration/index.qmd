@@ -28,6 +28,15 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// urlParams backs the Max field's default below — every other input on this
+// page is already URL-shareable, max was the one exception.
+urlParams = new URLSearchParams(window.location.search)
+
+initialMax = urlParams.get("max") ?? "15"
+```
+
+```{ojs}
+//| output: false
 traceOptions = ["f(x)", "Adaptive Simpson panels", "Partition points"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
@@ -56,27 +65,27 @@ traceColors = new Map([
 examples = [
   {
     title: "Oscillation near an endpoint",
-    params: {f: "sin(1 / (x + 0.3))", a: "0", b: "pi"}
+    params: {max: "15", f: "sin(1 / (x + 0.3))", a: "0", b: "pi"}
   },
   {
     title: "Challenging oscillations",
-    params: {f: "sin(1/x)", a: "0.05", b: "1"}
+    params: {max: "15", f: "sin(1/x)", a: "0.05", b: "1"}
   },
   {
     title: "Narrow spike",
-    params: {f: "1/(0.01 + x^2)", a: "-1", b: "1"}
+    params: {max: "15", f: "1/(0.01 + x^2)", a: "-1", b: "1"}
   },
   {
     title: "Steep transition",
-    params: {f: "tanh(20*(x - 0.2))", a: "-1", b: "1"}
+    params: {max: "15", f: "tanh(20*(x - 0.2))", a: "-1", b: "1"}
   },
   {
     title: "Nonsmooth corner",
-    params: {f: "abs(x)", a: "-2", b: "2"}
+    params: {max: "15", f: "abs(x)", a: "-2", b: "2"}
   },
   {
     title: "Endpoint behavior",
-    params: {f: "sqrt(x)", a: "0", b: "1"}
+    params: {max: "15", f: "sqrt(x)", a: "0", b: "1"}
   }
 ]
 ```
@@ -115,7 +124,17 @@ viewof b0 = {
 }
 ```
 
-</div>
+```{ojs}
+// Always-live (not gated behind Plot) — it bounds the recursion depth
+// rather than feeding result, so there's no reason to wait for a commit.
+// Shares this row with the commit-gated fields now that a shorter label
+// leaves room; see urlSyncControls below for how it stays in the URL.
+viewof maxDepthInput = {
+  const input = Inputs.text({value: initialMax, label: "Max depth", placeholder: "Example: 15, 5*3"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
 
 ```{ojs}
 viewof exampleSelect = {
@@ -127,13 +146,28 @@ viewof exampleSelect = {
 ```
 
 ```{ojs}
+// Plot commits the current function/endpoint fields — edits above don't
+// take effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The tolerance slider overlaid on the chart is
+// unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
 //| output: false
 // Plain CSS selectors, not direct viewof references -- see
 // js/ui/apply-example.js's comment for why.
 exampleFieldSelectors = ({
   f: '[data-example-field="f"]',
   a: '[data-example-field="a"]',
-  b: '[data-example-field="b"]'
+  b: '[data-example-field="b"]',
+  max: '[data-example-field="max"]'
 })
 ```
 
@@ -155,30 +189,6 @@ applyExampleFromSelect = {
   })
 }
 ```
-
-```{ojs}
-// Plot commits the current function/endpoint fields — edits above don't
-// take effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The tolerance slider and max depth field overlaid on the
-// chart are unaffected and stay reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto", "ojs-end")
-  return plotButton
-}
-```
-
-<div class="ojs-grid">
-
-```{ojs}
-// Its own group, below the commit-gated fields and the Plot button: these
-// are always-live and describe how the slider sweeps rather than what gets
-// computed. They live here rather than in the chart overlay so that bar
-// holds nothing but the slider itself.
-viewof maxDepthInput = Inputs.text({value: "15", label: "Max depth", placeholder: "Example: 15, 5*3"})
-```
-
-</div>
 
 </div>
 
@@ -230,6 +240,19 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+// max is always-live rather than commit-gated, so it gets its own sync cell
+// instead of piggybacking on committed above (which only runs when Plot is
+// clicked).
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("max", maxDepthInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
 }
 ```
 

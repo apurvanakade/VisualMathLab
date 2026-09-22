@@ -31,6 +31,15 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
+// urlParams backs the Max field's default below — every other input on this
+// page is already URL-shareable, max was the one exception.
+urlParams = new URLSearchParams(window.location.search)
+
+initialMax = urlParams.get("max") ?? "20"
+```
+
+```{ojs}
+//| output: false
 traceOptions = ["f(x)", "Previous midpoints", "Endpoints", "Midpoint", "Exact root found"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
@@ -64,19 +73,19 @@ traceColors = new Map([
 examples = [
   {
     title: "Choosing one root among many",
-    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "0.3", b: "3.4"}
+    params: {max: "20", f: "(x - 1)*(x - 2)*(x - 3)", a: "0.3", b: "3.4"}
   },
   {
     title: "Same function, different bracket",
-    params: {f: "(x - 1)*(x - 2)*(x - 3)", a: "2.4", b: "3.5"}
+    params: {max: "20", f: "(x - 1)*(x - 2)*(x - 3)", a: "2.4", b: "3.5"}
   },
   {
     title: "Standard guaranteed convergence",
-    params: {f: "x^3 - x - 2", a: "1", b: "2"}
+    params: {max: "20", f: "x^3 - x - 2", a: "1", b: "2"}
   },
   {
     title: "Sign change without a valid root",
-    params: {f: "1/x", a: "-1", b: "1"}
+    params: {max: "20", f: "1/x", a: "-1", b: "1"}
   }
 ]
 ```
@@ -115,7 +124,17 @@ viewof b0 = {
 }
 ```
 
-</div>
+```{ojs}
+// Always-live (not gated behind Plot) — it bounds the step slider rather
+// than feeding result, so there's no reason to wait for a commit. Shares
+// this row with the commit-gated fields now that a shorter label leaves
+// room; see urlSyncControls below for how it stays in the URL.
+viewof maxIterationsInput = {
+  const input = Inputs.text({value: initialMax, label: "Max n", placeholder: "Example: 20, 5*4"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
 
 ```{ojs}
 viewof exampleSelect = {
@@ -127,10 +146,23 @@ viewof exampleSelect = {
 ```
 
 ```{ojs}
+// Plot commits the current function/endpoint fields — edits above don't
+// take effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The step slider overlaid on the plot is unaffected and stays reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
 //| output: false
 // Plain CSS selectors, not direct viewof references -- see
 // js/ui/apply-example.js's comment for why.
-exampleFieldSelectors = ({f: '[data-example-field="f"]', a: '[data-example-field="a"]', b: '[data-example-field="b"]'})
+exampleFieldSelectors = ({f: '[data-example-field="f"]', a: '[data-example-field="a"]', b: '[data-example-field="b"]', max: '[data-example-field="max"]'})
 ```
 
 ```{ojs}
@@ -151,29 +183,6 @@ applyExampleFromSelect = {
   })
 }
 ```
-
-```{ojs}
-// Plot commits the current function/endpoint fields — edits above don't
-// take effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The step slider overlaid on the plot is unaffected and stays reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto", "ojs-end")
-  return plotButton
-}
-```
-
-<div class="ojs-grid">
-
-```{ojs}
-// Its own group, below the commit-gated fields and the Plot button: these
-// are always-live and describe how the slider sweeps rather than what gets
-// computed. They live here rather than in the chart overlay so that bar
-// holds nothing but the slider itself.
-viewof maxIterationsInput = Inputs.text({value: "20", label: "Max n", placeholder: "Example: 20, 5*4"})
-```
-
-</div>
 
 </div>
 
@@ -220,6 +229,19 @@ committed = {
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, a0: aVal, b0: bVal}
+}
+```
+
+```{ojs}
+//| output: false
+// max is always-live rather than commit-gated, so it gets its own sync cell
+// instead of piggybacking on committed above (which only runs when Plot is
+// clicked).
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("max", maxIterationsInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
 }
 ```
 

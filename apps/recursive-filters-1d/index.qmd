@@ -218,8 +218,6 @@ viewof maxNInput = {
 }
 ```
 
-</div>
-
 ```{ojs}
 viewof exampleSelect = {
   const options = [null, ...examples]
@@ -228,6 +226,22 @@ viewof exampleSelect = {
   return select
 }
 ```
+
+```{ojs}
+// Plot commits the current signal/noise/endpoint fields and redraws the
+// noisy measurements with a fresh seed — edits above don't take effect
+// until this is clicked, so result/mainPlot don't recompute (and the
+// noisy draw doesn't reshuffle) on every keystroke. The total-samples
+// field, and the method legend and filter parameters overlaid on the
+// chart, are unaffected and stay reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
 
 ```{ojs}
 //| output: false
@@ -266,20 +280,6 @@ applyExampleFromSelect = {
     if (!example) return
     VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
   })
-}
-```
-
-```{ojs}
-// Plot commits the current signal/noise/endpoint fields and redraws the
-// noisy measurements with a fresh seed — edits above don't take effect
-// until this is clicked, so result/mainPlot don't recompute (and the
-// noisy draw doesn't reshuffle) on every keystroke. The total-samples
-// field, and the method legend and filter parameters overlaid on the
-// chart, are unaffected and stay reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto", "ojs-end")
-  return plotButton
 }
 ```
 

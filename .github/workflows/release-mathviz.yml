@@ -1,0 +1,87 @@
+# Copyright (c) 2026 Apurva Nakade. All rights reserved.
+# Released under Apache 2.0 license as described in the file LICENSE.
+# Authors: Apurva Nakade
+
+# Cuts a mathviz release. This repository authors the library's code (see
+# CLAUDE.md's mathviz section), so the version bump happens here -- in the
+# three files _mathviz/scripts/build.mjs refuses to build without agreement
+# between -- and travels out with the next mirror.
+#
+# The tag is NOT cut here. Tagging happens in apurvanakade/mathviz, from
+# main, once the sync pull request has merged -- which is also the point at
+# which the reference docs for anything new in this release exist. Run
+# tag-release.yml over there afterwards.
+#
+# Bump before any develop -> main release of the site that changed the
+# library: the Lua's VERSION names the published
+# site_libs/quarto-contrib/mathviz-<version>/ folder, so new bundle bytes
+# under an old version leave returning visitors on a cached stale bundle.
+
+name: Release mathviz
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "New version, major.minor.patch (e.g. 0.1.5)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-mathviz
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v5
+        with:
+          ref: develop
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dev tooling
+        run: npm ci
+
+      - name: Set the version in all three files
+        run: node scripts/bump-mathviz-version.mjs "${{ inputs.version }}"
+
+      # Rebuild before testing: the bundle carries the version in its banner,
+      # and _extensions/mathviz/ is committed, so the release commit has to
+      # include the rebuilt copy or pr-check's freshness gate fails later.
+      - name: Rebuild and install the extension
+        run: npm run build:mathviz
+
+      - name: Tests
+        run: npm test
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::error::Nothing changed -- is the library already at ${{ inputs.version }}?"
+            exit 1
+          fi
+          git commit -m "Release mathviz v${{ inputs.version }}"
+          git push origin develop
+
+  # Carries the bump out to the sync branch immediately, rather than waiting
+  # for the push above to trigger the mirror -- a push made with
+  # GITHUB_TOKEN deliberately does not start other workflows.
+  mirror:
+    needs: bump
+    uses: ./.github/workflows/mirror-mathviz.yml
+    secrets: inherit

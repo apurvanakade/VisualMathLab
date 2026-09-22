@@ -1,0 +1,273 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* ── Output area ─────────────────────────────────────────────────── */
+
+/* Let layout-ncol cells shrink below the Plotly chart's intrinsic width */
+.quarto-layout-cell {
+  min-width: 0;
+}
+
+/* 72vh rather than the 78vh this was while the step bar floated over the
+ * chart: the bar now sits above it and adds its own ~53px (plus margin), so the
+ * chart gives back about what the bar takes and a chart block occupies close
+ * to the height it always did. The visible plot area is a wash -- 78vh with
+ * a slider bar covering its bottom strip showed about as much curve as 72vh
+ * with nothing over it -- but none of it is obscured any more. */
+.plotly-box-large {
+  width: 100%;
+  height: 72vh;
+  min-height: 500px;
+}
+
+/* Anchor for .ojs-legend-overlay below -- wrap a page's mainPlot cell and
+ * its viewof VM.ui.legendOverlay(...) cell together in this so the legend
+ * positions itself relative to the plot rather than the page.
+ *
+ * A column, so the slider bar can be ordered above the chart rather than
+ * below it: every other control on the page sits in the .ojs-panel above the
+ * chart, so a bar underneath left the reader's eye travelling past the chart
+ * and back again. Reordering here rather than in the 14 pages' markup keeps
+ * it one edit -- see the order values on the two rules below. */
+.ojs-chart-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* A named query container, so rules about "is this chart wide enough for
+   * X" can ask the chart's own width (legend-controls.css hides the floating
+   * legend on a narrow chart this way) rather than the viewport's. The two
+   * are not the same thing: in an <iframe> the viewport is the frame, and a
+   * width="100%" frame in an ordinary content column is 700-800px wide on a
+   * desktop with room to spare -- a viewport breakpoint meant for phones read
+   * every such embed as a phone. Inline-size only: a size container would
+   * need an explicit height, and this block's height comes from its
+   * content. The layout containment that comes with it is harmless here --
+   * every floating thing inside the block is already positioned against a
+   * box inside the block, and the playback popover is top-layer -- and its
+   * zero min-content contribution is what already lets a block in a
+   * layout-ncol column shrink with the column. Fullscreen's letterbox math
+   * queries a separate, unnamed size container further down the chain and
+   * is not affected. */
+  container: vm-chart / inline-size;
+}
+
+/* The Fullscreen API paints a black backdrop behind the fullscreened
+ * element; without an explicit background, that shows through anywhere the
+ * Plotly chart itself doesn't paint (e.g. around a narrower aspect ratio).
+ * plotly-fullscreen-button.js records the chart's on-page width/height
+ * ratio into --vm-plot-aspect-ratio right before requesting fullscreen,
+ * since the div's normal sizing (width: 100%; height: 78vh) is relative to
+ * the *fullscreen* viewport once entered, not its original box, and would
+ * otherwise stretch the plot to a different ratio than on the page. The
+ * existing per-page ResizeObserver on the graph div (see e.g.
+ * apps/newton-method/index.qmd's mainPlot cell) already calls
+ * Plotly.Plots.resize whenever this box resizes, so Plotly's own redraw
+ * picks up the letterboxed size with no extra JS here. */
+.ojs-chart-block:fullscreen {
+  background: var(--vm-bg);
+  /* The controls bar is a normal-flow sibling above the chart (see
+   * .ojs-chart-controls), so fullscreen has to divide the viewport between the
+   * two rather than letting the chart claim all of it -- hence a column here
+   * and the flex sizing on each part below. */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Quarto/Observable sits several plain wrapper divs between .ojs-chart-block
+ * and the actual .js-plotly-plot graph div (.cell > .cell-output-display >
+ * #ojs-cell-N > div.observablehq > .js-plotly-plot) -- each one shrinks to
+ * the chart's on-page size by default, which would otherwise cap the
+ * percentages below at the old (pre-fullscreen) box instead of the
+ * fullscreen viewport. `:has()` targets every one of them regardless of
+ * how many levels deep or what Quarto/Observable happens to name them,
+ * making each fill and center its child in turn -- the chain bottoms out
+ * at .js-plotly-plot itself, which doesn't contain a nested
+ * .js-plotly-plot so this rule doesn't match it. The legend/step overlays
+ * are unaffected since they're siblings of this chain, not ancestors of
+ * the graph div. */
+.ojs-chart-block:fullscreen div:has(.js-plotly-plot) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* The chain above is `height: 100%` all the way down, which is right for
+ * every link except the outermost one: as a flex item of the column above it
+ * has to take the height the step bar leaves rather than the container's
+ * full height, or the bar is pushed off the bottom of the screen. Same
+ * specificity as the rule above (a child combinator adds none), so this has
+ * to stay *after* it to win. */
+.ojs-chart-block:fullscreen > div:has(.js-plotly-plot) {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  /* Makes this the size container the letterbox math below measures against.
+   * Its cqh is the height left after the step bar takes its share, which is
+   * the number that box actually has to fit the chart into; 100vh is the
+   * whole screen and overstates it by the height of the bar, which showed up
+   * as a chart stretched wider than its on-page aspect ratio. */
+  container-type: size;
+}
+
+/* The legend's cell is what its top/left are measured from (see the ordering
+ * rules further down), so in fullscreen it has to be the chart's box rather
+ * than the screen's -- otherwise the legend hangs in the letterbox margin to
+ * the left of a chart it is supposed to be annotating. Same measured width
+ * the controls bar uses. */
+.ojs-chart-block:fullscreen > div:has(.ojs-legend-overlay) {
+  width: var(--vm-fs-plot-width, 100%);
+  margin-inline: auto;
+}
+
+/* Never shrink the controls to make room for the chart -- the chart is the
+ * part with flexible height here.
+ *
+ * The chart is letterboxed to its on-page aspect ratio and so is narrower
+ * than the screen; a full-width bar under it reads as a control strip for
+ * something bigger than the chart it drives, and stops matching the
+ * chart-width bar the reader saw a moment earlier on the page. Width comes
+ * from js/plotting/plotly-fullscreen-button.js, which measures the chart
+ * once the browser has laid it out -- the relationship is circular (bar
+ * width follows chart width follows leftover height follows bar height
+ * follows bar width) so there is no expressing it here. The 100% fallback is
+ * what applies if that script hasn't measured yet, i.e. the old behaviour
+ * for one frame rather than a collapsed bar. */
+.ojs-chart-block:fullscreen > .ojs-chart-controls {
+  flex: 0 0 auto;
+  width: var(--vm-fs-plot-width, 100%);
+  margin-inline: auto;
+}
+
+.ojs-chart-block:fullscreen .js-plotly-plot {
+  /* Each candidate is "fit to the full height" vs. "fit to the full width"
+   * at the recorded ratio; min() picks whichever one doesn't overflow the
+   * other axis, which is exactly contain-style letterboxing. */
+  width: min(100%, calc(100cqh * var(--vm-plot-aspect-ratio, 1.6)));
+  height: min(100%, calc(100cqw / var(--vm-plot-aspect-ratio, 1.6)));
+  min-height: 0;
+}
+
+/* ── SVG chart blocks ────────────────────────────────────────────── */
+/* A block that draws inline SVG (Observable Plot, a hand-built <svg>)
+ * instead of a Plotly chart: `<div class="ojs-chart-block ojs-svg-block">`.
+ * It has no modebar, so js/plotting/svg-fullscreen-button.js gives it a
+ * fullscreen button of its own -- one <button class="vm-fullscreen-toggle">
+ * as a direct child of the block, positioned by that script at the figure's
+ * top-right corner (top/right are set inline from a measured rect, since
+ * the figure is not the block: a fixed-width Plot SVG sits left-aligned in
+ * a wider column, and in fullscreen it is letterboxed into the middle).
+ * Same pill as the Plotly modebar, and hidden at rest the same way, so
+ * nothing sits over the picture until the reader hovers the block. The
+ * hover trigger is the block, not the picture's own cell -- the cell is
+ * rebuilt on every slider move, and a pill fading in from nothing on each
+ * step of a playback sweep flickers. */
+.vm-fullscreen-toggle {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
+  color: var(--vm-text-soft);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ojs-svg-block:hover > .vm-fullscreen-toggle,
+.vm-fullscreen-toggle:focus-visible {
+  opacity: 1;
+}
+
+.vm-fullscreen-toggle:hover {
+  background: var(--vm-surface-hover);
+  color: var(--vm-text);
+}
+
+.vm-fullscreen-toggle:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: -2px;
+}
+
+/* A touch device never fires hover, so a hover-only button would be
+ * permanently invisible there. */
+@media (hover: none) {
+  .vm-fullscreen-toggle {
+    opacity: 1;
+  }
+}
+
+/* On the page, a figure is centered in the block. Observable Plot's SVG is
+ * a fixed `width` (800 on every Sperner's lemma page) with its own
+ * `max-width: 100%; height: auto`, so it already shrinks on a narrow
+ * viewport but otherwise sits flush left in the wider content column,
+ * looking off-center against the centered controls bar above it. The
+ * selector mirrors findFigures in js/plotting/svg-fullscreen-button.js
+ * (any SVG not in the controls bar, the legend or a button) rather than
+ * keying on the .vm-fs-figure class that script adds, so the figure is
+ * centered from its first paint, not from the frame the script gets to it.
+ * A full-width SVG (the PPV page's grid) has no side margin to distribute,
+ * so this is a no-op there. */
+.ojs-svg-block svg:not(.ojs-chart-controls svg, .ojs-legend-overlay svg, button svg) {
+  display: block;
+  margin-inline: auto;
+}
+
+/* Fullscreen: the same letterbox chain as the Plotly block above, keyed on
+ * the figure SVG (tagged .vm-fs-figure by the script) instead of the graph
+ * div. Every wrapper between the block and the figure fills and centers its
+ * child; the outermost takes the height the controls bar leaves and is the
+ * size container the figure measures against. A column rather than a row,
+ * for a page that captions each figure with a <p> above it (the geometric
+ * proof's side-by-side pair): the caption then stays above, and the figure
+ * shrinks by the caption's height instead of running off the bottom. */
+.ojs-svg-block:fullscreen div:has(.vm-fs-figure) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  /* Two figures side by side are each `width: 100%` of a row; min-width:
+   * auto would refuse to shrink them to share it. */
+  min-width: 0;
+}
+
+.ojs-svg-block:fullscreen > div:has(.vm-fs-figure) {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  container-type: size;
+}
+
+/* The ratio comes from the SVG's viewBox (or width/height attributes),
+ * written as --vm-svg-aspect by the script; a viewBox'd SVG also centers its
+ * own drawing inside whatever box it gets, so a slightly-off ratio costs a
+ * sliver of margin, not a distorted picture. max-width/max-height are
+ * cleared because Observable Plot sets `max-width: 100%; height: auto` on
+ * its own SVG. */
+.ojs-svg-block:fullscreen .vm-fs-figure {
+  width: min(100%, calc(100cqh * var(--vm-svg-aspect, 1)));
+  height: min(100%, calc(100cqw / var(--vm-svg-aspect, 1)));
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  flex: 0 1 auto;
+}
+
+
+@media (max-width: 768px) {
+  .plotly-box-large { height: 65vh; min-height: 400px; }
+}

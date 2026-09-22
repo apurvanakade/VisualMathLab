@@ -58,7 +58,10 @@ const skipDirs = new Set(['docs', 'node_modules', '.quarto', '.git', '_freeze'])
 // Anything under these paths lands in every rendered page (the extension's
 // <head> tags, the includes, the theme, the sidebar), so a change there
 // cannot be verified by loading only the pages whose source changed.
-const siteWidePaths = ['_extensions/', '_includes/', '_theme/', 'styles.css', '_quarto.yml', 'js/', 'fonts/']
+// _mathviz/ is the library's source, which `npm run build:mathviz` turns
+// into _extensions/mathviz/ -- listed alongside it so a diff that edits the
+// source without a rebuilt bundle still escalates to the full crawl.
+const siteWidePaths = ['_mathviz/', '_extensions/', '_includes/', '_theme/', 'styles.css', '_quarto.yml', 'js/', 'fonts/']
 
 function findQmdPages(dir, base = '') {
   const pages = []

@@ -1,0 +1,334 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* Floating legend/checkbox hybrid, positioned atop a Plotly chart by
+ * VM.ui.legendOverlay (js/ui/legend-overlay.js) in place of a separate
+ * checkbox row -- each item is both this trace's legend entry and its
+ * visibility toggle. */
+.ojs-legend-overlay {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
+  font-size: 0.85rem;
+  max-width: min(220px, 45vw);
+}
+
+.ojs-legend-overlay .ojs-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  user-select: none;
+  color: var(--vm-text);
+}
+
+.ojs-legend-overlay .ojs-legend-item:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 2px;
+}
+
+.ojs-legend-overlay .ojs-legend-swatch {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 0.2rem;
+  flex: 0 0 auto;
+}
+
+.ojs-legend-overlay .ojs-legend-item[aria-checked="false"] {
+  color: var(--vm-text-soft);
+}
+
+.ojs-legend-overlay .ojs-legend-item[aria-checked="false"] .ojs-legend-swatch {
+  background: var(--vm-border) !important;
+}
+
+.ojs-legend-overlay .ojs-legend-item[aria-checked="false"] span:last-child {
+  text-decoration: line-through;
+}
+
+/* Step/parameter slider bar -- move a page's viewof stepControl inside
+ * .ojs-chart-block and wrap it in this to sit it directly above the
+ * chart, spanning its width. It is a normal-flow block, NOT a floating card:
+ * a bar pinned over the chart's bottom edge covers the part of the curve a
+ * reader is usually scrubbing toward, and no amount of translucency or
+ * collapsing changes the fact that it is in the way. Reserving the space
+ * instead means the chart is never obscured at all.
+ *
+ * Staying inside .ojs-chart-block is still what keeps it visible when the
+ * chart goes fullscreen (see plotly-fullscreen-button.js), which is why this
+ * is not simply a sibling of that wrapper. It takes .ojs-panel's chrome -- a
+ * solid surface rather than the blurred translucent card the legend uses --
+ * because there is no longer any curve behind it to show through. */
+.ojs-chart-controls {
+  /* Ordered ahead of both the chart and the legend cell below, so the page
+   * reads controls-panel, sliders, chart from top to bottom. */
+  order: -2;
+  margin-bottom: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  box-shadow: var(--vm-shadow);
+}
+
+/* The legend is absolutely positioned, and its containing block used to be
+ * .ojs-chart-block -- whose top edge was the chart's top edge, so top:
+ * 0.75rem put it just inside the chart's corner. With the bar ordered above
+ * the chart that is no longer the same point, and the legend would sit on
+ * the sliders. Ordering the legend's own cell between the two puts a
+ * zero-height box exactly at the chart's top edge, and making it the
+ * containing block restores what top/left are measured from -- no JS, and
+ * nothing to keep in sync with the bar's height.
+ *
+ * The overflow reset is not optional: Quarto gives .cell-output-display
+ * overflow: auto (see CLAUDE.md), which clips any descendant escaping its
+ * box. That does nothing while the legend's containing block is outside
+ * that wrapper, but the moment the cell becomes the containing block the
+ * wrapper starts clipping the legend to a zero-height box -- i.e. to
+ * nothing. Same trap the playback popover hit, solved there with the top
+ * layer; here the clip is one known ancestor, so switching it off is
+ * narrower than reaching for [popover]. */
+.ojs-chart-block > div:has(.ojs-legend-overlay) {
+  order: -1;
+  position: relative;
+  height: 0;
+}
+
+.ojs-chart-block > div:has(.ojs-legend-overlay) .cell-output-display,
+.ojs-chart-block > div:has(.ojs-legend-overlay) [id^="ojs-cell-"] {
+  overflow: visible;
+}
+
+/* The legend is the one panel still floating on the chart, and on a narrow
+ * chart it has nowhere to go but on top of the curve it annotates -- so it's
+ * hidden when the chart is under 600px wide, except when the chart is
+ * actually fullscreened. The Fullscreen API applies straight to
+ * .ojs-chart-block (see plotly-fullscreen-button.js), so :fullscreen needs
+ * no JS-toggled class here, and there's room for it once it is.
+ *
+ * A container query on the chart block (chart-block.css names it vm-chart),
+ * not a viewport breakpoint, because what matters is how much of *the chart*
+ * the legend covers, and the viewport is a poor proxy for that: inside an
+ * <iframe> the viewport is the frame, and this rule as a 992px media query
+ * hid the legend in every embed of ordinary column width on a desktop with
+ * room to spare. 600px is where a 220px legend starts covering more than a
+ * third of the chart, which is the phone problem again whatever the screen
+ * -- a phone's chart is ~360px and stays hidden, a tablet's ~700px now shows
+ * it (it is draggable, so it can be moved off the curve).
+ *
+ * The step bar needs nothing here: it reflows as a plain block above the
+ * chart at every width. */
+@container vm-chart (max-width: 599.98px) {
+  .ojs-chart-block:not(:fullscreen) .ojs-legend-overlay {
+    display: none;
+  }
+}
+
+/* Observable Inputs sizes every range input to a fixed ~180px track of its
+ * own, which strands a slider at a fraction of the bar it sits in
+ * -- and leaves it that same fixed size when the chart is fullscreened,
+ * instead of growing with the bar. The .ojs-panel rule above already gives
+ * panel sliders a fluid track; the chart-controls bar needs the same. */
+.ojs-chart-controls input[type="range"] {
+  accent-color: var(--vm-accent);
+  width: 100%;
+}
+
+/* ...and with the track now fluid, cap the number readout beside it the way
+ * .ojs-panel already does, so the pair splits the bar sensibly instead of
+ * the spinner eating a third of it. */
+.ojs-chart-controls input[type="number"] {
+  width: 5.5em;
+  flex: none !important;
+}
+
+/* .ojs-panel input[type="text"] (below) caps every text field on the site at
+ * 10em -- except this one never got the equivalent, so the one text-type
+ * field that lives in the chart-controls bar (every page's "Max"/"Max steps"/"Max
+ * depth" field) had nothing capping it. Without a width, it falls through to
+ * `width: inherit` from Observable's own wrapper div, which in turn inherits
+ * from the form's own natural size -- and since that form is .ojs-auto
+ * (width: auto, sized toward Observable's ~360px form max-width rather than
+ * shrinking to its actual "20"/"2000" content), the input rendered at 273px:
+ * three times the width of the number spinner (94px, capped just above) it
+ * sits right next to in the same bar. */
+.ojs-chart-controls input[type="text"] {
+  width: 10em;
+  max-width: 100%;
+  flex: none !important;
+}
+
+/* Inputs.radio()/checkbox() option groups render one block-level row per
+ * option by default (Observable Inputs' own stylesheet, not this project's)
+ * -- fine in a roomy .ojs-panel, but a tight chart-controls bar shared with
+ * sliders reads better as one horizontal row for a short option list.
+ * Observable appends a "-checkbox" suffix to the form's class for both
+ * radio and checkbox groups, alongside its hashed "oi-<hash>" prefix (the
+ * same hash-prefix convention this file already relies on elsewhere via
+ * `form[class^="oi-"]`) -- matching on that stable suffix instead of the
+ * hash keeps this working across Observable Inputs versions. */
+.ojs-chart-controls form[class$="-checkbox"] > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+/* Observable Inputs hardcodes every <label> to width: 120px; flex-shrink: 0
+ * (see the .ojs-panel rule above for the full explanation). A step-overlay
+ * slider's label is normally short enough ("Step", "n", "α") that this never
+ * shows -- but "Tolerance exponent e (ε = 10⁻ᵉ)" (adaptive-methods,
+ * adaptive-integration) wraps to 3 lines at 120px, making that field 93px
+ * tall against its "Max steps" neighbor's 37px and centering the slider
+ * roughly mid-label instead of level with it.
+ *
+ * Unlike the .ojs-panel fix, this does NOT also switch to flex-direction:
+ * column -- .ojs-panel has room to spare and stacking there is the established
+ * look, but the chart-controls bar is deliberately compact with the label beside the
+ * control (see every other page's Step/Max), and column-stacking here would
+ * grow that bar's height on every page, not just this one. Letting the label
+ * size to its content on a single line is enough: short labels were already
+ * narrower than 120px so this is a no-op for them, and the long one no longer
+ * wraps.
+ *
+ * :not([class$="-checkbox"]) excludes Inputs.radio()/checkbox() groups (e.g.
+ * k-means' "Algorithm" picker), which already get their own row-wrap
+ * treatment immediately above and would otherwise also match
+ * `form[class^="oi-"]`.
+ *
+ * No `white-space: nowrap` here (an earlier version of this rule had it,
+ * to force the long label onto one line): at 390px this bar has nowhere
+ * near enough room for an un-wrapping ~280px label, and since a flex item's
+ * default min-width is its content's min-content size, nowrap text can't
+ * shrink to fit -- it just overflows the viewport instead of wrapping,
+ * scrollWidth measured 360px past the viewport. Left free to wrap, the label
+ * shrinks back to multiple lines exactly like it did before this rule, but
+ * `.ojs-row`'s own `flex-wrap: wrap` has already dropped this field onto its
+ * own line below "Max steps" by the width this matters at, so the two no
+ * longer need to share a row's height in the first place. */
+.ojs-chart-controls form[class^="oi-"]:not([class$="-checkbox"]) label {
+  width: auto;
+}
+
+/* A multi-slider chart-controls bar (e.g. recursive-filters-1d' four filter
+ * parameters) uses .ojs-chart-controls.ojs-grid instead of the plain bar --
+ * see the .ojs-grid rule above for the auto-fit track. Inside a single-line
+ * step bar the label-beside-control layout above is right: there's exactly
+ * one control and plenty of width. Inside a grid cell it isn't: each
+ * ~250px-wide cell still packed a label (four different widths across the
+ * four sliders), a track, and a number readout into one flex row, leaving
+ * the track itself only a few dozen pixels wide with nothing lining up
+ * between cells. Stacking label above control, the same fix the .ojs-panel
+ * rule already uses, hands the whole cell width to the track; .ojs-grid's
+ * own `align-items: end` then bottom-aligns every control across the row
+ * exactly as it does in a panel. */
+/* Done by giving the label a full-width flex basis rather than by switching
+ * the form to flex-direction: column -- the same mechanism .ojs-panel uses
+ * for its own play-button forms (see .ojs-panel .vm-has-play > label below).
+ * Column-stacking would put the play button on a line of its own between the
+ * label and the track, since it lays out all three children vertically; a
+ * wrapped row instead breaks only after the label, leaving play button,
+ * readout and track together on the second line. */
+.ojs-chart-controls.ojs-grid form[class^="oi-"].vm-has-play {
+  /* Restated here purely to win on specificity. `.vm-has-play` already asks
+   * for wrap, but that is a lone class (0,1,0) and Observable Inputs injects
+   * its own `.oi-<hash>` rule into <head> at runtime -- same specificity,
+   * later in the cascade, so it wins and the row computes to nowrap. With
+   * nowrap the full-width label below simply consumes the line and squeezes
+   * the track to zero instead of pushing it onto a second row. (This is the
+   * same runtime-injection trap the .ojs-fill text-field rule documents.) */
+  flex-wrap: wrap;
+}
+
+.ojs-chart-controls.ojs-grid form[class^="oi-"] label {
+  width: auto;
+  flex: 0 0 100%;
+}
+
+/* Raised from the site-wide .ojs-grid minimum (250px) for this case only: at
+ * 250px a typical chart width fits four cells per row, which is exactly the
+ * cramped layout being fixed above. A wider floor lays the four out as a
+ * clean 2x2 with room for the play button next to each track. */
+.ojs-chart-controls.ojs-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+/* ── Draggable legend panel ──────────────────────────────────────── */
+/* The legend floats over the chart, pinned to a corner by default, which is
+ * sometimes exactly where the interesting part of the curve is. A grip fades
+ * in at its right edge; js/ui/draggable-overlay.js does the actual dragging
+ * (and remembers where it was put), this is only its chrome. The step bar
+ * above the chart is not draggable -- it covers nothing, so there is nowhere
+ * to drag it to. */
+
+/* The gutter the grip sits in, so it can never overlap a legend label. The
+ * step bar is in normal flow and has nothing to be dragged clear of, so it
+ * gets no grip and needs no gutter -- 1.5rem of dead space at the end of a
+ * full-width slider bar is worth reclaiming. */
+.ojs-legend-overlay {
+  padding-right: 1.5rem;
+}
+
+.vm-overlay-grip {
+  position: absolute;
+  right: 0.1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  border: 0;
+  border-radius: var(--vm-radius-sm);
+  background: none;
+  color: var(--vm-text-soft);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  /* Without this, a touch drag scrolls the page instead of moving the panel. */
+  touch-action: none;
+  /* Stops a press-and-drag from selecting the panel's text. The JS can't do
+   * this by cancelling pointerdown, which would also suppress the synthesized
+   * click/dblclick and break double-click-to-reset. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Revealed on hover, matching the modebar pill below rather than adding a
+ * third piece of always-on chrome to a chart. */
+.ojs-legend-overlay:hover .vm-overlay-grip,
+.vm-overlay-grip:focus-visible {
+  opacity: 1;
+}
+
+.vm-overlay-grip:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 1px;
+}
+
+.vm-overlay-grip:active,
+.vm-overlay-dragging .vm-overlay-grip {
+  cursor: grabbing;
+}
+
+/* A touch device never fires hover, so a hover-only affordance would be
+ * permanently invisible there. */
+@media (hover: none) {
+  .vm-overlay-grip {
+    opacity: 1;
+  }
+}
+

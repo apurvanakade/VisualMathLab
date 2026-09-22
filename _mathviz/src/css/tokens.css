@@ -1,0 +1,93 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* Design tokens. Every other stylesheet in this library, and every chart
+ * built through VM.plotting, consumes these --vm-* custom properties and
+ * nothing else -- no --bs-* fallback chains, no hardcoded hex -- so a site
+ * re-themes the whole library by redeclaring the tokens it wants to change.
+ *
+ * Both blocks are wrapped in :where(), which has zero specificity: a plain
+ * `:root { --vm-accent: ... }` in a consumer's stylesheet always wins over
+ * these defaults, whatever order the two files are loaded in. That matters
+ * in Quarto, where an extension's stylesheet is injected *before* the
+ * project's own `css:` files but *after* the compiled theme SCSS -- without
+ * :where(), these defaults would beat a theme's own :root declarations.
+ *
+ * JS reads the tokens at call time via getComputedStyle(document.body) --
+ * not documentElement: the dark block below matches <body> (Quarto's toggle
+ * flips a class there), and <html> never does, so reading from <html> would
+ * silently return the light value in dark mode. */
+
+:where(:root) {
+  /* Chrome */
+  --vm-bg: #fdfdfd;
+  --vm-surface: #f6f7f9;
+  --vm-surface-hover: #ececec;
+  --vm-text: #14161a;
+  --vm-text-soft: #5f6672;
+  --vm-border: rgba(27, 31, 36, 0.15);
+  --vm-accent: #2563eb;
+  --vm-accent-hover: #1d4ed8;
+  --vm-grid: rgba(20, 22, 26, 0.08);
+  --vm-radius: 8px;
+  --vm-radius-sm: 6px;
+  --vm-shadow: 0 1px 2px rgba(27, 31, 36, 0.08);
+  /* The face chart text is set in. Defaults to the system stack; a site
+   * that loads its own font redeclares this so charts match the page. */
+  --vm-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Chart palette -- what VM.plotting.colors() returns. Named after what
+   * each color means on a chart (the function itself, an alternate/reference
+   * trace, a "good"/converged marker, ...), not the hue. `halo` is the ring
+   * drawn around a marker to lift it off whatever it sits on: white on
+   * light, the page background on dark. */
+  --vm-color-fn: #2563eb;
+  --vm-color-alt: #dc2626;
+  --vm-color-ok: #16a34a;
+  --vm-color-muted: #94a3b8;
+  --vm-color-ink: #111827;
+  --vm-color-warn: #f59e0b;
+  --vm-color-accent2: #9333ea;
+  --vm-color-accent3: #0d9488;
+  --vm-color-halo: #ffffff;
+}
+
+/* Dark theme. The selector list here MUST match `darkSelector` in
+ * src/js/plotting/chart-theme.js -- that is how the JS decides which theme
+ * is active. `body.quarto-dark` is what Quarto's light/dark toggle sets;
+ * `html[data-bs-theme="dark"]`/`body[data-bs-theme="dark"]` is Bootstrap
+ * 5.3's convention; `html.vm-dark`/`body.vm-dark` is for any site with its
+ * own toggle (put it on <html> or <body>, or call
+ * VM.plotting.configure({darkSelector}) to name your own, scoped the same
+ * way). Deliberately root-scoped rather than a bare attribute/class match --
+ * Quarto sets data-bs-theme="dark" directly on its own <nav> element to
+ * force a dark navbar variant independent of the page theme, and since
+ * custom properties inherit down the DOM, an unscoped selector here leaked
+ * the whole dark palette into the navbar on an otherwise-light page. The
+ * dark palette lightens every hue: the light values read muddy on a
+ * near-black ground. */
+:where(body.quarto-dark, html[data-bs-theme="dark"], body[data-bs-theme="dark"], html.vm-dark, body.vm-dark) {
+  --vm-bg: #171b29;
+  --vm-surface: #1e2436;
+  --vm-surface-hover: #2a3145;
+  --vm-text: #c9cedb;
+  --vm-text-soft: #8b93a7;
+  --vm-border: rgba(224, 234, 247, 0.15);
+  --vm-accent: #8ab4ff;
+  --vm-accent-hover: #a9c7ff;
+  --vm-grid: rgba(201, 206, 219, 0.10);
+  --vm-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+
+  --vm-color-fn: #8ab4ff;
+  --vm-color-alt: #f87171;
+  --vm-color-ok: #4ade80;
+  --vm-color-muted: #7d8aa3;
+  --vm-color-ink: #c9cedb;
+  --vm-color-warn: #fbbf24;
+  --vm-color-accent2: #c084fc;
+  --vm-color-accent3: #2dd4bf;
+  --vm-color-halo: #171b29;
+}

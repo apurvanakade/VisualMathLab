@@ -1,0 +1,270 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* ── Range sliders ───────────────────────────────────────────────── */
+/* Every other control in a panel is fully styled (border, radius, focus
+ * ring); the sliders were the one holdout, left at browser-default geometry
+ * with only accent-color set. --sx is the filled fraction of the track,
+ * written by js/ui/range-progress.js on every input event -- WebKit has no
+ * native equivalent of Firefox's ::-moz-range-progress, so the fill has to
+ * be painted as a gradient on the track itself. */
+
+.ojs-panel input[type="range"],
+.ojs-chart-controls input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.25rem;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.ojs-panel input[type="range"]::-webkit-slider-runnable-track,
+.ojs-chart-controls input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.3rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(var(--vm-accent), var(--vm-accent)) 0 / var(--sx, 0%) 100% no-repeat,
+    var(--vm-border);
+}
+
+.ojs-panel input[type="range"]::-webkit-slider-thumb,
+.ojs-chart-controls input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.95rem;
+  height: 0.95rem;
+  /* centers the thumb on a 0.3rem track: (track - thumb) / 2 */
+  margin-top: -0.325rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--vm-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-bg) 70%, transparent);
+  transition: transform 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.ojs-panel input[type="range"]:active::-webkit-slider-thumb,
+.ojs-chart-controls input[type="range"]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* Firefox paints the filled portion itself via ::-moz-range-progress, so it
+ * needs no --sx and gets a plain track underneath. */
+.ojs-panel input[type="range"]::-moz-range-track,
+.ojs-chart-controls input[type="range"]::-moz-range-track {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--vm-border);
+}
+
+.ojs-panel input[type="range"]::-moz-range-progress,
+.ojs-chart-controls input[type="range"]::-moz-range-progress {
+  height: 0.3rem;
+  border-radius: 999px;
+  background: var(--vm-accent);
+}
+
+.ojs-panel input[type="range"]::-moz-range-thumb,
+.ojs-chart-controls input[type="range"]::-moz-range-thumb {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: none;
+  border-radius: 50%;
+  background: var(--vm-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--vm-bg) 70%, transparent);
+}
+
+.ojs-panel input[type="range"]:focus-visible,
+.ojs-chart-controls input[type="range"]:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 2px;
+}
+
+/* ── Slider playback button ──────────────────────────────────────── */
+/* js/ui/slider-play.js gives every slider a play/pause button plus a small
+ * caret that opens a speed/mode popover, wrapped together in
+ * <span class="vm-play"> and inserted immediately before the range track
+ * inside Observable Inputs' own <form>.
+ *
+ * Laid out as a wrapping flex row so it works with both form layouts the
+ * site already has: in a .ojs-chart-controls the label stays beside the
+ * control (see the chart-controls label rule above) and everything sits on one
+ * line, while in a .ojs-panel the label is given a full-width basis below
+ * so it keeps the stacked look the panel rule established.
+ *
+ * Repeated at the panel rule's own specificity, because that rule
+ * (`.ojs-panel form[class^="oi-"]`, a class plus an attribute selector) sets
+ * flex-direction: column and outranks a lone class -- which left the button
+ * stacked on a line of its own between the label and the track. */
+.vm-has-play,
+.ojs-panel form[class^="oi-"].vm-has-play {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.4rem;
+}
+
+.ojs-panel .vm-has-play > label {
+  flex: 0 0 100%;
+}
+
+/* Whatever holds the track -- Observable Inputs puts the range and its
+ * number readout either directly in the form or inside a wrapper div,
+ * depending on version -- takes the leftover width, so the button never
+ * shortens the track by its own size. The number readout opts back out
+ * via its own `flex: none !important` rules above. */
+/* flex-basis 0, not auto: the track inside carries `width: 100%`, so sizing
+ * this off its content asks for a full line's width and wraps the button
+ * group -- a couple of dozen pixels wide -- onto a line of its own above it.
+ * From zero, flex-grow hands it every pixel the group doesn't use. */
+.vm-has-play > *:not(label):not(.vm-play) {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+}
+
+/* The play button and its speed/mode caret, grouped so the flex rules above
+ * treat the pair as one unit. The popover itself is not in here -- see the
+ * .vm-play-panel note below for why it is mounted at the top level. */
+.vm-play {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.1rem;
+}
+
+/* A quiet icon button, like .vm-overlay-grip rather than the filled accent
+ * button Observable Inputs' own <button> gets -- it sits inside a control,
+ * not at the end of a form, and a filled button there would read as the
+ * page's primary action. The !important overrides are aimed at the
+ * `.ojs-panel form[class^="oi-"] button` skin above, which is written for
+ * the Plot/Regenerate button and would otherwise paint this solid accent. */
+.vm-play-button,
+.vm-play-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem !important;
+  border: 0 !important;
+  border-radius: 999px;
+  color: var(--vm-text-soft) !important;
+  background: none !important;
+  cursor: pointer;
+  transition: color 80ms cubic-bezier(0.33, 1, 0.68, 1), background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.vm-play-button {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.vm-play-more {
+  width: 1rem;
+  /* Narrower hit target than the play button on purpose -- it's the
+   * secondary action of the pair -- but never below the ~24px a touch target
+   * should be, via the padding above. */
+  opacity: 0.7;
+}
+
+.vm-play-button:hover,
+.vm-play-more:hover {
+  background: var(--vm-surface-hover) !important;
+  color: var(--vm-text) !important;
+}
+
+.vm-play-button.vm-playing {
+  color: var(--vm-accent) !important;
+}
+
+.vm-play-button:focus-visible,
+.vm-play-more:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 1px;
+}
+
+/* The speed/mode popover -- same floating-panel chrome as .ojs-legend-overlay
+ * (border, blur, shadow), since both are "a small panel of choices floating
+ * over a chart."
+ *
+ * This is a native popover ([popover] in js/ui/slider-play.js), so it renders
+ * in the TOP LAYER. That is load-bearing, not a stylistic choice: Quarto puts
+ * `overflow: auto` on `.cell-output-display`, the wrapper around every OJS
+ * cell output, which makes it a scroll container -- and a scroll container
+ * clips any descendant that escapes its box. This panel opens well above its
+ * own cell, so as an ordinary absolutely-positioned child it was clipped to
+ * near-invisibility no matter what z-index it carried. The top layer is
+ * outside every ancestor's clip, so it is also immune to the same trap being
+ * reintroduced later via `overflow`, `transform`, `filter` or `contain` on
+ * any wrapper between here and the page.
+ *
+ * Position is set from script (slider-play.js) because CSS anchor positioning
+ * is not cross-browser yet; `inset: auto` and `margin: 0` undo the UA's
+ * default centering of a top-layer box so those coordinates apply. */
+.vm-play-panel {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  /* Deliberately no `display` here -- the UA hides a closed popover with
+   * `display: none`, and an author `display` on the base rule would beat it
+   * and leave the panel permanently visible. It belongs on :popover-open. */
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: color-mix(in srgb, var(--vm-bg) 94%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--vm-shadow);
+  color: var(--vm-text);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.vm-play-panel:popover-open {
+  display: flex;
+}
+
+.vm-play-group {
+  color: var(--vm-text-soft);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vm-play-pills {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.vm-play-pill {
+  border: 1px solid var(--vm-border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--vm-text);
+  background: var(--vm-bg);
+  cursor: pointer;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1), border-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.vm-play-pill:hover {
+  border-color: var(--vm-accent);
+}
+
+.vm-play-pill-on {
+  border-color: var(--vm-accent);
+  background: var(--vm-accent);
+  color: #fff;
+}
+
+.vm-play-pill:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 1px;
+}
+

@@ -1,6 +1,6 @@
 ---
 name: verify
-description: This skill should be used to verify changes to Visual Math Lab (Quarto site, OJS cells, site includes, the vendored mathviz extension) actually work, before committing. Covers both pure-function regressions and browser-runtime errors that quarto render can't catch.
+description: This skill should be used to verify changes to Visual Math Lab (Quarto site, OJS cells, site includes, the mathviz library under _mathviz/) actually work, before committing. Covers both pure-function regressions and browser-runtime errors that quarto render can't catch.
 version: 0.1.0
 ---
 
@@ -15,17 +15,19 @@ npm install
 npx playwright install chromium
 ```
 
-Dev-only tooling (`package.json`, Playwright) — nothing here ships to `docs/` or affects the site's runtime. The shared `VM.*` library and its unit tests live in the mathviz repo (`../mathviz`, vendored here under `_extensions/`); its `npm test` is that library's Tier 1.
+Dev-only tooling (`package.json`, Playwright, math.js) — nothing here ships to `docs/` or affects the site's runtime. The shared `VM.*` library is authored in this repo under `_mathviz/`, so its unit tests run from the same `npm test` as the site's.
 
 ## Tier 1: `npm test` — structural and pure-logic regressions
 
-`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically. Here that is two files: `js/report-bug.test.js` (the one site-specific script left in `js/`, loaded the way a `<script>` tag would via indirect `eval`) and `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`head-scripts.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM).
+`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically, including under the underscore-prefixed `_mathviz/` (Node has no underscore convention; that is Quarto's). Two are the site's own — `js/report-bug.test.js` (the one site-specific script left in `js/`, loaded the way a `<script>` tag would via indirect `eval`) and `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`head-scripts.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM) — and the rest are the library's, below.
 
 ```bash
 npm test
 ```
 
-The `VM.*` unit tests (51 files, one per function) moved to the mathviz repo with the code. After editing a shared function there, run `npm test` **in that repo** — its `scripts/load-vm.mjs` loads the real `src/js/**` files in manifest order into the current realm, so a wiring bug (wrong category, typo'd name, broken cross-file reference) shows up as a real `TypeError`, not a false pass. Then `npm run build` there and `quarto add /path/to/mathviz --no-prompt` here to try the change on real pages before tagging a release.
+The `VM.*` unit tests (one per function, under `_mathviz/src/js/**`) run from this repo's `npm test` along with the site's own — ~224 assertions in one command. `_mathviz/scripts/load-vm.mjs` loads the real `src/js/**` files in manifest order into the current realm, so a wiring bug (wrong category, typo'd name, broken cross-file reference) shows up as a real `TypeError`, not a false pass.
+
+After a green `npm test`, run **`npm run build:mathviz`** before loading any page: the browser reads `_extensions/mathviz/dist/`, which only changes when that build runs, so without it you are testing the previous bundle and will conclude the change did nothing.
 
 ## Tier 2: `npm run verify` — full browser pass over every page
 
@@ -41,7 +43,7 @@ npm run verify   # = node scripts/verify-pages.mjs
 
 Prints `OK`/`FAIL` per page, in page order, with the time each page took; a `FAIL` includes the exact console error (which OJS cell, which line) — usually enough to find the bug directly, no further digging needed.
 
-`npm run verify -- --changed` crawls only the pages whose folder differs from `develop` (`git diff --name-only develop` plus untracked files), which is the right scope for a session's work; it falls back to the full site, saying which file caused it, when the diff touches anything baked into every page (`_extensions/`, `_includes/`, `_theme/`, `styles.css`, `_quarto.yml`, `js/`, `fonts/`).
+`npm run verify -- --changed` crawls only the pages whose folder differs from `develop` (`git diff --name-only develop` plus untracked files), which is the right scope for a session's work; it falls back to the full site, saying which file caused it, when the diff touches anything baked into every page (`_mathviz/`, `_extensions/`, `_includes/`, `_theme/`, `styles.css`, `_quarto.yml`, `js/`, `fonts/`). `_mathviz/` is listed alongside `_extensions/` so that editing the library's source escalates even if the rebuilt bundle isn't in the diff yet.
 
 Using `quarto preview` instead of `quarto render` means only files that actually changed since the last run get re-rendered (`quarto preview`'s file watcher does this on its own, based on mtimes) — `quarto render` unconditionally re-renders the whole site every single invocation, which is wasted work in the common edit-then-verify loop. The first run in a session (or after `docs/` is deleted) still pays a full-site render up front, same as `quarto render` would — `quarto preview` needs the whole project's metadata to build navigation/search regardless of how many pages actually changed.
 
@@ -85,14 +87,14 @@ script fails to execute there, not in a stubbed sandbox.
 
 ## When to run which
 
-- Editing a shared utility in mathviz (adding a math function, renaming, refactoring): `npm test` there first (fast), rebuild, re-`quarto add` it here, then `npm run verify` before considering it done — a function can pass its own unit tests and still be wired wrong at a call site on one of these pages.
+- Editing a shared utility under `_mathviz/src/**` (adding a math function, renaming, refactoring): `npm test` (fast), then `npm run build:mathviz`, then `npm run verify` before considering it done — a function can pass its own unit tests and still be wired wrong at a call site on one of these pages, and the rebuilt bundle lands in every page's `<head>`.
 - Editing a `.qmd` page only (new page, new OJS cells, no shared-utility changes): `npm run verify` is what actually exercises it; `npm test` won't see it.
 - Editing `_includes/analytics.html` or `_includes/consent.html`: `npm test` first (fast, catches a dropped local patch or a re-broken gate expression), then `npm run verify:analytics` — the full `npm run verify` crawl doesn't exercise the consent flow at all, since it never accepts or declines the banner on any page.
-- Adding a new shared utility function (in mathviz): add its `.test.js` alongside it (same pattern as the existing files) and list it in `src/manifest.mjs`, covering the properties that actually matter mathematically where possible (e.g. `sperner-color.test.js` doesn't just check "is a function" — it verifies the *end-to-end Sperner's-lemma property* that a colored triangulation always has an odd number of rainbow triangles, which is a far stronger regression guard than checking individual return values).
+- Adding a new shared utility function (under `_mathviz/src/js/<category>/`): add its `.test.js` alongside it (same pattern as the existing files) and list it in `_mathviz/src/manifest.mjs`, covering the properties that actually matter mathematically where possible (e.g. `sperner-color.test.js` doesn't just check "is a function" — it verifies the *end-to-end Sperner's-lemma property* that a colored triangulation always has an odd number of rainbow triangles, which is a far stronger regression guard than checking individual return values).
 
 ## Gotchas learned building this
 
 - `node --test <directory>` (a bare path argument) fails oddly on some Node versions ("Cannot find module"). `node --test` with **no** path argument works reliably (auto-discovers `*.test.js` recursively from cwd) — that's what `npm test` uses.
-- `assert.deepStrictEqual` on objects/arrays returned from code loaded via `vm.createContext` fails even when structurally identical, because that API creates a separate JS realm with its own `Object.prototype`. Both `js/report-bug.test.js` here and mathviz's `load-vm.mjs` avoid this by running scripts in the current realm via indirect `eval` instead.
+- `assert.deepStrictEqual` on objects/arrays returned from code loaded via `vm.createContext` fails even when structurally identical, because that API creates a separate JS realm with its own `Object.prototype`. Both `js/report-bug.test.js` and `_mathviz/scripts/load-vm.mjs` avoid this by running scripts in the current realm via indirect `eval` instead.
 - `verify-pages.mjs` spawns `quarto preview` with `detached: true` and kills it via `process.kill(-pid, 'SIGTERM')` (the whole process group), not a plain `proc.kill()` — the `quarto` CLI forks its own renderer/server subprocess, and killing only the immediate child leaves that subprocess (and the port) orphaned. It also passes `--timeout 120` to `quarto preview` itself as a belt-and-suspenders fallback in case the script's own cleanup is ever skipped (e.g. a hard crash).
 - Do **not** pass `--no-watch-inputs` to `quarto preview` here — it disables the mtime-based re-render-on-change that keeps served pages current. Without the watcher, `verify-pages.mjs` would silently test whatever was last rendered instead of the current source, defeating the point of verification.

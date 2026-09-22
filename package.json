@@ -1,15 +1,17 @@
 {
   "name": "visual-math-lab",
   "private": true,
-  "description": "Dev-only tooling for Visual Math Lab (Quarto site). Nothing here ships to docs/ or affects site runtime. The shared VM.* library and its tests live in apurvanakade/mathviz.",
+  "description": "Dev-only tooling for Visual Math Lab (Quarto site). Nothing here ships to docs/ or affects site runtime. The shared VM.* library is authored in _mathviz/ and mirrored out to apurvanakade/mathviz.",
   "type": "module",
   "scripts": {
     "test": "node --test",
+    "build:mathviz": "node scripts/sync-mathviz.mjs",
     "verify": "node scripts/verify-pages.mjs",
     "verify:analytics": "node scripts/verify-analytics.mjs",
     "thumbs": "node scripts/shoot-thumbnails.mjs"
   },
   "devDependencies": {
+    "mathjs": "^15.2.0",
     "playwright": "^1.61.1"
   }
 }

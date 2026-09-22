@@ -1,0 +1,187 @@
+# Copyright (c) 2026 Apurva Nakade. All rights reserved.
+# Released under Apache 2.0 license as described in the file LICENSE.
+# Authors: Apurva Nakade
+
+# Mirrors the mathviz library's code out to apurvanakade/mathviz.
+#
+# This repository is the source of truth for that code (see CLAUDE.md's
+# mathviz section): _mathviz/ holds src/, the build script and the
+# extension's two authored files, at exactly the paths the mathviz
+# repository uses, so the sync below is a path-for-path copy.
+#
+# It never pushes to main. Every sync lands on one long-lived branch with
+# one standing pull request, and mathviz's own CI gates it -- including
+# scripts/docs-coverage.test.js, which fails when a newly added VM.* member
+# has no entry in docs/reference/. Those reference pages are hand-written
+# (prose, parameter tables, live OJS demos) and stay authored over there, so
+# a contributor here is never asked to write one: the site ships on green,
+# the sync PR sits red until the docs are filled in on that branch, and
+# mathviz's main -- with its published docs and its tags -- stays correct in
+# the meantime.
+#
+# Two settings on apurvanakade/mathviz make the auto-merge below mean
+# something: "Allow auto-merge", and a branch-protection rule on main that
+# requires CI's checks. WITHOUT REQUIRED CHECKS, `gh pr merge --auto` MERGES
+# IMMEDIATELY and undocumented code reaches main -- the opposite of the
+# intent. "Automatically delete head branches" is also worth enabling; this
+# workflow copes either way (see the branch handling below).
+
+name: Mirror mathviz
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+  # release-mathviz.yml chains into this after pushing its version bump. It
+  # has to call the workflow rather than rely on that push triggering it: a
+  # push made with GITHUB_TOKEN deliberately does not start other workflows.
+  workflow_call:
+
+permissions:
+  contents: read
+
+# Two syncs racing would push the same branch from two checkouts. Queue them
+# rather than cancelling: a cancelled run leaves the branch a commit behind,
+# and the next push would carry both changes anyway, but only if it runs.
+concurrency:
+  group: mirror-mathviz
+  cancel-in-progress: false
+
+env:
+  SYNC_BRANCH: sync/from-visualmathlab
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Explicitly develop, not github.sha. Called from release-mathviz.yml
+      # the default would be the commit that started the dispatch, i.e. the
+      # one before its version bump, and the mirror would carry the old
+      # version out. This workflow only ever mirrors develop.
+      - name: Checkout this repository
+        uses: actions/checkout@v5
+        with:
+          ref: develop
+
+      - name: Record the commit being mirrored
+        run: echo "SRC_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      # A fine-grained PAT on this repository with, on apurvanakade/mathviz,
+      # Contents: read+write and Pull requests: read+write. The default
+      # GITHUB_TOKEN cannot reach another repository. This replaces the
+      # token that used to point the other way (mathviz's
+      # VISUALMATHLAB_DISPATCH_TOKEN, now removed).
+      - name: Checkout apurvanakade/mathviz
+        uses: actions/checkout@v5
+        with:
+          repository: apurvanakade/mathviz
+          token: ${{ secrets.MATHVIZ_PUSH_TOKEN }}
+          path: mirror
+          fetch-depth: 0
+
+      # Continue on the existing branch when a pull request is still open --
+      # that is where the reference docs for anything new are being written,
+      # and those commits must survive. With no open PR the branch is either
+      # absent or left over from one that already merged (its content is in
+      # main, with no parent link if it was squashed, so merging it back
+      # would conflict on every generated file); reset it to main instead.
+      - name: Position the sync branch
+        working-directory: mirror
+        env:
+          GH_TOKEN: ${{ secrets.MATHVIZ_PUSH_TOKEN }}
+        run: |
+          set -euo pipefail
+          open_pr=$(gh pr list --head "$SYNC_BRANCH" --state open --json number --jq '.[0].number // ""')
+          if [ -n "$open_pr" ]; then
+            echo "PR #$open_pr is open; continuing on $SYNC_BRANCH and merging main in."
+            git checkout -B "$SYNC_BRANCH" "origin/$SYNC_BRANCH"
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git merge --no-edit origin/main
+            echo "reset=false" >> "$GITHUB_ENV"
+          else
+            echo "No open PR; starting $SYNC_BRANCH fresh from main."
+            git checkout -B "$SYNC_BRANCH" origin/main
+            echo "reset=true" >> "$GITHUB_ENV"
+          fi
+
+      # Path-for-path. src/ is the one tree copied wholesale, so it is also
+      # the one that may delete: a source file removed here must disappear
+      # there. Everything else is copied file by file, which is why
+      # scripts/docs-coverage.test.js -- authored over there, and testing
+      # docs/ rather than src/ -- lives in scripts/ and not in src/.
+      - name: Copy the library's code into the mirror
+        run: |
+          set -euo pipefail
+          rsync -a --delete _mathviz/src/ mirror/src/
+          cp _mathviz/scripts/build.mjs _mathviz/scripts/load-vm.mjs mirror/scripts/
+          cp _mathviz/package.json mirror/package.json
+          cp _mathviz/_extensions/mathviz/_extension.yml \
+             _mathviz/_extensions/mathviz/mathviz.lua \
+             mirror/_extensions/mathviz/
+
+      # Rebuild in the mirror rather than copying this repo's bundle across:
+      # over there the same script also writes dist/ (which jsDelivr and
+      # `quarto add` serve straight from the tag) and the starter/ mirror, so
+      # running it there is what keeps those three copies consistent.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rebuild the bundle in the mirror
+        working-directory: mirror
+        run: |
+          npm ci
+          npm run build
+
+      # Deliberately no `npm test` here. See the header: a new VM.* member
+      # has no reference entry yet, docs-coverage would fail, and failing
+      # this job would block the site's develop on work that belongs in the
+      # other repository. mathviz's CI runs on the pushed branch and on the
+      # PR, which is where that failure belongs.
+      - name: Commit and push
+        id: push
+        working-directory: mirror
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing to mirror."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git commit -m "Sync from VisualMathLab@${SRC_SHA:0:7}" \
+                     -m "Mirrored by .github/workflows/mirror-mathviz.yml from apurvanakade/VisualMathLab@$SRC_SHA."
+          # --force only when the branch was reset to main above, where
+          # there is no open PR and so nothing of yours to overwrite.
+          if [ "$reset" = "true" ]; then
+            git push --force origin "$SYNC_BRANCH"
+          else
+            git push origin "$SYNC_BRANCH"
+          fi
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update the pull request
+        if: steps.push.outputs.changed == 'true'
+        working-directory: mirror
+        env:
+          GH_TOKEN: ${{ secrets.MATHVIZ_PUSH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$(gh pr list --head "$SYNC_BRANCH" --state open --json number --jq '.[0].number // ""')" ]; then
+            gh pr create \
+              --base main \
+              --head "$SYNC_BRANCH" \
+              --title "Sync from VisualMathLab" \
+              --body-file "$GITHUB_WORKSPACE/.github/mirror-pr-body.md"
+          fi
+          # Merges itself once CI is green -- which, for a sync that adds a
+          # new VM.* member, means once its reference entry exists. Requires
+          # "Allow auto-merge" and a branch-protection rule on main that
+          # requires CI; see this workflow's header.
+          gh pr merge "$SYNC_BRANCH" --auto --squash --delete-branch

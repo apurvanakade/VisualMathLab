@@ -1,0 +1,237 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* ── Parameter controls panel ────────────────────────────────────── */
+/* Composable primitives: .ojs-panel is chrome only, .ojs-row/.ojs-grid are
+ * layout only. Combine them (e.g. class="ojs-panel ojs-row") for a
+ * standalone panel, or nest a bare .ojs-row/.ojs-grid inside a .ojs-panel
+ * for a control group within a larger panel — nesting two .ojs-panels
+ * would double up the border/background. */
+
+.ojs-panel {
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+}
+
+.ojs-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: flex-end;
+}
+
+/* A flex/grid item's automatic minimum size is its content's min-content
+ * width, so an item can refuse to shrink below whatever is inside it and
+ * push the whole row past its container instead. Every child here wraps one
+ * Observable control whose intrinsic width is a fixed 360px (see the width
+ * rule on .ojs-panel form[class^="oi-"] below), which is wider than a
+ * two-column .ojs-grid track on a narrow viewport -- and a track sized to a
+ * min-content contribution that large overflows the page rather than
+ * wrapping. Same reason .quarto-layout-cell needs it above. */
+.ojs-row > *,
+.ojs-grid > * {
+  min-width: 0;
+}
+
+/* First control grows to fill the row; later ones (e.g. a button) keep their
+ * natural width.
+ *
+ * :first-of-type/:last-of-type rather than :first-child/:last-child, which
+ * these were. The child forms mean "a div that is ALSO the first/last child",
+ * so any non-div sibling inserted at either end stops them matching anything
+ * at all -- which is what happened when js/ui/draggable-overlay.js started
+ * appending its <button> grip to the legend panel, silently dropping the
+ * `flex: 1 1 200px` that makes a step slider fill its row. Every .ojs-row's
+ * children are Quarto `div.cell` wrappers, so the two forms are otherwise
+ * equivalent here. */
+.ojs-row > div { margin: 0; }
+.ojs-row > div:first-of-type { flex: 1 1 200px; }
+.ojs-row > div:last-of-type { flex: 0 0 auto; }
+
+/* auto-fit so empty tracks collapse instead of pinning real ones to the minmax floor */
+.ojs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 0.25rem 0.5rem;
+  align-items: end;
+}
+
+/* Skin every native input inside a panel to match its chrome */
+.ojs-panel input {
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  background: var(--vm-bg);
+  color: var(--vm-text);
+}
+
+/* !important overrides Observable Inputs' own flex-shrink on the number spinner */
+.ojs-panel input[type="number"] {
+  width: 5.5em;
+  flex: none !important;
+}
+
+/* 10em comfortably fits the short values/expressions (0.16, 20*3, pi/4,
+ * -5, ...) that the overwhelming majority of text fields hold. The
+ * minority that genuinely need to hold a long formula (fText, gText, the
+ * y' = f(t, y) field, ...) already opt into .ojs-fill everywhere in this
+ * codebase — none of them rely on this default, so it's safe to keep this
+ * default compact rather than sized for the exceptional case. */
+.ojs-panel input[type="text"] {
+  width: 10em;
+  max-width: 100%;
+  flex: none !important;
+}
+
+.ojs-panel input:focus {
+  outline: none;
+  border-color: var(--vm-accent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
+}
+
+.ojs-panel input[type="range"] {
+  border: none;
+  padding: 0;
+  background: none;
+  accent-color: var(--vm-accent);
+  width: 100%;
+}
+
+/* Observable Inputs' button has no class of its own to skin, and its
+ * browser-default text color doesn't adapt to the dark theme's panel
+ * background — style it explicitly instead of relying on defaults.
+ * Scoped to Observable Inputs' generated form (class^="oi-", per
+ * quarto-ojs.css) so this doesn't also catch Quarto's own per-cell
+ * "Copy to Clipboard" button, which lives in the same panel. */
+.ojs-panel form[class^="oi-"] button {
+  border: 1px solid var(--vm-accent);
+  border-radius: var(--vm-radius-sm);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #fff;
+  background: var(--vm-accent);
+  box-shadow: rgba(27, 31, 36, 0.1) 0 1px 0 0 inset;
+  transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
+  cursor: pointer;
+}
+
+.ojs-panel form[class^="oi-"] button:hover {
+  background: var(--vm-accent-hover);
+  border-color: var(--vm-accent-hover);
+}
+
+.ojs-panel form[class^="oi-"] button:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 35%, transparent);
+}
+
+/* Observable Inputs lays out every control as <form class="oi-...">
+ * label + input side by side in a flex row (display: flex; align-items:
+ * center; flex-direction: row — verified via computed styles, since this
+ * rule lives in Observable's own injected stylesheet rather than
+ * anything in this repo). When a label's text wraps to more lines than a
+ * neighboring field's label (a narrow .ojs-grid column, a long parameter
+ * name), each field's input ends up vertically centered in its own
+ * differently-tall row, so inputs across a shared .ojs-row/.ojs-grid stop
+ * lining up with each other. Stacking label above control instead removes
+ * the row-height dependency entirely: the control is always the last
+ * (bottom) element of its own field regardless of how many lines the
+ * label took, so .ojs-grid's `align-items: end` then bottom-aligns every
+ * control in a row exactly, no matter how each label wraps. */
+.ojs-panel form[class^="oi-"] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  /* Observable gives every form a fixed 360px width. In the row layout it
+   * was written for that is a sensible default; in a narrower .ojs-grid
+   * track it is a hard floor the item cannot shrink under, so a two-column
+   * grid on a ~700px viewport resolved its tracks to 360px each and pushed
+   * ~70px off the right of the page. A percentage is the fix rather than a
+   * smaller fixed width: percentages don't contribute to intrinsic sizing,
+   * so the track goes back to being sized by the grid instead of by its
+   * contents. The visible field width is unaffected either way -- that is
+   * set on the input (10em, or .ojs-fill for a formula), not on the form. */
+  width: 100%;
+}
+
+/* Observable also hardcodes every <label> to a fixed width: 120px;
+ * flex-shrink: 0 — a leftover of the row layout, where capping every
+ * label to the same width keeps inputs beside differently-long labels
+ * starting at the same x-position. In the column layout above there's no
+ * such row to align, so that fixed 120px just forces labels wider than
+ * ~120px (e.g. "Initial condition y(0)") to wrap even when the field has
+ * plenty of room. Let each label size to its own content instead. */
+.ojs-panel form[class^="oi-"] label {
+  width: auto;
+}
+
+/* Attach to an Inputs.* wrapper div to make it fill the row, overriding
+ * Observable Inputs' own default max-width: 360px cap on its form wrapper. */
+.ojs-fill { width: 100% !important; max-width: none !important; }
+
+/* Lets the user drag an expression field's right edge wider -- for fields
+ * like fText/gText/"y' = f(t, y)" where a formula can outgrow the fixed
+ * 10em default and the user wants to see the whole thing at once. This is
+ * automatic, not opt-in: every expression field already gets .ojs-fill
+ * (see above) and no numeric field does (10em is plenty for a guess,
+ * endpoint, or seed) -- see the comment on the 10em rule below -- so
+ * `form.ojs-fill` containing a text input reliably means "this is an
+ * expression field," with no extra class or JS needed at the call site.
+ * :has() targets Observable Inputs' own wrapper <div> around the actual
+ * <input> (form > div > input), which is what needs `resize` -- browsers
+ * don't support resizing an <input> directly, only elements that establish
+ * their own scrollable box. Horizontal only: these are single-line fields,
+ * so a taller box never helps.
+ * Scoped under .ojs-panel with three selector parts (class + element +
+ * class) so this reliably beats two same-specificity competitors that
+ * would otherwise win purely on load order: Observable Inputs' own
+ * dynamically-injected `.oi-xxxxxx-input { width: 100% }` rule (appended to
+ * <head> at runtime, after this stylesheet) and this file's own
+ * `.ojs-panel input[type="text"] { width: 10em }` default below. */
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) {
+  display: inline-block;
+  width: 20em;
+  min-width: 10em;
+  max-width: 100%;
+  resize: horizontal;
+  overflow: hidden;
+}
+
+.ojs-panel form.ojs-fill > div:has(> input[type="text"]) > input[type="text"] {
+  width: 100%;
+}
+
+/* Attach to an Inputs.* wrapper div to keep it at its natural width instead
+ * of Observable Inputs' 100%-wide default, which would otherwise force the
+ * row to wrap. */
+.ojs-auto { width: auto !important; flex: none !important; }
+
+/* Attach to an Inputs.* wrapper div to push it to the right edge of its
+ * container -- e.g. every page's "Plot" button, so it lands in the same
+ * bottom-right corner everywhere regardless of whether it shares a .ojs-row
+ * with a growing sibling field or sits alone below a .ojs-grid. A plain
+ * block-level div with width:auto (e.g. what .ojs-auto sets) actually
+ * stretches to fill its container in normal block flow -- unlike a flex
+ * item, "auto" here does NOT mean "shrink to content" -- so there's no
+ * free space left for margin-left:auto to consume. Forcing fit-content
+ * first is what makes the auto margin actually push it right, in both
+ * plain-block (a lone button under a .ojs-grid) and flex (a button beside
+ * a growing sibling in a .ojs-row) contexts. */
+.ojs-end { width: fit-content !important; margin-left: auto !important; }
+
+
+@media (max-width: 768px) {
+  .ojs-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .ojs-grid { grid-template-columns: 1fr; }
+}

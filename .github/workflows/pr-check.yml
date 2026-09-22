@@ -56,6 +56,18 @@ jobs:
       - name: Structural tests
         run: npm test
 
+      # _extensions/mathviz/ is generated from _mathviz/src/ and committed,
+      # because publish.yml renders with no npm step. Rebuilding has to be a
+      # no-op on a branch that already ran `npm run build:mathviz`; if it
+      # isn't, the committed bundle and the source it claims to be built
+      # from have drifted, and every page on the site is serving the stale
+      # one.
+      - name: The committed mathviz bundle matches its source
+        run: |
+          npm run build:mathviz
+          git diff --exit-code -- _extensions/mathviz \
+            || { echo "::error::_extensions/mathviz is out of date: run 'npm run build:mathviz' and commit the result."; exit 1; }
+
       - name: Render and crawl every page
         run: npm run verify
 

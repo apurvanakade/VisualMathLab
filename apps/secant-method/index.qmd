@@ -353,10 +353,10 @@ setup = {
   for (const row of result.rows) {
     if (Number.isFinite(row.fx) && Math.abs(row.fx) <= 1e8) yValues.push(row.fx)
     if (Number.isFinite(row.fxPrev) && Math.abs(row.fxPrev) <= 1e8) yValues.push(row.fxPrev)
-    if (Number.isFinite(row.xPrev) && Number.isFinite(row.fxPrev) && Number.isFinite(row.x) && Number.isFinite(row.fx) && row.x !== row.xPrev) {
+    if (Number.isFinite(row.xPrev) && Number.isFinite(row.fxPrev) && Number.isFinite(row.x) && Number.isFinite(row.fx) && Number.isFinite(row.xNext) && row.x !== row.xPrev) {
       const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
-      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x, row.xNext) - 0.75)
+      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x, row.xNext) + 0.75)
       for (const v of [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)]) {
         if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
       }
@@ -407,7 +407,9 @@ mainPlot = {
       }
     }
 
-    // Secant lines: previous ones faded, current one solid
+    // Secant lines: previous ones faded, current one solid. Each spans
+    // both secant points and the x-intercept (plus a margin), so the
+    // intercept marker is always on the drawn segment.
     const validSecantRows = []
     for (const r of visibleRows) {
       if (Number.isFinite(r.xPrev) && Number.isFinite(r.fxPrev) && Number.isFinite(r.x) && Number.isFinite(r.fx) && Number.isFinite(r.xNext)) {
@@ -421,8 +423,8 @@ mainPlot = {
     if (showSecant) {
       for (const row of prevSecants) {
         const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
-        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x, row.xNext) - 0.75)
+        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x, row.xNext) + 0.75)
         data.push({
           x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
           type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
@@ -432,8 +434,8 @@ mainPlot = {
       if (currentSecant) {
         const row = currentSecant
         const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x) - 0.75)
-        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x) + 0.75)
+        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x, row.xNext) - 0.75)
+        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x, row.xNext) + 0.75)
         data.push({
           x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
           type: "scatter", mode: "lines", name: "Secant line", showlegend: false,

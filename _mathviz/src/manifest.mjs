@@ -18,7 +18,6 @@ export const js = [
   'expressions/make-rational.js',
   'expressions/make-ode-function.js',
   'expressions/make-function-of-t.js',
-  'expressions/noop.js',
   'plotting/padded-range.js',
   'plotting/chart-theme.js',
   'plotting/plotly-fullscreen-button.js',

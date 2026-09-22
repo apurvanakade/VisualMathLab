@@ -208,6 +208,12 @@ _quarto.yml.
      is not part of the mathviz library. -->
 <script src="./js/report-bug.js"></script>
 
+<!-- Site-specific: the "Share" button injected above every app's controls
+     (<div class="vm-app">), opening a dialog that builds the ?embed= iframe
+     snippet embed.qmd documents. Skips itself on html.vm-embed, same as
+     report-bug.js and for the same reason -- see js/share.js. -->
+<script src="./js/share.js"></script>
+
 
 <link rel="stylesheet" href="styles.css">
 <meta property="og:title" content="Embedding an app – Visual Math Lab">
@@ -647,6 +653,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 <p>Every interactive app on this site can be dropped into another web page – lecture notes, a course site, a blog post – as an <code>&lt;iframe&gt;</code>. Add <code>embed=1</code> to the app’s URL and the page renders the app alone – its controls and its chart, with none of the page’s explanation, none of the diagnostic plots and tables under the chart, and no navigation bar, sidebar, title or footer.</p>
+<p>The fastest way to get there: every app has a <strong>Share</strong> button above its controls. It writes the snippet below for you, with a checkbox for whether to carry the inputs you currently have set up and a field for the frame height.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">iframe</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  src</span><span class="op">=</span><span class="st">"https://www.visualmathlab.com/apps/newton-method/?embed=1</span><span class="er">&amp;</span><span class="st">f=x^3-2</span><span class="er">&amp;</span><span class="st">x0=1"</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  width</span><span class="op">=</span><span class="st">"100%"</span><span class="ot"> height</span><span class="op">=</span><span class="st">"900"</span><span class="ot"> loading</span><span class="op">=</span><span class="st">"lazy"</span></span>
@@ -654,11 +661,11 @@ Authors: Apurva Nakade
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;/</span><span class="kw">iframe</span><span class="dt">&gt;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <section id="choosing-what-the-app-opens-with" class="level2">
 <h2 class="anchored" data-anchor-id="choosing-what-the-app-opens-with">Choosing what the app opens with</h2>
-<p>Every input on an app page is mirrored in its URL, so the parameters you see in the address bar after setting up an app are the parameters to put in the <code>src</code>. Set the function, endpoints, step counts and options the way you want readers to first see them, copy the URL, and append <code>&amp;embed=1</code>. Readers can still change everything once the app has loaded; the URL only sets the starting point.</p>
+<p>Every input on an app page is mirrored in its URL, so the parameters you see in the address bar after setting up an app are the parameters to put in the <code>src</code>. Set the function, endpoints, step counts and options the way you want readers to first see them, then open Share and tick <strong>Keep the current inputs</strong> – no need to copy the address bar or append <code>&amp;embed=1</code> by hand. Readers can still change everything once the app has loaded; the URL only sets the starting point.</p>
 </section>
 <section id="pages-with-more-than-one-app" class="level2">
 <h2 class="anchored" data-anchor-id="pages-with-more-than-one-app">Pages with more than one app</h2>
-<p>A few pages hold several interactive figures, one per step of an argument. <code>embed=1</code> gives the first; to frame a later one, name it instead of <code>1</code>. <a href="./apps/sperners-lemma-combinatorial-proof/index.html">Sperner’s Lemma – Combinatorial Proof</a> has three: <code>embed=triangulation</code> (the colored triangulation at the top, the same as <code>embed=1</code>), <code>embed=doors</code> (the three kinds of room) and <code>embed=boundary</code> (the bottom edge on its own). A name no figure on the page carries falls back to the first.</p>
+<p>A few pages hold several interactive figures, one per step of an argument. <code>embed=1</code> gives the first; to frame a later one, name it instead of <code>1</code>. Each figure has its own Share button right above it, so the snippet it writes already names the right one. <a href="./apps/sperners-lemma-combinatorial-proof/index.html">Sperner’s Lemma – Combinatorial Proof</a> has three: <code>embed=triangulation</code> (the colored triangulation at the top, the same as <code>embed=1</code>), <code>embed=doors</code> (the three kinds of room) and <code>embed=boundary</code> (the bottom edge on its own). A name no figure on the page carries falls back to the first.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode html code-with-copy"><code class="sourceCode html"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="dt">&lt;</span><span class="kw">iframe</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ot">  src</span><span class="op">=</span><span class="st">"https://www.visualmathlab.com/apps/sperners-lemma-combinatorial-proof/?embed=boundary"</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ot">  width</span><span class="op">=</span><span class="st">"100%"</span><span class="ot"> height</span><span class="op">=</span><span class="st">"480"</span><span class="ot"> loading</span><span class="op">=</span><span class="st">"lazy"</span></span>
@@ -667,7 +674,7 @@ Authors: Apurva Nakade
 </section>
 <section id="size" class="level2">
 <h2 class="anchored" data-anchor-id="size">Size</h2>
-<p>The controls keep their natural height and the chart takes whatever the frame has left, so the frame’s <code>height</code> decides how big the chart is and nothing inside it scrolls. <code>900</code> pixels gives every app a chart of at least about 400 pixels; <code>720</code> still fits most, but the apps with the longest controls panels are then down to the 300-pixel floor the chart holds at, below which the frame scrolls instead. <code>width="100%"</code> lets the frame follow your column. Below about 600 pixels of width the controls stack vertically and the floating legend is hidden, as it is on a phone; that works but is cramped, so on a narrow layout consider linking to the app instead.</p>
+<p>The controls keep their natural height and the chart takes whatever the frame has left, so the frame’s <code>height</code> decides how big the chart is and nothing inside it scrolls. <code>900</code> pixels gives every app a chart of at least about 400 pixels; <code>720</code> still fits most, but the apps with the longest controls panels are then down to the 300-pixel floor the chart holds at, below which the frame scrolls instead. <code>width="100%"</code> lets the frame follow your column. Below about 600 pixels of width the controls stack vertically and the floating legend is hidden, as it is on a phone; that works but is cramped, so on a narrow layout consider linking to the app instead. The Share dialog’s height field starts at one of these numbers – 900 for a Plotly chart, the figure’s own drawn height for anything else – and you can change it there instead of editing the snippet by hand.</p>
 </section>
 <section id="privacy" class="level2">
 <h2 class="anchored" data-anchor-id="privacy">Privacy</h2>

@@ -11,8 +11,8 @@
   // else. Matches site-url in _quarto.yml.
   const SITE_ORIGIN = "https://www.visualmathlab.com"
 
-  // Pure builders (exported below for js/share.test.js) -- no DOM, so they
-  // don't need a real `document`/`location` to test.
+  // Pure builders (exported as VML.share below for js/share.test.js) -- no
+  // DOM, so they don't need a real `document`/`location` to test.
 
   // Builds the absolute URL an <iframe src> should use: the given page,
   // carrying its current inputs when `keepInputs` is true, with `embed`
@@ -178,5 +178,12 @@
     })
   }
 
-  globalThis.VM = {...globalThis.VM, ui: {...globalThis.VM?.ui, embedSrc, buildEmbedSnippet}}
+  // VML, not VM: VM is the mathviz library's namespace, and mathviz is
+  // published to other sites that have never heard of this file. Merging
+  // into VM.ui would put a site-local function where a library function is
+  // expected, and the day mathviz grows an embedSrc of its own one of the
+  // two would silently win (this script loads after the extension, so it
+  // would be this one). A separate global keeps the boundary the same in
+  // the code as it is in the repo.
+  globalThis.VML = {...globalThis.VML, share: {embedSrc, buildEmbedSnippet}}
 })(window)

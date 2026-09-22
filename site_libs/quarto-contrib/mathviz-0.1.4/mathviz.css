@@ -39,6 +39,15 @@
   --vm-border: rgba(27, 31, 36, 0.15);
   --vm-accent: #2563eb;
   --vm-accent-hover: #1d4ed8;
+  /* Text and icons drawn ON --vm-accent, for a filled button or pill. Not
+   * white: --vm-accent is a mid blue in light mode but a pale blue in dark
+   * mode, and white on the dark accent measures 2.09:1 -- below even the
+   * 3:1 large-text floor, which made every Plot button on the site hard to
+   * read in dark mode. The page background is the right answer in both
+   * themes, because the accent is already chosen to contrast with it
+   * (5.08:1 light, 8.21:1 dark). A theme overriding --vm-accent should
+   * override this with its own background. */
+  --vm-on-accent: #fdfdfd;
   --vm-grid: rgba(20, 22, 26, 0.08);
   --vm-radius: 8px;
   --vm-radius-sm: 6px;
@@ -100,6 +109,7 @@
   --vm-border: rgba(224, 234, 247, 0.15);
   --vm-accent: #8ab4ff;
   --vm-accent-hover: #a9c7ff;
+  --vm-on-accent: #171b29;
   --vm-grid: rgba(201, 206, 219, 0.10);
   --vm-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   --vm-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238b93a7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
@@ -224,11 +234,11 @@
   flex: none !important;
 }
 
-.ojs-panel input:focus {
-  outline: none;
-  border-color: var(--vm-accent);
-  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
-}
+/* One focus ring for every field in a panel. <select> is skinned separately
+ * below (it has a chevron and its own sizing), but its focus state is not a
+ * separate design decision -- keeping the two in one rule is what stops them
+ * drifting apart. */
+.ojs-panel input:focus,
 
 /* Nothing skinned <select> before this -- Observable Inputs' select()
  * renders the bare browser default, so "Try an example" showed up as a
@@ -257,11 +267,6 @@
   max-width: 100%;
 }
 
-.ojs-panel select:focus {
-  outline: none;
-  border-color: var(--vm-accent);
-  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
-}
 
 .ojs-panel input[type="range"] {
   border: none;
@@ -291,7 +296,7 @@
   padding: 0 0.75rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--vm-on-accent);
   background: var(--vm-accent);
   transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
   cursor: pointer;
@@ -500,7 +505,7 @@
  * Plotly chart itself doesn't paint (e.g. around a narrower aspect ratio).
  * plotly-fullscreen-button.js records the chart's on-page width/height
  * ratio into --vm-plot-aspect-ratio right before requesting fullscreen,
- * since the div's normal sizing (width: 100%; height: 78vh) is relative to
+ * since the div's normal sizing (width: 100%; height: 72vh) is relative to
  * the *fullscreen* viewport once entered, not its original box, and would
  * otherwise stretch the plot to a different ratio than on the page. The
  * existing per-page ResizeObserver on the graph div (see e.g.
@@ -526,9 +531,9 @@
  * how many levels deep or what Quarto/Observable happens to name them,
  * making each fill and center its child in turn -- the chain bottoms out
  * at .js-plotly-plot itself, which doesn't contain a nested
- * .js-plotly-plot so this rule doesn't match it. The legend/step overlays
- * are unaffected since they're siblings of this chain, not ancestors of
- * the graph div. */
+ * .js-plotly-plot so this rule doesn't match it. The legend overlay and
+ * the controls bar are unaffected since they're siblings of this chain,
+ * not ancestors of the graph div. */
 .ojs-chart-block:fullscreen div:has(.js-plotly-plot) {
   display: flex;
   align-items: center;
@@ -1168,8 +1173,10 @@
  * when it appears. The icon colors themselves come from layout.modebar in
  * js/plotting/chart-theme.js -- only Plotly can set those, since it paints
  * the SVG fills inline. Everything here is the surrounding chrome, matching
- * .ojs-legend-overlay / .ojs-chart-controls so all three float in the same
- * visual language. */
+ * .ojs-legend-overlay -- the other thing that floats over the chart, and so
+ * the other thing wearing a blurred translucent card. (.ojs-chart-controls
+ * is in normal flow above the chart and takes .ojs-panel's solid surface
+ * instead; it is not what this is matching.) */
 
 .js-plotly-plot .modebar {
   display: flex;
@@ -1414,11 +1421,11 @@
   color: var(--vm-accent) !important;
 }
 
+/* The play button, its popover's disclosure arrow, and the speed pills
+ * inside that popover are one control family, so they share one focus ring
+ * rather than three copies of it that can drift. */
 .vm-play-button:focus-visible,
-.vm-play-more:focus-visible {
-  outline: 2px solid var(--vm-accent);
-  outline-offset: 1px;
-}
+.vm-play-more:focus-visible,
 
 /* The speed/mode popover -- same floating-panel chrome as .ojs-legend-overlay
  * (border, blur, shadow), since both are "a small panel of choices floating
@@ -1493,13 +1500,9 @@
 .vm-play-pill-on {
   border-color: var(--vm-accent);
   background: var(--vm-accent);
-  color: #fff;
+  color: var(--vm-on-accent);
 }
 
-.vm-play-pill:focus-visible {
-  outline: 2px solid var(--vm-accent);
-  outline-offset: 1px;
-}
 
 
 /* ---- src/css/table.css ---- */
@@ -1531,12 +1534,12 @@
 
 .ojs-panel input.vm-invalid,
 input.vm-invalid {
-  border-color: var(--vm-color-alt, #dc2626) !important;
-  background: color-mix(in srgb, var(--vm-color-alt, #dc2626) 7%, transparent);
+  border-color: var(--vm-color-alt) !important;
+  background: color-mix(in srgb, var(--vm-color-alt) 7%, transparent);
 }
 
 .ojs-panel input.vm-invalid:focus,
 input.vm-invalid:focus {
-  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-color-alt, #dc2626) 25%, transparent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-color-alt) 25%, transparent);
 }
 

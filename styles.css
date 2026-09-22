@@ -8,10 +8,10 @@
  * ojs-* panel/row/grid primitives, the chart block and its fullscreen chain,
  * the floating legend, the slider bar and play button, the modebar, the
  * prose swatches, the iteration table -- is the mathviz extension's
- * stylesheet (_extensions/mathviz/dist/mathviz.css, source in the
- * apurvanakade/mathviz repo under src/css/). What is left here is what
- * only this site has: the collapsible sidebar and its rail, navbar and
- * footer, listing cards, callouts, the report-bug popup, and embed mode.
+ * stylesheet (_extensions/mathviz/dist/mathviz.css, authored in this repo
+ * under _mathviz/src/css/). What is left here is what only this site has:
+ * the collapsible sidebar and its rail, navbar and footer, listing cards,
+ * callouts, the report-bug popup, the share dialog, and embed mode.
  *
  * Design tokens (--vm-*) get their defaults from mathviz's tokens.css and
  * are overridden by _theme/vml-light.scss and _theme/vml-dark.scss, which
@@ -28,8 +28,8 @@
  * rules force the off-canvas treatment at every width instead, driven by
  * our own .vm-sidebar-open/.vm-sidebar-pinned classes on <body> (see
  * _includes/sidebar-rail.html) rather than Bootstrap's .collapse/.show —
- * bypassing Bootstrap's own JS entirely is what lets the rail's
- * hover-to-preview interaction work without fighting it. */
+ * bypassing Bootstrap's own JS entirely, so the rail's open/pin/Escape
+ * handling is the only thing driving the panel. */
 
 /* Scoped to >=992px on purpose. Below that Quarto's own responsive grid
  * already collapses the sidebar track and sizes the body column to the
@@ -109,8 +109,7 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
 }
 
 /* Quarto's own backdrop is Bootstrap-collapse-driven and unused here —
- * sidebar-rail.html's own mouseleave/click-outside/Escape handling
- * replaces it. */
+ * sidebar-rail.html's own click-outside/Escape handling replaces it. */
 #quarto-sidebar-glass {
   display: none !important;
 }
@@ -148,7 +147,7 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
 
 /* The always-visible rail: a slim strip at the left edge with a hamburger
  * toggle, present regardless of sidebar state so there's always something
- * to hover or click to bring the sidebar back. */
+ * to click to bring the sidebar back. */
 /* Only as tall as the buttons it holds. It used to run the full height of
  * the viewport, to catch a pointer drifting into the left edge and preview
  * the sidebar; with that behaviour gone the tall box had no purpose and one
@@ -202,7 +201,7 @@ body.vm-sidebar-open #vm-sidebar-rail {
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  border-radius: var(--vm-radius-sm, 6px);
+  border-radius: var(--vm-radius-sm);
   background: transparent;
   color: var(--vm-text-soft);
   cursor: pointer;
@@ -260,8 +259,18 @@ body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
  * 812px against a 649px column) scrolls inside its own box instead, the
  * same way .ojs-table-container does for a wide table. overflow-y stays
  * hidden so this only ever adds a horizontal scrollbar; MathJax positions
- * its own glyphs and needs no vertical scrolling. */
+ * its own glyphs and needs no vertical scrolling.
+ *
+ * max-width is what makes the box a box at all: left unconstrained, a wide
+ * formula forces its containing line wider than the viewport, which on a
+ * narrow phone expands the whole page's layout viewport rather than just
+ * that one line (the same failure mode the "Page grid" section's
+ * minmax(0, ...) comment describes for a different cause). A display
+ * equation is already its own block box, so capping it directly is safe --
+ * inline math is not, and is deliberately left alone; see the note at the
+ * end of this section. */
 mjx-container[display="true"] {
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   /* The scrollbar is drawn inside the box, so give it a lane of its own
@@ -313,7 +322,7 @@ main.content a {
   border: none;
   border-radius: var(--vm-radius-sm);
   background: var(--vm-accent);
-  color: #fff;
+  color: var(--vm-on-accent);
   font-size: 0.8rem;
   line-height: 1.2;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -384,13 +393,7 @@ main.content a {
   color: var(--vm-text-soft);
 }
 
-.vm-share-checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
-
+.vm-share-checkbox-row,
 .vm-share-height-row {
   display: flex;
   align-items: center;
@@ -437,7 +440,7 @@ main.content a {
 .vm-share-actions .vm-share-copy {
   background: var(--vm-accent);
   border-color: var(--vm-accent);
-  color: #fff;
+  color: var(--vm-on-accent);
 }
 
 .vm-share-actions .vm-share-copy:hover {
@@ -474,20 +477,6 @@ main.content a {
   body.vm-sidebar-open #vm-sidebar-rail { left: min(85vw, 320px); }
 }
 
-/* A wide formula (a long inline fraction, a multi-term display equation)
- * doesn't wrap the way text does -- left unconstrained, it forces its
- * containing line wider than the viewport, which on a narrow phone
- * expands the whole page's layout viewport rather than just that one
- * line (the same failure mode the "Page grid" section's minmax(0, ...)
- * comment already describes for a different cause: content wider than
- * the viewport with nothing willing to shrink). Display equations are
- * already their own block box, so capping them directly is safe. */
-mjx-container[display="true"] {
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
 /* Inline math is deliberately left alone -- don't add a max-width /
  * overflow rule here, on mjx-container or on the <span class="math
  * inline"> wrapper around it. Two separate attempts at that both broke
@@ -510,8 +499,8 @@ mjx-container[display="true"] {
  *      is why this only showed up in some browsers.
  *
  * A formula wide enough to overflow a phone belongs in a display
- * equation ($$...$$), which is a block box and is capped above without
- * any of this. */
+ * equation ($$...$$), which is a block box and is capped in the "Wide
+ * content" section above without any of this. */
 
 /* ── Embed mode ──────────────────────────────────────────────────── */
 /* html.vm-embed is set by the inline script in _includes/head-scripts.html

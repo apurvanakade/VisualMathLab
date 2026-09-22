@@ -282,9 +282,6 @@ showPartitionPoints = traces.includes("Partition points")
 // its share of ε, or maxDepth is reached).
 //   leaves — array of { a, b, mid, fa, fmid, fb, estimate, errorEstimate,
 //     depth, width }, one entry per accepted subinterval, left to right
-//   calls — array of { id, parentId, a, b, mid, depth, accepted }, one entry
-//     per interval the recursion ever considered (both accepted leaves and
-//     intervals that were split further) — the decision tree behind `leaves`
 //   f — parsed function, reused for curve sampling in setup
 //   totalEstimate — sum of leaf estimates (the adaptive quadrature's answer)
 //   totalErrorEstimate — sum of leaf Richardson error estimates
@@ -296,18 +293,18 @@ result = {
   const f = VM.expressions.makeFunction(math, committed.fText)
   const fallback = x => NaN
 
-  if (!f) return {leaves: [], calls: [], f: fallback, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  if (!f) return {leaves: [], f: fallback, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
 
   const a = committed.a0
   const b = committed.b0
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {leaves: [], calls: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {leaves: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
 
   const lo = Math.min(a, b)
   const hi = Math.max(a, b)
 
   const fa = f(lo)
   const fb = f(hi)
-  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {leaves: [], calls: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {leaves: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
 
   const depthLimit = maxDepth
   // Safety valve: caps total leaves so a pathological (e.g. non-converging
@@ -325,17 +322,12 @@ result = {
   }
 
   const leaves = []
-  const calls = []
-  let nextId = 0
 
-  const recurse = (a0, b0, fa0, fmid0, fb0, whole, tol, depth, parentId) => {
-    const id = nextId
-    nextId += 1
+  const recurse = (a0, b0, fa0, fmid0, fb0, whole, tol, depth) => {
     const c = (a0 + b0) / 2
 
     if (leaves.length >= maxLeaves) {
       leaves.push({a: a0, b: b0, mid: c, fa: fa0, fmid: fmid0, fb: fb0, estimate: whole, errorEstimate: 0, depth, width: b0 - a0})
-      calls.push({id, parentId, a: a0, b: b0, mid: c, depth, accepted: true})
       return
     }
 
@@ -346,17 +338,15 @@ result = {
 
     if (!Number.isFinite(combined) || depth >= depthLimit || Math.abs(combined - whole) <= 15 * tol) {
       leaves.push({a: a0, b: b0, mid: c, fa: fa0, fmid: fmid0, fb: fb0, estimate: combined + errorEst, errorEstimate: Math.abs(errorEst), depth, width: b0 - a0})
-      calls.push({id, parentId, a: a0, b: b0, mid: c, depth, accepted: true})
       return
     }
 
-    calls.push({id, parentId, a: a0, b: b0, mid: c, depth, accepted: false})
-    recurse(a0, c, fa0, left.ymid, fmid0, left.value, tol / 2, depth + 1, id)
-    recurse(c, b0, fmid0, right.ymid, fb0, right.value, tol / 2, depth + 1, id)
+    recurse(a0, c, fa0, left.ymid, fmid0, left.value, tol / 2, depth + 1)
+    recurse(c, b0, fmid0, right.ymid, fb0, right.value, tol / 2, depth + 1)
   }
 
   const whole0 = simpsonPiece(lo, hi, fa, fb)
-  recurse(lo, hi, fa, whole0.ymid, fb, whole0.value, tolerance, 0, -1)
+  recurse(lo, hi, fa, whole0.ymid, fb, whole0.value, tolerance, 0)
 
   let totalEstimate = 0
   let totalErrorEstimate = 0
@@ -368,7 +358,7 @@ result = {
   const trueIntegral = VM.numerical.simpsonEstimate(f, lo, hi, 4000)
   const actualError = Math.abs(totalEstimate - trueIntegral)
 
-  return {leaves, calls, f, totalEstimate, totalErrorEstimate, trueIntegral, actualError}
+  return {leaves, f, totalEstimate, totalErrorEstimate, trueIntegral, actualError}
 }
 ```
 
@@ -526,46 +516,6 @@ mainPlot = {
 ```
 
 ```{ojs}
-// summary reports the headline numbers for the current tolerance: how many
-// leaves the adaptive partition needed, the resulting estimate, its
-// self-reported (Richardson) error bound, and the actual error against a
-// fine reference integral.
-//
-// Defined (and displayed) right here, rather than as a hidden cell invoked
-// from elsewhere: it already returns the final displayable node, and a
-// `//| output: false` cell still attaches its returned node to its own
-// (hidden) output slot — a later bare reference to it would then find the
-// node already parented elsewhere and fall back to showing an inspector
-// summary instead of the node itself.
-summary = {
-  const container = document.createElement("p")
-
-  if (result.leaves.length === 0) {
-    container.textContent = "Enter a valid function and interval, then click Plot."
-    return container
-  }
-
-  const stats = [
-    ["Tolerance ε", tolerance.toExponential(2)],
-    ["Subintervals used", String(result.leaves.length)],
-    ["Estimate", result.totalEstimate.toPrecision(8)],
-    ["Estimated error", result.totalErrorEstimate.toExponential(3)],
-    ["Actual error", result.actualError.toExponential(3)]
-  ]
-
-  for (let i = 0; i < stats.length; i++) {
-    const [label, value] = stats[i]
-    if (i > 0) container.append(document.createTextNode("  ·  "))
-    const strong = document.createElement("strong")
-    strong.textContent = `${label}: `
-    container.append(strong, document.createTextNode(value))
-  }
-
-  return container
-}
-```
-
-```{ojs}
 //| output: false
 // maxDepth parses the Max depth field's expression, falling back to 15 for
 // invalid input so the recursion always gets a usable depth limit.
@@ -607,88 +557,6 @@ viewof tolExponent = {
 
 </div>
 
-<!-- The recursion tree below traces every interval the algorithm considered while building the partition above — gray segments were split further, green segments were accepted as a leaf. It shares the same x-axis as the main chart, so you can line up a cluster of low, refined segments with the region of $f$ that caused it. -->
-
-```{ojs}
-// decisionTreePlot draws that recursion tree: one horizontal segment per
-// interval the algorithm ever considered, positioned at its actual [a, b]
-// range on the x-axis (shared with the main chart above) and stacked by
-// recursion depth on the y-axis. Gray segments were split further; green
-// segments were accepted as a leaf of the final partition. Connector lines
-// link each interval to the two children it was split into.
-//
-// Defined (and displayed) right here for the same reason as `summary`
-// above — it already returns the final displayable node.
-decisionTreePlot = {
-  if (result.calls.length === 0) {
-    // Always return a Node so Quarto's OJS runtime never latches this
-    // declaration cell as hidden.
-    return document.createElement("div")
-  }
-
-  const byId = new Map()
-  for (const call of result.calls) byId.set(call.id, call)
-
-  const links = []
-  for (const call of result.calls) {
-    if (call.parentId === -1) continue
-    const parent = byId.get(call.parentId)
-    links.push({x1: parent.mid, y1: parent.depth, x2: call.mid, y2: call.depth})
-  }
-
-  let maxDepthUsed = 0
-  for (const call of result.calls) {
-    if (call.depth > maxDepthUsed) maxDepthUsed = call.depth
-  }
-
-  const acceptedName = "Accepted (leaf)"
-  const splitName = "Split further"
-
-  const statusOf = call => {
-    if (call.accepted) return acceptedName
-    return splitName
-  }
-
-  const tooltipOf = call => {
-    let label = `[${call.a.toPrecision(6)}, ${call.b.toPrecision(6)}]  depth ${call.depth}`
-    if (call.accepted) {
-      label += "  accepted"
-    } else {
-      label += "  split further"
-    }
-    return label
-  }
-
-  const colorDomain = [splitName, acceptedName]
-  const colorRange = ["#d3d7dc9e", chartColors.ok]
-
-  const chart = Plot.plot({
-    width,
-    height: Math.min(520, 90 + 26 * (maxDepthUsed + 1)),
-    marginLeft: 46,
-    marginBottom: 30,
-    x: {label: "x"},
-    y: {label: "recursion depth", domain: [0, maxDepthUsed], reverse: true, tickFormat: "d"},
-    color: {domain: colorDomain, range: colorRange},
-    marks: [
-      Plot.link(links, {x1: "x1", y1: "y1", x2: "x2", y2: "y2", stroke: "#cbd5e1"}),
-      Plot.ruleY(result.calls, {
-        x1: "a", x2: "b", y: "depth",
-        stroke: statusOf,
-        strokeWidth: 6,
-        strokeLinecap: "round",
-        title: tooltipOf
-      })
-    ]
-  })
-  const legend = Plot.legend({color: {domain: colorDomain, range: colorRange}})
-
-  const container = document.createElement("div")
-  container.append(chart, legend)
-  return container
-}
-```
-
 :::: {.callout-note collapse="true" title="Partition table"}
 
 ```{ojs}
@@ -727,10 +595,25 @@ iterationTable = {
 
 ::::
 
-**Adaptive quadrature** refines the partition of $[a,b]$ only where it's needed, instead of the fixed grid used in [Numerical Integration](../numerical-integration/index.qmd). Simpson's rule on an interval $[p,q]$ with midpoint $m=(p+q)/2$,
+## How it works
+
+[Numerical integration](../numerical-integration/index.qmd) lays a fixed grid over $[a,b]$ and uses the same panel width everywhere. An **adaptive** method instead subdivides only where it has to: narrow panels where $f$ wiggles or turns sharply, wide ones where $f$ is nearly a parabola already.
+
+To decide, it needs an estimate of the error a panel makes. Simpson's rule on $[p,q]$ with midpoint $m = (p+q)/2$ is
 
 $$
-S[p,q] = \frac{q-p}{6}\Big(f(p)+4f(m)+f(q)\Big),
+S[p,q] = \frac{q-p}{6}\Bigl(f(p) + 4f(m) + f(q)\Bigr),
 $$
 
-is compared against the sum of Simpson's rule on each half, $S[a,m]+S[m,b]$; since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of 16, giving the Richardson error estimate $\big(S[a,m]+S[m,b]-S[a,b]\big)/15$. Whenever $\left|S[a,m]+S[m,b]-S[a,b]\right|$ exceeds $15\varepsilon$ for the current tolerance $\varepsilon$, the interval is bisected and each half is refined recursively (with $\varepsilon$ halved at each level, so the total error stays bounded by the original tolerance).
+and the same panel split in half gives a second, finer estimate $S[p,m] + S[m,q]$. Since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of $16$, so the difference between the two is almost all error:
+
+$$
+E = \frac{\bigl|\, S[p,m] + S[m,q] - S[p,q] \,\bigr|}{15}.
+$$
+
+It is then compared with the tolerance $\varepsilon$ set by the slider:
+
+- **Accept** if $E \le \varepsilon$: keep $[p,q]$ as a panel of the final partition, using the finer estimate.
+- **Refine** if $E > \varepsilon$: bisect at $m$ and recurse on each half with $\varepsilon/2$, so the total error stays bounded by the original tolerance.
+
+A larger $\varepsilon$ means fewer, wider panels and a coarser partition; a smaller $\varepsilon$ means more panels, clustered exactly where $f$ is hardest to approximate.

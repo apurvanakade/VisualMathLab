@@ -33,13 +33,15 @@ The `VM.*` unit tests (51 files, one per function) moved to the mathviz repo wit
 npm run verify   # = node scripts/verify-pages.mjs
 ```
 
-`scripts/verify-pages.mjs` spawns `quarto preview` itself (rather than a blocking `quarto render` followed by a plain static file server) and walks **every** page discovered from the source tree — every `index.qmd` under the project (no hardcoded page list — new pages are picked up automatically, per this repo's page-naming convention, see `CLAUDE.md`). For each page it:
-1. loads it and waits for network idle,
-2. clicks every visible `<button>` (Plot/Regenerate/etc. — many `VM.*` calls only run inside click handlers, not on initial render),
+`scripts/verify-pages.mjs` spawns `quarto preview` itself (rather than a blocking `quarto render` followed by a plain static file server) and walks **every** page discovered from the source tree — every `index.qmd` under the project (no hardcoded page list — new pages are picked up automatically, per this repo's page-naming convention, see `CLAUDE.md`), four pages at a time as tabs of one Chromium (`--jobs N` to change that). For each page it:
+1. loads it, waits for network idle, then for every OJS cell to finish evaluating (no `.observablehq--running` left outside a function-declaration cell, whose inspector never flips; capped at 1.5s),
+2. clicks every visible `<button>` (Plot/Regenerate/etc. — many `VM.*` calls only run inside click handlers, not on initial render), leaving fullscreen after each click if the button entered it — otherwise the fullscreened block covers every later button, and none of their handlers would run,
 3. nudges every `<input type=range>` to its midpoint,
 4. asserts zero `console.error`, zero uncaught page errors, zero failed requests.
 
-Prints `OK`/`FAIL` per page; a `FAIL` includes the exact console error (which OJS cell, which line) — usually enough to find the bug directly, no further digging needed.
+Prints `OK`/`FAIL` per page, in page order, with the time each page took; a `FAIL` includes the exact console error (which OJS cell, which line) — usually enough to find the bug directly, no further digging needed.
+
+`npm run verify -- --changed` crawls only the pages whose folder differs from `develop` (`git diff --name-only develop` plus untracked files), which is the right scope for a session's work; it falls back to the full site, saying which file caused it, when the diff touches anything baked into every page (`_extensions/`, `_includes/`, `_theme/`, `styles.css`, `_quarto.yml`, `js/`, `fonts/`).
 
 Using `quarto preview` instead of `quarto render` means only files that actually changed since the last run get re-rendered (`quarto preview`'s file watcher does this on its own, based on mtimes) — `quarto render` unconditionally re-renders the whole site every single invocation, which is wasted work in the common edit-then-verify loop. The first run in a session (or after `docs/` is deleted) still pays a full-site render up front, same as `quarto render` would — `quarto preview` needs the whole project's metadata to build navigation/search regardless of how many pages actually changed.
 

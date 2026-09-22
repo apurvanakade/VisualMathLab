@@ -25,14 +25,24 @@
 // Pass one or more .qmd paths as CLI args to check only those pages instead
 // of the whole site -- much faster while iterating on a specific page,
 // since `quarto preview`'s own startup/render is paid once regardless, but
-// only the requested pages get a browser pass.
+// only the requested pages get a browser pass. `--changed` picks that list
+// for you: every page whose folder differs from `develop` (committed,
+// staged, unstaged or untracked). It falls back to the full site when the
+// diff also touches something that is baked into every page (the mathviz
+// extension, an include, the theme, styles.css, _quarto.yml, js/, fonts/),
+// since a per-page check cannot see a regression on a page it did not load.
+//
+// Pages are crawled a few at a time (`--jobs N`, default 4) as separate tabs
+// of one Chromium; results still print in sorted page order.
 //
 // Usage: node scripts/verify-pages.mjs (or: npm run verify)
 //        node scripts/verify-pages.mjs apps/newton-method/index.qmd [...]
+//        node scripts/verify-pages.mjs --changed
+//        node scripts/verify-pages.mjs --jobs 8
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
@@ -40,8 +50,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')
 const port = 8934
 const readyTimeoutMs = 60000
+const settleTimeoutMs = 1500
+const defaultJobs = 4
 
 const skipDirs = new Set(['docs', 'node_modules', '.quarto', '.git', '_freeze'])
+
+// Anything under these paths lands in every rendered page (the extension's
+// <head> tags, the includes, the theme, the sidebar), so a change there
+// cannot be verified by loading only the pages whose source changed.
+const siteWidePaths = ['_extensions/', '_includes/', '_theme/', 'styles.css', '_quarto.yml', 'js/', 'fonts/']
 
 function findQmdPages(dir, base = '') {
   const pages = []
@@ -58,6 +75,46 @@ function findQmdPages(dir, base = '') {
     }
   }
   return pages
+}
+
+function gitLines(args) {
+  const result = spawnSync('git', args, { cwd: repoRoot, encoding: 'utf8' })
+  if (result.status !== 0) {
+    throw new Error(`git ${args.join(' ')} failed:\n${result.stderr}`)
+  }
+  const lines = []
+  for (const line of result.stdout.split('\n')) {
+    if (line.trim() !== '') lines.push(line.trim())
+  }
+  return lines
+}
+
+// Every page whose folder has a file that differs from `develop`, or null
+// when the diff touches a site-wide path and only the full crawl will do.
+// `git diff develop` compares the working tree (committed + staged +
+// unstaged) against the branch; untracked files come from ls-files.
+function findChangedPages() {
+  const changedFiles = gitLines(['diff', '--name-only', 'develop', '--'])
+  for (const file of gitLines(['ls-files', '--others', '--exclude-standard'])) changedFiles.push(file)
+
+  const pages = new Set()
+  for (const file of changedFiles) {
+    for (const prefix of siteWidePaths) {
+      if (file.startsWith(prefix)) {
+        console.log(`--changed: ${file} is site-wide, so every page is checked.`)
+        return null
+      }
+    }
+    const folder = path.dirname(file)
+    if (folder === '.') {
+      if (file === 'index.qmd') pages.add('index.html')
+      continue
+    }
+    if (path.basename(folder).startsWith('_')) continue
+    if (!fs.existsSync(path.join(repoRoot, folder, 'index.qmd'))) continue
+    pages.add(folder + '/index.html')
+  }
+  return [...pages]
 }
 
 // Spawned detached (its own process group) so that on cleanup we can kill
@@ -226,6 +283,34 @@ function embedProblems(expectedId) {
   return problems
 }
 
+// True once no OJS cell is still evaluating and, on an app page, its app has
+// drawn something. Quarto's `ojs-in-a-box-waiting-for-module-import` class is
+// not the marker to watch: it is only ever cleared when the page's OJS module
+// has `import`s (none here does), so it stays on every cell forever. The
+// Observable inspector's `--running` class is, with one exception: a
+// declaration cell (`function f() {}`) never gets its inspector fulfilled,
+// so it reports running for the life of the page.
+function isSettled(isApp) {
+  for (const el of document.querySelectorAll('.observablehq--running')) {
+    const cell = el.closest('[data-nodetype]')
+    if (cell && cell.dataset.nodetype === 'declaration') continue
+    return false
+  }
+  if (isApp) {
+    const app = document.querySelector('.vm-app')
+    if (app && !app.querySelector('.plotly, svg')) return false
+  }
+  return true
+}
+
+// In practice every page is settled by the time `networkidle` fires, so this
+// costs one poll; the timeout is the ceiling for a page that never is, which
+// then gets exactly the fixed wait it got before.
+async function waitForSettle(page, relPath) {
+  const isApp = relPath.startsWith('apps/')
+  await page.waitForFunction(isSettled, isApp, { timeout: settleTimeoutMs, polling: 50 }).catch(() => {})
+}
+
 async function checkEmbedMode(browser, base, relPath, errors) {
   const page = await browser.newPage()
   page.on('pageerror', err => errors.push(`embed pageerror: ${err.message}`))
@@ -234,7 +319,7 @@ async function checkEmbedMode(browser, base, relPath, errors) {
   })
   try {
     await page.goto(`${base}${relPath}?embed=1`, { waitUntil: 'networkidle', timeout: 30000 })
-    await page.waitForTimeout(1500)
+    await waitForSettle(page, relPath)
     if (!(await page.evaluate(() => document.documentElement.classList.contains('vm-embed')))) {
       errors.push('embed: html.vm-embed not set')
     }
@@ -248,7 +333,7 @@ async function checkEmbedMode(browser, base, relPath, errors) {
     })
     for (const id of ids) {
       await page.goto(`${base}${relPath}?embed=${encodeURIComponent(id)}`, { waitUntil: 'networkidle', timeout: 30000 })
-      await page.waitForTimeout(1500)
+      await waitForSettle(page, relPath)
       for (const problem of await page.evaluate(embedProblems, id)) errors.push(`embed=${id}: ${problem}`)
     }
   } finally {
@@ -268,7 +353,7 @@ async function checkPage(browser, base, relPath) {
   })
 
   await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
-  await page.waitForTimeout(1500)
+  await waitForSettle(page, relPath)
 
   // Layout assertions run before the generic button-mashing below, so they
   // see each page's initial render rather than whatever state clicking
@@ -282,6 +367,13 @@ async function checkPage(browser, base, relPath) {
     if (await button.isVisible()) {
       await button.click({ timeout: 2000 }).catch(() => {})
       await page.waitForTimeout(100)
+      // A chart's fullscreen toggle leaves its block covering the page, so
+      // every later click would time out on the actionability check (2s
+      // each) without ever reaching its handler. Leave fullscreen the way
+      // Escape would before moving on.
+      await page.evaluate(() => {
+        if (document.fullscreenElement) return document.exitFullscreen()
+      }).catch(() => {})
     }
   }
 
@@ -310,12 +402,96 @@ function qmdArgToRelPath(arg) {
   return normalized.slice(0, -'index.qmd'.length) + 'index.html'
 }
 
+function parseArgs(argv) {
+  const options = { jobs: defaultJobs, changed: false, qmdPaths: [] }
+  let i = 0
+  while (i < argv.length) {
+    const arg = argv[i]
+    if (arg === '--changed') {
+      options.changed = true
+    } else if (arg === '--jobs') {
+      const n = Number(argv[i + 1])
+      if (!Number.isInteger(n) || n < 1) throw new Error(`--jobs needs a positive integer, got: ${argv[i + 1]}`)
+      options.jobs = n
+      i++
+    } else if (arg.startsWith('--')) {
+      throw new Error(`Unknown option: ${arg}`)
+    } else {
+      options.qmdPaths.push(arg)
+    }
+    i++
+  }
+  return options
+}
+
+// Runs `jobs` pages at a time. Each result is printed as soon as every page
+// sorted before it has printed too, so the output reads in page order while
+// still showing progress during the crawl.
+async function crawl(browser, base, pages, jobs) {
+  const results = new Map()
+  let nextToStart = 0
+  let nextToPrint = 0
+  let anyFailure = false
+
+  function printReady() {
+    while (nextToPrint < pages.length && results.has(pages[nextToPrint])) {
+      const relPath = pages[nextToPrint]
+      const { errors, ms } = results.get(relPath)
+      const seconds = (ms / 1000).toFixed(1)
+      if (errors.length) {
+        anyFailure = true
+        console.log(`FAIL  ${relPath}  (${seconds}s)`)
+        for (const e of errors) console.log(`      ${e}`)
+      } else {
+        console.log(`OK    ${relPath}  (${seconds}s)`)
+      }
+      nextToPrint++
+    }
+  }
+
+  async function worker() {
+    while (nextToStart < pages.length) {
+      const relPath = pages[nextToStart]
+      nextToStart++
+      const started = Date.now()
+      const errors = await checkPage(browser, base, relPath)
+      results.set(relPath, { errors, ms: Date.now() - started })
+      printReady()
+    }
+  }
+
+  const workers = []
+  for (let i = 0; i < jobs; i++) workers.push(worker())
+  await Promise.all(workers)
+  return anyFailure
+}
+
 async function main() {
-  const args = process.argv.slice(2)
-  const pages = args.length > 0
-    ? args.map(qmdArgToRelPath).sort()
-    : findQmdPages(repoRoot).sort()
-  console.log(`Checking ${pages.length} page(s)${args.length > 0 ? '' : ' (full site, from source index.qmd files)'}.\n`)
+  const options = parseArgs(process.argv.slice(2))
+  let pages
+  let scope
+  if (options.qmdPaths.length > 0) {
+    pages = []
+    for (const arg of options.qmdPaths) pages.push(qmdArgToRelPath(arg))
+    scope = ''
+  } else if (options.changed) {
+    pages = findChangedPages()
+    if (pages === null) {
+      pages = findQmdPages(repoRoot)
+      scope = ' (full site, from source index.qmd files)'
+    } else {
+      scope = ' (changed since develop)'
+    }
+  } else {
+    pages = findQmdPages(repoRoot)
+    scope = ' (full site, from source index.qmd files)'
+  }
+  pages.sort()
+  if (pages.length === 0) {
+    console.log('No pages changed since develop; nothing to check.')
+    process.exit(0)
+  }
+  console.log(`Checking ${pages.length} page(s)${scope}, ${options.jobs} at a time.\n`)
 
   console.log('Starting `quarto preview`...')
   const previewProc = await startPreview()
@@ -326,16 +502,7 @@ async function main() {
 
   let anyFailure = false
   try {
-    for (const relPath of pages) {
-      const errors = await checkPage(browser, base, relPath)
-      if (errors.length) {
-        anyFailure = true
-        console.log(`FAIL  ${relPath}`)
-        for (const e of errors) console.log(`      ${e}`)
-      } else {
-        console.log(`OK    ${relPath}`)
-      }
-    }
+    anyFailure = await crawl(browser, base, pages, options.jobs)
   } finally {
     await browser.close()
     stopPreview(previewProc)

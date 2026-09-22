@@ -397,6 +397,20 @@
   width: 100%;
 }
 
+/* ...except when the expression field shares a .ojs-row with the page's
+ * Plot button, where 20em would strand the button out at the row's right
+ * edge with a few hundred pixels of dead panel between the two. Here the
+ * field takes whatever width the button leaves instead, so the row reads as
+ * one unit and fills edge to edge. The `resize: horizontal` affordance
+ * above still applies -- it just starts from the full width rather than
+ * from 20em.
+ *
+ * Four selector parts against the base rule's three, so this wins on
+ * specificity wherever both match, independent of source order. */
+.ojs-panel .ojs-row form.ojs-fill > div:has(> input[type="text"]) {
+  width: 100%;
+}
+
 /* Attach to an Inputs.* wrapper div to keep it at its natural width instead
  * of Observable Inputs' 100%-wide default, which would otherwise force the
  * row to wrap. */

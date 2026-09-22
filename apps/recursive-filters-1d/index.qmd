@@ -180,6 +180,8 @@ examples = [
 
 <div class="ojs-panel">
 
+<div class="ojs-row">
+
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
@@ -189,6 +191,22 @@ viewof fText = {
   return fTextInput
 }
 ```
+
+```{ojs}
+// Plot commits the current signal/noise/endpoint fields and redraws the
+// noisy measurements with a fresh seed — edits above don't take effect
+// until this is clicked, so result/mainPlot don't recompute (and the
+// noisy draw doesn't reshuffle) on every keystroke. The total-samples
+// field, and the method legend and filter parameters overlaid on the
+// chart, are unaffected and stay reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
 
 <div class="ojs-grid">
 
@@ -224,20 +242,6 @@ viewof exampleSelect = {
   const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
   select.classList.add("ojs-fill")
   return select
-}
-```
-
-```{ojs}
-// Plot commits the current signal/noise/endpoint fields and redraws the
-// noisy measurements with a fresh seed — edits above don't take effect
-// until this is clicked, so result/mainPlot don't recompute (and the
-// noisy draw doesn't reshuffle) on every keystroke. The total-samples
-// field, and the method legend and filter parameters overlaid on the
-// chart, are unaffected and stay reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
-  return plotButton
 }
 ```
 

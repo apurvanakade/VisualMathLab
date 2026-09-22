@@ -138,6 +138,8 @@ examples = [
 
 <div class="ojs-panel">
 
+<div class="ojs-row">
+
 ```{ojs}
 viewof fText = {
   const fTextInput = Inputs.text({label: "Function f(x)", value: initialFText, placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
@@ -146,6 +148,20 @@ viewof fText = {
   return fTextInput
 }
 ```
+
+```{ojs}
+// Plot commits the current function/endpoint fields — edits above don't
+// take effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The n slider and the interpolant legend overlaying the
+// chart are unaffected and stay reactive.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto")
+  return plotButton
+}
+```
+
+</div>
 
 <div class="ojs-grid">
 
@@ -183,18 +199,6 @@ viewof exampleSelect = {
   const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
   select.classList.add("ojs-fill")
   return select
-}
-```
-
-```{ojs}
-// Plot commits the current function/endpoint fields — edits above don't
-// take effect until this is clicked, so result/mainPlot don't recompute on
-// every keystroke. The n slider and the interpolant legend overlaying the
-// chart are unaffected and stay reactive.
-viewof plotTrigger = {
-  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  plotButton.classList.add("ojs-auto")
-  return plotButton
 }
 ```
 

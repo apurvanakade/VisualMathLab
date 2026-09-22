@@ -98,6 +98,8 @@ examples = [
 
 <div class="ojs-panel">
 
+<div class="ojs-row">
+
 ```{ojs}
 // TODO: the commit-gated inputs -- what to compute. Each reads its default
 // from the URL (so a shared link reproduces the run) and tags itself with
@@ -110,6 +112,16 @@ viewof gText = {
   return input
 }
 ```
+
+```{ojs}
+viewof plotTrigger = {
+  const button = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
 
 <div class="ojs-grid">
 
@@ -139,14 +151,6 @@ viewof exampleSelect = {
   const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
   select.classList.add("ojs-fill")
   return select
-}
-```
-
-```{ojs}
-viewof plotTrigger = {
-  const button = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
-  button.classList.add("ojs-auto")
-  return button
 }
 ```
 

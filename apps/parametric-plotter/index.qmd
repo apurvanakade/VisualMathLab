@@ -1,0 +1,473 @@
+---
+title: "Parametric Plotter"
+description: "Draws the curve traced by (x(t), y(t)) from two formulas and a t-range, with a slider that walks a point along it."
+author:
+  - Apurva Nakade
+  - Dhruv Azad
+date: 2026-09-21
+# TODO: give this page a topic (matching a topics/<topic>/index.qmd title
+# exactly) and an order, and add it to that topic's listing.contents and to
+# the sidebar in _quarto.yml, before it lands -- none of the six existing
+# topics is a natural home for a general-purpose plotter.
+categories:
+  - Computational Math
+  - Parametric Curves
+  - Plotting
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade, Dhruv Azad
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded globally via the mathviz extension. This page uses VM.expressions.makeFunctionOfT, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.plotting.colors, VM.plotting.onThemeChange, VM.plotting.config, VM.plotting.autoResize, VM.ui.applyExampleParams, VM.ui.legendOverlay.
+VM = window.VM
+```
+
+<div class="vm-app">
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown below -- each one is a
+// named curve worth seeing, and between them they demonstrate the ways a
+// parametric expression can be phrased.
+examples = [
+  {
+    title: "Butterfly curve",
+    params: {x: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", y: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    // A hypotrochoid: a pen fixed 6 units from the center of a radius-4
+    // wheel rolling inside a radius-11 ring. The wheel returns to its
+    // start only after four laps, hence t running to 8*pi.
+    title: "Spirograph (hypotrochoid)",
+    params: {x: "7*cos(t) + 6*cos(7*t/4)", y: "7*sin(t) - 6*sin(7*t/4)", tmin: "0", tmax: "8*pi"}
+  },
+  {
+    // A (3, 7) torus knot seen from above: the curve winds 3 times around
+    // the torus's axis while wrapping 7 times through its tube.
+    title: "Torus knot (3, 7)",
+    params: {x: "(2 + cos(7*t)) * cos(3*t)", y: "(2 + cos(7*t)) * sin(3*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    // Two pendulums with slightly incommensurate frequencies, damped
+    // exponentially -- the drift between them is what draws the swirl.
+    title: "Harmonograph (damped Lissajous)",
+    params: {x: "exp(-0.02*t) * sin(3*t + pi/2)", y: "exp(-0.02*t) * sin(4.02*t)", tmin: "0", tmax: "80"}
+  },
+  {
+    title: "Trefoil knot (projection)",
+    params: {x: "sin(t) + 2*sin(2*t)", y: "cos(t) - 2*cos(2*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Lissajous curve (3:4)",
+    params: {x: "sin(3*t)", y: "sin(4*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Rose (five petals)",
+    params: {x: "cos(5*t) * cos(t)", y: "cos(5*t) * sin(t)", tmin: "0", tmax: "pi"}
+  },
+  {
+    title: "Cardioid",
+    params: {x: "(1 - cos(t)) * cos(t)", y: "(1 - cos(t)) * sin(t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Astroid",
+    params: {x: "cos(t)^3", y: "sin(t)^3", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Lemniscate of Bernoulli",
+    params: {x: "cos(t) / (1 + sin(t)^2)", y: "sin(t) * cos(t) / (1 + sin(t)^2)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Spirograph (epitrochoid)",
+    params: {x: "6*cos(t) - 3*cos(6*t)", y: "6*sin(t) - 3*sin(6*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Deltoid",
+    params: {x: "2*cos(t) + cos(2*t)", y: "2*sin(t) - sin(2*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Archimedean spiral",
+    params: {x: "t * cos(t)", y: "t * sin(t)", tmin: "0", tmax: "8*pi"}
+  },
+  {
+    title: "Cycloid",
+    params: {x: "t - sin(t)", y: "1 - cos(t)", tmin: "0", tmax: "6*pi"}
+  },
+  {
+    title: "Heart curve",
+    params: {x: "16*sin(t)^3", y: "13*cos(t) - 5*cos(2*t) - 2*cos(3*t) - cos(4*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Squircle (superellipse)",
+    params: {x: "sign(cos(t)) * abs(cos(t))^0.5", y: "sign(sin(t)) * abs(sin(t))^0.5", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    title: "Nephroid",
+    params: {x: "3*cos(t) - cos(3*t)", y: "3*sin(t) - sin(3*t)", tmin: "0", tmax: "2*pi"}
+  },
+  {
+    // A rose with a fractional petal count needs t to run past 2*pi
+    // before the curve closes: 7/3 petals close after 3*pi.
+    title: "Rose (7/3 petals)",
+    params: {x: "cos(7*t/3) * cos(t)", y: "cos(7*t/3) * sin(t)", tmin: "0", tmax: "3*pi"}
+  },
+  {
+    // The path of a thread's end as it unwinds, taut, from a unit circle.
+    title: "Involute of a circle",
+    params: {x: "cos(t) + t*sin(t)", y: "sin(t) - t*cos(t)", tmin: "0", tmax: "6*pi"}
+  }
+]
+```
+
+```{ojs}
+//| output: false
+traceOptions = ["Curve", "Point at t"]
+
+// Matches the colors mainPlot draws each trace in, so the overlay
+// legend's swatches double as a color key.
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the traces it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+traceColors = new Map([
+  ["Curve", chartColors.fn],
+  ["Point at t", chartColors.alt]
+])
+```
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof xText = {
+  const input = Inputs.text({label: "x(t)", value: "sin(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: cos(t), t - sin(t)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "x"
+  return input
+}
+```
+
+```{ojs}
+viewof yText = {
+  const input = Inputs.text({label: "y(t)", value: "cos(t) * (exp(cos(t)) - 2*cos(4*t) - sin(t/12)^5)", placeholder: "Example: sin(t), 1 - cos(t)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "y"
+  return input
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof tMinText = {
+  const input = Inputs.text({label: "t from", value: "0", placeholder: "Example: 0, -pi"})
+  input.dataset.exampleField = "tmin"
+  return input
+}
+```
+
+```{ojs}
+viewof tMaxText = {
+  const input = Inputs.text({label: "t to", value: "2*pi", placeholder: "Example: 2*pi, 10"})
+  input.dataset.exampleField = "tmax"
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof exampleSelect = {
+  const options = [null, ...examples]
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// js/ui/apply-example.js's comment for why.
+exampleFieldSelectors = ({
+  x: '[data-example-field="x"]',
+  y: '[data-example-field="y"]',
+  tmin: '[data-example-field="tmin"]',
+  tmax: '[data-example-field="tmax"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Plot, in place. A plain "change" listener attached once to the stable
+// native <select> (rather than an OJS cell reactive on
+// exampleSelect's value) -- a <select> fires both "input" and
+// "change" per selection, and a reactive cell would run twice, with the
+// two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+// Plot commits the current formula/parameter-range fields -- edits above
+// don't take effect until this is clicked.
+viewof plotTrigger = {
+  const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
+  plotButton.classList.add("ojs-auto", "ojs-end")
+  return plotButton
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Pressing Enter in the formula/parameter-range fields clicks Plot instead
+// of submitting the field's own (invisible) form.
+enterToPlot = {
+  for (const view of [viewof xText, viewof yText, viewof tMinText, viewof tMaxText]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots the fields only when Plot is clicked -- it
+// reads the stable `viewof` DOM views, not the reactive values, so it does
+// not rerun on every keystroke.
+committed = {
+  plotTrigger
+  const math = window.math
+  return {
+    xText: (viewof xText).value,
+    yText: (viewof yText).value,
+    tMin: VM.expressions.makeNumber(math, (viewof tMinText).value),
+    tMax: VM.expressions.makeNumber(math, (viewof tMaxText).value)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// setup samples (x(t), y(t)) across the committed t-range. `key`
+// changes whenever a new curve is committed, and is used as the plot's
+// uirevision so a fresh curve autoscales instead of inheriting the
+// previous curve's zoom.
+setup = {
+  const math = window.math
+  const x = VM.expressions.makeFunctionOfT(math, committed.xText)
+  const y = VM.expressions.makeFunctionOfT(math, committed.yText)
+
+  let tMin = committed.tMin
+  let tMax = committed.tMax
+  const key = JSON.stringify(committed)
+
+  if (!x || !y || !Number.isFinite(tMin) || !Number.isFinite(tMax) || tMin === tMax) {
+    return {ts: [], xs: [], ys: [], tMin: 0, tMax: 1, xRange: {lo: -1, hi: 1}, yRange: {lo: -1, hi: 1}, key}
+  }
+  if (tMin > tMax) { const temp = tMin; tMin = tMax; tMax = temp }
+
+  // Parametric curves double back on themselves, so they need a good deal
+  // more samples than a graph over an interval before the polyline stops
+  // looking faceted.
+  const sampleCount = 2400
+  const ts = []
+  const xs = []
+  const ys = []
+  for (let i = 0; i < sampleCount; i++) {
+    const t = tMin + (tMax - tMin) * i / (sampleCount - 1)
+    const xValue = x(t)
+    const yValue = y(t)
+    ts.push(t)
+    if (Number.isFinite(xValue) && Number.isFinite(yValue) && Math.abs(xValue) < 1e8 && Math.abs(yValue) < 1e8) {
+      xs.push(xValue)
+      ys.push(yValue)
+    } else {
+      // A null in both coordinates breaks the trace here instead of
+      // drawing a spurious segment across a pole or a gap in the domain.
+      xs.push(null)
+      ys.push(null)
+    }
+  }
+
+  // Padded explicitly rather than left to Plotly's autorange: an axis pair
+  // tied together by scaleanchor (see mainPlot) autoranges with no
+  // padding at all on the constraining axis, which puts a curve's extreme
+  // points (the astroid's cusps, a rose's petal tips) right on the plot's
+  // edges.
+  const xRange = VM.plotting.paddedRange(xs, {relativePadding: 0.06, minPadding: 0.1})
+  const yRange = VM.plotting.paddedRange(ys, {relativePadding: 0.06, minPadding: 0.1})
+  return {ts, xs, ys, tMin, tMax, xRange, yRange, key}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot is a closure over a _plotDiv variable so the same DOM
+// node is reused across reactive re-renders, preserving zoom/pan.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({ts, xs, ys, xRange, yRange, key}, cursorIndex, showCurve, showCursor) => {
+    const data = []
+
+    if (showCurve) {
+      data.push({
+        x: xs, y: ys, type: "scatter", mode: "lines", name: "Curve", showlegend: false,
+        line: {color: chartColors.fn, width: 2.5, shape: "spline"},
+        customdata: ts,
+        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
+      })
+    }
+
+    // The cursor reads straight out of the sampled arrays rather than
+    // re-evaluating x(t)/y(t), so the marker always sits exactly on the
+    // polyline that's drawn, never a hair off it.
+    const i = cursorIndex
+    if (showCursor && i !== null && i >= 0 && i < xs.length && xs[i] !== null) {
+      data.push({
+        x: [xs[i]], y: [ys[i]], type: "scatter", mode: "markers", name: "Point at t", showlegend: false,
+        marker: {color: chartColors.alt, size: 12, line: {color: chartColors.halo, width: 2}},
+        customdata: [ts[i]],
+        hovertemplate: "t = %{customdata:.3f}<br>x = %{x:.3f}<br>y = %{y:.3f}<extra></extra>"
+      })
+    }
+    const layout = {
+      xaxis: {title: "x", zeroline: true, range: [xRange.lo, xRange.hi], constrain: "domain"},
+      // scaleanchor keeps one unit of y the same length on screen as one
+      // unit of x -- without it a circle plots as an ellipse, which ruins
+      // every curve below.
+      //
+      // constrain: "domain" -- on both axes, or the unconstrained one still
+      // gets widened -- makes Plotly satisfy that by shrinking the drawn
+      // plot area to the curve's own aspect ratio, leaving the ranges above
+      // exactly as asked for. The default ("range") instead widens
+      // whichever range is too tight for the box -- and since newPlot runs
+      // on a still-detached div (Plotly measures its 700x450 default) while
+      // every later react runs at the real size, the two widened by
+      // different amounts and the first slider nudge visibly jumped the
+      // zoom. Pinning the ranges removes the discrepancy at the source.
+      yaxis: {title: "y", zeroline: true, range: [yRange.lo, yRange.hi], scaleanchor: "x", scaleratio: 1, constrain: "domain"},
+      hovermode: "closest",
+      uirevision: key,
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// The slider steps by one sample of setup, so its value doubles as
+// an index into the sampled arrays -- see mainPlot's cursor trace.
+cursorIndex = {
+  if (setup.ts.length === 0) return null
+  const span = setup.tMax - setup.tMin
+  const index = Math.round((tCursor - setup.tMin) / span * (setup.ts.length - 1))
+  return index
+}
+```
+
+```{ojs}
+//| output: false
+showCurve = traces.includes("Curve")
+```
+
+```{ojs}
+//| output: false
+showCursor = traces.includes("Point at t")
+```
+
+<div class="ojs-chart-block">
+
+```{ojs}
+mainPlot(setup, cursorIndex, showCurve, showCursor)
+```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+// Always-live: the cursor moves as the slider is dragged, no Plot click
+// needed. Recreated whenever a new curve is committed, so its range always
+// spans that curve's own t interval.
+viewof tCursor = {
+  const {tMin, tMax} = setup
+
+  // Round the step to the nearest 1/2/5 x 10^k below span/500, so the
+  // slider's own number readout stays short (0.05, not 0.0157145109...)
+  // whatever t-range the current curve happens to span.
+  const raw = (tMax - tMin) / 500
+  const magnitude = Math.pow(10, Math.floor(Math.log10(raw)))
+  const normalized = raw / magnitude
+  let nice
+  if (normalized <= 1) nice = 1
+  else if (normalized <= 2) nice = 2
+  else if (normalized <= 5) nice = 5
+  else nice = 10
+  const step = nice * magnitude
+
+  const slider = Inputs.range([tMin, tMax], {label: "t", step, value: tMin})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+</div>
+
+</div>
+
+</div>
+
+A parametric curve is the path of a point whose coordinates are both functions of a single parameter $t$: as $t$ runs from one end of its range to the other, $(x(t),\, y(t))$ traces a curve in the plane. Unlike the graph of a function $y = f(x)$, a parametric curve can loop, cross itself, and double back, which is what makes it the natural description of anything drawn by a moving point -- a rolling wheel, a swinging pendulum, a knot seen from above.
+
+Write $x(t)$ and $y(t)$ using the variable `t` (and `pi`, `e`, and the usual functions), set the range of $t$, and click **Plot**. The slider under the chart then moves a point along the curve, so you can watch the parametrization's *speed* as well as its shape; the point crowds together where the curve is traversed slowly and spreads out where it moves fast. The axes keep equal scales, so a circle looks like a circle.

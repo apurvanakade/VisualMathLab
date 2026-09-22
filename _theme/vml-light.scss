@@ -63,24 +63,28 @@ $code-bg:    $vm-surface;
   --vm-border: #{$vm-border};
   --vm-accent: #{$vm-accent};
   --vm-accent-hover: #{$vm-accent-hover};
+  // What reads ON the accent -- see the note in mathviz's tokens.css. This
+  // site overrides --vm-accent, so it has to override this with it.
+  --vm-on-accent: #{$vm-bg};
   --vm-grid: #{$vm-grid};
   --vm-radius: 8px;
   --vm-radius-sm: 6px;
   --vm-shadow: 0 1px 2px rgba(27, 31, 36, 0.08);
-  --vm-font-weight-body: 400;
   --vm-font-weight-display: 300;
   // The face mathviz sets chart text in -- the same stack as
   // $font-family-sans-serif above, so a chart's labels match the page.
   --vm-font-sans: #{$font-family-sans-serif};
   // The chart palette itself (--vm-color-fn/alt/ok/...) is mathviz's, declared
   // in its tokens.css with the values this site was designed around, so it is
-  // not redeclared here. These four aliases exist for page-local CSS that
-  // names a palette hue in prose or chrome (a swatch in a sentence, a graph
-  // node's stroke) under the older --vm-alt spelling. vml-dark.scss repeats
-  // them under body.quarto-dark -- see the note there for why it has to.
+  // not redeclared here. These two aliases exist for the page-local CSS that
+  // names a palette hue under the older --vm-alt spelling: the graph edges in
+  // apps/distribution-relationships and the orientation hatches in
+  // apps/sperners-lemma-geometric-proof. Everything else -- .vm-swatch in
+  // prose, the .vm-invalid field border -- reads --vm-color-* directly, so
+  // don't add an alias for a hue until a page actually asks for one.
+  // vml-dark.scss repeats them under body.quarto-dark -- see the note there
+  // for why it has to.
   --vm-alt: var(--vm-color-alt);
-  --vm-ok: var(--vm-color-ok);
-  --vm-warn: var(--vm-color-warn);
   --vm-accent2: var(--vm-color-accent2);
 }
 

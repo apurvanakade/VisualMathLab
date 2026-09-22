@@ -115,5 +115,7 @@
     })
   }
 
-  globalThis.VM = {...globalThis.VM, ui: {...globalThis.VM?.ui, qmdSourcePath, buildReportBugUrl}}
+  // VML, not VM -- see the note at the foot of js/share.js. These two are
+  // about this repository's issue tracker and mean nothing in the library.
+  globalThis.VML = {...globalThis.VML, reportBug: {qmdSourcePath, buildReportBugUrl}}
 })(window)

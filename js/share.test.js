@@ -18,8 +18,7 @@ import { fileURLToPath } from 'node:url'
 globalThis.window = globalThis
 globalThis.document = { addEventListener: () => {}, documentElement: { classList: { contains: () => false } } }
 ;(0, eval)(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'share.js'), 'utf8'))
-const VM = globalThis.VM
-const { embedSrc, buildEmbedSnippet } = VM.ui
+const { embedSrc, buildEmbedSnippet } = globalThis.VML.share
 
 test('embedSrc points at the public site, not the page origin', () => {
   const src = embedSrc({ pathname: '/apps/newton-method/', search: '', blockId: '', keepInputs: false })

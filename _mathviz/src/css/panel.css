@@ -106,11 +106,11 @@
   flex: none !important;
 }
 
-.ojs-panel input:focus {
-  outline: none;
-  border-color: var(--vm-accent);
-  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
-}
+/* One focus ring for every field in a panel. <select> is skinned separately
+ * below (it has a chevron and its own sizing), but its focus state is not a
+ * separate design decision -- keeping the two in one rule is what stops them
+ * drifting apart. */
+.ojs-panel input:focus,
 
 /* Nothing skinned <select> before this -- Observable Inputs' select()
  * renders the bare browser default, so "Try an example" showed up as a
@@ -139,11 +139,6 @@
   max-width: 100%;
 }
 
-.ojs-panel select:focus {
-  outline: none;
-  border-color: var(--vm-accent);
-  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
-}
 
 .ojs-panel input[type="range"] {
   border: none;
@@ -173,7 +168,7 @@
   padding: 0 0.75rem;
   font-size: 0.85rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--vm-on-accent);
   background: var(--vm-accent);
   transition: background-color 80ms cubic-bezier(0.33, 1, 0.68, 1);
   cursor: pointer;

@@ -59,7 +59,7 @@
  * Plotly chart itself doesn't paint (e.g. around a narrower aspect ratio).
  * plotly-fullscreen-button.js records the chart's on-page width/height
  * ratio into --vm-plot-aspect-ratio right before requesting fullscreen,
- * since the div's normal sizing (width: 100%; height: 78vh) is relative to
+ * since the div's normal sizing (width: 100%; height: 72vh) is relative to
  * the *fullscreen* viewport once entered, not its original box, and would
  * otherwise stretch the plot to a different ratio than on the page. The
  * existing per-page ResizeObserver on the graph div (see e.g.
@@ -85,9 +85,9 @@
  * how many levels deep or what Quarto/Observable happens to name them,
  * making each fill and center its child in turn -- the chain bottoms out
  * at .js-plotly-plot itself, which doesn't contain a nested
- * .js-plotly-plot so this rule doesn't match it. The legend/step overlays
- * are unaffected since they're siblings of this chain, not ancestors of
- * the graph div. */
+ * .js-plotly-plot so this rule doesn't match it. The legend overlay and
+ * the controls bar are unaffected since they're siblings of this chain,
+ * not ancestors of the graph div. */
 .ojs-chart-block:fullscreen div:has(.js-plotly-plot) {
   display: flex;
   align-items: center;

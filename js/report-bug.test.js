@@ -10,15 +10,14 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// report-bug.js is the one site-specific script left in js/ (the shared
-// VM.* library moved to the mathviz extension, tests included). Load the
-// real file the way a <script> tag would: an IIFE evaluated in global scope
-// against a minimal window/document stub.
+// report-bug.js is one of the two site-specific scripts in js/ (the other
+// is share.js; the shared VM.* library lives in the mathviz extension,
+// tests included). Load the real file the way a <script> tag would: an IIFE
+// evaluated in global scope against a minimal window/document stub.
 globalThis.window = globalThis
 globalThis.document = { addEventListener: () => {}, documentElement: { classList: { contains: () => false } } }
 ;(0, eval)(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'report-bug.js'), 'utf8'))
-const VM = globalThis.VM
-const { qmdSourcePath, buildReportBugUrl } = VM.ui
+const { qmdSourcePath, buildReportBugUrl } = globalThis.VML.reportBug
 
 test('qmdSourcePath maps a directory-style pathname to its index.qmd source', () => {
   assert.equal(qmdSourcePath('/apps/newton-method/'), 'apps/newton-method/index.qmd')

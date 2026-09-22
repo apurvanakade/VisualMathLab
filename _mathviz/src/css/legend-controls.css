@@ -251,6 +251,23 @@
   line-height: 1.25;
   font-weight: 500;
   color: var(--vm-text-soft);
+  /* Observable Inputs injects `align-self: start` on every label. In this
+   * bar the form is a flex ROW (label beside the control), so that pins the
+   * label to the top of a ~30px line while the track, the number readout and
+   * the play button all sit centered in it -- the label rode about 6px high.
+   * It was invisible until the padding above was zeroed: Observable's own
+   * `padding: 5px 0 4px` had bulked the label box out to nearly the row's
+   * full height, so there was no slack for start-alignment to show.
+   *
+   * Deliberately NOT applied to .ojs-panel's labels: those forms are a flex
+   * COLUMN, where the cross axis is horizontal and `start` is what keeps a
+   * label left-aligned over its field. Centering there would center every
+   * label above its own control.
+   *
+   * Inert in the .ojs-chart-controls.ojs-grid case below, where the label
+   * takes `flex: 0 0 100%` and so occupies a flex line of its own whose
+   * cross size is just the label's height. */
+  align-self: center;
 }
 
 /* The [class$="-checkbox"] groups (Inputs.radio()/checkbox(), e.g. the

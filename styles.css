@@ -324,6 +324,131 @@ main.content a {
   background: var(--vm-accent-hover);
 }
 
+/* ── Share dialog ─────────────────────────────────────────────────── */
+/* js/share.js inserts a "Share" button as the first row of every app's
+ * <div class="vm-app">, opening a native <dialog> (appended to <body>, in
+ * the top layer -- same reasoning as the play-speed popover in mathviz's
+ * slider-play.js) that builds the ?embed= <iframe> snippet embed.qmd
+ * documents. */
+
+.vm-share-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.25rem;
+}
+
+.vm-share-button {
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-surface);
+  color: var(--vm-text-soft);
+  font-size: 0.8rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.vm-share-button:hover {
+  background: var(--vm-surface-hover);
+  color: var(--vm-text);
+}
+
+.vm-share-dialog {
+  max-width: min(42rem, 92vw);
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  box-shadow: var(--vm-shadow);
+}
+
+.vm-share-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.vm-share-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vm-share-form h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.vm-share-form p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--vm-text-soft);
+}
+
+.vm-share-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.vm-share-height-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.vm-share-height {
+  width: 6rem;
+  padding: 0.2rem 0.4rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-bg);
+  color: var(--vm-text);
+}
+
+.vm-share-code {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-bg);
+  color: var(--vm-text);
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  resize: vertical;
+}
+
+.vm-share-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.vm-share-actions button {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  cursor: pointer;
+}
+
+.vm-share-actions .vm-share-copy {
+  background: var(--vm-accent);
+  border-color: var(--vm-accent);
+  color: #fff;
+}
+
+.vm-share-actions .vm-share-copy:hover {
+  background: var(--vm-accent-hover);
+  border-color: var(--vm-accent-hover);
+}
+
+.vm-share-actions .vm-share-close:hover {
+  background: var(--vm-surface-hover);
+}
+
 /* ── Callouts ─────────────────────────────────────────────────────── */
 /* Quarto's default callout-note is a Bootstrap-alert-style colored bar
  * (blue left border + tinted background); this site uses "Convergence
@@ -393,9 +518,10 @@ mjx-container[display="true"] {
  * when the URL carries ?embed=1 -- another site framing one of these apps
  * in an <iframe>. Everything that is this site rather than the app goes:
  * navbar, sidebar and its glass/rail, the title block (the framing page has
- * its own heading), footer, prev/next navigation, and the consent, mobile
- * and report-bug affordances (each of whose scripts also skips itself, so
- * this is belt and braces for the paint before they run). The class is on
+ * its own heading), footer, prev/next navigation, and the consent, mobile,
+ * report-bug and share affordances (each of whose scripts also skips
+ * itself, so this is belt and braces for the paint before they run). The
+ * class is on
  * <html> rather than <body> because the script runs in <head>, before <body>
  * exists -- which is also why nothing flashes. */
 html.vm-embed #quarto-header,
@@ -410,7 +536,9 @@ html.vm-embed .page-navigation,
 html.vm-embed #quarto-margin-sidebar,
 html.vm-embed .vml-consent,
 html.vm-embed .vml-mobile-warning,
-html.vm-embed .vm-report-bug-popup {
+html.vm-embed .vm-report-bug-popup,
+html.vm-embed .vm-share-bar,
+html.vm-embed .vm-share-dialog {
   display: none !important;
 }
 

@@ -14,6 +14,10 @@ to the app's URL and the page renders the app alone -- its controls and its
 chart, with none of the page's explanation, none of the diagnostic plots and
 tables under the chart, and no navigation bar, sidebar, title or footer.
 
+The fastest way to get there: every app has a **Share** button above its
+controls. It writes the snippet below for you, with a checkbox for whether to
+carry the inputs you currently have set up and a field for the frame height.
+
 ```html
 <iframe
   src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=x^3-2&x0=1"
@@ -27,14 +31,17 @@ tables under the chart, and no navigation bar, sidebar, title or footer.
 Every input on an app page is mirrored in its URL, so the parameters you see
 in the address bar after setting up an app are the parameters to put in the
 `src`. Set the function, endpoints, step counts and options the way you want
-readers to first see them, copy the URL, and append `&embed=1`. Readers can
-still change everything once the app has loaded; the URL only sets the
-starting point.
+readers to first see them, then open Share and tick **Keep the current
+inputs** -- no need to copy the address bar or append `&embed=1` by hand.
+Readers can still change everything once the app has loaded; the URL only
+sets the starting point.
 
 ## Pages with more than one app
 
 A few pages hold several interactive figures, one per step of an argument.
-`embed=1` gives the first; to frame a later one, name it instead of `1`.
+`embed=1` gives the first; to frame a later one, name it instead of `1`. Each
+figure has its own Share button right above it, so the snippet it writes
+already names the right one.
 [Sperner's Lemma -- Combinatorial Proof](apps/sperners-lemma-combinatorial-proof/index.qmd)
 has three: `embed=triangulation` (the colored triangulation at the top, the
 same as `embed=1`), `embed=doors` (the three kinds of room) and
@@ -59,7 +66,10 @@ controls panels are then down to the 300-pixel floor the chart holds at,
 below which the frame scrolls instead. `width="100%"` lets the frame follow
 your column. Below about 600 pixels of width the controls stack vertically
 and the floating legend is hidden, as it is on a phone; that works but is
-cramped, so on a narrow layout consider linking to the app instead.
+cramped, so on a narrow layout consider linking to the app instead. The
+Share dialog's height field starts at one of these numbers -- 900 for a
+Plotly chart, the figure's own drawn height for anything else -- and you can
+change it there instead of editing the snippet by hand.
 
 ## Privacy
 

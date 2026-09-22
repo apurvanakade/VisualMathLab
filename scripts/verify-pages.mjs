@@ -249,6 +249,48 @@ async function checkSliderControls(page, errors) {
   }
 }
 
+// Share dialog (CLAUDE.md, "Embed mode"): js/share.js's button opens a
+// <dialog> that writes the ?embed= <iframe> snippet embed.qmd documents.
+// Runs before the generic button-mashing loop below, for the same reason
+// checkSliderControls does -- it asserts the dialog's actual content, which
+// the blind click-everything loop never inspects. Clipboard permission is
+// granted up front so the Copy button's real navigator.clipboard.writeText
+// path is exercised rather than always falling back to textarea.select().
+async function checkShareDialog(page, errors) {
+  const button = page.locator('.vm-share-button').first()
+  if ((await button.count()) === 0) return
+
+  await button.click({ timeout: 2000 }).catch(() => {})
+  await page.waitForTimeout(150)
+
+  const problem = await page.evaluate(() => {
+    const dialog = document.querySelector('dialog.vm-share-dialog')
+    if (!dialog || !dialog.open) return 'share button did not open the dialog'
+    const code = dialog.querySelector('.vm-share-code')
+    if (!code) return 'share dialog has no snippet textarea'
+    const snippet = code.value
+    if (!snippet.includes('<iframe')) return `share snippet is missing <iframe: ${snippet}`
+    if (!snippet.includes('embed=')) return `share snippet is missing embed=: ${snippet}`
+    if (!snippet.includes('https://www.visualmathlab.com')) return `share snippet does not point at the public site: ${snippet}`
+    return null
+  })
+  if (problem) errors.push(`share: ${problem}`)
+
+  await page.locator('.vm-share-copy').click({ timeout: 2000 }).catch(() => {})
+  await page.waitForTimeout(100)
+  const copyLabel = await page.locator('.vm-share-copy').textContent().catch(() => '')
+  if (!/Copied|Press/.test(copyLabel ?? '')) {
+    errors.push(`share: Copy button gave no feedback after click (label: "${copyLabel}")`)
+  }
+
+  // Leave the dialog closed so it doesn't shadow the generic button loop
+  // below, whose own actionability checks would otherwise time out (2s
+  // each) on every button behind the modal until something closes it.
+  await page.evaluate(() => {
+    for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close()
+  }).catch(() => {})
+}
+
 // Embed mode (CLAUDE.md, "Embed mode"): ?embed=1 must show the page's tagged
 // app and nothing else in the content column, and ?embed=<id> must show the
 // block with that id. Rendered-outcome assertions, like checkSliderControls:
@@ -346,6 +388,10 @@ async function checkEmbedMode(browser, base, relPath, errors) {
 
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
+  // Grants the Share dialog's Copy button its real navigator.clipboard.
+  // writeText path instead of always hitting the textarea.select() fallback
+  // -- harmless for every other page, which never calls the clipboard API.
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'], { origin: new URL(base).origin }).catch(() => {})
   const errors = []
   page.on('pageerror', err => errors.push(`pageerror: ${err.message}`))
   page.on('console', msg => {
@@ -358,10 +404,11 @@ async function checkPage(browser, base, relPath) {
   await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
   await waitForSettle(page, relPath)
 
-  // Layout assertions run before the generic button-mashing below, so they
-  // see each page's initial render rather than whatever state clicking
-  // everything leaves behind.
+  // Layout/content assertions run before the generic button-mashing below,
+  // so they see each page's initial render rather than whatever state
+  // clicking everything leaves behind.
   await checkSliderControls(page, errors)
+  await checkShareDialog(page, errors)
 
   const buttons = page.locator('button')
   const buttonCount = await buttons.count()
@@ -373,9 +420,14 @@ async function checkPage(browser, base, relPath) {
       // A chart's fullscreen toggle leaves its block covering the page, so
       // every later click would time out on the actionability check (2s
       // each) without ever reaching its handler. Leave fullscreen the way
-      // Escape would before moving on.
+      // Escape would before moving on. The Share button (re-clicked here
+      // like any other button, since this loop doesn't know about it)
+      // opens a modal <dialog> with the same problem -- close it too.
       await page.evaluate(() => {
         if (document.fullscreenElement) return document.exitFullscreen()
+      }).catch(() => {})
+      await page.evaluate(() => {
+        for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close()
       }).catch(() => {})
     }
   }

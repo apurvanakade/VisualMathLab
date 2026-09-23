@@ -85,7 +85,7 @@ examples = [
   },
   {
     title: "Nearly flat tangent",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.81649658"}
+    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.83"}
   },
   {
     title: "Large jumps from shallow slopes",
@@ -268,6 +268,7 @@ showIntercepts = traces.includes("Tangent x-intercepts")
 // result: runs Newton's method with the current committed inputs.
 //   rows — array of { i, x, fx, dfx, xNext, error }, one entry per iteration
 //   f, df — parsed functions, reused for curve sampling in setup
+//   parsed — false when f(x) (or its derivative) couldn't be parsed
 result = {
   const math = window.math
 
@@ -277,12 +278,12 @@ result = {
   const df = VM.expressions.makeDerivative(math, committed.fText)
   const fallback = x => NaN
 
-  if (!f || !df) return {rows: [], f: fallback, df: fallback}
+  if (!f || !df) return {rows: [], f: fallback, df: fallback, parsed: false}
 
   const rows  = []
   const initialGuess = committed.x0
 
-  if (!Number.isFinite(initialGuess)) return {rows: [], f, df}
+  if (!Number.isFinite(initialGuess)) return {rows: [], f, df, parsed: true}
 
   let x = initialGuess
   let i = 0
@@ -293,13 +294,13 @@ result = {
     // Stop if f or f' blows up — the method has diverged.
     if (!Number.isFinite(fx) || !Number.isFinite(dfx)) {
       rows.push({i, x, fx, dfx, xNext: NaN, error: NaN})
-      return {rows, f, df}
+      return {rows, f, df, parsed: true}
     }
 
     // Stop if the tangent is nearly flat — dividing by dfx would be unstable.
     if (Math.abs(dfx) < 1e-14) {
       rows.push({i, x, fx, dfx, xNext: NaN, error: NaN})
-      return {rows, f, df}
+      return {rows, f, df, parsed: true}
     }
 
     const xNext = x - fx / dfx        // Newton update: x-intercept of the tangent
@@ -309,7 +310,7 @@ result = {
     x = xNext
     i++
   }
-  return {rows, f, df}
+  return {rows, f, df, parsed: true}
 }
 ```
 
@@ -366,7 +367,7 @@ setup = {
   }
   const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
-  return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}
+  return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs, parsed: result.parsed}
 }
 ```
 
@@ -381,7 +382,7 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showTangent, showNewtonPoints, showIntercepts) => {
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs, parsed}, showFCurve, showTangent, showNewtonPoints, showIntercepts) => {
     const data = []
 
     if (showFCurve) {
@@ -477,11 +478,9 @@ mainPlot = {
 
     // An unparseable f(x) makes result.rows empty and every sample NaN, so
     // without this the chart would just draw an empty grid -- visually
-    // identical to a valid function that happens to plot nothing.
-    let hasCurve = false
-    for (const y of sampleYs) {
-      if (Number.isFinite(y)) { hasCurve = true; break }
-    }
+    // identical to a valid function that happens to plot nothing. Keyed on
+    // the parse itself, not on the samples: a valid f whose iterates run off
+    // to ~1e8 has every sample capped to null, and that isn't a bad formula.
 
     const layout = {
       // margin is intentionally not set here: VM.plotting.layout's shared
@@ -489,7 +488,7 @@ mainPlot = {
       // which a flat {l:0,r:0,t:0,b:0} took away.
       xaxis: {title: "x", range: [xRange.lo, xRange.hi], zeroline: true},
       yaxis: {title: "f(x)", range: [yRange.lo, yRange.hi], zeroline: true},
-      annotations: hasCurve ? [] : VM.plotting.emptyState("Couldn't read that function — check the formula for f(x)."),
+      annotations: parsed ? [] : VM.plotting.emptyState("Couldn't read that function — check the formula for f(x)."),
       hovermode: "closest",
       uirevision: "static",  // keeps zoom/pan state across reactive updates
       autosize: true

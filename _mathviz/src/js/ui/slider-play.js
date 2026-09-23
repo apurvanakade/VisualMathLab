@@ -613,6 +613,8 @@
     input.addEventListener("pointerdown", () => stop("idle"))
     input.addEventListener("keydown", () => stop("idle"))
 
+    controls.add({anchor: wrap, close: closePanel, refresh})
+
     setButtonState()
     // Inserted before whichever form-level element holds the range input, so
     // this works whether Observable Inputs puts the range and its number

@@ -113,9 +113,9 @@ Authors: Apurva Nakade
 }
 </style>
 
-A screening mammogram in U.S. community practice has about 87% sensitivity and 92% specificity ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time, and if you don't, it comes back negative 92% of the time. About 7 in 1,000 women screened have breast cancer. Below, each dot is one of 1,000 people screened: red has the condition, dark doesn't. A test hollows out everyone it clears, and each further test is given only to whoever is still solid, so the solid dots are the people who have tested positive every time so far.
+A screening mammogram in U.S. community practice has about <span class="vm-swatch vm-swatch-accent">87% sensitivity</span> and <span class="vm-swatch vm-swatch-accent">92% specificity</span> ([Lee et al., 2023](#references)): if you have cancer it comes back positive 87% of the time, and if you don't, it comes back negative 92% of the time. About <span class="vm-swatch vm-swatch-accent">7 in 1,000</span> women screened have breast cancer.
 
-If you test positive, what are the chances you have the condition? This number is the test's **positive predictive value** (PPV).
+**If you test positive, what are the chances you have the condition?** This is the test's positive predictive value (PPV). Make a guess before reading on — the answer may surprise you.
 
 ```{ojs}
 //| output: false
@@ -720,9 +720,38 @@ summaryTable = {
 
 :::
 
-Even a highly accurate test gives a weak positive result when the condition is rare: the healthy population is so much larger that a small false-positive rate among them outnumbers the true positives among the few who are sick. That is what the solid dots show: a handful of red in a crowd of dark.
+## The answer
 
-Retesting works because each repeat test starts from a population whose prevalence is the previous round's PPV, so the same sensitivity and specificity give a much sharper result. Bayes' rule is this update, with the denominator split into the two ways a test can come back positive:
+```{ojs}
+revealAnswer(ppvs[1], prevalence, sensitivity, specificity)
+```
+
+```{ojs}
+//| output: false
+// revealAnswer: answers the question the page opens with, using the
+// sliders' current values rather than a hardcoded number -- so dragging
+// Prevalence/Sensitivity/Specificity above updates the answer, not just
+// the grid and the summary table. The verdict flips at 50%, since with
+// the sliders moved far enough a positive can be more likely right than
+// wrong.
+function revealAnswer(ppvAfterOneTest, prevalence, sensitivity, specificity) {
+  let verdict = "most positive results are false alarms"
+  if (ppvAfterOneTest >= 0.5) verdict = "a positive result is more likely right than wrong"
+  return html`<p>With ${formatPct(prevalence)} prevalence, ${formatPct(sensitivity)} sensitivity and ${formatPct(specificity)} specificity, the positive predictive value is <strong>${formatPct(ppvAfterOneTest)}</strong>: ${verdict}.</p>`
+}
+```
+
+At the default settings that's about 7%, far lower than most people guess. When a condition is rare, the healthy group is so much larger that even a small false-positive rate among them outnumbers the true positives among the few who are sick: a handful of red in a crowd of dark.
+
+## Doctors get it wrong too
+
+If you guessed high, you're in good company. When researchers asked 60 staff and students at Harvard Medical School about a disease with a prevalence of 1 in 1,000 and a test with a 5% false-positive rate, nearly half answered 95%; only 11 gave the correct answer, about 2% ([Casscells, Schoenberger & Graboys, 1978](#references)). In a mammography version of the question, most physicians estimated about 75% when the answer was 7.5% ([Eddy, 1982](#references)). Judging a positive by the test's accuracy alone, while ignoring how rare the condition is, is called the [base-rate fallacy](https://en.wikipedia.org/wiki/Base_rate_fallacy).
+
+How the numbers are presented matters. Given percentages, only 10% of physicians answered correctly; given the same numbers as natural frequencies ("10 out of 1,000 women…"), 46% did ([Hoffrage & Gigerenzer, 1998](#references)). That's why this page shows 1,000 people as dots.
+
+## Why retesting helps
+
+A second test goes only to the people who tested positive, and among them the condition is far more common: its prevalence is the first test's PPV. The same test, applied to that group, gives a much higher PPV, as the *Tests* slider and the summary table show. Bayes' rule is this update, with the denominator split into the two ways a test can come back positive:
 
 $$
 \begin{aligned}
@@ -736,7 +765,7 @@ $$
 
 ## Screening in practice
 
-A positive mammogram is not a diagnosis; it starts a three-round process. Each round is one row of the retesting table above: the PPV coming out of one round is the prevalence going into the next.
+A positive mammogram is not a diagnosis; it starts a three-round process that works the same way, with the PPV out of each round becoming the prevalence going into the next.
 
 ::: {.ppv-flow}
 ::: {.ppv-flow-step}
@@ -753,8 +782,41 @@ confirms cancer in about a third of the remaining cases
 :::
 :::
 
-Per 1,000 women screened in Lee et al.'s data: 83 are recalled, about 18 go on to biopsy, and 6 have cancer. The PPV rises from 7% after the screening mammogram to 32% after biopsy.
+Per 1,000 women screened in Lee et al.'s data, 83 are recalled, about 18 go on to biopsy, and 6 have cancer: the PPV rises from 7% after the mammogram to 32% after biopsy.
+
+## Same test, different population
+
+```{ojs}
+//| output: false
+// raisePrevalenceLink: an inline link that moves the Prevalence slider to
+// 32.6% in place -- setting the view and dispatching "input" is how OJS
+// picks up a programmatic change -- then scrolls the app into view so the
+// reader sees the grid redraw. Also shows one test if none has been run, so
+// the legend under the grid states the new PPV. The href is a fallback for
+// a middle-click or a new tab.
+raisePrevalenceLink = {
+  const link = html`<a href="?prevalence=0.326&tests=1">slide <em>Prevalence</em> up to 32.6%</a>`
+  link.addEventListener("click", event => {
+    event.preventDefault()
+    const prevalenceView = viewof prevalence
+    prevalenceView.value = 0.326
+    prevalenceView.dispatchEvent(new Event("input", {bubbles: true}))
+    const testsView = viewof tests
+    if (testsView.value === 0) {
+      testsView.value = 1
+      testsView.dispatchEvent(new Event("input", {bubbles: true}))
+    }
+    document.querySelector(".vm-app").scrollIntoView({behavior: "smooth"})
+  })
+  return link
+}
+```
+
+Now ${raisePrevalenceLink}, the highest it reached during COVID-19, leaving *Sensitivity* and *Specificity* where they are. What PPV do you see? Same test, very different answer. Does that mean the test is bad?
 
 ## References
 
+- Casscells, W., Schoenberger, A., & Graboys, T. B. (1978). Interpretation by Physicians of Clinical Laboratory Results. *New England Journal of Medicine*, 299(18), 999–1001. [https://doi.org/10.1056/NEJM197811022991808](https://doi.org/10.1056/NEJM197811022991808).
+- Eddy, D. M. (1982). Probabilistic Reasoning in Clinical Medicine: Problems and Opportunities. In D. Kahneman, P. Slovic, & A. Tversky (Eds.), *Judgment under Uncertainty: Heuristics and Biases* (pp. 249–267). Cambridge University Press. [https://doi.org/10.1017/CBO9780511809477.019](https://doi.org/10.1017/CBO9780511809477.019).
+- Hoffrage, U., & Gigerenzer, G. (1998). Using Natural Frequencies to Improve Diagnostic Inferences. *Academic Medicine*, 73(5), 538–540. [https://doi.org/10.1097/00001888-199805000-00024](https://doi.org/10.1097/00001888-199805000-00024).
 - Lee, C. I., Abraham, L., Miglioretti, D. L., Stout, N. K., Kerlikowske, K., Henderson, L. M., Tosteson, A. N. A., Bissell, M. C. S., Onega, T., Sprague, B. L., Sabatino, S. A., Lawson, M. B., Lowry, K. P., Buist, D. S. M., & Breast Cancer Surveillance Consortium (2023). National Performance Benchmarks for Screening Digital Breast Tomosynthesis: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 307(4), e222499. [https://doi.org/10.1148/radiol.222499](https://doi.org/10.1148/radiol.222499). Source of this page's sensitivity (87.4%), specificity (92.2%) and prevalence (5.8 cancers detected plus 0.8 missed per 1,000 screens), plus the recall rate (8.3%) and the PPV after screening (6.9%) and after biopsy (32.2%), from 458,175 U.S. screening examinations, 2011–2018.

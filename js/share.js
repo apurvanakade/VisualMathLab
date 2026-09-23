@@ -98,7 +98,7 @@
         <form method="dialog" class="vm-share-form">
           <h2>Embed this app</h2>
           <p>Paste this into another page to show the app alone, as an
-          <code>&lt;iframe&gt;</code>. See <a href="/embed.qmd">Embedding an app</a>
+          <code>&lt;iframe&gt;</code>. See <a href="/embed.html">Embedding an app</a>
           for details.</p>
           <label class="vm-share-checkbox-row">
             <input type="checkbox" class="vm-share-keep-inputs" checked>

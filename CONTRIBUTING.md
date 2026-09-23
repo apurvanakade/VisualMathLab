@@ -107,5 +107,6 @@ Authors: [Your Name]
 Authors: Apurva Nakade, [Your Name]
 
 ```
+On a `.qmd` page, also add your name to the YAML front matter's `author:` field — that's the public-facing byline Quarto renders; the comment header alone won't show up on the page.
 
 

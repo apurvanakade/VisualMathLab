@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 globalThis.window = globalThis
 globalThis.document = { addEventListener: () => {}, documentElement: { classList: { contains: () => false } } }
 ;(0, eval)(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'share.js'), 'utf8'))
-const { embedSrc, buildEmbedSnippet } = globalThis.VML.share
+const { siteRelativePath, embedSrc, pageUrl, buildEmbedSnippet } = globalThis.VML.share
 
 test('embedSrc points at the public site, not the page origin', () => {
   const src = embedSrc({ pathname: '/apps/newton-method/', search: '', blockId: '', keepInputs: false })
@@ -80,4 +80,37 @@ test('buildEmbedSnippet escapes double quotes in the title', () => {
     title: 'The "root" finder'
   })
   assert.match(snippet, /title="The &quot;root&quot; finder"/)
+})
+
+test('pageUrl keeps the current inputs when keepInputs is true', () => {
+  const url = pageUrl({ pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', keepInputs: true })
+  assert.equal(url, 'https://www.visualmathlab.com/apps/newton-method/?f=x%5E3-2&x0=1')
+})
+
+test('pageUrl drops the inputs, and leaves no bare "?", when keepInputs is false', () => {
+  const url = pageUrl({ pathname: '/apps/newton-method/index.html', search: '?f=x%5E3-2&x0=1', keepInputs: false })
+  assert.equal(url, 'https://www.visualmathlab.com/apps/newton-method/')
+})
+
+test('pageUrl drops an embed param so the link opens the full page', () => {
+  const url = pageUrl({ pathname: '/apps/newton-method/', search: '?f=x&embed=1', keepInputs: true })
+  assert.equal(url, 'https://www.visualmathlab.com/apps/newton-method/?f=x')
+})
+
+test('siteRelativePath strips a /docs/ prefix when the repo root is served', () => {
+  const path = siteRelativePath({ href: 'http://localhost:8000/docs/apps/newton-method/?f=x', offset: '../../' })
+  assert.equal(path, '/apps/newton-method/')
+})
+
+test('siteRelativePath strips the prefix for a top-level page too', () => {
+  assert.equal(siteRelativePath({ href: 'http://localhost:8000/docs/embed.html', offset: './' }), '/embed.html')
+})
+
+test('siteRelativePath leaves a root-served path alone', () => {
+  const path = siteRelativePath({ href: 'https://www.visualmathlab.com/apps/newton-method/index.html', offset: '../../' })
+  assert.equal(path, '/apps/newton-method/index.html')
+})
+
+test('siteRelativePath falls back to the pathname when there is no offset meta', () => {
+  assert.equal(siteRelativePath({ href: 'http://localhost/docs/apps/x/', offset: undefined }), '/docs/apps/x/')
 })

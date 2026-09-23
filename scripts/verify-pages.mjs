@@ -272,6 +272,14 @@ async function checkShareDialog(page, errors) {
     if (!snippet.includes('<iframe')) return `share snippet is missing <iframe: ${snippet}`
     if (!snippet.includes('embed=')) return `share snippet is missing embed=: ${snippet}`
     if (!snippet.includes('https://www.visualmathlab.com')) return `share snippet does not point at the public site: ${snippet}`
+    const withInputs = dialog.querySelector('.vm-share-link-inputs')
+    const plain = dialog.querySelector('.vm-share-link-plain')
+    if (!withInputs || !plain) return 'share dialog is missing a page link'
+    for (const link of [withInputs, plain]) {
+      if (!link.href.startsWith('https://www.visualmathlab.com/')) return `share link does not point at the public site: ${link.href}`
+      if (link.href.includes('embed=')) return `share link carries embed=: ${link.href}`
+    }
+    if (plain.href.includes('?')) return `share link without inputs still has a query string: ${plain.href}`
     return null
   })
   if (problem) errors.push(`share: ${problem}`)

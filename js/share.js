@@ -14,6 +14,22 @@
   // Pure builders (exported as VML.share below for js/share.test.js) -- no
   // DOM, so they don't need a real `document`/`location` to test.
 
+  // The page's path relative to the site root, which is what the public
+  // URL needs. location.pathname alone isn't: served from anywhere but the
+  // site root (a local server over the repo, where it reads /docs/apps/...,
+  // or a subpath deploy) it carries a prefix the public site doesn't have.
+  // `offset` is Quarto's quarto:offset meta -- the relative path from this
+  // page back to the root ("../../" for an app page) -- so resolving it
+  // against the page gives the root as served, and everything after that
+  // is the site-relative path.
+  const siteRelativePath = ({ href, offset }) => {
+    const pathname = new URL(href).pathname
+    if (!offset) return pathname
+    const root = new URL(offset, href).pathname
+    if (!pathname.startsWith(root)) return pathname
+    return "/" + pathname.slice(root.length)
+  }
+
   // Builds the absolute URL an <iframe src> should use: the given page,
   // carrying its current inputs when `keepInputs` is true, with `embed`
   // set to the block's id (or "1" for the page's first/only app).
@@ -26,6 +42,22 @@
     params.set("embed", blockId || "1")
 
     return `${SITE_ORIGIN}${path}?${params.toString()}`
+  }
+
+  // Builds the absolute URL of the page itself (the whole page, not the
+  // embed view), with or without the current inputs. An `embed` param is
+  // always dropped -- a shared link should open the full page -- and a
+  // link with no inputs left carries no bare trailing "?".
+  const pageUrl = ({ pathname, search, keepInputs }) => {
+    let path = pathname
+    if (path.endsWith("/index.html")) path = path.slice(0, -"index.html".length)
+
+    const params = new URLSearchParams(keepInputs ? search : "")
+    params.delete("embed")
+
+    const query = params.toString()
+    if (query === "") return `${SITE_ORIGIN}${path}`
+    return `${SITE_ORIGIN}${path}?${query}`
   }
 
   // Builds the exact <iframe> block embed.qmd documents, so the page and
@@ -70,6 +102,11 @@
       return document.title.replace(/\s*[–-]\s*Visual Math Lab\s*$/, "").trim()
     }
 
+    const sitePath = () => siteRelativePath({
+      href: location.href,
+      offset: document.querySelector('meta[name="quarto:offset"]')?.content
+    })
+
     let dialog = null
     let activeBlock = null
     let copyResetId = null
@@ -79,7 +116,7 @@
       const height = dialog.querySelector(".vm-share-height").value || "900"
       const blockId = activeBlock.id || ""
       const src = embedSrc({
-        pathname: location.pathname,
+        pathname: sitePath(),
         search: location.search,
         blockId,
         keepInputs
@@ -91,14 +128,48 @@
       dialog.querySelector(".vm-share-code").value = currentSnippet()
     }
 
+    // The two page links are read from location.search when the dialog
+    // opens, which the page's committed/urlSyncControls cells keep current.
+    const renderLinks = () => {
+      const withInputs = pageUrl({ pathname: sitePath(), search: location.search, keepInputs: true })
+      const withoutInputs = pageUrl({ pathname: sitePath(), search: location.search, keepInputs: false })
+      for (const [selector, url] of [[".vm-share-link-inputs", withInputs], [".vm-share-link-plain", withoutInputs]]) {
+        const link = dialog.querySelector(selector)
+        link.href = url
+        link.textContent = url
+      }
+    }
+
+    // Copies `text`, calling onCopied once it's on the clipboard and
+    // onFailed when the Clipboard API is missing or refuses (an insecure
+    // origin, a denied permission).
+    const copyText = (text, onCopied, onFailed) => {
+      if (globalThis.navigator?.clipboard?.writeText) {
+        globalThis.navigator.clipboard.writeText(text).then(onCopied).catch(onFailed)
+      } else {
+        onFailed()
+      }
+    }
+
     const buildDialog = () => {
       const el = document.createElement("dialog")
       el.className = "vm-share-dialog"
       el.innerHTML = `
         <form method="dialog" class="vm-share-form">
-          <h2>Embed this app</h2>
+          <h2>Share this app</h2>
+          <h3>Link</h3>
+          <p>Click a link to copy it.</p>
+          <div class="vm-share-links">
+            <span class="vm-share-link-label">With current inputs</span>
+            <a class="vm-share-link vm-share-link-inputs"></a>
+            <span class="vm-share-link-status" aria-live="polite"></span>
+            <span class="vm-share-link-label">Without inputs</span>
+            <a class="vm-share-link vm-share-link-plain"></a>
+            <span class="vm-share-link-status" aria-live="polite"></span>
+          </div>
+          <h3>Embed</h3>
           <p>Paste this into another page to show the app alone, as an
-          <code>&lt;iframe&gt;</code>. See <a href="/embed.html">Embedding an app</a>
+          <code>&lt;iframe&gt;</code>. See <a class="vm-share-docs-link">Embedding an app</a>
           for details.</p>
           <label class="vm-share-checkbox-row">
             <input type="checkbox" class="vm-share-keep-inputs" checked>
@@ -116,6 +187,12 @@
         </form>
       `
       document.body.appendChild(el)
+
+      // Relative to the site root as served (quarto:offset), not a
+      // root-absolute "/embed.html", which breaks whenever the site is
+      // served under a prefix -- the same problem sitePath() solves.
+      const offset = document.querySelector('meta[name="quarto:offset"]')?.content ?? "/"
+      el.querySelector(".vm-share-docs-link").href = new URL(`${offset}embed.html`, location.href).href
 
       el.querySelector(".vm-share-keep-inputs").addEventListener("change", renderSnippet)
       el.querySelector(".vm-share-height").addEventListener("input", renderSnippet)
@@ -139,12 +216,34 @@
           copyResetId = setTimeout(() => { copyButton.textContent = "Copy" }, 2500)
         }
 
-        if (globalThis.navigator?.clipboard?.writeText) {
-          globalThis.navigator.clipboard.writeText(text).then(showCopied).catch(fallbackSelect)
-        } else {
-          fallbackSelect()
-        }
+        copyText(text, showCopied, fallbackSelect)
       })
+
+      // A link click only copies its URL -- the reader is already on this
+      // page, so following it would just reload what they're looking at.
+      // It stays a real <a href> so the browser's own "Copy link address"
+      // still works. When the clipboard refuses, the URL text is selected
+      // instead, for a manual copy, same as the Copy button's fallback.
+      for (const link of el.querySelectorAll(".vm-share-link")) {
+        const status = link.nextElementSibling
+        let statusResetId = null
+        const showStatus = (text, ms) => {
+          clearTimeout(statusResetId)
+          status.textContent = text
+          statusResetId = setTimeout(() => { status.textContent = "" }, ms)
+        }
+        link.addEventListener("click", (event) => {
+          event.preventDefault()
+          copyText(link.href, () => showStatus("Copied", 1500), () => {
+            const range = document.createRange()
+            range.selectNodeContents(link)
+            const selection = globalThis.getSelection()
+            selection.removeAllRanges()
+            selection.addRange(range)
+            showStatus("Press ⌘C / Ctrl+C", 2500)
+          })
+        })
+      }
 
       el.addEventListener("click", (event) => {
         if (event.target === el) el.close()
@@ -158,6 +257,7 @@
       activeBlock = block
       dialog.querySelector(".vm-share-height").value = defaultHeight(block)
       renderSnippet()
+      renderLinks()
       dialog.showModal()
     }
 
@@ -185,5 +285,5 @@
   // two would silently win (this script loads after the extension, so it
   // would be this one). A separate global keeps the boundary the same in
   // the code as it is in the repo.
-  globalThis.VML = {...globalThis.VML, share: {embedSrc, buildEmbedSnippet}}
+  globalThis.VML = {...globalThis.VML, share: {siteRelativePath, embedSrc, pageUrl, buildEmbedSnippet}}
 })(window)

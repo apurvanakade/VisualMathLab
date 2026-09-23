@@ -788,18 +788,18 @@ Per 1,000 women screened in Lee et al.'s data, 83 are recalled, about 18 go on t
 
 ```{ojs}
 //| output: false
-// raisePrevalenceLink: an inline link that moves the Prevalence slider to
-// 32.6% in place -- setting the view and dispatching "input" is how OJS
-// picks up a programmatic change -- then scrolls the app into view so the
-// reader sees the grid redraw. Also shows one test if none has been run, so
-// the legend under the grid states the new PPV. The href is a fallback for
-// a middle-click or a new tab.
-raisePrevalenceLink = {
-  const link = html`<a href="?prevalence=0.326&tests=1">slide <em>Prevalence</em> up to 32.6%</a>`
+// prevalenceLink(value, label): an inline link that moves the Prevalence
+// slider to `value` in place -- setting the view and dispatching "input" is
+// how OJS picks up a programmatic change -- then scrolls the app into view
+// so the reader sees the grid redraw. Also shows one test if none has been
+// run, so the legend under the grid states the new PPV. The href is a
+// fallback for a middle-click or a new tab.
+function prevalenceLink(value, label) {
+  const link = html`<a href="?prevalence=${value}&tests=1">${label}</a>`
   link.addEventListener("click", event => {
     event.preventDefault()
     const prevalenceView = viewof prevalence
-    prevalenceView.value = 0.326
+    prevalenceView.value = value
     prevalenceView.dispatchEvent(new Event("input", {bubbles: true}))
     const testsView = viewof tests
     if (testsView.value === 0) {
@@ -812,7 +812,19 @@ raisePrevalenceLink = {
 }
 ```
 
-Now ${raisePrevalenceLink}, the highest it reached during COVID-19, leaving *Sensitivity* and *Specificity* where they are. What PPV do you see? Same test, very different answer. Does that mean the test is bad?
+```{ojs}
+//| output: false
+peakPrevalenceLink = prevalenceLink(0.326, "up to 32.6%")
+```
+
+```{ojs}
+//| output: false
+todayPrevalenceLink = prevalenceLink(0.005, "down to 0.5%")
+```
+
+At the height of the pandemic, COVID-19 prevalence reached 32.6%; today it is under 1%. Slide *Prevalence* ${peakPrevalenceLink}, then ${todayPrevalenceLink}, leaving *Sensitivity* and *Specificity* where they are. What happens to the PPV?
+
+Now suppose you ran a study today, found that most people who tested positive did not have COVID-19, and reported that the test is bad. Is that a valid claim?
 
 ## References
 

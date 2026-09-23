@@ -337,7 +337,8 @@ main.content a {
 /* js/share.js inserts a "Share" button as the first row of every app's
  * <div class="vm-app">, opening a native <dialog> (appended to <body>, in
  * the top layer -- same reasoning as the play-speed popover in mathviz's
- * slider-play.js) that builds the ?embed= <iframe> snippet embed.qmd
+ * slider-play.js) that shows the page's own link, with and without the
+ * current inputs, and builds the ?embed= <iframe> snippet embed.qmd
  * documents. */
 
 .vm-share-bar {
@@ -391,6 +392,50 @@ main.content a {
   margin: 0;
   font-size: 0.9rem;
   color: var(--vm-text-soft);
+}
+
+.vm-share-form h3 {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+}
+
+/* Label, URL, "Copied" status: one row per link. The URL column shrinks
+ * (minmax(0, ...)) and breaks anywhere, so a long query string wraps
+ * inside the dialog rather than widening it past a phone's screen. */
+.vm-share-links {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 3.5rem;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.vm-share-link-label {
+  color: var(--vm-text-soft);
+  white-space: nowrap;
+}
+
+.vm-share-link {
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.vm-share-link-status {
+  color: var(--vm-text-soft);
+  font-size: 0.8rem;
+}
+
+/* On a phone the label column would squeeze the URL into a sliver; put
+ * each label on its own row above its link instead. */
+@media (max-width: 575.98px) {
+  .vm-share-links {
+    grid-template-columns: minmax(0, 1fr) 3.5rem;
+  }
+
+  .vm-share-link-label {
+    grid-column: 1 / -1;
+  }
 }
 
 .vm-share-checkbox-row,

@@ -359,9 +359,12 @@ function rationalApprox(x, maxDen = 1000) {
 
 ```{ojs}
 //| output: false
-// result: the committed radii and pen distance, and whether R/r is rational.
+// result: the committed radii and pen distance, whether R/r is rational, and
+// closeTurns, the number of turns after which the curve closes (null: never).
 // If R/r = p/q in lowest terms, the curve closes after q turns of the
 // rolling circle's center around the fixed one, inside or outside alike.
+// The exception is d = 0: the pen sits at the rolling circle's center, which
+// traces the circle a e^{it} and closes after one turn whatever R/r is.
 result = {
   const math = window.math
   const R = VM.expressions.makeNumber(math, committed.RText)
@@ -369,10 +372,16 @@ result = {
   const d = VM.expressions.makeNumber(math, committed.dText)
 
   const valid = Number.isFinite(R) && Number.isFinite(r) && Number.isFinite(d) && R > 0 && r > 0
-  if (!valid) return {valid: false, R: 1, r: 1, d: 0, fraction: null}
+  if (!valid) return {valid: false, R: 1, r: 1, d: 0, fraction: null, closeTurns: null}
 
   const fraction = rationalApprox(R / r)
-  return {valid: true, R, r, d, fraction}
+  let closeTurns = null
+  if (d === 0) {
+    closeTurns = 1
+  } else if (fraction) {
+    closeTurns = fraction.q
+  }
+  return {valid: true, R, r, d, fraction, closeTurns}
 }
 ```
 
@@ -383,9 +392,9 @@ result = {
 span = {
   let closes = false
   let T = maxTurns
-  if (result.fraction && result.fraction.q <= maxTurns) {
+  if (result.closeTurns !== null && result.closeTurns <= maxTurns) {
     closes = true
-    T = result.fraction.q
+    T = result.closeTurns
   }
   return {T, closes}
 }
@@ -618,7 +627,7 @@ equationsTable = {
     cartesian: tex`\begin{aligned} x(t) &= a\cos t \pm d\cos(kt) \\ y(t) &= a\sin t - d\sin(kt) \end{aligned}`,
     complex: tex`z(t) = a\,e^{it} \pm d\,e^{\mp ikt}`,
     polar: tex`\begin{aligned} \rho(t)^2 &= a^2 + d^2 \pm 2ad\cos(mt) \\ \theta(t) &= t - \operatorname{atan2}\big(d\sin(mt),\ a \pm d\cos(mt)\big) \end{aligned}`,
-    closes: html`<span>After ${tex`t = 2\pi q`} if ${tex`R/r = p/q`} in lowest terms, with ${tex`p`}-fold symmetry; never if ${tex`R/r`} is irrational.</span>`
+    closes: html`<span>After ${tex`t = 2\pi q`} if ${tex`R/r = p/q`} in lowest terms, with ${tex`p`}-fold symmetry; never if ${tex`R/r`} is irrational. After ${tex`t = 2\pi`} if ${tex`d = 0`}: the pen is at the rolling circle's center.</span>`
   }
   const current = {cartesian: null, complex: null, polar: null, closes: null}
 
@@ -676,7 +685,9 @@ equationsTable = {
     current.cartesian = tex`\begin{aligned} ${x} \\ ${y} \end{aligned}`
     current.complex = tex`${z}`
     current.polar = tex`\begin{aligned} ${rho} \\ ${theta} \end{aligned}`
-    if (fraction) {
+    if (d === 0) {
+      current.closes = html`<span>After ${tex`t = 2\pi`}: with ${tex`d = 0`} the pen is at the rolling circle's center, which traces a circle of radius ${tex`${number(Math.abs(a))}`}.</span>`
+    } else if (fraction) {
       current.closes = html`<span>After ${tex`t = 2\pi \cdot ${fraction.q}`}, with ${fraction.p}-fold symmetry, since ${tex`R/r = ${mText}`}.</span>`
     } else {
       current.closes = html`<span>Never: ${tex`R/r \approx ${number(R / r)}`} is irrational.</span>`

@@ -103,7 +103,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "atan(x)", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - x - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -144,8 +144,8 @@ viewof x1 = {
 ```
 
 ```{ojs}
-// Only inverse quadratic interpolation uses a third starting point; the
-// field stays in place (disabled) in secant mode so the grid doesn't reflow.
+// Only inverse quadratic interpolation uses a third starting point. It stays
+// enabled in secant mode too: the convergence plots run both methods.
 viewof x2 = {
   const params = new URLSearchParams(window.location.search)
   const x2Input = Inputs.text({label: "Initial guess x₂", value: params.get("x2") ?? "1.5", placeholder: "Example: 1.5"})
@@ -229,16 +229,6 @@ enterToPlot = {
       viewof plotTrigger.querySelector("button").click()
     })
   }
-}
-```
-
-```{ojs}
-//| output: false
-// Greys out x₂ while the secant method (which never reads it) is selected.
-x2Enabled = {
-  const input = (viewof x2).querySelector("input")
-  if (input) input.disabled = method !== "iqi"
-  return method === "iqi"
 }
 ```
 
@@ -330,30 +320,17 @@ function inverseInterpolant(nodes, y) {
 
 ```{ojs}
 //| output: false
-// result: runs the selected method with the current committed inputs.
+// runMethod iterates from the given initial guesses: two for the secant
+// method, three for inverse quadratic interpolation (each step interpolates
+// the last guesses.length points). Returns
 //   rows   — array of { i, nodes, xNext, error }, one entry per iteration;
 //            nodes are the points interpolated at that step, oldest first,
-//            each { i, x, fx } (two for secant, three for IQI)
+//            each { i, x, fx }
 //   points — every x visited so far, x_0, x_1, ..., x_N (used for the
 //            iterates plot, which needs the initial guesses too)
-//   f      — parsed function, reused for curve sampling in setup
-//   method — "secant" or "iqi", the method these rows came from
-result = {
-  const math = window.math
-
-  // Parse f(x) from the committed string. makeFunction returns null if the
-  // expression is invalid.
-  const f = VM.expressions.makeFunction(math, committed.fText)
-  const fallback = x => NaN
-
-  if (!f) return {rows: [], points: [], f: fallback, method}
-
-  // Secant interpolates the last two points, IQI the last three.
-  let initialGuesses = [committed.x0, committed.x1]
-  if (method === "iqi") initialGuesses = [committed.x0, committed.x1, committed.x2]
-
+function runMethod(f, initialGuesses, maxIterations) {
   for (const guess of initialGuesses) {
-    if (!Number.isFinite(guess)) return {rows: [], points: [], f, method}
+    if (!Number.isFinite(guess)) return {rows: [], points: []}
   }
 
   const nodeCount = initialGuesses.length
@@ -374,7 +351,7 @@ result = {
     }
     if (diverged) {
       rows.push({i, nodes, xNext: NaN, error: NaN})
-      return {rows, points, f, method}
+      return {rows, points}
     }
 
     // Stop if a node is already an exact root.
@@ -384,7 +361,7 @@ result = {
     }
     if (root) {
       rows.push({i, nodes, xNext: root.x, error: 0})
-      return {rows, points, f, method}
+      return {rows, points}
     }
 
     // Stop if two nodes share (nearly) the same f-value — the interpolant
@@ -397,7 +374,7 @@ result = {
     }
     if (degenerate) {
       rows.push({i, nodes, xNext: NaN, error: NaN})
-      return {rows, points, f, method}
+      return {rows, points}
     }
 
     const xNext = inverseInterpolant(nodes, 0)
@@ -407,7 +384,52 @@ result = {
     points.push({x: xNext, fx: f(xNext)})
     i++
   }
-  return {rows, points, f, method}
+  return {rows, points}
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs the selected method with the current committed inputs.
+//   rows, points — see runMethod
+//   f      — parsed function, reused for curve sampling in setup
+//   method — "secant" or "iqi", the method these rows came from
+result = {
+  const math = window.math
+
+  // Parse f(x) from the committed string. makeFunction returns null if the
+  // expression is invalid.
+  const f = VM.expressions.makeFunction(math, committed.fText)
+  const fallback = x => NaN
+
+  if (!f) return {rows: [], points: [], f: fallback, method}
+
+  // Secant interpolates the last two points, IQI the last three.
+  let initialGuesses = [committed.x0, committed.x1]
+  if (method === "iqi") initialGuesses = [committed.x0, committed.x1, committed.x2]
+
+  const run = runMethod(f, initialGuesses, maxIterations)
+  return {rows: run.rows, points: run.points, f, method}
+}
+```
+
+```{ojs}
+//| output: false
+// comparison runs both methods on the committed inputs, whatever the Method
+// toggle says, so the convergence plots can show them side by side.
+comparison = {
+  const f = VM.expressions.makeFunction(window.math, committed.fText)
+  const runs = [
+    {label: "Secant", color: chartColors.fn, guesses: [committed.x0, committed.x1]},
+    {label: "Inverse quadratic", color: chartColors.alt, guesses: [committed.x0, committed.x1, committed.x2]}
+  ]
+  for (const run of runs) {
+    let outcome = {rows: [], points: []}
+    if (f) outcome = runMethod(f, run.guesses, maxIterations)
+    run.rows = outcome.rows
+    run.points = outcome.points
+  }
+  return runs
 }
 ```
 
@@ -676,65 +698,82 @@ viewof stepControl = {
 ::: {layout-ncol=2}
 
 ```{ojs}
-// iteratesPlot draws xₙ vs n for the entire run, including the two initial
-// guesses — it doesn't depend on the current step, so it's just plotted
-// once per run.
+// iteratesPlot draws xₙ vs n for the entire run of both methods, including
+// their initial guesses — it doesn't depend on the current step, so it's
+// just plotted once per run.
 iteratesPlot = {
   const pointRows = []
-  for (let k = 0; k < result.points.length; k++) {
-    const point = result.points[k]
-    if (Number.isFinite(point.x)) pointRows.push({i: k, x: point.x})
+  for (const run of comparison) {
+    for (let k = 0; k < run.points.length; k++) {
+      const point = run.points[k]
+      if (Number.isFinite(point.x)) pointRows.push({method: run.label, i: k, x: point.x})
+    }
   }
-  return Plot.plot({
+
+  const domain = [], range = []
+  for (const run of comparison) {
+    domain.push(run.label)
+    range.push(run.color)
+  }
+
+  const chart = Plot.plot({
     width: 340, height: 300, marginLeft: 46,
     x: {label: "n"},
     y: {label: "xₙ"},
+    color: {domain, range},
     marks: [
-      Plot.lineY(pointRows, {x: "i", y: "x", stroke: chartColors.fn}),
-      Plot.dot(pointRows, {x: "i", y: "x", fill: chartColors.fn, r: 4})
+      Plot.lineY(pointRows, {x: "i", y: "x", z: "method", stroke: "method"}),
+      Plot.dot(pointRows, {x: "i", y: "x", fill: "method", r: 4})
     ]
   })
+
+  const container = document.createElement("div")
+  container.append(chart)
+  container.append(Plot.legend({color: {domain, range}}))
+  return container
 }
 ```
 
 ```{ojs}
 // convergencePlot draws log₁₀|eₙ₊₁| vs log₁₀|eₙ| (successive step sizes,
-// eₙ = |xₙ₊₁ − xₙ|) with a linear regression line, for the entire run.
-// Both methods converge superlinearly for a simple root: the secant method
-// with order φ = (1+√5)/2 ≈ 1.618 (the golden ratio), inverse quadratic
-// interpolation with order ≈ 1.839 — both slower than Newton's quadratic
-// order but without needing a derivative. This log-log successive-error plot
-// is the standard diagnostic: its slope estimates the order of convergence p
-// directly.
+// eₙ = |xₙ₊₁ − xₙ|) for both methods on one chart, each with its own linear
+// regression line, for the entire run. Both methods converge superlinearly
+// for a simple root: the secant method with order φ = (1+√5)/2 ≈ 1.618 (the
+// golden ratio), inverse quadratic interpolation with order ≈ 1.839 — both
+// slower than Newton's quadratic order but without needing a derivative.
+// This log-log successive-error plot is the standard diagnostic: its slope
+// estimates the order of convergence p directly.
 convergencePlot = {
-  const logRows = []
-  for (let k = 0; k < result.rows.length - 1; k++) {
-    const en  = result.rows[k].error
-    const en1 = result.rows[k + 1].error
-    if (Number.isFinite(en) && en > 0 && Number.isFinite(en1) && en1 > 0) {
-      logRows.push({x: Math.log10(en), y: Math.log10(en1)})
-    }
-  }
-
-  const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
-  const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
-  const colorDomain = [pointsName], colorRange = [chartColors.alt]
-  // legendDomain/legendRange hold only the regression line(s) — the legend
-  // shown below the chart displays just the fitted order, not the raw
-  // point series, to keep it uncluttered.
+  const marks = []
+  const colorDomain = [], colorRange = []
+  // legendDomain/legendRange name each method with its fitted order; the
+  // dots share their method's color, so they need no legend entry of their own.
   const legendDomain = [], legendRange = []
 
-  const fit = VM.numerical.linearRegression(logRows)
-  if (fit) {
-    const lineName = `order ≈ ${fit.slope.toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push(chartColors.accent2)
-    legendDomain.push(lineName)
-    legendRange.push(chartColors.accent2)
+  for (const run of comparison) {
+    const logRows = []
+    for (let k = 0; k < run.rows.length - 1; k++) {
+      const en  = run.rows[k].error
+      const en1 = run.rows[k + 1].error
+      if (Number.isFinite(en) && en > 0 && Number.isFinite(en1) && en1 > 0) {
+        logRows.push({x: Math.log10(en), y: Math.log10(en1)})
+      }
+    }
+
+    let name = run.label
+    const fit = VM.numerical.linearRegression(logRows)
+    if (fit) {
+      name = `${run.label}: order ≈ ${fit.slope.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
+        {x: "x", y: "y", stroke: () => name, strokeDasharray: "6,4"}
+      ))
+    }
+    marks.push(Plot.dot(logRows, {x: "x", y: "y", fill: () => name, r: 4}))
+    colorDomain.push(name)
+    colorRange.push(run.color)
+    legendDomain.push(name)
+    legendRange.push(run.color)
   }
 
   const chart = Plot.plot({
@@ -747,13 +786,7 @@ convergencePlot = {
 
   const container = document.createElement("div")
   container.append(chart)
-  // Plot.legend throws on an empty domain/range — there's no legend to
-  // show when the run didn't produce a regression line (e.g. a
-  // non-converging example).
-  if (legendDomain.length > 0) {
-    const legend = Plot.legend({color: {domain: legendDomain, range: legendRange}})
-    container.append(legend)
-  }
+  container.append(Plot.legend({color: {domain: legendDomain, range: legendRange}}))
   return container
 }
 ```

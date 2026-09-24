@@ -19,12 +19,13 @@
 # mathviz's main -- with its published docs and its tags -- stays correct in
 # the meantime.
 #
-# Two settings on apurvanakade/mathviz make the auto-merge below mean
-# something: "Allow auto-merge", and a branch-protection rule on main that
-# requires CI's checks. WITHOUT REQUIRED CHECKS, `gh pr merge --auto` MERGES
-# IMMEDIATELY and undocumented code reaches main -- the opposite of the
-# intent. "Automatically delete head branches" is also worth enabling; this
-# workflow copes either way (see the branch handling below).
+# The pull request is never set to auto-merge. Green CI means the code
+# builds and every VM.* member has a heading; it does not mean the review
+# comments on the PR have been read, or that the guide still describes what
+# the CSS does. Landing it is a deliberate step over there: address the
+# review, check the docs against the diff, wait for CI, then merge.
+# "Automatically delete head branches" is worth enabling
+# on mathviz; this workflow copes either way (see the branch handling below).
 
 name: Mirror mathviz
 
@@ -180,8 +181,3 @@ jobs:
               --title "Sync from VisualMathLab" \
               --body-file "$GITHUB_WORKSPACE/.github/mirror-pr-body.md"
           fi
-          # Merges itself once CI is green -- which, for a sync that adds a
-          # new VM.* member, means once its reference entry exists. Requires
-          # "Allow auto-merge" and a branch-protection rule on main that
-          # requires CI; see this workflow's header.
-          gh pr merge "$SYNC_BRANCH" --auto --squash --delete-branch

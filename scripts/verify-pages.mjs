@@ -364,6 +364,58 @@ async function waitForSettle(page, relPath) {
   await page.waitForFunction(isSettled, isApp, { timeout: settleTimeoutMs, polling: 50 }).catch(() => {})
 }
 
+// "Try an example" dropdown (CLAUDE.md, "URL-shareable inputs and example
+// presets"): it must name the example the fields hold -- on load, after a
+// pick, and again once an edit is undone -- and read "Custom inputs" only
+// while they match no example. Runs against the real Inputs.select, which
+// the stubbed unit tests in apply-example.test.js can't reach.
+async function checkExampleDropdown(page, errors) {
+  const select = page.locator('.vm-app form:has-text("Try an example") select').first()
+  if ((await select.count()) === 0) return
+  const state = () => select.evaluate(s => ({
+    label: s.options[s.selectedIndex].textContent,
+    custom: {disabled: s.options[0].disabled, hidden: s.options[0].hidden},
+    count: s.options.length
+  }))
+
+  const onLoad = await state()
+  if (onLoad.label === 'Custom inputs') {
+    errors.push('example dropdown: page opens on "Custom inputs" -- its default inputs match no example')
+  }
+  if (!onLoad.custom.disabled || !onLoad.custom.hidden) {
+    errors.push('example dropdown: "Custom inputs" option is pickable (not disabled and hidden)')
+  }
+  if (onLoad.count < 3) return
+
+  // Pick an example other than the current one; applyExampleParams waits
+  // 100 ms per field, so give it time to finish.
+  let pickIndex = 1
+  if (onLoad.label === (await select.evaluate(s => s.options[1].textContent))) pickIndex = 2
+  const picked = await select.evaluate((s, i) => s.options[i].textContent, pickIndex)
+  await select.selectOption({index: pickIndex})
+  await page.waitForTimeout(1500)
+  const afterPick = await state()
+  if (afterPick.label !== picked) {
+    errors.push(`example dropdown: picked "${picked}" but it reads "${afterPick.label}"`)
+  }
+
+  const field = page.locator('.vm-app [data-example-field] input[type=text]').first()
+  if ((await field.count()) === 0) return
+  const original = await field.inputValue()
+  await field.fill(original + '+0')
+  await page.waitForTimeout(300)
+  const afterEdit = await state()
+  if (afterEdit.label !== 'Custom inputs') {
+    errors.push(`example dropdown: an edited field still reads "${afterEdit.label}", not "Custom inputs"`)
+  }
+  await field.fill(original)
+  await page.waitForTimeout(300)
+  const afterUndo = await state()
+  if (afterUndo.label !== picked) {
+    errors.push(`example dropdown: undoing the edit reads "${afterUndo.label}", not "${picked}"`)
+  }
+}
+
 async function checkEmbedMode(browser, base, relPath, errors) {
   const page = await browser.newPage()
   page.on('pageerror', err => errors.push(`embed pageerror: ${err.message}`))
@@ -417,6 +469,7 @@ async function checkPage(browser, base, relPath) {
   // clicking everything leaves behind.
   await checkSliderControls(page, errors)
   await checkShareDialog(page, errors)
+  await checkExampleDropdown(page, errors)
 
   const buttons = page.locator('button')
   const buttonCount = await buttons.count()

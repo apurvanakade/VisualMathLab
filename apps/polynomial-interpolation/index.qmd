@@ -121,7 +121,10 @@ basisLabelToSlug = new Map([
 
 initialBasis = {
   const raw = urlParams.get("basis")
-  if (!raw) return basisOptions
+  // Missing means the default (both); present but empty ("basis=") is what
+  // urlSyncControls writes when the reader turned both off, so keep it off.
+  if (raw === null) return basisOptions
+  if (raw.trim() === "") return []
   const chosen = []
   for (const part of raw.split(",")) {
     const key = part.trim().toLowerCase()
@@ -640,7 +643,12 @@ basis = {
 
   const lo = setup.nodesX[0]
   const hi = setup.nodesX[n]
-  const sampleCount = Math.max(300, n * 30)
+  // About 30 samples per subinterval keeps each term smooth, but there are
+  // n + 1 terms, so that alone grows like n^2 points. Cap the total at
+  // pointBudget so a large Max n can't stall the page; past the cap the
+  // terms are too crowded to read individually anyway.
+  const pointBudget = 150000
+  const sampleCount = Math.max(50, Math.min(Math.max(300, n * 30), Math.floor(pointBudget / (n + 1))))
 
   for (let k = 0; k <= n; k++) {
     let yk = setup.nodesY[k]

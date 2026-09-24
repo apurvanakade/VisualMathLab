@@ -51,9 +51,20 @@
       } else if (x >= xs[n]) {
         i = n - 1
       } else {
-        for (let k = 0; k < n; k++) {
-          if (x >= xs[k] && x <= xs[k + 1]) { i = k; break }
+        // Binary search for the interval [xs[i], xs[i+1]] holding x, so an
+        // evaluation costs O(log n) rather than a scan over every interval
+        // (the page samples n + 1 splines at O(n) points each).
+        let left = 0
+        let right = n
+        while (right - left > 1) {
+          const mid = Math.floor((left + right) / 2)
+          if (xs[mid] <= x) {
+            left = mid
+          } else {
+            right = mid
+          }
         }
+        i = left
       }
       const dx = x - xs[i]
       return ys[i] + b[i] * dx + c[i] * dx * dx + d[i] * dx * dx * dx

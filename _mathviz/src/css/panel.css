@@ -117,6 +117,18 @@
   box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
 }
 
+/* A disabled field (e.g. the Secant page's x₂ while the secant method, which
+ * never reads it, is selected). The skin above sets its own colors, so the
+ * browser's greyed-out default never shows -- restate it in token terms:
+ * sunk into the panel's own surface, with the soft text color, which keeps
+ * the value legible in both themes. */
+.ojs-panel input:disabled {
+  background: var(--vm-surface);
+  color: var(--vm-text-soft);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
 /* Nothing skinned <select> before this -- Observable Inputs' select()
  * renders the bare browser default, so "Try an example" showed up as a
  * square-cornered, full-panel-width box next to rounded 30px inputs.

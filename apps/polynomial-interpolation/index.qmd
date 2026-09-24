@@ -12,6 +12,7 @@ categories:
   - Linear Interpolation
   - Cubic Splines
   - Arc Length
+  - Basis Functions
 format:
   html:
     include-in-header:
@@ -36,22 +37,24 @@ VM = window.VM
 // URL presets make the example cards shareable/reproducible.
 //
 // Supported parameters:
-//   f=1/(1+x^2)
-//   a=-5
-//   b=5
-//   n=5
+//   f=sin(x)
+//   a=0
+//   b=2*pi
+//   n=10
 //   max=40
 //   show=original,linear,cubic
+//   basis=hats,cardinal   (families drawn in the cardinal-function chart)
+//   k=3                   (the cardinal function drawn bold there)
 urlParams = new URLSearchParams(window.location.search)
 
-initialFText = urlParams.get("f") ?? "1/(1+x^2)"
-initialA0 = urlParams.get("a") ?? "-5"
-initialB0 = urlParams.get("b") ?? "5"
+initialFText = urlParams.get("f") ?? "sin(x)"
+initialA0 = urlParams.get("a") ?? "0"
+initialB0 = urlParams.get("b") ?? "2*pi"
 initialMaxNText = urlParams.get("max") ?? "40"
 
 initialN = {
   const raw = Number(urlParams.get("n"))
-  return Number.isInteger(raw) && raw >= 1 ? raw : 5
+  return Number.isInteger(raw) && raw >= 1 ? raw : 10
 }
 
 interpolantOptions = ["Original curve", "Linear interpolant", "Cubic spline interpolant", "Interpolation nodes"]
@@ -79,7 +82,10 @@ interpolantColors = new Map([
 initialInterpolants = {
   const raw = urlParams.get("show")
   const all = interpolantOptions
-  if (!raw) return all
+  // Missing means the default (all); present but empty ("show=") is what the
+  // URL sync writes when the reader hid every trace, so keep them hidden.
+  if (raw === null) return all
+  if (raw.trim() === "") return []
 
   const map = {
     original: "Original curve",
@@ -103,6 +109,34 @@ initialInterpolants = {
 
   return chosen.length ? chosen : all
 }
+
+basisOptions = ["Hat functions", "Spline cardinal functions"]
+
+basisColors = new Map([
+  ["Hat functions", chartColors.alt],
+  ["Spline cardinal functions", chartColors.ok]
+])
+
+basisLabelToSlug = new Map([
+  ["Hat functions", "hats"],
+  ["Spline cardinal functions", "cardinal"]
+])
+
+initialBasis = {
+  const raw = urlParams.get("basis")
+  // Missing means the default (both); present but empty ("basis=") is what
+  // urlSyncControls writes when the reader turned both off, so keep it off.
+  if (raw === null) return basisOptions
+  if (raw.trim() === "") return []
+  const chosen = []
+  for (const part of raw.split(",")) {
+    const key = part.trim().toLowerCase()
+    for (const [label, slug] of basisLabelToSlug) {
+      if (slug === key && !chosen.includes(label)) chosen.push(label)
+    }
+  }
+  return chosen.length ? chosen : basisOptions
+}
 ```
 
 ```{ojs}
@@ -116,16 +150,16 @@ initialInterpolants = {
 // applied to.
 examples = [
   {
+    title: "Sine on one full period",
+    params: {f: "sin(x)", a: "0", b: "2*pi", max: "40", n: "10"}
+  },
+  {
     title: "Rational peak",
     params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "5"}
   },
   {
     title: "Nonsmooth corner",
     params: {f: "abs(x)", a: "-2", b: "2", max: "30", n: "4"}
-  },
-  {
-    title: "Sine on one full period",
-    params: {f: "sin(x)", a: "0", b: "2*pi", max: "20", n: "4"}
   },
   {
     title: "Cubic polynomial",
@@ -354,6 +388,11 @@ urlSyncControls = {
       return label
     }).join(",")
   )
+
+  const basisSlugs = []
+  for (const label of basisShown) basisSlugs.push(basisLabelToSlug.get(label))
+  params.set("basis", basisSlugs.join(","))
+  params.set("k", String(kControl))
 
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 }
@@ -587,6 +626,153 @@ mainPlot = {
 
 ```{ojs}
 //| output: false
+// basis samples the terms y_k * phi_k(x) of both interpolants for the
+// current nodes. phi_k is the cardinal function: the interpolant of the data
+// (0, ..., 0, 1, 0, ..., 0) with the 1 at node k, so phi_k(x_k) = 1 and
+// phi_k(x_j) = 0 at every other node. Each interpolant is the sum of its
+// terms, p(x) = sum_k y_k phi_k(x), and term k passes through (x_k, y_k).
+//   hats[k]      — {x, y}: y_k times the piecewise-linear phi_k, a tent on
+//                  [x_{k-1}, x_{k+1}] and zero elsewhere
+//   cardinals[k] — {x, y}: y_k times the natural-spline phi_k, sampled over
+//                  all of [a, b] (it is nonzero almost everywhere)
+//   yLo, yHi     — extremes over every term of each family, for the y-axis
+basis = {
+  const n = setup.nodesX.length - 1
+  const hats = []
+  const cardinals = []
+  const hatRange = {lo: 0, hi: 0}
+  const cardinalRange = {lo: 0, hi: 0}
+  if (n < 1) return {hats, cardinals, hatRange, cardinalRange}
+
+  const lo = setup.nodesX[0]
+  const hi = setup.nodesX[n]
+  // About 30 samples per subinterval keeps each term smooth, but there are
+  // n + 1 terms, so that alone grows like n^2 points. Cap the total at
+  // pointBudget so a large Max n can't stall the page; past the cap the
+  // terms are too crowded to read individually anyway.
+  const pointBudget = 150000
+  const sampleCount = Math.max(50, Math.min(Math.max(300, n * 30), Math.floor(pointBudget / (n + 1))))
+
+  for (let k = 0; k <= n; k++) {
+    let yk = setup.nodesY[k]
+    if (!Number.isFinite(yk)) yk = 0
+    if (yk < hatRange.lo) hatRange.lo = yk
+    if (yk > hatRange.hi) hatRange.hi = yk
+
+    // Hat: zero up to the previous node, y_k at node k, zero from the next.
+    const hatX = []
+    const hatY = []
+    if (k > 1) {
+      hatX.push(lo)
+      hatY.push(0)
+    }
+    if (k > 0) {
+      hatX.push(setup.nodesX[k - 1])
+      hatY.push(0)
+    }
+    hatX.push(setup.nodesX[k])
+    hatY.push(yk)
+    if (k < n) {
+      hatX.push(setup.nodesX[k + 1])
+      hatY.push(0)
+    }
+    if (k < n - 1) {
+      hatX.push(hi)
+      hatY.push(0)
+    }
+    hats.push({x: hatX, y: hatY})
+
+    // Spline: the natural cubic spline through the k-th unit vector.
+    const unit = new Array(n + 1).fill(0)
+    unit[k] = 1
+    const phi = VM.cubicSpline(setup.nodesX, unit)
+    const cardX = []
+    const cardY = []
+    for (let i = 0; i <= sampleCount; i++) {
+      const x = lo + (hi - lo) * i / sampleCount
+      const y = yk * phi(x)
+      cardX.push(x)
+      cardY.push(y)
+      if (y < cardinalRange.lo) cardinalRange.lo = y
+      if (y > cardinalRange.hi) cardinalRange.hi = y
+    }
+    cardinals.push({x: cardX, y: cardY})
+  }
+
+  return {hats, cardinals, hatRange, cardinalRange}
+}
+```
+
+```{ojs}
+//| output: false
+// basisPlot draws every term y_j * phi_j of each family that is switched on,
+// faint, with the slider's term k drawn bold on top. The nodes sit on y = 0,
+// where every term except term j vanishes at x_j; the bold term also passes
+// through (x_k, y_k), marked. Same _plotDiv reuse as mainPlot, so zoom/pan
+// survive a slider move.
+basisPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (data, basis, k, showHats, showCardinal) => {
+    const traces = []
+    const families = []
+    if (showHats) families.push({terms: basis.hats, color: chartColors.alt, kind: "hat"})
+    if (showCardinal) families.push({terms: basis.cardinals, color: chartColors.ok, kind: "spline"})
+
+    // Faint pass first, then the highlighted phi_k of each family on top.
+    for (const family of families) {
+      for (let j = 0; j < family.terms.length; j++) {
+        if (j === k) continue
+        const term = family.terms[j]
+        traces.push({x: term.x, y: term.y, type: "scatter", mode: "lines", name: `y${j}·φ${j} (${family.kind})`, showlegend: false, opacity: 0.35, line: {color: family.color, width: 1.25}})
+      }
+    }
+    for (const family of families) {
+      const term = family.terms[k]
+      if (!term) continue
+      traces.push({x: term.x, y: term.y, type: "scatter", mode: "lines", name: `y${k}·φ${k} (${family.kind})`, showlegend: false, line: {color: family.color, width: 3}})
+    }
+
+    if (data.nodesX.length > 0) {
+      const zeros = new Array(data.nodesX.length).fill(0)
+      traces.push({x: data.nodesX, y: zeros, type: "scatter", mode: "markers", name: "Nodes", showlegend: false, marker: {color: chartColors.ink, size: 7, line: {color: chartColors.halo, width: 1}}})
+      traces.push({x: [data.nodesX[k]], y: [data.nodesY[k]], type: "scatter", mode: "markers", name: `(x${k}, y${k})`, showlegend: false, marker: {color: chartColors.ink, size: 9, line: {color: chartColors.halo, width: 1}}})
+    }
+
+    // Fit whichever families are on (both include 0), plus a little room.
+    let yLo = basis.hatRange.lo
+    let yHi = basis.hatRange.hi
+    if (showCardinal) {
+      yLo = Math.min(yLo, basis.cardinalRange.lo)
+      yHi = Math.max(yHi, basis.cardinalRange.hi)
+    }
+    const yRange = VM.plotting.paddedRange([yLo, yHi], {emptyRange: [-1, 1], relativePadding: 0.1, minPadding: 0.1})
+
+    const layout = {
+      xaxis: {title: "x", range: [data.xRange.lo, data.xRange.hi], zeroline: true},
+      yaxis: {title: "yₖ φₖ(x)", range: [yRange.lo, yRange.hi], zeroline: true},
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, traces, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, traces, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
 // maxN parses the Max field's expression, falling back to 20 for invalid
 // input so the n slider always gets a usable bound.
 maxN = {
@@ -621,6 +807,64 @@ viewof nControl = {
   nSlider.classList.add("ojs-fill")
   nSlider.dataset.exampleField = "n"
   return nSlider
+}
+```
+
+</div>
+
+</div>
+
+```{ojs}
+//| output: false
+showHats = basisShown.includes("Hat functions")
+```
+
+```{ojs}
+//| output: false
+showCardinal = basisShown.includes("Spline cardinal functions")
+```
+
+<div class="ojs-chart-block">
+
+```{ojs}
+basisPlot(setup, basis, Math.min(kControl, setup.n), showHats, showCardinal)
+```
+
+```{ojs}
+viewof basisShown = {
+  const items = []
+  for (const label of basisOptions) items.push({label, color: basisColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: initialBasis})
+}
+```
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+// k picks the term y_k * phi_k drawn bold. Its range follows n, so this
+// view is recreated whenever n changes; it re-reads k from the URL (which
+// urlSyncControls keeps current) rather than from a reactive cell, so the
+// reader's k survives an n change instead of snapping back to the default.
+// With no k in the URL it starts at the node with the largest |y_k|, so the
+// bold term is never a flat line (the middle node of sin on [0, 2pi] is pi,
+// where y_k = 0).
+viewof kControl = {
+  const n = Math.max(1, setup.n)
+  const rawText = new URLSearchParams(window.location.search).get("k")
+  const raw = Number(rawText)
+  let k = 0
+  let biggest = -1
+  for (let j = 0; j < setup.nodesY.length; j++) {
+    const size = Math.abs(setup.nodesY[j])
+    if (Number.isFinite(size) && size > biggest) {
+      biggest = size
+      k = j
+    }
+  }
+  if (rawText !== null && Number.isInteger(raw) && raw >= 0) k = Math.min(raw, n)
+  const kSlider = Inputs.range([0, n], {step: 1, value: k, label: "k (highlighted yₖφₖ)"})
+  kSlider.classList.add("ojs-fill")
+  return kSlider
 }
 ```
 
@@ -812,3 +1056,11 @@ L(x) = y_k + \frac{y_{k+1}-y_k}{x_{k+1}-x_k}\,(x-x_k),\qquad x\in[x_k,x_{k+1}],
 $$
 
 or with the **natural cubic spline** $S$: the unique piecewise cubic through every node with $S$, $S'$, and $S''$ continuous at each interior node and $S''(x_0)=S''(x_n)=0$ at the ends. The page then compares how fast each interpolant's arc length converges to $f$'s true arc length as $n$ grows.
+
+Both interpolants depend linearly on the data, so each is a sum of fixed **cardinal functions** weighted by the data,
+
+$$
+p(x) = \sum_{k=0}^{n} y_k\,\varphi_k(x),\qquad \varphi_k(x_j) = \begin{cases}1 & j = k\\ 0 & j \ne k,\end{cases}
+$$
+
+where $\varphi_k$ is the interpolant of the data $(0,\dots,0,1,0,\dots,0)$ and depends only on the nodes, not on $f$. The second chart draws the terms $y_k\varphi_k$ of that sum: add them up and you get back the interpolant in the first chart. For the linear interpolant, $\varphi_k$ is a **hat function**: it rises from $0$ at $x_{k-1}$ to $1$ at $x_k$ and falls back to $0$ at $x_{k+1}$, so each $y_k$ affects only the two neighboring intervals. The spline's $\varphi_k$ also equals $1$ at $x_k$ and $0$ at the other nodes, but it ripples, with decaying amplitude, across the whole of $[a,b]$: changing one $y_k$ moves the spline everywhere, just less and less farther away.

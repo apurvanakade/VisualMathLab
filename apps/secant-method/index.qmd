@@ -1,7 +1,7 @@
 ---
 title: "Secant Method"
 topic: "Root Finding"
-description: "Approximates Newton's method without a derivative, using the secant line through the last two iterates."
+description: "Approximates Newton's method without a derivative, using the secant line through the last two iterates, or inverse quadratic interpolation through the last three."
 author: Apurva Nakade
 date: 2026-06-25
 order: 4
@@ -10,6 +10,7 @@ categories:
   - Computational Math
   - No Derivatives
   - Superlinear Convergence
+  - Inverse Quadratic Interpolation
   - Root Finding
 ---
 
@@ -33,11 +34,18 @@ VM = window.VM
 urlParams = new URLSearchParams(window.location.search)
 
 initialMax = urlParams.get("max") ?? "20"
+
+initialMethod = {
+  if (urlParams.get("method") === "iqi") return "iqi"
+  return "secant"
+}
 ```
 
 ```{ojs}
 //| output: false
-traceOptions = ["f(x)", "Secant line", "Secant points", "Secant x-intercepts"]
+// Labels are method-neutral so the legend (and whatever the reader has
+// toggled off) survives switching between secant and IQI.
+traceOptions = ["f(x)", "Interpolant", "Interpolation points", "x-intercepts"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
 // overlay legend's swatches double as a color key.
@@ -54,39 +62,34 @@ chartColors = VM.plotting.colors(vmTheme)
 
 traceColors = new Map([
   ["f(x)", chartColors.fn],
-  ["Secant line", chartColors.alt],
-  ["Secant points", chartColors.alt],
-  ["Secant x-intercepts", chartColors.ok]
+  ["Interpolant", chartColors.alt],
+  ["Interpolation points", chartColors.alt],
+  ["x-intercepts", chartColors.ok]
 ])
 ```
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
+// examples backs the "Try an example" dropdown near the top controls. They
+// deliberately don't set the method: each gives both starting pairs (x₀, x₁)
+// and triples (x₀, x₁, x₂), so the reader can flip the Method toggle and
+// compare secant and IQI on the same problem.
 examples = [
   {
-    title: "Nearly horizontal secant",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.7", x1: "0.9"}
+    title: "Simple root: IQI takes fewer steps",
+    params: {max: "20", f: "x^3 - x - 2", x0: "1", x1: "2", x2: "1.5"}
   },
   {
-    title: "Problematic secant pair",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0", x1: "1"}
+    title: "Secant wanders, IQI converges",
+    params: {max: "20", f: "x^3 - 2*x + 2", x0: "-2", x1: "0", x2: "-1"}
   },
   {
-    title: "Sensitive starting pair",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "-2", x1: "0"}
+    title: "Secant converges, IQI diverges",
+    params: {max: "20", f: "atan(x)", x0: "1", x1: "2", x2: "1.5"}
   },
   {
-    title: "Standard superlinear convergence",
-    params: {max: "20", f: "x^3 - x - 2", x0: "1", x1: "2"}
-  },
-  {
-    title: "Large jumps from shallow slopes",
-    params: {max: "20", f: "atan(x)", x0: "1", x1: "2"}
-  },
-  {
-    title: "Multiple root behavior",
-    params: {max: "20", f: "x^3", x0: "-0.5", x1: "0.8"}
+    title: "Triple root: both slow to linear",
+    params: {max: "20", f: "x^3", x0: "-0.5", x1: "0.8", x2: "0.3"}
   }
 ]
 ```
@@ -141,6 +144,26 @@ viewof x1 = {
 ```
 
 ```{ojs}
+// Only inverse quadratic interpolation uses a third starting point; the
+// field stays in place (disabled) in secant mode so the grid doesn't reflow.
+viewof x2 = {
+  const params = new URLSearchParams(window.location.search)
+  const x2Input = Inputs.text({label: "Initial guess x₂", value: params.get("x2") ?? "1.5", placeholder: "Example: 1.5"})
+  x2Input.dataset.exampleField = "x2"
+  return x2Input
+}
+```
+
+```{ojs}
+// Always-live, like Max: switching method recomputes straight away.
+viewof method = {
+  const radio = Inputs.radio(new Map([["Secant", "secant"], ["Inverse quadratic", "iqi"]]), {label: "Method", value: initialMethod})
+  radio.dataset.exampleField = "method"
+  return radio
+}
+```
+
+```{ojs}
 // Always-live (not gated behind Plot) — it bounds the step slider rather
 // than feeding result, so there's no reason to wait for a commit. Shares
 // this row with the commit-gated fields now that a shorter label leaves
@@ -167,7 +190,7 @@ viewof exampleSelect = {
 //| output: false
 // Plain CSS selectors, not direct viewof references -- see
 // js/ui/apply-example.js's comment for why.
-exampleFieldSelectors = ({f: '[data-example-field="f"]', x0: '[data-example-field="x0"]', x1: '[data-example-field="x1"]', max: '[data-example-field="max"]'})
+exampleFieldSelectors = ({method: '[data-example-field="method"]', f: '[data-example-field="f"]', x0: '[data-example-field="x0"]', x1: '[data-example-field="x1"]', x2: '[data-example-field="x2"]', max: '[data-example-field="max"]'})
 ```
 
 ```{ojs}
@@ -193,11 +216,11 @@ applyExampleFromSelect = {
 
 ```{ojs}
 //| output: false
-// Pressing Enter in the function/x₀/x₁ fields clicks Plot instead of
+// Pressing Enter in the function/x₀/x₁/x₂ fields clicks Plot instead of
 // submitting the field's own (invisible) form. Depends only on the stable
 // views, so this wiring runs once and is never re-attached.
 enterToPlot = {
-  for (const view of [viewof fText, viewof x0, viewof x1]) {
+  for (const view of [viewof fText, viewof x0, viewof x1, viewof x2]) {
     const input = view.querySelector("input")
     if (!input) continue
     input.addEventListener("keydown", (e) => {
@@ -211,7 +234,17 @@ enterToPlot = {
 
 ```{ojs}
 //| output: false
-// committed snapshots fText/x0/x1 only when Plot is clicked, and writes them
+// Greys out x₂ while the secant method (which never reads it) is selected.
+x2Enabled = {
+  const input = (viewof x2).querySelector("input")
+  if (input) input.disabled = method !== "iqi"
+  return method === "iqi"
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots fText/x0/x1/x2 only when Plot is clicked, and writes them
 // back into the URL so the address bar stays a shareable link. It reads
 // `viewof fText`/`viewof x0`/`viewof x1` (the stable DOM views) rather than
 // `fText`/`x0`/`x1` (the reactive values), so it does NOT rerun on every
@@ -224,27 +257,31 @@ committed = {
   const fVal = (viewof fText).value
   const x0Text = (viewof x0).value
   const x1Text = (viewof x1).value
+  const x2Text = (viewof x2).value
   const x0Val = VM.expressions.makeNumber(math, x0Text)
   const x1Val = VM.expressions.makeNumber(math, x1Text)
+  const x2Val = VM.expressions.makeNumber(math, x2Text)
 
   const params = new URLSearchParams(window.location.search)
   params.set("f", fVal)
   params.set("x0", x0Text)
   params.set("x1", x1Text)
+  params.set("x2", x2Text)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
-  return {fText: fVal, x0: x0Val, x1: x1Val}
+  return {fText: fVal, x0: x0Val, x1: x1Val, x2: x2Val}
 }
 ```
 
 ```{ojs}
 //| output: false
-// max is always-live rather than commit-gated, so it gets its own sync cell
+// max and method are always-live rather than commit-gated, so it gets its own sync cell
 // instead of piggybacking on committed above (which only runs when Plot is
 // clicked).
 urlSyncControls = {
   const params = new URLSearchParams(window.location.search)
   params.set("max", maxIterationsInput)
+  params.set("method", method)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
   return true
 }
@@ -257,26 +294,50 @@ showFCurve = traces.includes("f(x)")
 
 ```{ojs}
 //| output: false
-showSecant = traces.includes("Secant line")
+showSecant = traces.includes("Interpolant")
 ```
 
 ```{ojs}
 //| output: false
-showSecantPoints = traces.includes("Secant points")
+showSecantPoints = traces.includes("Interpolation points")
 ```
 
 ```{ojs}
 //| output: false
-showIntercepts = traces.includes("Secant x-intercepts")
+showIntercepts = traces.includes("x-intercepts")
 ```
 
 ```{ojs}
 //| output: false
-// result: runs the secant method with the current committed inputs.
-//   rows   — array of { i, xPrev, x, fxPrev, fx, xNext, error }, one entry per iteration
+// inverseInterpolant evaluates, at height y, the polynomial x = q(y) that
+// passes through every node (x_k, f(x_k)) -- Lagrange interpolation with the
+// roles of x and y swapped. Through two nodes q is the secant line; through
+// three it is the sideways parabola of inverse quadratic interpolation.
+// Either way the next iterate is q(0), where the interpolant meets the x-axis.
+function inverseInterpolant(nodes, y) {
+  let x = 0
+  for (let j = 0; j < nodes.length; j++) {
+    let term = nodes[j].x
+    for (let k = 0; k < nodes.length; k++) {
+      if (k === j) continue
+      term *= (y - nodes[k].fx) / (nodes[j].fx - nodes[k].fx)
+    }
+    x += term
+  }
+  return x
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs the selected method with the current committed inputs.
+//   rows   — array of { i, nodes, xNext, error }, one entry per iteration;
+//            nodes are the points interpolated at that step, oldest first,
+//            each { i, x, fx } (two for secant, three for IQI)
 //   points — every x visited so far, x_0, x_1, ..., x_N (used for the
 //            iterates plot, which needs the initial guesses too)
 //   f      — parsed function, reused for curve sampling in setup
+//   method — "secant" or "iqi", the method these rows came from
 result = {
   const math = window.math
 
@@ -285,53 +346,68 @@ result = {
   const f = VM.expressions.makeFunction(math, committed.fText)
   const fallback = x => NaN
 
-  if (!f) return {rows: [], points: [], f: fallback}
+  if (!f) return {rows: [], points: [], f: fallback, method}
 
-  const initialGuess0 = committed.x0
-  const initialGuess1 = committed.x1
+  // Secant interpolates the last two points, IQI the last three.
+  let initialGuesses = [committed.x0, committed.x1]
+  if (method === "iqi") initialGuesses = [committed.x0, committed.x1, committed.x2]
 
-  if (!Number.isFinite(initialGuess0) || !Number.isFinite(initialGuess1)) return {rows: [], points: [], f}
+  for (const guess of initialGuesses) {
+    if (!Number.isFinite(guess)) return {rows: [], points: [], f, method}
+  }
 
-  const points = [{x: initialGuess0, fx: f(initialGuess0)}, {x: initialGuess1, fx: f(initialGuess1)}]
+  const nodeCount = initialGuesses.length
+  const points = []
+  for (const x of initialGuesses) points.push({x, fx: f(x)})
   const rows = []
 
-  let i = 1
-  while (i <= maxIterations) {
-    const prev = points[i - 1]
-    const curr = points[i]
+  let i = nodeCount - 1
+  while (rows.length < maxIterations) {
+    const nodes = []
+    for (let k = i - nodeCount + 1; k <= i; k++) nodes.push({i: k, x: points[k].x, fx: points[k].fx})
+    const curr = nodes[nodes.length - 1]
 
-    // Stop if either point's f-value blew up — the method has diverged.
-    if (!Number.isFinite(prev.fx) || !Number.isFinite(curr.fx)) {
-      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: NaN, error: NaN})
-      return {rows, points, f}
+    // Stop if any node's f-value blew up — the method has diverged.
+    let diverged = false
+    for (const node of nodes) {
+      if (!Number.isFinite(node.fx)) diverged = true
+    }
+    if (diverged) {
+      rows.push({i, nodes, xNext: NaN, error: NaN})
+      return {rows, points, f, method}
     }
 
-    // Stop if either current secant point is already an exact root.
-    if (prev.fx === 0) {
-      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: prev.x, error: 0})
-      return {rows, points, f}
+    // Stop if a node is already an exact root.
+    let root = null
+    for (const node of nodes) {
+      if (node.fx === 0 && root === null) root = node
+    }
+    if (root) {
+      rows.push({i, nodes, xNext: root.x, error: 0})
+      return {rows, points, f, method}
     }
 
-    if (curr.fx === 0) {
-      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: curr.x, error: 0})
-      return {rows, points, f}
+    // Stop if two nodes share (nearly) the same f-value — the interpolant
+    // x = q(y) would have to divide by their difference.
+    let degenerate = false
+    for (let a = 0; a < nodes.length; a++) {
+      for (let b = a + 1; b < nodes.length; b++) {
+        if (Math.abs(nodes[a].fx - nodes[b].fx) < 1e-14) degenerate = true
+      }
+    }
+    if (degenerate) {
+      rows.push({i, nodes, xNext: NaN, error: NaN})
+      return {rows, points, f, method}
     }
 
-    // Stop if the secant is nearly flat — dividing by the difference would be unstable.
-    if (Math.abs(curr.fx - prev.fx) < 1e-14) {
-      rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext: NaN, error: NaN})
-      return {rows, points, f}
-    }
-
-    // Secant update: x-intercept of the line through (x_{n-1}, f(x_{n-1})) and (x_n, f(x_n))
-    const xNext = curr.x - curr.fx * (curr.x - prev.x) / (curr.fx - prev.fx)
+    const xNext = inverseInterpolant(nodes, 0)
     const error = Math.abs(xNext - curr.x)
-    rows.push({i, xPrev: prev.x, x: curr.x, fxPrev: prev.fx, fx: curr.fx, xNext, error})
+    rows.push({i, nodes, xNext, error})
 
     points.push({x: xNext, fx: f(xNext)})
     i++
   }
-  return {rows, points, f}
+  return {rows, points, f, method}
 }
 ```
 
@@ -345,8 +421,9 @@ setup = {
 
   // Axis ranges are computed from ALL rows, not just visibleRows,
   // so the axes stay fixed as the user steps through iterations.
-  const xValues = [committed.x0, committed.x1]
-  for (const row of result.rows) xValues.push(row.x, row.xNext)
+  const xValues = []
+  for (const point of result.points) xValues.push(point.x)
+  for (const row of result.rows) xValues.push(row.xNext)
   const xRange = VM.plotting.paddedRange(xValues, {emptyRange: [-3, 3], relativePadding: 0.25, minPadding: 0.5})
 
   // A wider domain (double the padding of xRange) so the curve is already
@@ -367,37 +444,64 @@ setup = {
     }
   }
 
-  // Collect y values for the y-axis range, including secant line endpoints.
-  // Only samples within the initial view (xRange) count, so yRange — and
-  // the initial view — stay unaffected by the wider sampling.
-  // Cap at 1e8 so a near-vertical secant doesn't blow up the axis range.
+  // Collect y values for the y-axis range, including every interpolation
+  // node. Only samples within the initial view (xRange) count, so yRange —
+  // and the initial view — stay unaffected by the wider sampling.
+  // Cap at 1e8 so a runaway iterate doesn't blow up the axis range.
   const yValues = [0]
   for (let i = 0; i < sampleXs.length; i++) {
     const x = sampleXs[i]
     if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
   }
   for (const row of result.rows) {
-    if (Number.isFinite(row.fx) && Math.abs(row.fx) <= 1e8) yValues.push(row.fx)
-    if (Number.isFinite(row.fxPrev) && Math.abs(row.fxPrev) <= 1e8) yValues.push(row.fxPrev)
-    if (Number.isFinite(row.xPrev) && Number.isFinite(row.fxPrev) && Number.isFinite(row.x) && Number.isFinite(row.fx) && Number.isFinite(row.xNext) && row.x !== row.xPrev) {
-      const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-      const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x, row.xNext) - 0.75)
-      const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x, row.xNext) + 0.75)
-      for (const v of [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)]) {
-        if (Number.isFinite(v) && Math.abs(v) <= 1e8) yValues.push(v)
-      }
+    for (const node of row.nodes) {
+      if (Number.isFinite(node.fx) && Math.abs(node.fx) <= 1e8) yValues.push(node.fx)
     }
   }
   const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
-  return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}
+  return {visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs, method: result.method}
 }
 ```
 
 ```{ojs}
 //| output: false
-// mainPlot draws f(x), the secant lines, the secant points, and the
-// secant x-intercepts.
+// interpolantCurve samples x = q(y) (see inverseInterpolant) for one row,
+// over the f-values of its nodes and 0, plus a margin on either side, so the
+// drawn curve always runs through every node and the x-intercept. Returns
+// null when the row has no usable interpolant (diverged or degenerate).
+function interpolantCurve(row) {
+  if (!Number.isFinite(row.xNext)) return null
+  let yLo = 0
+  let yHi = 0
+  for (const node of row.nodes) {
+    if (!Number.isFinite(node.x) || !Number.isFinite(node.fx)) return null
+    yLo = Math.min(yLo, node.fx)
+    yHi = Math.max(yHi, node.fx)
+  }
+  const margin = 0.25 * (yHi - yLo)
+  yLo -= margin
+  yHi += margin
+
+  const sampleCount = 200
+  const xs = []
+  const ys = []
+  for (let k = 0; k < sampleCount; k++) {
+    const y = yLo + (yHi - yLo) * k / (sampleCount - 1)
+    const x = inverseInterpolant(row.nodes, y)
+    if (Number.isFinite(x)) {
+      xs.push(x)
+      ys.push(y)
+    }
+  }
+  return {xs, ys}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws f(x), the interpolant (secant line or inverse quadratic),
+// the interpolation points, and the x-intercepts.
 //
 // _plotDiv is kept in a closure so Plotly reuses the same DOM node across
 // reactive updates — this preserves zoom and pan when the step changes.
@@ -405,72 +509,65 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs}, showFCurve, showSecant, showSecantPoints, showIntercepts) => {
+  return ({visibleRows, xRange, xBuffer, yRange, sampleXs, sampleYs, method}, showFCurve, showSecant, showSecantPoints, showIntercepts) => {
     const data = []
+
+    // Hover name only — the legend label stays "Interpolant" for both methods.
+    let interpolantName = "Secant line"
+    if (method === "iqi") interpolantName = "Inverse quadratic"
 
     if (showFCurve) {
       // The function curve
       data.push({x: sampleXs, y: sampleYs, type: "scatter", mode: "lines", name: "f(x)", showlegend: false, line: {color: chartColors.fn, width: 3}})
     }
 
-    // Every point used so far: x_0 (from the first visible row's xPrev)
-    // followed by x_i for each visible row.
+    // Every point used so far: all nodes of the first visible row, then
+    // the newest node of each later row.
     const secantPoints = []
-    if (visibleRows.length > 0) {
-      const first = visibleRows[0]
-      if (Number.isFinite(first.xPrev) && Number.isFinite(first.fxPrev)) {
-        secantPoints.push({i: first.i - 1, x: first.xPrev, fx: first.fxPrev})
+    for (let r = 0; r < visibleRows.length; r++) {
+      const nodes = visibleRows[r].nodes
+      let first = nodes.length - 1
+      if (r === 0) first = 0
+      for (let k = first; k < nodes.length; k++) {
+        if (Number.isFinite(nodes[k].x) && Number.isFinite(nodes[k].fx)) secantPoints.push(nodes[k])
       }
     }
-    for (const r of visibleRows) {
-      if (Number.isFinite(r.x) && Number.isFinite(r.fx)) secantPoints.push({i: r.i, x: r.x, fx: r.fx})
-    }
 
-    // Dotted vertical lines from the x-axis up to each secant point
+    // Dotted vertical lines from the x-axis up to each interpolation point
     if (showSecantPoints) {
       for (const p of secantPoints) {
         data.push({x: [p.x, p.x], y: [0, p.fx], type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: chartColors.muted, width: 1.5, dash: "dot"}})
       }
     }
 
-    // Secant lines: previous ones faded, current one solid. Each spans
-    // both secant points and the x-intercept (plus a margin), so the
-    // intercept marker is always on the drawn segment.
-    const validSecantRows = []
+    // Interpolants: previous ones faded, current one solid. Each spans its
+    // nodes and the x-intercept (plus a margin), so the intercept marker is
+    // always on the drawn curve.
+    const curves = []
     for (const r of visibleRows) {
-      if (Number.isFinite(r.xPrev) && Number.isFinite(r.fxPrev) && Number.isFinite(r.x) && Number.isFinite(r.fx) && Number.isFinite(r.xNext)) {
-        validSecantRows.push(r)
-      }
+      const curve = interpolantCurve(r)
+      if (curve) curves.push(curve)
     }
-    const prevSecants = validSecantRows.slice(0, -1)
-    let currentSecant = null
-    if (validSecantRows.length > 0) currentSecant = validSecantRows[validSecantRows.length - 1]
 
     if (showSecant) {
-      for (const row of prevSecants) {
-        const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x, row.xNext) - 0.75)
-        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x, row.xNext) + 0.75)
+      for (let k = 0; k < curves.length - 1; k++) {
         data.push({
-          x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
+          x: curves[k].xs, y: curves[k].ys,
           type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
           line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
         })
       }
-      if (currentSecant) {
-        const row = currentSecant
-        const slope = (row.fx - row.fxPrev) / (row.x - row.xPrev)
-        const tlo = Math.max(xRange.lo, Math.min(row.xPrev, row.x, row.xNext) - 0.75)
-        const thi = Math.min(xRange.hi, Math.max(row.xPrev, row.x, row.xNext) + 0.75)
+      if (curves.length > 0) {
+        const current = curves[curves.length - 1]
         data.push({
-          x: [tlo, thi], y: [row.fx + slope * (tlo - row.x), row.fx + slope * (thi - row.x)],
-          type: "scatter", mode: "lines", name: "Secant line", showlegend: false,
+          x: current.xs, y: current.ys,
+          type: "scatter", mode: "lines", name: interpolantName, showlegend: false,
           line: {color: chartColors.alt, width: 2.5}
         })
       }
     }
 
-    // Red markers at each (x_i, f(x_i)) secant point
+    // Red markers at each (x_i, f(x_i)) interpolation point
     if (showSecantPoints && secantPoints.length > 0) {
       const xs = [], ys = [], labels = []
       for (const p of secantPoints) {
@@ -480,13 +577,13 @@ mainPlot = {
       }
       data.push({
         x: xs, y: ys,
-        type: "scatter", mode: "markers+text", name: "Secant points",
+        type: "scatter", mode: "markers+text", name: "Interpolation points",
         text: labels, textposition: "top center", showlegend: false,
         marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}}
       })
     }
 
-    // Green markers at each secant x-intercept (x_{i+1})
+    // Green markers at each x-intercept (x_{i+1})
     const intercepts = []
     for (const r of visibleRows) {
       if (Number.isFinite(r.xNext)) intercepts.push({i: r.i + 1, x: r.xNext})
@@ -500,7 +597,7 @@ mainPlot = {
       }
       data.push({
         x: xs, y: ys,
-        type: "scatter", mode: "markers+text", name: "Secant x-intercepts",
+        type: "scatter", mode: "markers+text", name: "x-intercepts",
         text: labels, textposition: "bottom center", showlegend: false,
         marker: {color: chartColors.ok, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}}
       })
@@ -603,11 +700,12 @@ iteratesPlot = {
 ```{ojs}
 // convergencePlot draws log₁₀|eₙ₊₁| vs log₁₀|eₙ| (successive step sizes,
 // eₙ = |xₙ₊₁ − xₙ|) with a linear regression line, for the entire run.
-// The secant method converges superlinearly for a simple root
-// (eₙ₊₁ ~ C·eₙ^φ with φ = (1+√5)/2 ≈ 1.618, the golden ratio) — slower than
-// Newton's quadratic order but without needing a derivative. This log-log
-// successive-error plot is the standard diagnostic: its slope estimates the
-// order of convergence p directly (≈1.618 for a simple root here).
+// Both methods converge superlinearly for a simple root: the secant method
+// with order φ = (1+√5)/2 ≈ 1.618 (the golden ratio), inverse quadratic
+// interpolation with order ≈ 1.839 — both slower than Newton's quadratic
+// order but without needing a derivative. This log-log successive-error plot
+// is the standard diagnostic: its slope estimates the order of convergence p
+// directly.
 convergencePlot = {
   const logRows = []
   for (let k = 0; k < result.rows.length - 1; k++) {
@@ -668,6 +766,8 @@ convergencePlot = {
 
 ```{ojs}
 // Iteration table — shows the entire run, not just the current step.
+// One x and one f(x) column per interpolation node, so secant runs get
+// x_{n-1}, x_n and IQI runs x_{n-2}, x_{n-1}, x_n.
 iterationTable = {
   if (result.rows.length === 0) {
     // Always return a Node so Quarto's OJS runtime never latches this
@@ -675,19 +775,42 @@ iterationTable = {
     return document.createElement("div")
   }
 
+  const nodeCount = result.rows[0].nodes.length
+  const nodeLabels = []
+  for (let k = nodeCount - 1; k >= 0; k--) {
+    if (k === 0) {
+      nodeLabels.push("x_n")
+    } else {
+      nodeLabels.push(`x_{n-${k}}`)
+    }
+  }
+
+  const headers = ["n"]
+  const csvHeaders = ["n"]
+  for (const label of nodeLabels) {
+    headers.push(tex`${label}`)
+    csvHeaders.push(label)
+  }
+  for (const label of nodeLabels) {
+    headers.push(tex`f(${label})`)
+    csvHeaders.push(`f(${label})`)
+  }
+  headers.push(tex`x_{n+1}`, tex`|x_{n+1} - x_n|`)
+  csvHeaders.push("x_{n+1}", "|x_{n+1} - x_n|")
+
   const formattedRows = []
   for (const row of result.rows) {
-    let xPrevCell = "NaN"
-    if (Number.isFinite(row.xPrev)) xPrevCell = row.xPrev.toPrecision(10)
-
-    let xCell = "NaN"
-    if (Number.isFinite(row.x)) xCell = row.x.toPrecision(10)
-
-    let fxPrevCell = "NaN"
-    if (Number.isFinite(row.fxPrev)) fxPrevCell = row.fxPrev.toExponential(5)
-
-    let fxCell = "NaN"
-    if (Number.isFinite(row.fx)) fxCell = row.fx.toExponential(5)
+    const cells = [row.i]
+    for (const node of row.nodes) {
+      let xCell = "NaN"
+      if (Number.isFinite(node.x)) xCell = node.x.toPrecision(10)
+      cells.push(xCell)
+    }
+    for (const node of row.nodes) {
+      let fxCell = "NaN"
+      if (Number.isFinite(node.fx)) fxCell = node.fx.toExponential(5)
+      cells.push(fxCell)
+    }
 
     let xNextCell = "NaN"
     if (Number.isFinite(row.xNext)) xNextCell = row.xNext.toPrecision(10)
@@ -695,23 +818,33 @@ iterationTable = {
     let errorCell = "NaN"
     if (Number.isFinite(row.error)) errorCell = row.error.toExponential(4)
 
-    formattedRows.push([row.i, xPrevCell, xCell, fxPrevCell, fxCell, xNextCell, errorCell])
+    cells.push(xNextCell, errorCell)
+    formattedRows.push(cells)
   }
 
-  return VM.ui.renderTable({
-    html,
-    headers: ["n", tex`x_{n-1}`, tex`x_n`, tex`f(x_{n-1})`, tex`f(x_n)`, tex`x_{n+1}`, tex`|x_{n+1} - x_n|`],
-    csvHeaders: ["n", "x_{n-1}", "x_n", "f(x_{n-1})", "f(x_n)", "x_{n+1}", "|x_{n+1} - x_n|"],
-    filename: "secant-method-iterations.csv",
-    rows: formattedRows
-  })
+  let filename = "secant-method-iterations.csv"
+  if (result.method === "iqi") filename = "inverse-quadratic-interpolation-iterations.csv"
+
+  return VM.ui.renderTable({html, headers, csvHeaders, filename, rows: formattedRows})
 }
 ```
 
 ::::
 
-The secant method finds roots of $f(x)=0$ like Newton's method, but replaces the tangent line with the secant line through the two most recent approximations, so no derivative is needed:
+Both methods find a root of $f(x)=0$ without a derivative, by interpolating the most recent iterates and taking the point where the interpolant crosses the $x$-axis as the next iterate. Write $y_k = f(x_k)$.
+
+The **secant method** uses the line through the last two points $(x_{n-1}, y_{n-1})$ and $(x_n, y_n)$, replacing Newton's tangent line with a secant:
 
 $$
-x_{n+1}=x_n-f(x_n)\frac{x_n-x_{n-1}}{f(x_n)-f(x_{n-1})}.
+x_{n+1}=x_n-y_n\,\frac{x_n-x_{n-1}}{y_n-y_{n-1}}.
 $$
+
+**Inverse quadratic interpolation** (IQI) uses the last three points, and fits $x$ as a quadratic function of $y$, a sideways parabola $x=q(y)$, rather than $y$ as a function of $x$. The next iterate is $x_{n+1}=q(0)$:
+
+$$
+x_{n+1}=\frac{x_{n-2}\,y_{n-1}\,y_n}{(y_{n-2}-y_{n-1})(y_{n-2}-y_n)}+\frac{x_{n-1}\,y_{n-2}\,y_n}{(y_{n-1}-y_{n-2})(y_{n-1}-y_n)}+\frac{x_n\,y_{n-2}\,y_{n-1}}{(y_n-y_{n-2})(y_n-y_{n-1})}.
+$$
+
+Because a sideways parabola crosses the $x$-axis exactly once, there is no need to solve a quadratic equation. (Read the same way, the secant line is $x$ as a linear function of $y$, evaluated at $y=0$.)
+
+Near a simple root the secant method converges with order $\varphi=(1+\sqrt5)/2\approx 1.62$ and IQI with order about $1.84$, both between bisection's linear rate and Newton's quadratic one. The slope of the log-log plot in "Convergence plots" estimates this order. Each method breaks down when two of the interpolated $f$-values coincide.

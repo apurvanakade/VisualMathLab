@@ -111,6 +111,23 @@
  * separate design decision -- keeping the two in one rule is what stops them
  * drifting apart. */
 .ojs-panel input:focus,
+.ojs-panel select:focus {
+  outline: none;
+  border-color: var(--vm-accent);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--vm-accent) 25%, transparent);
+}
+
+/* A disabled field (e.g. the Secant page's x₂ while the secant method, which
+ * never reads it, is selected). The skin above sets its own colors, so the
+ * browser's greyed-out default never shows -- restate it in token terms:
+ * sunk into the panel's own surface, with the soft text color, which keeps
+ * the value legible in both themes. */
+.ojs-panel input:disabled {
+  background: var(--vm-surface);
+  color: var(--vm-text-soft);
+  border-style: dashed;
+  cursor: not-allowed;
+}
 
 /* Nothing skinned <select> before this -- Observable Inputs' select()
  * renders the bare browser default, so "Try an example" showed up as a
@@ -236,6 +253,36 @@
   line-height: 1.25;
   font-weight: 500;
   color: var(--vm-text-soft);
+}
+
+/* Inputs.radio()/checkbox() groups in a panel (e.g. the Secant page's Method
+ * toggle; Observable suffixes the form's class "-checkbox" for both). The
+ * label reset above also zeroes Observable's own spacing between options, so
+ * put a gap back, and centre the options in a control-height line so they sit
+ * level with the fields beside them. The input rules undo the text-field skin
+ * (`.ojs-panel input` and its focus ring), which otherwise gives each button a
+ * 30px bordered box -- (0,2,2) beats those rules' (0,2,1). Keyboard focus
+ * still gets a ring, drawn as an outline around the native button. */
+.ojs-panel form[class$="-checkbox"] > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  min-height: var(--vm-control-h);
+}
+
+.ojs-panel form[class$="-checkbox"] input,
+.ojs-panel form[class$="-checkbox"] input:focus {
+  height: auto;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  accent-color: var(--vm-accent);
+}
+
+.ojs-panel form[class$="-checkbox"] input:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 2px;
 }
 
 /* Attach to an Inputs.* wrapper div to make it fill the row, overriding

@@ -8,8 +8,16 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadVM } from '../../../scripts/load-vm.mjs'
 
+// syncExampleSelect and applyExampleParams look fields up with
+// document.querySelector; `fields` maps a selector to a stand-in view.
+const fields = {}
+globalThis.document = {
+  addEventListener: () => {},
+  querySelector: selector => fields[selector] ?? null
+}
+
 const VM = loadVM()
-const { findMatchingExample } = VM.ui
+const { findMatchingExample, syncExampleSelect, applyExampleParams } = VM.ui
 
 const examples = [
   {title: 'Two-cycle', params: {max: '20', f: 'x^3 - 2*x + 2', x0: '0'}},
@@ -44,4 +52,74 @@ test('findMatchingExample compares nested tableau objects', () => {
   const tableaus = [{title: 'Euler', params: {s: '1', tableau: {a: [['0']], b: ['1'], c: ['0']}}}]
   assert.equal(findMatchingExample(tableaus, {s: '1', tableau: {c: ['0'], a: [['0']], b: ['1']}}).title, 'Euler')
   assert.equal(findMatchingExample(tableaus, {s: '1', tableau: {c: ['0'], a: [['0']], b: ['2']}}), null)
+})
+
+// A stand-in for an Inputs.select view over [null, ...examples]: records
+// every value it is set to and every event dispatched on it.
+const fakeSelectView = optionCount => {
+  const options = []
+  for (let i = 0; i < optionCount; i++) options.push({disabled: false, hidden: false})
+  const view = {
+    sets: [],
+    events: [],
+    current: null,
+    querySelector: selector => (selector === 'select' ? {options} : null),
+    dispatchEvent: event => view.events.push(event),
+    options
+  }
+  Object.defineProperty(view, 'value', {
+    get: () => view.current,
+    set: value => {
+      view.sets.push(value)
+      view.current = value
+    }
+  })
+  return view
+}
+
+const fakeField = value => ({value, dispatchEvent: () => {}})
+
+const selectors = {max: '#max', f: '#f', x0: '#x0'}
+
+test('syncExampleSelect selects the matching example without dispatching an event', () => {
+  fields['#max'] = fakeField('20')
+  fields['#f'] = fakeField('x^2 - 2')
+  fields['#x0'] = fakeField('1.5')
+  const view = fakeSelectView(examples.length + 1)
+  syncExampleSelect(view, examples, selectors)
+  assert.equal(view.value, examples[1])
+  assert.equal(view.events.length, 0)
+})
+
+test('syncExampleSelect disables and hides the "Custom inputs" option', () => {
+  const view = fakeSelectView(examples.length + 1)
+  syncExampleSelect(view, examples, selectors)
+  assert.deepEqual(view.options[0], {disabled: true, hidden: true})
+  assert.deepEqual(view.options[1], {disabled: false, hidden: false})
+})
+
+test('syncExampleSelect falls back to null ("Custom inputs") once a field is edited', () => {
+  fields['#max'] = fakeField('20')
+  fields['#f'] = fakeField('x^2 - 3')
+  fields['#x0'] = fakeField('1.5')
+  const view = fakeSelectView(examples.length + 1)
+  view.current = examples[1]
+  syncExampleSelect(view, examples, selectors)
+  assert.equal(view.value, null)
+})
+
+test('syncExampleSelect leaves the dropdown alone while an example is being applied', async () => {
+  fields['#max'] = fakeField('20')
+  fields['#f'] = fakeField('x^2 - 2')
+  fields['#x0'] = fakeField('1.5')
+  const view = fakeSelectView(examples.length + 1)
+  view.current = examples[0]
+  const trigger = {querySelector: () => null}
+  // Applies the first param, then waits 100 ms before the next: mid-apply.
+  const applying = applyExampleParams(selectors, examples[0].params, trigger)
+  syncExampleSelect(view, examples, selectors)
+  assert.equal(view.sets.length, 0)
+  await applying
+  syncExampleSelect(view, examples, selectors)
+  assert.equal(view.value, examples[0])
 })

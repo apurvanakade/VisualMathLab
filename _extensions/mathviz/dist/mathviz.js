@@ -3603,7 +3603,8 @@
   // triggerEl to run the same commit flow a real user click would (updates
   // result and rewrites the URL) — used by both the top dropdown and the
   // generated example grid so an example applies in place, with no page
-  // navigation/reload/scroll jump.
+  // navigation/reload/scroll jump. syncExampleSelect, below, keeps that
+  // dropdown naming the example the fields currently hold.
   //
   // fieldSelectors is a page-local {paramKey: cssSelector} object of plain
   // strings, deliberately NOT direct viewof references: some fields (e.g.
@@ -3665,20 +3666,124 @@
    * @returns {Promise<void>}
    */
   const applyExampleParams = async (fieldSelectors, params, triggerEl) => {
-    for (const key in params) {
-      const selector = fieldSelectors[key]
-      if (!selector) continue
-      const view = document.querySelector(selector)
-      if (!view) continue
-      view.value = params[key]
-      view.dispatchEvent(new Event("input", {bubbles: true}))
-      await new Promise(resolve => setTimeout(resolve, 100))
+    // While this runs, the fields pass through states that match no example
+    // (one field applied, the rest not yet), and syncExampleSelect below
+    // would flip the dropdown to "Custom inputs" and back once per field.
+    // The dropdown already shows the example being applied, so it simply
+    // skips while any apply is in flight.
+    applying += 1
+    try {
+      for (const key in params) {
+        const selector = fieldSelectors[key]
+        if (!selector) continue
+        const view = document.querySelector(selector)
+        if (!view) continue
+        view.value = params[key]
+        view.dispatchEvent(new Event("input", {bubbles: true}))
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+    } finally {
+      applying -= 1
     }
     const button = triggerEl.querySelector("button")
     if (button) button.click()
   }
 
-  globalThis.VM = {...globalThis.VM, ui: {...globalThis.VM?.ui, applyExampleParams}}
+  let applying = 0
+
+  // Loose equality between a field's current value and an example's param:
+  // params are mostly the strings a URL would carry ("20") while a slider's
+  // value is a number (20), so scalars compare as trimmed strings. Arrays
+  // (checkbox groups) compare element by element, in order; plain objects
+  // (the Butcher tableau's {a, b, c}) compare key by key.
+  const sameValue = (current, expected) => {
+    if (Array.isArray(current) || Array.isArray(expected)) {
+      if (!Array.isArray(current) || !Array.isArray(expected)) return false
+      if (current.length !== expected.length) return false
+      for (let i = 0; i < current.length; i++) {
+        if (!sameValue(current[i], expected[i])) return false
+      }
+      return true
+    }
+    const currentIsObject = current !== null && typeof current === "object"
+    const expectedIsObject = expected !== null && typeof expected === "object"
+    if (currentIsObject || expectedIsObject) {
+      if (!currentIsObject || !expectedIsObject) return false
+      const keys = new Set([...Object.keys(current), ...Object.keys(expected)])
+      for (const key of keys) {
+        if (!sameValue(current[key], expected[key])) return false
+      }
+      return true
+    }
+    return String(current).trim() === String(expected).trim()
+  }
+
+  /**
+   * Finds the example whose params all equal the given field values.
+   *
+   * @param {Array<{title: string, params: Object<string, *>}>} examples
+   * @param {Object<string, *>} values - `{paramKey: currentValue}`. A param
+   *   key with no entry here (a field this page doesn't have) is ignored.
+   * @returns {Object|null} The first matching example, or null when none
+   *   match (or when no param key has a value to compare against).
+   */
+  const findMatchingExample = (examples, values) => {
+    for (const example of examples) {
+      let compared = 0
+      let matches = true
+      for (const key in example.params) {
+        if (!(key in values)) continue
+        compared += 1
+        if (!sameValue(values[key], example.params[key])) {
+          matches = false
+          break
+        }
+      }
+      if (matches && compared > 0) return example
+    }
+    return null
+  }
+
+  /**
+   * Points the "Try an example" dropdown at whichever example the page's
+   * fields currently hold, so it never names an example the chart isn't
+   * showing. Call it from a cell that reads every example field's value,
+   * so it re-runs whenever one changes.
+   *
+   * The dropdown's options are `[null, ...examples]`: the `null` entry,
+   * formatted "Custom inputs", is shown only when no example matches (a
+   * shared link with its own inputs, or a field the reader has edited). It
+   * is disabled and hidden in the list, so it can't be picked.
+   *
+   * Sets the view's value without dispatching an event, so nothing
+   * downstream re-runs and the page's "change" listener doesn't re-apply.
+   *
+   * @param {Element} selectView - The `viewof exampleSelect` element.
+   * @param {Array<{title: string, params: Object<string, *>}>} examples
+   * @param {Object<string, string>} fieldSelectors - Same as
+   *   {@link applyExampleParams}'s.
+   * @returns {void}
+   */
+  const syncExampleSelect = (selectView, examples, fieldSelectors) => {
+    const nativeSelect = selectView.querySelector("select")
+    if (nativeSelect && nativeSelect.options.length > 0) {
+      nativeSelect.options[0].disabled = true
+      nativeSelect.options[0].hidden = true
+    }
+    if (applying > 0) return
+    const values = {}
+    for (const key in fieldSelectors) {
+      const view = document.querySelector(fieldSelectors[key])
+      if (view) values[key] = view.value
+    }
+    const match = findMatchingExample(examples, values)
+    if (selectView.value !== match) selectView.value = match
+  }
+
+  globalThis.VM = {
+    ...globalThis.VM,
+    ui: {...globalThis.VM?.ui, applyExampleParams, findMatchingExample, syncExampleSelect}
+  }
 })(window)
 
 // ---- src/js/ui/legend-overlay.js ----

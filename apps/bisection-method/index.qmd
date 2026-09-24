@@ -152,7 +152,7 @@ viewof maxIterationsInput = {
 ```{ojs}
 viewof exampleSelect = {
   const options = [null, ...examples]
-  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Pick an example…", value: null})
+  const select = Inputs.select(options, {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
   select.classList.add("ojs-fill")
   return select
 }
@@ -183,6 +183,17 @@ applyExampleFromSelect = {
     if (!example) return
     VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
   })
+}
+```
+
+```{ojs}
+//| output: false
+// Keeps the dropdown naming the example the fields above hold ("Custom
+// inputs" once none does). Reads every example field's value so it re-runs
+// whenever one changes; it only sets the dropdown, never a field.
+syncExampleFromFields = {
+  fText; a0; b0; maxIterationsInput
+  VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
 }
 ```
 

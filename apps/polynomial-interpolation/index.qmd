@@ -82,7 +82,10 @@ interpolantColors = new Map([
 initialInterpolants = {
   const raw = urlParams.get("show")
   const all = interpolantOptions
-  if (!raw) return all
+  // Missing means the default (all); present but empty ("show=") is what the
+  // URL sync writes when the reader hid every trace, so keep them hidden.
+  if (raw === null) return all
+  if (raw.trim() === "") return []
 
   const map = {
     original: "Original curve",

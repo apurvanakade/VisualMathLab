@@ -87,8 +87,8 @@ script fails to execute there, not in a stubbed sandbox.
 
 ## When to run which
 
-- Editing a shared utility under `_mathviz/src/**` (adding a math function, renaming, refactoring): `npm test` (fast), then `npm run build:mathviz`, then `npm run verify` before considering it done — a function can pass its own unit tests and still be wired wrong at a call site on one of these pages, and the rebuilt bundle lands in every page's `<head>`.
-- Editing a `.qmd` page only (new page, new OJS cells, no shared-utility changes): `npm run verify` is what actually exercises it; `npm test` won't see it.
+- Editing a shared utility under `_mathviz/src/**` (adding a math function, renaming, refactoring): `npm test` (fast), then `npm run build:mathviz`, then check a page that calls it in `quarto preview`. A function can pass its own unit tests and still be wired wrong at a call site on some other page, and the rebuilt bundle lands in every page's `<head>` — which is exactly what the full `npm run verify` crawl in the PR's `pr-check.yml` catches. Don't run that crawl locally unless the user asks.
+- Editing a `.qmd` page only (new page, new OJS cells, no shared-utility changes): `npm run verify -- apps/<slug>/index.qmd` (that one page only) is what actually exercises it; `npm test` won't see it.
 - Editing `_includes/analytics.html` or `_includes/consent.html`: `npm test` first (fast, catches a dropped local patch or a re-broken gate expression), then `npm run verify:analytics` — the full `npm run verify` crawl doesn't exercise the consent flow at all, since it never accepts or declines the banner on any page.
 - Adding a new shared utility function (under `_mathviz/src/js/<category>/`): add its `.test.js` alongside it (same pattern as the existing files) and list it in `_mathviz/src/manifest.mjs`, covering the properties that actually matter mathematically where possible (e.g. `sperner-color.test.js` doesn't just check "is a function" — it verifies the *end-to-end Sperner's-lemma property* that a colored triangulation always has an odd number of rainbow triangles, which is a far stronger regression guard than checking individual return values).
 

@@ -402,12 +402,9 @@ committed = {
   params.set("f", fVal)
   params.set("sigma", sigmaVal)
   params.set("b", bVal)
-  params.set("max", maxNInput)
-  params.set("alpha", String(alpha))
-  params.set("k", String(windowK))
-  params.set("R", String(R))
-  params.set("Q", String(Q))
-  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  // The always-live controls (max, alpha, k, R, Q, show) are written by
+  // urlSyncControls. Naming them here would make this cell reactive on
+  // them, so every slider move would redraw fresh noise.
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, sigma: sigmaNum, bEnd: bNum, seed: seedNum}

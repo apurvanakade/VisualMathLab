@@ -470,8 +470,10 @@ path = {
     ys.push(y)
   }
 
-  // Square view that holds the fixed circle, the rolling circle and the pen.
-  const reach = Math.max(R, Math.abs(geometry.a) + r, Math.abs(geometry.a) + Math.abs(d))
+  // Square view that holds the fixed circle, the rolling circle and the pen
+  // at every d the slider can reach (up to 2r), not just the current d, so
+  // dragging or playing the d slider never rescales the axes.
+  const reach = Math.max(R, Math.abs(geometry.a) + r, Math.abs(geometry.a) + Math.max(2 * r, Math.abs(d)))
   const half = reach * 1.08
 
   return {xs, ys, count, geometry, half}

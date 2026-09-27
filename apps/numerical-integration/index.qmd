@@ -544,15 +544,14 @@ setup = {
     }
   }
 
-  // y-range from f over [lo, hi] plus node, rectangle, and parabola values.
+  // y-range from f over [lo, hi] (plus 0, where the rectangles stand) only,
+  // not the n-dependent nodes, rectangles and parabolas, so moving the n
+  // slider never rescales the axis.
   const yValues = [0]
   for (let i = 0; i < sampleXs.length; i++) {
     const x = sampleXs[i]
     if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
   }
-  for (const y of nodesY) if (Number.isFinite(y)) yValues.push(y)
-  for (const y of midY) if (Number.isFinite(y)) yValues.push(y)
-  for (const y of simpsonY) if (Number.isFinite(y)) yValues.push(y)
   const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
   return {n, nodesX, nodesY, leftY, midX, midY, widths, simpsonX, simpsonY, sampleXs, sampleYs, xRange, xBuffer, yRange}

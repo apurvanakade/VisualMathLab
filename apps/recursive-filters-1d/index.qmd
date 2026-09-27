@@ -402,12 +402,9 @@ committed = {
   params.set("f", fVal)
   params.set("sigma", sigmaVal)
   params.set("b", bVal)
-  params.set("max", maxNInput)
-  params.set("alpha", String(alpha))
-  params.set("k", String(windowK))
-  params.set("R", String(R))
-  params.set("Q", String(Q))
-  params.set("show", methods.map(m => methodLabelToSlug.get(m)).filter(Boolean).join(","))
+  // The always-live controls (max, alpha, k, R, Q, show) are written by
+  // urlSyncControls. Naming them here would make this cell reactive on
+  // them, so every slider move would redraw fresh noise.
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {fText: fVal, sigma: sigmaNum, bEnd: bNum, seed: seedNum}
@@ -495,13 +492,14 @@ setup = {
     refYs.push(result.f(x))
   }
 
+  // y-range from the true signal and the noisy samples only, not the
+  // filter outputs, so moving the alpha/k/R/Q sliders never rescales the
+  // axis. Nothing is lost: SMA, EMA and the Kalman estimate are each a
+  // weighted average of noisy samples, so they never leave that range.
   const yValues = []
   for (const y of refYs) if (Number.isFinite(y)) yValues.push(y)
   for (const row of result.rows) {
     if (Number.isFinite(row.noisyVal)) yValues.push(row.noisyVal)
-    if (Number.isFinite(row.smaVal)) yValues.push(row.smaVal)
-    if (Number.isFinite(row.emaVal)) yValues.push(row.emaVal)
-    if (Number.isFinite(row.kalmanVal)) yValues.push(row.kalmanVal)
   }
   const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.15, minPadding: 0.5})
 

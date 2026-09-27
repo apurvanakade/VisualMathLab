@@ -79,17 +79,14 @@ traceColors = new Map([
 // examples backs the "Try an example" dropdown. max is listed first: it
 // bounds the t slider, whose view is recreated when it changes.
 examples = [
-  // One of each kind of special case listed at the bottom of the page.
-  // id is what their links there name (see exampleLinks).
+  // Special cases listed at the bottom of the page, one per (R, r, mode):
+  // a case that differs from another only in d (the ellipse, the limaçon)
+  // is a drag of the d slider away, so it is link-only. id is what their
+  // links there name (see exampleLinks).
   {
     id: "line",
-    title: "Straight line: Tusi couple (R = 2r, d = r)",
+    title: "R = 2r: straight line (d = r) → ellipse",
     params: {max: "30", R: "2", r: "1", d: "1", mode: "inside"}
-  },
-  {
-    id: "ellipse",
-    title: "Ellipse (R = 2r, d ≠ r)",
-    params: {max: "30", R: "2", r: "1", d: "0.5", mode: "inside"}
   },
   {
     id: "astroid",
@@ -98,13 +95,8 @@ examples = [
   },
   {
     id: "cardioid",
-    title: "Cardioid (R = r, d = r)",
+    title: "R = r outside: cardioid (d = r) → limaçon",
     params: {max: "30", R: "1", r: "1", d: "1", mode: "outside"}
-  },
-  {
-    id: "limacon-loop",
-    title: "Limaçon with an inner loop (R = r, d > r)",
-    params: {max: "30", R: "1", r: "1", d: "1.6", mode: "outside"}
   },
   {
     id: "rose",
@@ -248,10 +240,12 @@ syncExampleFromFields = {
 
 ```{ojs}
 //| output: false
-// linkOnlyExamples: a special case linked from the bottom of the page that
-// isn't in the dropdown, to keep that list short.
+// linkOnlyExamples: special cases linked from the bottom of the page that
+// aren't in the dropdown, to keep that list short.
 linkOnlyExamples = [
-  {id: "nephroid", params: {max: "30", R: "2", r: "1", d: "1", mode: "outside"}}
+  {id: "ellipse", params: {max: "30", R: "2", r: "1", d: "0.5", mode: "inside"}},
+  {id: "nephroid", params: {max: "30", R: "2", r: "1", d: "1", mode: "outside"}},
+  {id: "limacon-loop", params: {max: "30", R: "1", r: "1", d: "1.6", mode: "outside"}}
 ]
 ```
 
@@ -470,8 +464,10 @@ path = {
     ys.push(y)
   }
 
-  // Square view that holds the fixed circle, the rolling circle and the pen.
-  const reach = Math.max(R, Math.abs(geometry.a) + r, Math.abs(geometry.a) + Math.abs(d))
+  // Square view that holds the fixed circle, the rolling circle and the pen
+  // at every d the slider can reach (up to 2r), not just the current d, so
+  // dragging or playing the d slider never rescales the axes.
+  const reach = Math.max(R, Math.abs(geometry.a) + r, Math.abs(geometry.a) + Math.max(2 * r, Math.abs(d)))
   const half = reach * 1.08
 
   return {xs, ys, count, geometry, half}
@@ -510,7 +506,14 @@ setup = {
     fixedCircle: circle(0, 0, result.R),
     rollingCircle: circle(center[0], center[1], result.r),
     half,
-    valid: result.valid
+    valid: result.valid,
+    // Nothing here depends on d, so dragging or playing the d slider keeps
+    // the zoom: maxTurns rather than span.T, which changes at d = 0 (where
+    // the curve closes after one turn). Built here rather than inside
+    // mainPlot's closure: naming committed or span there would make the
+    // mainPlot cell itself re-run when they change, throwing away the reused
+    // div and redrawing it detached, at Plotly's 700x450 default size.
+    uirevision: `${committed.RText}|${committed.rText}|${mode}|${maxTurns}`
   }
 }
 ```
@@ -525,7 +528,7 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return ({pathXs, pathYs, pen, center, fixedCircle, rollingCircle, half, valid}, showFixed, showRolling, showPath) => {
+  return ({pathXs, pathYs, pen, center, fixedCircle, rollingCircle, half, valid, uirevision}, showFixed, showRolling, showPath) => {
     const data = []
 
     if (valid && showFixed) {
@@ -568,17 +571,38 @@ mainPlot = {
       yaxis: {range: [-half, half], zeroline: false, scaleanchor: "x", scaleratio: 1},
       annotations: valid ? [] : VM.plotting.emptyState("Couldn't read the radii — R and r must be positive numbers."),
       hovermode: "closest",
-      // d is left out so that dragging or playing the d slider keeps the zoom.
-      uirevision: `${committed.RText}|${committed.rText}|${mode}|${span.T}`,
+      uirevision,
       autosize: true
     }
     const config = VM.plotting.config()
+
+    // Same curve as the last draw: keep whatever range is on screen, so a
+    // reader's zoom survives moving d or t. uirevision alone can't do this
+    // here: scaleanchor writes its adjusted range back into the div's
+    // layout, so [-half, half] always looks like a new range to Plotly and
+    // would replace the zoom.
+    if (_plotDiv && _plotDiv.layout && _plotDiv.layout.uirevision === uirevision) {
+      layout.xaxis.range = _plotDiv.layout.xaxis.range.slice()
+      layout.yaxis.range = _plotDiv.layout.yaxis.range.slice()
+    }
 
     if (!_plotDiv) {
       _plotDiv = document.createElement("div")
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, data, layout, config)
       VM.plotting.autoResize(_plotDiv)
+      // The first draw happens detached, at Plotly's 700x450 default, and
+      // scaleanchor widens the y-range to keep x and y at the same scale in
+      // that box; the resize to the real box then keeps the widened range.
+      // So once the div is on the page, resize it and redraw with the
+      // intended range, or the first slider move would visibly rescale.
+      const div = _plotDiv
+      const firstFit = new ResizeObserver(() => {
+        if (!div.isConnected || div.getClientRects().length === 0) return
+        firstFit.disconnect()
+        Plotly.Plots.resize(div).then(() => Plotly.react(div, data, layout, config))
+      })
+      firstFit.observe(div)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }

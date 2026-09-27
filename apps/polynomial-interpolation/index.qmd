@@ -556,14 +556,13 @@ setup = {
     }
   }
 
-  // y-range from f over [lo, hi] plus node and cubic-spline values.
+  // y-range from f over [lo, hi] only, not the n-dependent nodes and
+  // splines, so moving the n slider never rescales the axis.
   const yValues = []
   for (let i = 0; i < sampleXs.length; i++) {
     const x = sampleXs[i]
     if (x >= xRange.lo && x <= xRange.hi && sampleYs[i] !== null) yValues.push(sampleYs[i])
   }
-  for (const y of nodesY) if (Number.isFinite(y)) yValues.push(y)
-  for (const y of cubicY) if (Number.isFinite(y)) yValues.push(y)
   const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
   return {n, nodesX, nodesY, linearX, linearY, cubicX, cubicY, sampleXs, sampleYs, xRange, xBuffer, yRange}

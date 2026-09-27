@@ -426,10 +426,11 @@ setup = {
 
   const tRange = VM.plotting.paddedRange([t0, b], {emptyRange: [-3, 3], relativePadding: 0.1, minPadding: 0.25})
 
-  // Cap at 1e8 so a diverging solution doesn't blow up the axis range.
+  // The y-range fits the reference solution only, not the RKF45 points, so
+  // moving the tolerance slider never rescales the axis. Cap at 1e8 so a
+  // blowing-up reference doesn't wreck the range.
   const yValues = []
   for (const y of reference.ys) if (Number.isFinite(y) && Math.abs(y) <= 1e8) yValues.push(y)
-  for (const y of result.ys) if (Number.isFinite(y) && Math.abs(y) <= 1e8) yValues.push(y)
   const yRange = VM.plotting.paddedRange(yValues, {emptyRange: [-1, 1], relativePadding: 0.25, minPadding: 0.5})
 
   // Marker size per accepted point, on a log scale of the step size that

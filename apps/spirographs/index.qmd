@@ -507,13 +507,13 @@ setup = {
     rollingCircle: circle(center[0], center[1], result.r),
     half,
     valid: result.valid,
-    // d is left out so that dragging or playing the d slider keeps the zoom.
-    // Built here rather than inside mainPlot's closure: naming committed or
-    // span there would make the mainPlot cell itself re-run when they change
-    // (span does at d = 0, where the curve closes after one turn), throwing
-    // away the reused div and redrawing it detached, at Plotly's 700x450
-    // default size.
-    uirevision: `${committed.RText}|${committed.rText}|${mode}|${span.T}`
+    // Nothing here depends on d, so dragging or playing the d slider keeps
+    // the zoom: maxTurns rather than span.T, which changes at d = 0 (where
+    // the curve closes after one turn). Built here rather than inside
+    // mainPlot's closure: naming committed or span there would make the
+    // mainPlot cell itself re-run when they change, throwing away the reused
+    // div and redrawing it detached, at Plotly's 700x450 default size.
+    uirevision: `${committed.RText}|${committed.rText}|${mode}|${maxTurns}`
   }
 }
 ```
@@ -575,6 +575,16 @@ mainPlot = {
       autosize: true
     }
     const config = VM.plotting.config()
+
+    // Same curve as the last draw: keep whatever range is on screen, so a
+    // reader's zoom survives moving d or t. uirevision alone can't do this
+    // here: scaleanchor writes its adjusted range back into the div's
+    // layout, so [-half, half] always looks like a new range to Plotly and
+    // would replace the zoom.
+    if (_plotDiv && _plotDiv.layout && _plotDiv.layout.uirevision === uirevision) {
+      layout.xaxis.range = _plotDiv.layout.xaxis.range.slice()
+      layout.yaxis.range = _plotDiv.layout.yaxis.range.slice()
+    }
 
     if (!_plotDiv) {
       _plotDiv = document.createElement("div")

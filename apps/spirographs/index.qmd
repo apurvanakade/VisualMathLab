@@ -20,6 +20,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
+Suppose you roll a circle of radius 1 around the inside of a circle of radius 2, and follow a single point on the smaller circle. What path does that point trace? Think of an answer before looking below. You might be surprised.
+
+![](puzzle.svg){width=200 fig-align="center" fig-alt="A circle of radius 1 rolling inside a circle of radius 2, with one point on the small circle marked and an arrow showing the direction of rolling."}
+
 
 ```{ojs}
 //| output: false
@@ -29,11 +33,17 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// Always-live controls (max, mode, t) read their initial value from the URL
-// here; the commit-gated R/r/d fields read theirs inline below.
+// Always-live controls (max, d, mode, t) read their initial value from the
+// URL here; the commit-gated R/r fields read theirs inline below.
 urlParams = new URLSearchParams(window.location.search)
 
 initialMax = urlParams.get("max") ?? "30"
+
+initialD = {
+  const value = VM.expressions.makeNumber(window.math, urlParams.get("d") ?? "5")
+  if (value === null || !Number.isFinite(value) || value < 0) return 5
+  return value
+}
 
 initialMode = {
   if (urlParams.get("mode") === "outside") return "outside"
@@ -112,6 +122,10 @@ examples = [
     params: {max: "30", R: "5", r: "3", d: "5", mode: "inside"}
   },
   {
+    title: "Rational ratio: rounded triangle (R/r = 3/2)",
+    params: {max: "30", R: "3", r: "2", d: "1.5", mode: "inside"}
+  },
+  {
     title: "Rational ratio: lacy ring (R/r = 35/12)",
     params: {max: "30", R: "105", r: "36", d: "30", mode: "inside"}
   },
@@ -151,20 +165,20 @@ viewof rText = {
 ```
 
 ```{ojs}
-viewof dText = {
-  const input = Inputs.text({label: "Pen distance d", value: urlParams.get("d") ?? "5", placeholder: "Example: 2.5"})
-  input.dataset.exampleField = "d"
-  return input
-}
-```
-
-```{ojs}
 // Always-live (not gated behind Plot): it bounds the t slider for a curve
 // that never closes, or closes only after more turns than this.
 viewof maxTurnsInput = {
   const input = Inputs.text({label: "Max turns", value: initialMax, placeholder: "Example: 30"})
   input.dataset.exampleField = "max"
   return input
+}
+```
+
+```{ojs}
+viewof mode = {
+  const radio = Inputs.radio(new Map([["Inside", "inside"], ["Outside", "outside"]]), {label: "Rolls", value: initialMode})
+  radio.dataset.exampleField = "mode"
+  return radio
 }
 ```
 
@@ -180,8 +194,8 @@ viewof exampleSelect = {
 </div>
 
 ```{ojs}
-// Plot commits R, r and d. The inside/outside toggle and the t slider on
-// the chart stay live.
+// Plot commits R and r. The inside/outside toggle and the d and t sliders
+// on the chart stay live.
 viewof plotTrigger = {
   const plotButton = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   plotButton.classList.add("ojs-auto")
@@ -225,7 +239,7 @@ applyExampleFromSelect = {
 // inputs" once none does). Reads every example field's value so it re-runs
 // whenever one changes; it only sets the dropdown, never a field.
 syncExampleFromFields = {
-  maxTurnsInput; RText; rText; dText; mode
+  maxTurnsInput; RText; rText; penDistance; mode
   VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
 }
 ```
@@ -274,9 +288,9 @@ exampleLinks = {
 
 ```{ojs}
 //| output: false
-// Pressing Enter in R, r or d clicks Plot.
+// Pressing Enter in R or r clicks Plot.
 enterToPlot = {
-  for (const view of [viewof RText, viewof rText, viewof dText]) {
+  for (const view of [viewof RText, viewof rText]) {
     const input = view.querySelector("input")
     if (!input) continue
     input.addEventListener("keydown", (e) => {
@@ -290,30 +304,29 @@ enterToPlot = {
 
 ```{ojs}
 //| output: false
-// committed snapshots R/r/d only when Plot is clicked (it reads the stable
+// committed snapshots R/r only when Plot is clicked (it reads the stable
 // views, not the reactive values) and writes them into the URL.
 committed = {
   plotTrigger
   const RVal = (viewof RText).value
   const rVal = (viewof rText).value
-  const dVal = (viewof dText).value
 
   const params = new URLSearchParams(window.location.search)
   params.set("R", RVal)
   params.set("r", rVal)
-  params.set("d", dVal)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
-  return {RText: RVal, rText: rVal, dText: dVal}
+  return {RText: RVal, rText: rVal}
 }
 ```
 
 ```{ojs}
 //| output: false
-// max, mode and t are always-live, so they get their own sync cell.
+// max, d, mode and t are always-live, so they get their own sync cell.
 urlSyncControls = {
   const params = new URLSearchParams(window.location.search)
   params.set("max", maxTurnsInput)
+  params.set("d", String(penDistance))
   params.set("mode", mode)
   params.set("t", String(turns))
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
@@ -375,7 +388,7 @@ function rationalApprox(x, maxDen = 1000) {
 
 ```{ojs}
 //| output: false
-// result: the committed radii and pen distance, whether R/r is rational, and
+// result: the committed radii, the live pen distance, whether R/r is rational, and
 // closeTurns, the number of turns after which the curve closes (null: never).
 // If R/r = p/q in lowest terms, the curve closes after q turns of the
 // rolling circle's center around the fixed one, inside or outside alike.
@@ -385,7 +398,7 @@ result = {
   const math = window.math
   const R = VM.expressions.makeNumber(math, committed.RText)
   const r = VM.expressions.makeNumber(math, committed.rText)
-  const d = VM.expressions.makeNumber(math, committed.dText)
+  const d = penDistance
 
   const valid = Number.isFinite(R) && Number.isFinite(r) && Number.isFinite(d) && R > 0 && r > 0
   if (!valid) return {valid: false, R: 1, r: 1, d: 0, fraction: null, closeTurns: null}
@@ -553,9 +566,10 @@ mainPlot = {
     const layout = {
       xaxis: {range: [-half, half], zeroline: false},
       yaxis: {range: [-half, half], zeroline: false, scaleanchor: "x", scaleratio: 1},
-      annotations: valid ? [] : VM.plotting.emptyState("Couldn't read the radii — R and r must be positive numbers, d any number."),
+      annotations: valid ? [] : VM.plotting.emptyState("Couldn't read the radii — R and r must be positive numbers."),
       hovermode: "closest",
-      uirevision: `${committed.RText}|${committed.rText}|${committed.dText}|${mode}|${span.T}`,
+      // d is left out so that dragging or playing the d slider keeps the zoom.
+      uirevision: `${committed.RText}|${committed.rText}|${mode}|${span.T}`,
       autosize: true
     }
     const config = VM.plotting.config()
@@ -581,6 +595,30 @@ mainPlot = {
 sliderState = ({usedUrl: false})
 ```
 
+```{ojs}
+//| output: false
+// dRange: the d slider runs from 0 to 2r, which covers every example (the
+// loopiest, the limacon, has d = 1.6r). It follows the r field as typed, not
+// the committed r, so that applying an example -- which sets r, then d, then
+// clicks Plot -- finds the slider already wide enough for the example's d.
+dRange = {
+  let r = VM.expressions.makeNumber(window.math, rText)
+  // Not result.r: result reads this slider, so that would be a cycle.
+  if (r === null || !Number.isFinite(r) || r <= 0) r = VM.expressions.makeNumber(window.math, committed.rText)
+  if (r === null || !Number.isFinite(r) || r <= 0) r = 1
+  return 2 * r
+}
+
+// dState remembers the d slider's value across rebuilds (a new r gives it
+// a new range), so a rebuild keeps d rather than resetting it.
+dState = ({value: initialD})
+```
+
+```{ojs}
+//| output: false
+dRemember = { dState.value = penDistance }
+```
+
 <div class="ojs-chart-block">
 
 ```{ojs}
@@ -595,7 +633,17 @@ viewof traces = {
 }
 ```
 
-<div class="ojs-chart-controls ojs-row">
+<div class="ojs-chart-controls ojs-grid">
+
+```{ojs}
+viewof penDistance = {
+  const value = Math.min(dRange, dState.value)
+  const slider = Inputs.range([0, dRange], {step: 0.01, value, label: "Pen distance d"})
+  slider.dataset.exampleField = "d"
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
 
 ```{ojs}
 viewof turns = {
@@ -605,14 +653,6 @@ viewof turns = {
   const slider = Inputs.range([0, span.T], {step: 0.005, value, label: "Turns t/2π"})
   slider.classList.add("ojs-fill")
   return slider
-}
-```
-
-```{ojs}
-viewof mode = {
-  const radio = Inputs.radio(new Map([["Inside", "inside"], ["Outside", "outside"]]), {value: initialMode})
-  radio.dataset.exampleField = "mode"
-  return radio
 }
 ```
 

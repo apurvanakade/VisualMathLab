@@ -150,10 +150,16 @@ push, and retry. Never force-push `main`.
 Stop the worktree's preview if one is running, then:
 
 ```sh
-git worktree remove ../VisualMath-<slug>
+git worktree remove --force ../VisualMath-<slug>
 git branch -d <branch>
 git push origin --delete <branch>
 ```
+
+`--force` is the default here: by this point the branch is merged, so the
+only things left in the folder are untracked build output (`docs/`,
+`.quarto/`) and a `node_modules` install or symlink, which a plain `remove`
+refuses to delete. Check `git -C ../VisualMath-<slug> status --short` first
+and stop if it lists a modified tracked file -- that is unmerged work.
 
 ## Report
 

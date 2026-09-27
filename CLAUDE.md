@@ -42,7 +42,7 @@ There is a second, separate trigger with the same symptom: **on startup, `quarto
 3. **Switching branches**: `cd` to the other folder (or switch browser tabs to its port). Nothing is rewritten, so nothing re-renders.
 4. **Tests in a worktree**: `node_modules/` is per-folder, so run `npm install` once there (or `ln -s ../VisualMathLab/node_modules node_modules` -- `package.json` is identical across branches) before `npm test`/`npm run verify`.
 5. **Landing**: push the branch, open a PR into `develop`, merge it once `pr-check.yml` passes, then `git pull` in the develop folder (see "Changes reach `develop` through a pull request" above). Its preview will do one full re-render if the merge touched the project-level files above -- once per merge, not per switch.
-6. **Cleanup**: stop that worktree's preview, then `git worktree remove ../VisualMath-<slug>` and `git branch -d app/<slug>`. Without stopping the preview first, `remove` complains about the untracked `docs/`.
+6. **Cleanup**: stop that worktree's preview, then `git worktree remove --force ../VisualMath-<slug>` and `git branch -d app/<slug>`. `--force` because the folder always holds untracked build output (`docs/`, `.quarto/`, `node_modules`) that a plain `remove` refuses to delete -- check `git status --short` there first for a modified tracked file, which would be unmerged work.
 
 If you ever must checkout or pull in a folder that has a preview, kill the preview first and restart it afterwards. That avoids the watcher's reaction to the project-level files, but the restart will still re-render every page whose `.qmd` the checkout touched (see above) -- there is no way to switch branches in place without paying for what changed.
 

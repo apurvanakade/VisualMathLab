@@ -79,17 +79,14 @@ traceColors = new Map([
 // examples backs the "Try an example" dropdown. max is listed first: it
 // bounds the t slider, whose view is recreated when it changes.
 examples = [
-  // One of each kind of special case listed at the bottom of the page.
-  // id is what their links there name (see exampleLinks).
+  // Special cases listed at the bottom of the page, one per (R, r, mode):
+  // a case that differs from another only in d (the ellipse, the limaçon)
+  // is a drag of the d slider away, so it is link-only. id is what their
+  // links there name (see exampleLinks).
   {
     id: "line",
-    title: "Straight line: Tusi couple (R = 2r, d = r)",
+    title: "R = 2r: straight line (d = r) → ellipse",
     params: {max: "30", R: "2", r: "1", d: "1", mode: "inside"}
-  },
-  {
-    id: "ellipse",
-    title: "Ellipse (R = 2r, d ≠ r)",
-    params: {max: "30", R: "2", r: "1", d: "0.5", mode: "inside"}
   },
   {
     id: "astroid",
@@ -98,13 +95,8 @@ examples = [
   },
   {
     id: "cardioid",
-    title: "Cardioid (R = r, d = r)",
+    title: "R = r outside: cardioid (d = r) → limaçon",
     params: {max: "30", R: "1", r: "1", d: "1", mode: "outside"}
-  },
-  {
-    id: "limacon-loop",
-    title: "Limaçon with an inner loop (R = r, d > r)",
-    params: {max: "30", R: "1", r: "1", d: "1.6", mode: "outside"}
   },
   {
     id: "rose",
@@ -248,10 +240,12 @@ syncExampleFromFields = {
 
 ```{ojs}
 //| output: false
-// linkOnlyExamples: a special case linked from the bottom of the page that
-// isn't in the dropdown, to keep that list short.
+// linkOnlyExamples: special cases linked from the bottom of the page that
+// aren't in the dropdown, to keep that list short.
 linkOnlyExamples = [
-  {id: "nephroid", params: {max: "30", R: "2", r: "1", d: "1", mode: "outside"}}
+  {id: "ellipse", params: {max: "30", R: "2", r: "1", d: "0.5", mode: "inside"}},
+  {id: "nephroid", params: {max: "30", R: "2", r: "1", d: "1", mode: "outside"}},
+  {id: "limacon-loop", params: {max: "30", R: "1", r: "1", d: "1.6", mode: "outside"}}
 ]
 ```
 

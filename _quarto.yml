@@ -40,6 +40,18 @@ mathviz:
   # The collapsible sidebar rail (off-canvas sidebar + hamburger rail), with
   # its pin kept under this localStorage key -- privacy.qmd lists it.
   sidebar-rail: vml-sidebar-pinned
+  # The one-time "bigger screen" notice on a phone; privacy.qmd lists its key.
+  mobile-warning: vml-mobile-warning-dismissed
+  # The Share button on every .vm-app (which turns on ?embed= mode too).
+  # Links point at site-url (repeated from website: below -- the extension
+  # can't read project config); embed.qmd is the page explaining it.
+  share:
+    site-url: https://www.visualmathlab.com
+    embed-docs: embed.html
+  # "Report bug" on a text selection files an issue here, linking the
+  # page's .qmd source on main.
+  report-bug:
+    repo: apurvanakade/VisualMathLab
 
 format:
   html:
@@ -49,18 +61,14 @@ format:
     theme:
       light: [_extensions/mathviz/theme/mathviz-light.scss]
       dark: [_extensions/mathviz/theme/mathviz-dark.scss]
-    css: styles.css
     toc: false
     html-math-method: mathjax
     title-block-categories: false
-    include-in-header:
-      - _includes/head-scripts.html
     # Order matters: consent.html looks for the gated <script> that
     # analytics.html emits, so analytics.html has to be in the DOM first.
     include-after-body:
       - _includes/analytics.html
       - _includes/consent.html
-      - _includes/mobile-warning.html
     # Sidebar columns collapse to 0 above 992px too (the sidebar rail's CSS,
     # _mathviz/src/chrome/sidebar-rail.css), so the remaining body column can
     # run wider than Quarto's ~750px default -- a 78vh chart needs the room.

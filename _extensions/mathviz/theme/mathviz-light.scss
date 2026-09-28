@@ -119,3 +119,135 @@ h1, h1.title {
 
 h2 { font-size: 1.5rem; font-weight: 600; }
 h3 { font-size: 1.2rem; font-weight: 600; }
+
+// Quarto's own chrome in the same quiet, bordered style as the ojs-* panels.
+// Plain CSS over --vm-* custom properties (not Sass variables), so it follows
+// the runtime tokens like everything else in mathviz.
+
+// ── Navbar / footer ─────────────────────────────────────────────
+#quarto-header .navbar {
+  background: color-mix(in srgb, var(--vm-bg) 85%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--vm-border);
+}
+
+.footer {
+  border-top: 1px solid var(--vm-border);
+  color: var(--vm-text-soft);
+  background: var(--vm-bg);
+}
+
+.footer a {
+  color: var(--vm-text-soft);
+}
+
+.footer a:hover {
+  color: var(--vm-accent);
+}
+
+// ── Wide content ────────────────────────────────────────────────
+/* Two things on these pages are laid out at their natural width and will
+ * happily run off the side of a phone. Either one takes the whole page's
+ * horizontal scroll with it, which is worse than it sounds: every other
+ * element then sits in a viewport wider than the screen, so the reader
+ * scrolls sideways through the entire article to read one line of it. */
+
+/* A display equation (Visual Math Lab's Kalman update measures 812px
+ * against a 649px column) scrolls inside its own box instead, the
+ * same way .ojs-table-container does for a wide table. overflow-y stays
+ * hidden so this only ever adds a horizontal scrollbar; MathJax positions
+ * its own glyphs and needs no vertical scrolling.
+ *
+ * max-width is what makes the box a box at all: left unconstrained, a wide
+ * formula forces its containing line wider than the viewport, which on a
+ * narrow phone expands the whole page's layout viewport rather than just
+ * that one line (the same failure mode the "Page grid" section's
+ * minmax(0, ...) comment describes for a different cause). A display
+ * equation is already its own block box, so capping it directly is safe --
+ * inline math is not, and is deliberately left alone; see the note at the
+ * end of this section. */
+mjx-container[display="true"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* The scrollbar is drawn inside the box, so give it a lane of its own
+   * rather than letting it sit on the equation's descenders. */
+  padding-bottom: 0.25rem;
+}
+
+/* A bare URL is one unbreakable word, and a References section that spells
+ * its citations' links out in full rather than hiding them behind link text
+ * would run off a phone.
+ * Nothing else in prose is long enough to need this, so it stays scoped to
+ * links instead of licensing mid-word breaks in the body copy. */
+main.content a {
+  overflow-wrap: break-word;
+}
+
+// ── Listing cards ───────────────────────────────────────────────
+/* No shadow-lift on hover -- a bordered tile that tints its own background
+ * instead, matching visualpde.com's card treatment rather than a
+ * skeuomorphic elevation change. */
+
+.quarto-grid-item {
+  border: 1px solid var(--vm-border) !important;
+  border-radius: var(--vm-radius);
+  cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.quarto-grid-item:hover {
+  background-color: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
+}
+
+.quarto-grid-item .card-img,
+.quarto-grid-item .thumbnail-image {
+  height: 160px !important;
+  object-fit: cover;
+}
+
+// ── Callouts ────────────────────────────────────────────────────
+/* Quarto's default callout-note is a Bootstrap-alert-style colored bar
+ * (blue left border + tinted background); mathviz pages use callouts
+ * ("Convergence plots", "Iteration table") as plain content containers, not
+ * as attention-grabbing notes, so they're restyled to match .ojs-panel's
+ * quiet bordered chrome instead. */
+
+.callout.callout-style-default {
+  border: 1px solid var(--vm-border);
+  border-left: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-bg);
+}
+
+.callout.callout-style-default .callout-header {
+  background: var(--vm-surface);
+}
+
+// ── Inline math ──────────────────────────────────────────────────
+/* Inline math is deliberately left alone -- don't add a max-width /
+ * overflow rule here, on mjx-container or on the <span class="math
+ * inline"> wrapper around it. Two separate attempts at that both broke
+ * every formula on the site:
+ *
+ *   1. max-width only does anything on an inline-block box, and giving
+ *      such a box a non-'visible' overflow makes the browser compute its
+ *      baseline as its own bottom margin edge rather than the baseline
+ *      of its content (CSS 2.1 10.8.1) -- a lower point for anything
+ *      with a descender, so every formula sat off its text line.
+ *   2. Moving the same constraint to the wrapper span hits a subtler
+ *      version: MathJax's CHTML output paints outside its container's
+ *      advance width on purpose (italic correction, relative-positioned
+ *      internals), so it *relies* on overflow staying 'visible'. As a
+ *      scroll container that intentional spill reads as content to
+ *      scroll -- measured at +1px to +26px on ordinary short formulas --
+ *      so Chrome painted a scrollbar under most of them, and the
+ *      scrollbar's height pushed the bottom margin edge (i.e. the
+ *      baseline again) down. Firefox reported no overflow at all, which
+ *      is why this only showed up in some browsers.
+ *
+ * A formula wide enough to overflow a phone belongs in a display
+ * equation ($$...$$), which is a block box and is capped in the "Wide
+ * content" section above without any of this. */

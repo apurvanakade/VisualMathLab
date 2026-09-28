@@ -14,9 +14,9 @@ format:
   html:
     include-in-header:
       # Both are page-local: d3 is the only CDN dependency the site loads
-      # outside _includes/head-scripts.html, and this is the only page that
+      # beyond the mathviz extension's, and this is the only page that
       # needs it, the same reason relationship-graph.js is colocated here
-      # rather than promoted into js/**.
+      # rather than promoted into mathviz.
       - text: |
           <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
           <script src="relationship-graph.js"></script>
@@ -32,10 +32,10 @@ Authors: Dhruv Azad
 /* Page-local styles. Every selector here targets markup that exists only on
    this page -- the d3 relationship graph built by relationship-graph.js, its
    legend, and the detail blurb -- so it lives with the page rather than in
-   the site-wide styles.css (see CLAUDE.md's page-local CSS convention).
-   Colors are the same --vm-* design tokens styles.css uses, so all of it
+   a shared stylesheet (see CLAUDE.md's page-local CSS convention).
+   Colors are the same --vm-* design tokens mathviz uses, so all of it
    re-themes with the site on a dark-mode toggle: --vm-accent for exact
-   relationships, --vm-alt for limiting ones, which are also dashed so the
+   relationships, --vm-color-alt for limiting ones, which are also dashed so the
    distinction never rests on color alone. */
 
 .ojs-graph-container {
@@ -127,7 +127,7 @@ Authors: Dhruv Azad
    layer they are -- and hover/selection below restores full weight, so
    nothing is lost when the reader goes looking. */
 .ojs-graph-edge-limit .ojs-graph-edge {
-  stroke: var(--vm-alt);
+  stroke: var(--vm-color-alt);
   stroke-dasharray: 6 5;
   stroke-width: 1.6;
   opacity: 0.72;
@@ -140,7 +140,7 @@ Authors: Dhruv Azad
 }
 
 .ojs-graph-arrow-limit {
-  fill: var(--vm-alt);
+  fill: var(--vm-color-alt);
 }
 
 .ojs-graph-edge-hit {
@@ -219,7 +219,7 @@ Authors: Dhruv Azad
 .ojs-graph-legend-swatch.is-exact { border-top-color: var(--vm-accent); }
 
 .ojs-graph-legend-swatch.is-limit {
-  border-top-color: var(--vm-alt);
+  border-top-color: var(--vm-color-alt);
   border-top-style: dashed;
 }
 
@@ -310,7 +310,7 @@ Authors: Dhruv Azad
    wrappers with display: contents, keeps this off Quarto's internal class
    names (.cell-output-display, .ojs-in-a-box-waiting-for-module-import),
    which are generated markup this page has no business depending on. The
-   wrapper keeps .ojs-grid so styles.css's label-above-track rule, which
+   wrapper keeps .ojs-grid so mathviz's label-above-track rule (panel.css), which
    matches forms at any depth, still applies. */
 .ojs-chart-controls .vm-params-form {
   display: grid;
@@ -801,9 +801,9 @@ edgeText = ({
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via
-// _includes/head-scripts.html: js/** utilities plus js/distributions/** (the
-// closed-form PDF/PMF functions this page plots), and this page's own
+// VM is the shared utility library, loaded on every page by the mathviz
+// extension -- VM.distributions.* included (the closed-form PDF/PMF
+// functions this page plots) -- plus this page's own
 // colocated relationship-graph.js (see include-in-header). This page uses
 // VM.relationshipGraph, VM.distributions.*, and VM.plotting.*.
 VM = window.VM

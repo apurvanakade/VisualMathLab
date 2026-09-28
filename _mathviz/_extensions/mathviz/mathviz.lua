@@ -18,9 +18,29 @@
 --     css: false               # bring your own stylesheet
 --     referrer: same-origin    # emit <meta name="referrer"> ahead of the CDN tags
 --     fonts: true              # self-host Inter + JetBrains Mono (off by default)
---     sidebar-rail: my-site-pin  # collapsible sidebar rail (off by default); a
---                                # string names the pin's localStorage key, true
---                                # uses "vm-sidebar-pinned"
+--
+-- and, each off by default, the site chrome a Quarto website or book built
+-- on mathviz pages can take instead of writing its own:
+--
+--     sidebar-rail: my-site-pin    # off-canvas sidebar behind a slim rail; a
+--                                  # string names the pin's localStorage key
+--                                  # (true: "vm-sidebar-pinned")
+--     mobile-warning: my-site-key  # one-time "bigger screen" notice on a
+--                                  # phone; a string names its localStorage
+--                                  # key (true: "vm-mobile-warning-dismissed")
+--     embed: true                  # ?embed=1 shows a page's .vm-app alone,
+--                                  # for another site's <iframe>
+--     share:                       # "Share" button on every .vm-app; turns
+--       site-url: https://...      #   embed on too. Links point here -- else
+--       embed-docs: embed.html     #   at the site root as served, which is
+--                                  #   wrong from a preview. embed-docs is an
+--                                  #   optional page, relative to the root.
+--                                  #   (A filter can't see website.site-url:
+--                                  #   Quarto keeps project config out of a
+--                                  #   page's metadata, so it is repeated.)
+--     report-bug:                  # "Report bug" popup on text selection,
+--       repo: owner/name           #   filing a GitHub issue that links the
+--       branch: main               #   page's .qmd source (branch: main)
 --
 -- The optional Quarto theme is not an option here: a site opts in by listing
 -- theme/mathviz-light.scss / mathviz-dark.scss under format.html.theme (see
@@ -42,6 +62,31 @@ local function option(meta, key, default)
   if value == nil then return default end
   if type(value) == "boolean" then return value end
   return pandoc.utils.stringify(value)
+end
+
+-- Reads mathviz.<key>.<sub>, stringified, when mathviz.<key> is a map
+-- (`share: {site-url: ...}`); nil otherwise.
+local function subOption(meta, key, sub)
+  local opts = meta.mathviz
+  if type(opts) ~= "table" then return nil end
+  local value = opts[key]
+  if value == nil or pandoc.utils.type(value) ~= "table" then return nil end
+  if value[sub] == nil then return nil end
+  return pandoc.utils.stringify(value[sub])
+end
+
+-- Whether mathviz.<key> is set to anything but false: true, a string, or a
+-- map of sub-options all switch a piece of chrome on.
+local function enabled(meta, key)
+  local opts = meta.mathviz
+  if type(opts) ~= "table" then return false end
+  local value = opts[key]
+  if value == nil or value == false then return false end
+  return true
+end
+
+local function escapeAttr(text)
+  return (text:gsub("&", "&amp;"):gsub('"', "&quot;"):gsub("<", "&lt;"))
 end
 
 local function scriptTag(value, defaultUrl)
@@ -98,22 +143,63 @@ function Meta(meta)
   -- same folder as the stylesheet: Quarto copies a dependency's stylesheets
   -- and resources flat into site_libs/quarto-contrib/mathviz-fonts-<v>/,
   -- dropping the fonts/ prefix from each, which puts them side by side.
-  -- Opt-in site chrome, for a Quarto website or book whose sidebar is
-  -- `style: floating`: keeps it off-canvas at every width behind a slim
-  -- always-visible rail (see chrome/sidebar-rail.js). The pin's storage key
-  -- travels as a meta tag so the script needs no build-time templating.
-  local rail = option(meta, "sidebar-rail", false)
-  if rail ~= false then
-    local dep = {
-      name = "mathviz-sidebar-rail",
+  -- Opt-in site chrome (see the header). Each piece is a dependency of its
+  -- own, so a site pays only for what it turns on, and passes its settings
+  -- to its script as <meta name="mathviz:..."> tags -- one tag per
+  -- dependency, for the injector bug described above -- so the scripts need
+  -- no build-time templating. Their stylesheets land after Bootstrap's and
+  -- Quarto's CSS and before a site's own css: files, the place these rules
+  -- held when they lived in Visual Math Lab's styles.css.
+  local function chrome(name, meta_tags)
+    quarto.doc.add_html_dependency({
+      name = "mathviz-" .. name,
       version = VERSION,
-      scripts = { "chrome/sidebar-rail.js" },
-      stylesheets = { "chrome/sidebar-rail.css" }
-    }
-    if type(rail) == "string" and rail ~= "" then
-      dep.head = '<meta name="mathviz:sidebar-pin-key" content="' .. rail .. '">'
+      scripts = { "chrome/" .. name .. ".js" },
+      stylesheets = { "chrome/" .. name .. ".css" }
+    })
+    for meta_name, content in pairs(meta_tags or {}) do
+      if content ~= nil and content ~= "" then
+        headTag("mathviz-" .. meta_name, '<meta name="mathviz:' .. meta_name .. '" content="' .. escapeAttr(content) .. '">')
+      end
     end
-    quarto.doc.add_html_dependency(dep)
+  end
+  -- A string value is the option's one setting (a storage key); `true` is
+  -- a plain boolean and leaves the script's default.
+  local function stringValue(key)
+    local value = option(meta, key, false)
+    if type(value) == "string" then return value end
+    return nil
+  end
+
+  if enabled(meta, "sidebar-rail") then
+    chrome("sidebar-rail", { ["sidebar-pin-key"] = stringValue("sidebar-rail") })
+  end
+  if enabled(meta, "mobile-warning") then
+    chrome("mobile-warning", { ["mobile-warning-key"] = stringValue("mobile-warning") })
+  end
+  -- The Share dialog's snippet is an ?embed= URL, so share implies embed.
+  if enabled(meta, "embed") or enabled(meta, "share") then
+    chrome("embed")
+  end
+  if enabled(meta, "share") or enabled(meta, "report-bug") then
+    quarto.doc.add_html_dependency({ name = "mathviz-chrome-site", version = VERSION, scripts = { "chrome/site.js" } })
+  end
+  if enabled(meta, "share") then
+    chrome("share", {
+      ["share-site-url"] = subOption(meta, "share", "site-url"),
+      ["share-embed-docs"] = subOption(meta, "share", "embed-docs")
+    })
+  end
+  if enabled(meta, "report-bug") then
+    local repo = subOption(meta, "report-bug", "repo")
+    if repo == nil then
+      quarto.log.warning("mathviz: report-bug needs report-bug.repo (owner/name); skipping it")
+    else
+      chrome("report-bug", {
+        ["report-bug-repo"] = repo,
+        ["report-bug-branch"] = subOption(meta, "report-bug", "branch")
+      })
+    end
   end
 
   if option(meta, "fonts", false) == true then

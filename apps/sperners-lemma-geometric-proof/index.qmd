@@ -17,7 +17,7 @@ Authors: Apurva Nakade
 
 <style>
 /* Page-local: the side-by-side comparison pair below the sliders. In
-   fullscreen, styles.css's .ojs-svg-block letterbox chain makes every
+   fullscreen, mathviz's .ojs-svg-block letterbox chain makes every
    wrapper around a figure a centered column (so each plot's caption stays
    above it); the pair's own wrapper has to stay a row, or the two plots
    stack. Markup only this page emits, so it lives here (see CLAUDE.md).
@@ -33,16 +33,16 @@ Authors: Apurva Nakade
    opacity) rather than the flat 40% tint .vm-swatch uses for a plain
    color name. */
 .sperner-shade-light {
-  background: color-mix(in srgb, var(--vm-accent2) 25%, var(--vm-bg));
+  background: color-mix(in srgb, var(--vm-color-accent2) 25%, var(--vm-bg));
 }
 .sperner-shade-dark {
-  background: color-mix(in srgb, var(--vm-accent2) 60%, var(--vm-bg));
+  background: color-mix(in srgb, var(--vm-color-accent2) 60%, var(--vm-bg));
 }
 </style>
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
 VM = window.VM
 ```
 
@@ -330,7 +330,7 @@ viewof comparisonRegenerate = {
 // Side by side, with each plot captioned above (stacking into one column
 // on a phone-width viewport, where two half-width panels would be too
 // small to read). .sperner-compare is what keeps the pair a row in
-// fullscreen, where styles.css's letterbox chain otherwise turns every
+// fullscreen, where mathviz's letterbox chain otherwise turns every
 // wrapper around a figure into a column (see the page-local <style> block).
 html`<div class="sperner-compare" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
   <div style="flex: 1 1 280px; min-width: 0;"><p><b>Sperner's condition satisfied</b></p>${plotValid}</div>

@@ -88,14 +88,31 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../../site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-274675e3d30973819a56aa271261c775.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="../../site_libs/bootstrap/bootstrap-dark-c52a8b1049e56201930b74ab82ee342d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="../../site_libs/bootstrap/bootstrap-274675e3d30973819a56aa271261c775.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-d71b394cfec3f5d196965bb32079d76c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark-ea04064fa629b1c0b203013179750073.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-d71b394cfec3f5d196965bb32079d76c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <meta name="referrer" content="same-origin">
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="../../site_libs/quarto-contrib/mathviz-0.1.7/mathviz.js"></script>
-<link href="../../site_libs/quarto-contrib/mathviz-0.1.7/mathviz.css" rel="stylesheet">
+<script src="../../site_libs/quarto-contrib/mathviz-0.1.9/mathviz.js"></script>
+<link href="../../site_libs/quarto-contrib/mathviz-0.1.9/mathviz.css" rel="stylesheet">
+<script src="../../site_libs/quarto-contrib/mathviz-sidebar-rail-0.1.9/sidebar-rail.js"></script>
+<link href="../../site_libs/quarto-contrib/mathviz-sidebar-rail-0.1.9/sidebar-rail.css" rel="stylesheet">
+<meta name="mathviz:sidebar-pin-key" content="vml-sidebar-pinned">
+<script src="../../site_libs/quarto-contrib/mathviz-mobile-warning-0.1.9/mobile-warning.js"></script>
+<link href="../../site_libs/quarto-contrib/mathviz-mobile-warning-0.1.9/mobile-warning.css" rel="stylesheet">
+<meta name="mathviz:mobile-warning-key" content="vml-mobile-warning-dismissed">
+<script src="../../site_libs/quarto-contrib/mathviz-embed-0.1.9/embed.js"></script>
+<link href="../../site_libs/quarto-contrib/mathviz-embed-0.1.9/embed.css" rel="stylesheet">
+<script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.1.9/site.js"></script>
+<script src="../../site_libs/quarto-contrib/mathviz-share-0.1.9/share.js"></script>
+<link href="../../site_libs/quarto-contrib/mathviz-share-0.1.9/share.css" rel="stylesheet">
+<meta name="mathviz:share-embed-docs" content="embed.html">
+<meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
+<script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.1.9/report-bug.js"></script>
+<link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.1.9/report-bug.css" rel="stylesheet">
+<meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
+<link href="../../site_libs/quarto-contrib/mathviz-fonts-0.1.9/fonts.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -122,107 +139,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
-
-<!--
-Third-party requests are a privacy surface, and privacy.qmd describes it, so
-keep that page in step with anything added here or to the mathviz block in
-_quarto.yml.
-
-- The <meta name="referrer" content="same-origin"> that used to sit here is
-  now emitted by the mathviz extension (`mathviz: {referrer: same-origin}` in
-  _quarto.yml), because the extension's own CDN tags (math.js, Plotly) land
-  in <head> *above* everything in include-in-header -- a meta here would come
-  too late to cover them. Every page's query string is the visitor's own math
-  input (see the URL-shareable inputs section of CLAUDE.md); the policy makes
-  privacy.qmd's "no third party sees it" claim independent of browser
-  defaults, and covers the MathJax and polyfill scripts Quarto injects too.
-  scripts/analytics.test.js asserts the option is set;
-  scripts/verify-analytics.mjs asserts the rendered order.
-- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
-  only third-party origins a page loads from are the two script CDNs the
-  extension adds plus Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
-- The shared VM.* library, its CSS and the two CDN scripts are all injected
-  by the mathviz extension -- nothing here loads them. Only site-specific
-  scripts belong below.
--->
-
-<link rel="stylesheet" href="../../fonts/fonts.css">
-
-<!-- Embed mode: another site frames one of these apps with
-     <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
-     and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, plus everything
-     in the content column that is not the page's tagged app (the
-     <div class="vm-app"> each app page wraps its controls and chart in), and
-     consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
-     each skip themselves. This runs in <head>, so the class goes on <html>
-     (<body> doesn't exist yet) and the chrome never paints at all -- no
-     flash of navbar before the CSS applies.
-
-     embed=1 shows the page's first .vm-app. A page with several tagged
-     blocks gives each an id, and embed=<id> shows that one instead. Either
-     way, once the DOM exists the chosen block gets vm-app-active, and
-     styles.css shows only that block, what is inside it and its ancestors
-     (Quarto wraps everything under a ## heading in a <section>, so a block
-     is not necessarily a direct child of the content column). Until then
-     the content column is blank -- DOMContentLoaded comes well before OJS
-     draws anything, so nothing visible is ever hidden. An id no block on
-     the page carries falls back to the first block rather than showing
-     nothing.
-
-     history.replaceState is wrapped because every app rewrites the URL with
-     its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed, but a page that builds
-     its query string from scratch (distribution-relationships does) would
-     drop it, and the next reactive rerender would flash the chrome back in.
-     Same-origin URLs only; a page never passes anything else. -->
-<script>
-(function () {
-  var embed = new URLSearchParams(location.search).get("embed")
-  if (embed == null || embed === "") return
-  document.documentElement.classList.add("vm-embed")
-  document.addEventListener("DOMContentLoaded", function () {
-    var block = null
-    if (embed !== "1") block = document.getElementById(embed)
-    if (block === null || !block.classList.contains("vm-app")) {
-      block = document.querySelector(".vm-app")
-    }
-    if (block !== null) block.classList.add("vm-app-active")
-  })
-  var replaceState = history.replaceState.bind(history)
-  history.replaceState = function (state, title, url) {
-    if (url != null) {
-      var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && !next.searchParams.has("embed")) {
-        next.searchParams.set("embed", embed)
-      }
-      url = next.pathname + next.search + next.hash
-    }
-    return replaceState(state, title, url)
-  }
-})()
-</script>
-
-<!-- Site-specific: the "Report bug" popup on text selection, which is
-     hardcoded to this repository and to this site's URL-to-.qmd layout, so it
-     is not part of the mathviz library. -->
-<script src="../../js/report-bug.js"></script>
-
-<!-- Site-specific: the "Share" button injected above every app's controls
-     (<div class="vm-app">), opening a dialog that builds the ?embed= iframe
-     snippet embed.qmd documents. Skips itself on html.vm-embed, same as
-     report-bug.js and for the same reason -- see js/share.js. -->
-<script src="../../js/share.js"></script>
 <script type="module" src="../../site_libs/quarto-ojs/quarto-ojs-runtime.js"></script>
 <link href="../../site_libs/quarto-ojs/quarto-ojs.css" rel="stylesheet">
 
 
-<link rel="stylesheet" href="../../styles.css">
 <meta property="og:title" content="Sperner’s Lemma - Statement – Visual Math Lab">
 <meta property="og:description" content="States Sperner’s Lemma on a triangulated triangle and lets you color vertices to test the condition interactively.">
 <meta property="og:image" content="https://www.visualmathlab.com/apps/sperners-lemma-statement/sperners-lemma-statement.png">
@@ -710,7 +630,7 @@ Authors: Apurva Nakade
 </div>
 <p>In fact, you always have an odd number of such triangles.</p>
 <div class="cell hidden">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="34" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 33;"><span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="co">// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb1" data-startfrom="34" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 33;"><span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a><span class="co">// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.</span></span>
 <span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>VM <span class="op">=</span> <span class="bu">window</span><span class="op">.</span><span class="at">VM</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display hidden">
 <div id="ojs-cell-1" data-nodetype="declaration">
@@ -1059,8 +979,8 @@ localStorage, so this site sets no cookies at all.
 <style>
   /* Colours come from Bootstrap's theme variables rather than literals, so
      the banner follows the site's light (cosmo) and dark (cyborg) themes
-     without a second palette here. Kept inline rather than in styles.css
-     since this markup is the only thing that uses these classes. */
+     without a second palette here. Kept inline, next to the only markup
+     that uses these classes. */
   .vml-consent {
     position: fixed;
     z-index: 1080;
@@ -1162,7 +1082,7 @@ localStorage, so this site sets no cookies at all.
   }
 </style>
 
-<div id="vml-consent" class="vml-consent" role="dialog" aria-labelledby="vml-consent-title" hidden="">
+<div id="vml-consent" class="vml-consent" data-vm-embed-hide="" role="dialog" aria-labelledby="vml-consent-title" hidden="">
   <div class="vml-consent-inner">
     <h2 id="vml-consent-title" class="vml-consent-title">Analytics</h2>
     <p class="vml-consent-text">
@@ -1329,7 +1249,7 @@ localStorage, so this site sets no cookies at all.
     }
   }
 
-  /* Embed mode (?embed=1, see _includes/head-scripts.html): the app is
+  /* Embed mode (?embed=1, mathviz's `embed` option): the app is
      framed by another site, so this site neither asks nor measures -- no
      banner, and no analytics even for a visitor who granted them here
      earlier. privacy.qmd states this. */
@@ -1353,276 +1273,8 @@ localStorage, so this site sets no cookies at all.
   }
 })();
 </script>
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
-
-<!--
-One-time "this site is built for larger screens" notice, shown on a phone
-only. Charts on this site float a draggable trace legend over the plot;
-below the 991.98px breakpoint this uses, styles.css hides that legend
-(".ojs-legend-overlay") since there isn't room for it alongside the chart on
-a phone screen. The slider bar (".ojs-chart-controls") is NOT hidden -- it
-sits in normal flow just above the chart at every width, so scrubbing and the
-play button still work on a phone; only the legend needs fullscreen.
-The copy is deliberately short -- "meant for larger screens, tap fullscreen
-if a plot isn't fully visible" -- rather than spelling out which control is
-hidden and why; a phone visitor doesn't need the mechanics, only the fix.
-This banner shows once,
-remembered in localStorage so it never shows again -- same shape as
-_includes/consent.html's banner, just a single acknowledgement instead of a
-granted/denied choice.
--->
-
-<style>
-  .vml-mobile-warning {
-    position: fixed;
-    z-index: 1080;
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-  }
-
-  .vml-mobile-warning[hidden] {
-    display: none;
-  }
-
-  .vml-mobile-warning-inner {
-    pointer-events: auto;
-    max-width: 32rem;
-    padding: 1.1rem 1.25rem;
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: 0.5rem;
-    background: var(--bs-body-bg, #fff);
-    color: var(--bs-body-color, #212529);
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
-  }
-
-  .vml-mobile-warning-title {
-    margin: 0 0 0.4rem;
-    padding: 0;
-    border: none;
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
-  .vml-mobile-warning-text {
-    margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.5;
-  }
-
-  .vml-mobile-warning-buttons {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.9rem;
-  }
-
-  .vml-mobile-warning-btn {
-    padding: 0.4rem 1rem;
-    border: 1px solid var(--bs-primary, #2563eb);
-    border-radius: 0.35rem;
-    background: var(--bs-primary, #2563eb);
-    color: #fff;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .vml-mobile-warning-btn:hover {
-    filter: brightness(1.08);
-  }
-</style>
-
-<div id="vml-mobile-warning" class="vml-mobile-warning" role="dialog" aria-labelledby="vml-mobile-warning-title" hidden="">
-  <div class="vml-mobile-warning-inner">
-    <h2 id="vml-mobile-warning-title" class="vml-mobile-warning-title">Built for a bigger screen</h2>
-    <p class="vml-mobile-warning-text">
-      This site is meant for larger screens. If a plot isn't fully visible, tap its fullscreen button.
-    </p>
-    <div class="vml-mobile-warning-buttons">
-      <button type="button" class="vml-mobile-warning-btn" data-mobile-warning-dismiss="">Got it</button>
-    </div>
-  </div>
-</div>
-
-<script>
-(function () {
-  const KEY = "vml-mobile-warning-dismissed"
-  const BREAKPOINT = "(max-width: 991.98px)"
-  const banner = document.getElementById("vml-mobile-warning")
-  if (!banner) return
-  // Embed mode (?embed=1): the framing site decides how much room the app
-  // gets; a warning about this site's layout would be about the wrong page.
-  if (document.documentElement.classList.contains("vm-embed")) return
-
-  function dismissed() {
-    try {
-      return localStorage.getItem(KEY) === "1"
-    } catch (e) {
-      return false
-    }
-  }
-
-  function dismiss() {
-    try {
-      localStorage.setItem(KEY, "1")
-    } catch (e) {
-      /* Private browsing with storage blocked: the choice just won't stick. */
-    }
-    banner.hidden = true
-  }
-
-  const button = banner.querySelector("[data-mobile-warning-dismiss]")
-  button.addEventListener("click", dismiss)
-
-  if (window.matchMedia(BREAKPOINT).matches && !dismissed()) {
-    banner.hidden = false
-  }
-})()
-</script>
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
-
-<!--
-Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
-hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
-JS; styles.css forces the same off-canvas treatment at every width, driven
-by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
-.collapse/.show. This script owns those two classes and provides the one
-thing that treatment removes: a permanently visible way back in -- a slim
-rail at the left edge with a hamburger toggle, click-to-pin for a session
-that stays open, Escape/click-outside to close.
-
-The rail used to open the sidebar on hover anywhere down its full-height
-box. That is gone: the hamburger is a visible control and can simply be
-clicked, and the hover version cost more than it gave. It fired on any
-pointer drift into the left edge, and since it announces itself by writing
-.vm-sidebar-open onto <body>, every one of those accidental opens churned a
-class list that chart pages observe (see VM.plotting.onThemeChange). It also
-forced the rail's box to span the viewport to catch the pointer, which left
-an invisible 21px strip lying over the content column below 768px, where the
-body's own left margin is narrower than the rail.
--->
-<script>
-(function () {
-  function init() {
-    // Embed mode (?embed=1): the sidebar is hidden, so no rail to open it.
-    if (document.documentElement.classList.contains("vm-embed")) return
-    var sidebar = document.getElementById("quarto-sidebar")
-    if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
-
-    var PIN_KEY = "vml-sidebar-pinned"
-    var body = document.body
-
-    // Below 992px Quarto renders its own .quarto-secondary-nav bar (mobile
-    // breadcrumbs) between the navbar and the sidebar/rail -- its height
-    // varies with breadcrumb depth/length and can wrap on a narrow phone,
-    // so it's measured here rather than hardcoded, and exposed as a CSS
-    // variable the top-offset media query in styles.css reads.
-    var secondaryNav = document.querySelector(".quarto-secondary-nav")
-    function updateSecondaryNavHeight() {
-      var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
-      document.documentElement.style.setProperty("--vm-secondary-nav-height", h + "px")
-    }
-    if (secondaryNav) {
-      updateSecondaryNavHeight()
-      window.addEventListener("resize", updateSecondaryNavHeight)
-    }
-
-    var rail = document.createElement("div")
-    rail.id = "vm-sidebar-rail"
-    // The buttons live in their own wrapper, which is what carries the
-    // painted surface. See the .vm-rail-cluster rules in styles.css.
-    rail.innerHTML =
-      '<div class="vm-rail-cluster">' +
-      '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
-      '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>' +
-      "</button>" +
-      '<button type="button" data-vm-pin aria-label="Keep sidebar open" title="Keep sidebar open">' +
-      '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.037l-1.394 1.393c.18.613.185 1.373.021 2.023-.212.828-.696 1.747-1.435 2.486l-.104.104a.5.5 0 0 1-.707 0l-2.404-2.404-2.968 2.967c-.09.09-.203.203-.401.401-.081.08-.181.18-.297.294a1.001 1.001 0 0 1-.399.245.998.998 0 0 1-.797-.061.998.998 0 0 1-.4-.245l-.106-.106a1 1 0 0 1-.06-.797 1 1 0 0 1 .245-.399l.294-.297.401-.401 2.967-2.968-2.404-2.404a.5.5 0 0 1 0-.707l.104-.104c.739-.739 1.658-1.223 2.486-1.435.65-.164 1.41-.159 2.023.021L9.617 2.65a5 5 0 0 1-.037-.46c0-.431.108-1.023.588-1.503A.5.5 0 0 1 9.828.722z"/></svg>' +
-      "</button>" +
-      "</div>"
-    document.body.appendChild(rail)
-
-    var toggleBtn = rail.querySelector("[data-vm-toggle]")
-    var pinBtn = rail.querySelector("[data-vm-pin]")
-
-    function isPinned() {
-      try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
-    }
-
-    function setPinned(pinned) {
-      try { localStorage.setItem(PIN_KEY, pinned ? "1" : "0") } catch (e) { /* storage unavailable */ }
-      body.classList.toggle("vm-sidebar-pinned", pinned)
-      pinBtn.setAttribute("aria-pressed", String(pinned))
-    }
-
-    function openSidebar() {
-      body.classList.add("vm-sidebar-open")
-      toggleBtn.setAttribute("aria-expanded", "true")
-    }
-
-    function closeSidebar() {
-      if (isPinned()) return
-      body.classList.remove("vm-sidebar-open")
-      toggleBtn.setAttribute("aria-expanded", "false")
-    }
-
-    toggleBtn.addEventListener("click", function () {
-      if (body.classList.contains("vm-sidebar-open")) {
-        setPinned(false)
-        closeSidebar()
-      } else {
-        openSidebar()
-      }
-    })
-
-    pinBtn.addEventListener("click", function () {
-      var next = !isPinned()
-      setPinned(next)
-      if (next) openSidebar()
-    })
-
-    document.addEventListener("keydown", function (event) {
-      if (event.key !== "Escape") return
-      if (!body.classList.contains("vm-sidebar-open")) return
-      setPinned(false)
-      closeSidebar()
-    })
-
-    // Click-outside, together with Escape and the toggle itself, is now the
-    // whole of how the sidebar closes.
-    document.addEventListener("click", function (event) {
-      if (!body.classList.contains("vm-sidebar-open")) return
-      if (isPinned()) return
-      if (sidebar.contains(event.target) || rail.contains(event.target)) return
-      closeSidebar()
-    })
-
-    if (isPinned()) {
-      setPinned(true)
-      openSidebar()
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init)
-  } else {
-    init()
-  }
-})()
-</script>
 <script type="ojs-module-contents">
-eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIFZNIGlzIHRoZSBzaGFyZWQgdXRpbGl0eSBsaWJyYXJ5LCBsb2FkZWQgZ2xvYmFsbHkgdmlhIF9pbmNsdWRlcy9oZWFkLXNjcmlwdHMuaHRtbCAoanMvKiopLiBUaGlzIHBhZ2UgdXNlcyBWTS5kaXNjcmV0ZU1hdGguYmFyeWNlbnRyaWNUcmlwbGVzLCBWTS5kaXNjcmV0ZU1hdGguc3ViVHJpYW5nbGVUcmlwbGVzLCBWTS5kaXNjcmV0ZU1hdGguc3Blcm5lckNvbG9yLCBWTS5kaXNjcmV0ZU1hdGgudHJpYW5ndWxhdGlvbkVkZ2VzLCBWTS5kaXNjcmV0ZU1hdGgucGFpckNvbG9yLCBWTS5kaXNjcmV0ZU1hdGgudHJpYW5nbGVGaWxsQ29sb3IsIFZNLmRpc2NyZXRlTWF0aC52ZXJ0ZXhDb2xvci5cblZNID0gd2luZG93LlZNXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTIiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiIvLyB2bVRoZW1lIGlzIHdoYXQgbWFrZXMgdGhlIGNvbG9ycyBiZWxvdyByZWFjdGl2ZTogaXQgcmUtcnVucyBvbiBldmVyeVxuLy8gZGFyay9saWdodCB0b2dnbGUsIGFuZCBldmVyeSBjZWxsIHRoYXQgZHJhd3MgcmVhZHMgaXRzIGNvbG9ycyB0aHJvdWdoXG4vLyBjaGFydENvbG9ycyAob3IgdGhyb3VnaCBhIFZNLmRpc2NyZXRlTWF0aCBjb2xvciBoZWxwZXIsIHdoaWNoIHJlYWRzIHRoZVxuLy8gc2FtZSBwYWxldHRlIGF0IGNhbGwgdGltZSksIHNvIHRoZSBmaWd1cmUgcmVwYWludHMgaW4gdGhlIG5ldyB0aGVtZS5cbnZtVGhlbWUgPSBHZW5lcmF0b3JzLm9ic2VydmUobm90aWZ5ID0+IFZNLnBsb3R0aW5nLm9uVGhlbWVDaGFuZ2Uobm90aWZ5KSlcbmNoYXJ0Q29sb3JzID0gVk0ucGxvdHRpbmcuY29sb3JzKHZtVGhlbWUpXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTMiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJ2aWV3b2YgTiA9IHtcbiAgY29uc3Qgc2xpZGVyID0gSW5wdXRzLnJhbmdlKFsyLCAyMF0sIHtzdGVwOiAxLCB2YWx1ZTogMTUsIGxhYmVsOiBcIk51bWJlciBvZiBzdWJkaXZpc2lvbnNcIn0pXG4gIHNsaWRlci5jbGFzc0xpc3QuYWRkKFwib2pzLWZpbGxcIilcbiAgcmV0dXJuIHNsaWRlclxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC00IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gUmVmZXJlbmNlZCAoYnV0IG90aGVyd2lzZSB1bnVzZWQpIGluc2lkZSBjb2xvcmVkUG9pbnRzIGJlbG93IHNvIHRoYXRcbi8vIGNsaWNraW5nIHRoZSBidXR0b24gcmUtcnVucyB0aGUgcmFuZG9tIGNvbG9yIGFzc2lnbm1lbnQgd2l0aG91dCBtb3Zpbmdcbi8vIHRoZSBzbGlkZXIuXG52aWV3b2YgcmVnZW5lcmF0ZSA9IHtcbiAgY29uc3QgYnV0dG9uID0gSW5wdXRzLmJ1dHRvbihcIlJlZ2VuZXJhdGUgY29sb3JzXCIsIHt2YWx1ZTogMCwgcmVkdWNlOiB2ID0+IHYgKyAxfSlcbiAgYnV0dG9uLmNsYXNzTGlzdC5hZGQoXCJvanMtYXV0b1wiKVxuICByZXR1cm4gYnV0dG9uXG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTUiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiIvLyBBIGRpYWdyYW0sIG5vdCBhIGdyYXBoOiBubyBheGVzLCBhbmQgYSBoZWlnaHQgY2hvc2VuIHNvIHRoZSB1bml0LXdpZGVcbi8vIGVxdWlsYXRlcmFsIHRyaWFuZ2xlIGlzIGRyYXduIHRvIHNjYWxlIChQbG90IHN0cmV0Y2hlcyB5IHRvIGZpbGxcbi8vIHdoYXRldmVyIGhlaWdodCBpdCBpcyBnaXZlbiBvdGhlcndpc2UpLlxudmlld29mIG1haW5QbG90ID0ge1xuICBjb25zdCB3aWR0aCA9IDgwMDtcbiAgY29uc3QgbWFyZ2luID0gMjA7XG4gIGNvbnN0IGhlaWdodCA9ICh3aWR0aCAtIDIgKiBtYXJnaW4pICogTWF0aC5zcXJ0KDMpIC8gMiArIDIgKiBtYXJnaW47XG5cbiAgY29uc3QgZmVhdHVyZXMgPSBbXTtcbiAgZm9yIChjb25zdCB0cmlhbmdsZSBvZiBzdWJUcmlhbmdsZXMpIHtcbiAgICBjb25zdCByaW5nID0gW107XG4gICAgZm9yIChjb25zdCBjb29yZCBvZiB0cmlhbmdsZS5jb29yZGluYXRlcykge1xuICAgICAgY29uc3QgYyA9IGNvbG9yZWQuYnlLZXkuZ2V0KGNvb3JkLmpvaW4oJywnKSkuZ2V0Q29vcmRzKCk7XG4gICAgICByaW5nLnB1c2goW2MueCwgYy55XSk7XG4gICAgfVxuICAgIHJpbmcucHVzaChyaW5nWzBdKTtcbiAgICBmZWF0dXJlcy5wdXNoKHtcbiAgICAgIHR5cGU6IFwiRmVhdHVyZVwiLFxuICAgICAgZ2VvbWV0cnk6IHsgdHlwZTogXCJQb2x5Z29uXCIsIGNvb3JkaW5hdGVzOiBbcmluZ10gfSxcbiAgICAgIHByb3BlcnRpZXM6IHsgZmlsbENvbG9yOiBWTS5kaXNjcmV0ZU1hdGgudHJpYW5nbGVGaWxsQ29sb3IodHJpYW5nbGUudmVydGV4X2NvbG9ycykgfVxuICAgIH0pO1xuICB9XG5cbiAgcmV0dXJuIFBsb3QucGxvdChWTS5wbG90dGluZy5wbG90T3B0aW9ucyh7XG4gICAgd2lkdGgsXG4gICAgaGVpZ2h0LFxuICAgIG1hcmdpbixcbiAgICBncmlkOiBmYWxzZSxcbiAgICB4OiB7IGRvbWFpbjogWzAsIDFdLCBheGlzOiBudWxsIH0sXG4gICAgeTogeyBkb21haW46IFswLCBNYXRoLnNxcnQoMykgLyAyXSwgYXhpczogbnVsbCB9LFxuICAgIG1hcmtzOiBbXG4gICAgICBQbG90LmxpbmUoWy4uLnZlcnRpY2VzLCB2ZXJ0aWNlc1swXV0sIHtcbiAgICAgICAgeDogXCJ4XCIsXG4gICAgICAgIHk6IFwieVwiLFxuICAgICAgICBzdHJva2U6IGNoYXJ0Q29sb3JzLmluayxcbiAgICAgICAgc3Ryb2tlV2lkdGg6IDFcbiAgICAgIH0pLFxuICAgICAgUGxvdC5nZW8oXG4gICAgICAgIHsgdHlwZTogXCJGZWF0dXJlQ29sbGVjdGlvblwiLCBmZWF0dXJlcyB9LFxuICAgICAgICB7XG4gICAgICAgICAgZmlsbDogZCA9PiBkLnByb3BlcnRpZXMuZmlsbENvbG9yLFxuICAgICAgICAgIHN0cm9rZTogY2hhcnRDb2xvcnMuaW5rLFxuICAgICAgICAgIHN0cm9rZVdpZHRoOiAxXG4gICAgICAgIH1cbiAgICAgICksXG4gICAgICBQbG90LmxpbmsobWl4ZWRFZGdlcywge1xuICAgICAgICB4MTogXCJ4MVwiLCB5MTogXCJ5MVwiLCB4MjogXCJ4MlwiLCB5MjogXCJ5MlwiLFxuICAgICAgICBzdHJva2U6IFwiY29sb3JcIixcbiAgICAgICAgc3Ryb2tlV2lkdGg6IDNcbiAgICAgIH0pLFxuICAgICAgUGxvdC5kb3QoXG4gICAgICAgIGNvbG9yZWQucG9pbnRzLFxuICAgICAgICB7XG4gICAgICAgICAgeDogXCJ4XCIsXG4gICAgICAgICAgeTogXCJ5XCIsXG4gICAgICAgICAgZmlsbDogZCA9PiBWTS5kaXNjcmV0ZU1hdGgudmVydGV4Q29sb3IoZC5jb2xvciksXG4gICAgICAgICAgcjogNFxuICAgICAgICB9XG4gICAgICApXG4gICAgXVxuICB9KSk7XG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTYiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJ2ZXJ0aWNlcyA9IFtcbiAge3g6IDEsIHk6IDB9LFxuICB7eDogMC41LCB5OiBNYXRoLnNxcnQoMykgLyAyfSxcbiAge3g6IDAsIHk6IDB9LFxuXVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC03IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiY2xhc3MgQ29sb3JlZFBvaW50IHtcbiAgY29uc3RydWN0b3IodHJpcGxlLCB2ZXJ0aWNlcywgTikge1xuICAgIHRoaXMuYmFyeWNlbnRyaWNUcmlwbGUgPSB0cmlwbGU7XG4gICAgY29uc3QgW0EsIEIsIENdID0gdmVydGljZXM7XG5cbiAgICB0aGlzLnggPSAodHJpcGxlWzBdICogQS54ICsgdHJpcGxlWzFdICogQi54ICsgdHJpcGxlWzJdICogQy54KSAvIE47XG4gICAgdGhpcy55ID0gKHRyaXBsZVswXSAqIEEueSArIHRyaXBsZVsxXSAqIEIueSArIHRyaXBsZVsyXSAqIEMueSkgLyBOO1xuXG4gICAgY29uc3QgW2EsIGIsIGNdID0gdHJpcGxlO1xuICAgIHRoaXMuY29sb3IgPSBWTS5kaXNjcmV0ZU1hdGguc3Blcm5lckNvbG9yKGEsIGIsIGMpO1xuICB9XG5cbiAgZ2V0Q29vcmRzKCkge1xuICAgIHJldHVybiB7IHg6IHRoaXMueCwgeTogdGhpcy55IH07XG4gIH1cblxuICBnZXRDb2xvcigpIHtcbiAgICByZXR1cm4gdGhpcy5jb2xvcjtcbiAgfVxufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC04IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiY29sb3JlZCA9IHtcbiAgcmVnZW5lcmF0ZTtcbiAgY29uc3QgcG9pbnRzID0gW107XG4gIGZvciAoY29uc3QgdHJpcGxlIG9mIFZNLmRpc2NyZXRlTWF0aC5iYXJ5Y2VudHJpY1RyaXBsZXMoTikpIHtcbiAgICBwb2ludHMucHVzaChuZXcgQ29sb3JlZFBvaW50KHRyaXBsZSwgdmVydGljZXMsIE4pKTtcbiAgfVxuXG4gIGNvbnN0IGJ5S2V5ID0gbmV3IE1hcCgpO1xuICBmb3IgKGNvbnN0IHAgb2YgcG9pbnRzKSB7XG4gICAgYnlLZXkuc2V0KHAuYmFyeWNlbnRyaWNUcmlwbGUuam9pbignLCcpLCBwKTtcbiAgfVxuXG4gIHJldHVybiB7IHBvaW50cywgYnlLZXkgfTtcbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtOSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6InN1YlRyaWFuZ2xlcyA9IHtcbiAgY29uc3QgdHJpYW5nbGVzID0gW107XG4gIGZvciAoY29uc3QgY29vcmRpbmF0ZXMgb2YgVk0uZGlzY3JldGVNYXRoLnN1YlRyaWFuZ2xlVHJpcGxlcyhOKSkge1xuICAgIGNvbnN0IHZlcnRleF9jb2xvcnMgPSBuZXcgU2V0KCk7XG4gICAgZm9yIChjb25zdCBjb29yZCBvZiBjb29yZGluYXRlcykge1xuICAgICAgdmVydGV4X2NvbG9ycy5hZGQoY29sb3JlZC5ieUtleS5nZXQoY29vcmQuam9pbignLCcpKS5nZXRDb2xvcigpKTtcbiAgICB9XG4gICAgdHJpYW5nbGVzLnB1c2goeyBjb29yZGluYXRlcywgdmVydGV4X2NvbG9ycyB9KTtcbiAgfVxuICByZXR1cm4gdHJpYW5nbGVzO1xufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC0xMCIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIEVkZ2VzIGJldHdlZW4gZGlmZmVyZW50bHktY29sb3JlZCB2ZXJ0aWNlcywgaW4gdGhlIHNoYXJlZCBhbWJlci90ZWFsL1xuLy8gcHVycGxlIHBhaXIgcGFsZXR0ZSAoVk0uZGlzY3JldGVNYXRoLnBhaXJDb2xvcikuIFNhbWUtY29sb3IgZWRnZXMgYXJlXG4vLyBza2lwcGVkIGVudGlyZWx5IHRvIGF2b2lkIGNsdXR0ZXIuIGNoYXJ0Q29sb3JzIGlzIHJlZmVyZW5jZWQgc28gdGhlXG4vLyBzdG9yZWQgY29sb3JzIGFyZSByZWNvbXB1dGVkIG9uIGEgdGhlbWUgdG9nZ2xlLlxubWl4ZWRFZGdlcyA9IHtcbiAgY2hhcnRDb2xvcnM7XG4gIGNvbnN0IGVkZ2VzID0gW107XG4gIGZvciAoY29uc3QgeyBhLCBiIH0gb2YgVk0uZGlzY3JldGVNYXRoLnRyaWFuZ3VsYXRpb25FZGdlcyhOKSkge1xuICAgIGNvbnN0IHBhID0gY29sb3JlZC5ieUtleS5nZXQoYS5qb2luKCcsJykpO1xuICAgIGNvbnN0IHBiID0gY29sb3JlZC5ieUtleS5nZXQoYi5qb2luKCcsJykpO1xuICAgIGNvbnN0IGNvbG9yID0gVk0uZGlzY3JldGVNYXRoLnBhaXJDb2xvcihwYS5nZXRDb2xvcigpLCBwYi5nZXRDb2xvcigpKTtcbiAgICBpZiAoIWNvbG9yKSBjb250aW51ZTtcbiAgICBjb25zdCBjYSA9IHBhLmdldENvb3JkcygpO1xuICAgIGNvbnN0IGNiID0gcGIuZ2V0Q29vcmRzKCk7XG4gICAgZWRnZXMucHVzaCh7IHgxOiBjYS54LCB5MTogY2EueSwgeDI6IGNiLngsIHkyOiBjYi55LCBjb2xvciB9KTtcbiAgfVxuICByZXR1cm4gZWRnZXM7XG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTExIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gcHJpbnQgdGhlIG51bWJlciBvZiBSR0IgdHJpYW5nbGVzIGFzIGEgaHRtbCBlbGVtZW50XG5udW1SR0JUcmlhbmdsZXMgPSB7XG4gIGxldCBjb3VudCA9IDA7XG4gIGZvciAoY29uc3QgdHJpYW5nbGUgb2Ygc3ViVHJpYW5nbGVzKSB7XG4gICAgaWYgKHRyaWFuZ2xlLnZlcnRleF9jb2xvcnMuc2l6ZSA9PT0gMykgY291bnQrKztcbiAgfVxuICByZXR1cm4gY291bnQ7XG59XG5odG1sYDxiPk51bWJlciBvZiBSR0IgdHJpYW5nbGVzOiAke251bVJHQlRyaWFuZ2xlc308L2I+YFxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJzaGlueUlucHV0KCdOJykifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6InNoaW55SW5wdXQoJ3JlZ2VuZXJhdGUnKSJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgnbWFpblBsb3QnKSJ9XX0=
+eyJjb250ZW50cyI6W3sibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIFZNIGlzIHRoZSBzaGFyZWQgdXRpbGl0eSBsaWJyYXJ5LCBsb2FkZWQgb24gZXZlcnkgcGFnZSBieSB0aGUgbWF0aHZpeiBleHRlbnNpb24uIFRoaXMgcGFnZSB1c2VzIFZNLmRpc2NyZXRlTWF0aC5iYXJ5Y2VudHJpY1RyaXBsZXMsIFZNLmRpc2NyZXRlTWF0aC5zdWJUcmlhbmdsZVRyaXBsZXMsIFZNLmRpc2NyZXRlTWF0aC5zcGVybmVyQ29sb3IsIFZNLmRpc2NyZXRlTWF0aC50cmlhbmd1bGF0aW9uRWRnZXMsIFZNLmRpc2NyZXRlTWF0aC5wYWlyQ29sb3IsIFZNLmRpc2NyZXRlTWF0aC50cmlhbmdsZUZpbGxDb2xvciwgVk0uZGlzY3JldGVNYXRoLnZlcnRleENvbG9yLlxuVk0gPSB3aW5kb3cuVk1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMiIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIHZtVGhlbWUgaXMgd2hhdCBtYWtlcyB0aGUgY29sb3JzIGJlbG93IHJlYWN0aXZlOiBpdCByZS1ydW5zIG9uIGV2ZXJ5XG4vLyBkYXJrL2xpZ2h0IHRvZ2dsZSwgYW5kIGV2ZXJ5IGNlbGwgdGhhdCBkcmF3cyByZWFkcyBpdHMgY29sb3JzIHRocm91Z2hcbi8vIGNoYXJ0Q29sb3JzIChvciB0aHJvdWdoIGEgVk0uZGlzY3JldGVNYXRoIGNvbG9yIGhlbHBlciwgd2hpY2ggcmVhZHMgdGhlXG4vLyBzYW1lIHBhbGV0dGUgYXQgY2FsbCB0aW1lKSwgc28gdGhlIGZpZ3VyZSByZXBhaW50cyBpbiB0aGUgbmV3IHRoZW1lLlxudm1UaGVtZSA9IEdlbmVyYXRvcnMub2JzZXJ2ZShub3RpZnkgPT4gVk0ucGxvdHRpbmcub25UaGVtZUNoYW5nZShub3RpZnkpKVxuY2hhcnRDb2xvcnMgPSBWTS5wbG90dGluZy5jb2xvcnModm1UaGVtZSlcbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMyIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6InZpZXdvZiBOID0ge1xuICBjb25zdCBzbGlkZXIgPSBJbnB1dHMucmFuZ2UoWzIsIDIwXSwge3N0ZXA6IDEsIHZhbHVlOiAxNSwgbGFiZWw6IFwiTnVtYmVyIG9mIHN1YmRpdmlzaW9uc1wifSlcbiAgc2xpZGVyLmNsYXNzTGlzdC5hZGQoXCJvanMtZmlsbFwiKVxuICByZXR1cm4gc2xpZGVyXG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTQiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiIvLyBSZWZlcmVuY2VkIChidXQgb3RoZXJ3aXNlIHVudXNlZCkgaW5zaWRlIGNvbG9yZWRQb2ludHMgYmVsb3cgc28gdGhhdFxuLy8gY2xpY2tpbmcgdGhlIGJ1dHRvbiByZS1ydW5zIHRoZSByYW5kb20gY29sb3IgYXNzaWdubWVudCB3aXRob3V0IG1vdmluZ1xuLy8gdGhlIHNsaWRlci5cbnZpZXdvZiByZWdlbmVyYXRlID0ge1xuICBjb25zdCBidXR0b24gPSBJbnB1dHMuYnV0dG9uKFwiUmVnZW5lcmF0ZSBjb2xvcnNcIiwge3ZhbHVlOiAwLCByZWR1Y2U6IHYgPT4gdiArIDF9KVxuICBidXR0b24uY2xhc3NMaXN0LmFkZChcIm9qcy1hdXRvXCIpXG4gIHJldHVybiBidXR0b25cbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtNSIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6Ii8vIEEgZGlhZ3JhbSwgbm90IGEgZ3JhcGg6IG5vIGF4ZXMsIGFuZCBhIGhlaWdodCBjaG9zZW4gc28gdGhlIHVuaXQtd2lkZVxuLy8gZXF1aWxhdGVyYWwgdHJpYW5nbGUgaXMgZHJhd24gdG8gc2NhbGUgKFBsb3Qgc3RyZXRjaGVzIHkgdG8gZmlsbFxuLy8gd2hhdGV2ZXIgaGVpZ2h0IGl0IGlzIGdpdmVuIG90aGVyd2lzZSkuXG52aWV3b2YgbWFpblBsb3QgPSB7XG4gIGNvbnN0IHdpZHRoID0gODAwO1xuICBjb25zdCBtYXJnaW4gPSAyMDtcbiAgY29uc3QgaGVpZ2h0ID0gKHdpZHRoIC0gMiAqIG1hcmdpbikgKiBNYXRoLnNxcnQoMykgLyAyICsgMiAqIG1hcmdpbjtcblxuICBjb25zdCBmZWF0dXJlcyA9IFtdO1xuICBmb3IgKGNvbnN0IHRyaWFuZ2xlIG9mIHN1YlRyaWFuZ2xlcykge1xuICAgIGNvbnN0IHJpbmcgPSBbXTtcbiAgICBmb3IgKGNvbnN0IGNvb3JkIG9mIHRyaWFuZ2xlLmNvb3JkaW5hdGVzKSB7XG4gICAgICBjb25zdCBjID0gY29sb3JlZC5ieUtleS5nZXQoY29vcmQuam9pbignLCcpKS5nZXRDb29yZHMoKTtcbiAgICAgIHJpbmcucHVzaChbYy54LCBjLnldKTtcbiAgICB9XG4gICAgcmluZy5wdXNoKHJpbmdbMF0pO1xuICAgIGZlYXR1cmVzLnB1c2goe1xuICAgICAgdHlwZTogXCJGZWF0dXJlXCIsXG4gICAgICBnZW9tZXRyeTogeyB0eXBlOiBcIlBvbHlnb25cIiwgY29vcmRpbmF0ZXM6IFtyaW5nXSB9LFxuICAgICAgcHJvcGVydGllczogeyBmaWxsQ29sb3I6IFZNLmRpc2NyZXRlTWF0aC50cmlhbmdsZUZpbGxDb2xvcih0cmlhbmdsZS52ZXJ0ZXhfY29sb3JzKSB9XG4gICAgfSk7XG4gIH1cblxuICByZXR1cm4gUGxvdC5wbG90KFZNLnBsb3R0aW5nLnBsb3RPcHRpb25zKHtcbiAgICB3aWR0aCxcbiAgICBoZWlnaHQsXG4gICAgbWFyZ2luLFxuICAgIGdyaWQ6IGZhbHNlLFxuICAgIHg6IHsgZG9tYWluOiBbMCwgMV0sIGF4aXM6IG51bGwgfSxcbiAgICB5OiB7IGRvbWFpbjogWzAsIE1hdGguc3FydCgzKSAvIDJdLCBheGlzOiBudWxsIH0sXG4gICAgbWFya3M6IFtcbiAgICAgIFBsb3QubGluZShbLi4udmVydGljZXMsIHZlcnRpY2VzWzBdXSwge1xuICAgICAgICB4OiBcInhcIixcbiAgICAgICAgeTogXCJ5XCIsXG4gICAgICAgIHN0cm9rZTogY2hhcnRDb2xvcnMuaW5rLFxuICAgICAgICBzdHJva2VXaWR0aDogMVxuICAgICAgfSksXG4gICAgICBQbG90LmdlbyhcbiAgICAgICAgeyB0eXBlOiBcIkZlYXR1cmVDb2xsZWN0aW9uXCIsIGZlYXR1cmVzIH0sXG4gICAgICAgIHtcbiAgICAgICAgICBmaWxsOiBkID0+IGQucHJvcGVydGllcy5maWxsQ29sb3IsXG4gICAgICAgICAgc3Ryb2tlOiBjaGFydENvbG9ycy5pbmssXG4gICAgICAgICAgc3Ryb2tlV2lkdGg6IDFcbiAgICAgICAgfVxuICAgICAgKSxcbiAgICAgIFBsb3QubGluayhtaXhlZEVkZ2VzLCB7XG4gICAgICAgIHgxOiBcIngxXCIsIHkxOiBcInkxXCIsIHgyOiBcIngyXCIsIHkyOiBcInkyXCIsXG4gICAgICAgIHN0cm9rZTogXCJjb2xvclwiLFxuICAgICAgICBzdHJva2VXaWR0aDogM1xuICAgICAgfSksXG4gICAgICBQbG90LmRvdChcbiAgICAgICAgY29sb3JlZC5wb2ludHMsXG4gICAgICAgIHtcbiAgICAgICAgICB4OiBcInhcIixcbiAgICAgICAgICB5OiBcInlcIixcbiAgICAgICAgICBmaWxsOiBkID0+IFZNLmRpc2NyZXRlTWF0aC52ZXJ0ZXhDb2xvcihkLmNvbG9yKSxcbiAgICAgICAgICByOiA0XG4gICAgICAgIH1cbiAgICAgIClcbiAgICBdXG4gIH0pKTtcbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtNiIsImlubGluZSI6ZmFsc2UsInNvdXJjZSI6InZlcnRpY2VzID0gW1xuICB7eDogMSwgeTogMH0sXG4gIHt4OiAwLjUsIHk6IE1hdGguc3FydCgzKSAvIDJ9LFxuICB7eDogMCwgeTogMH0sXG5dXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTciLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJjbGFzcyBDb2xvcmVkUG9pbnQge1xuICBjb25zdHJ1Y3Rvcih0cmlwbGUsIHZlcnRpY2VzLCBOKSB7XG4gICAgdGhpcy5iYXJ5Y2VudHJpY1RyaXBsZSA9IHRyaXBsZTtcbiAgICBjb25zdCBbQSwgQiwgQ10gPSB2ZXJ0aWNlcztcblxuICAgIHRoaXMueCA9ICh0cmlwbGVbMF0gKiBBLnggKyB0cmlwbGVbMV0gKiBCLnggKyB0cmlwbGVbMl0gKiBDLngpIC8gTjtcbiAgICB0aGlzLnkgPSAodHJpcGxlWzBdICogQS55ICsgdHJpcGxlWzFdICogQi55ICsgdHJpcGxlWzJdICogQy55KSAvIE47XG5cbiAgICBjb25zdCBbYSwgYiwgY10gPSB0cmlwbGU7XG4gICAgdGhpcy5jb2xvciA9IFZNLmRpc2NyZXRlTWF0aC5zcGVybmVyQ29sb3IoYSwgYiwgYyk7XG4gIH1cblxuICBnZXRDb29yZHMoKSB7XG4gICAgcmV0dXJuIHsgeDogdGhpcy54LCB5OiB0aGlzLnkgfTtcbiAgfVxuXG4gIGdldENvbG9yKCkge1xuICAgIHJldHVybiB0aGlzLmNvbG9yO1xuICB9XG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTgiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiJjb2xvcmVkID0ge1xuICByZWdlbmVyYXRlO1xuICBjb25zdCBwb2ludHMgPSBbXTtcbiAgZm9yIChjb25zdCB0cmlwbGUgb2YgVk0uZGlzY3JldGVNYXRoLmJhcnljZW50cmljVHJpcGxlcyhOKSkge1xuICAgIHBvaW50cy5wdXNoKG5ldyBDb2xvcmVkUG9pbnQodHJpcGxlLCB2ZXJ0aWNlcywgTikpO1xuICB9XG5cbiAgY29uc3QgYnlLZXkgPSBuZXcgTWFwKCk7XG4gIGZvciAoY29uc3QgcCBvZiBwb2ludHMpIHtcbiAgICBieUtleS5zZXQocC5iYXJ5Y2VudHJpY1RyaXBsZS5qb2luKCcsJyksIHApO1xuICB9XG5cbiAgcmV0dXJuIHsgcG9pbnRzLCBieUtleSB9O1xufVxuIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0IiwiY2VsbE5hbWUiOiJvanMtY2VsbC05IiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoic3ViVHJpYW5nbGVzID0ge1xuICBjb25zdCB0cmlhbmdsZXMgPSBbXTtcbiAgZm9yIChjb25zdCBjb29yZGluYXRlcyBvZiBWTS5kaXNjcmV0ZU1hdGguc3ViVHJpYW5nbGVUcmlwbGVzKE4pKSB7XG4gICAgY29uc3QgdmVydGV4X2NvbG9ycyA9IG5ldyBTZXQoKTtcbiAgICBmb3IgKGNvbnN0IGNvb3JkIG9mIGNvb3JkaW5hdGVzKSB7XG4gICAgICB2ZXJ0ZXhfY29sb3JzLmFkZChjb2xvcmVkLmJ5S2V5LmdldChjb29yZC5qb2luKCcsJykpLmdldENvbG9yKCkpO1xuICAgIH1cbiAgICB0cmlhbmdsZXMucHVzaCh7IGNvb3JkaW5hdGVzLCB2ZXJ0ZXhfY29sb3JzIH0pO1xuICB9XG4gIHJldHVybiB0cmlhbmdsZXM7XG59XG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXQiLCJjZWxsTmFtZSI6Im9qcy1jZWxsLTEwIiwiaW5saW5lIjpmYWxzZSwic291cmNlIjoiLy8gRWRnZXMgYmV0d2VlbiBkaWZmZXJlbnRseS1jb2xvcmVkIHZlcnRpY2VzLCBpbiB0aGUgc2hhcmVkIGFtYmVyL3RlYWwvXG4vLyBwdXJwbGUgcGFpciBwYWxldHRlIChWTS5kaXNjcmV0ZU1hdGgucGFpckNvbG9yKS4gU2FtZS1jb2xvciBlZGdlcyBhcmVcbi8vIHNraXBwZWQgZW50aXJlbHkgdG8gYXZvaWQgY2x1dHRlci4gY2hhcnRDb2xvcnMgaXMgcmVmZXJlbmNlZCBzbyB0aGVcbi8vIHN0b3JlZCBjb2xvcnMgYXJlIHJlY29tcHV0ZWQgb24gYSB0aGVtZSB0b2dnbGUuXG5taXhlZEVkZ2VzID0ge1xuICBjaGFydENvbG9ycztcbiAgY29uc3QgZWRnZXMgPSBbXTtcbiAgZm9yIChjb25zdCB7IGEsIGIgfSBvZiBWTS5kaXNjcmV0ZU1hdGgudHJpYW5ndWxhdGlvbkVkZ2VzKE4pKSB7XG4gICAgY29uc3QgcGEgPSBjb2xvcmVkLmJ5S2V5LmdldChhLmpvaW4oJywnKSk7XG4gICAgY29uc3QgcGIgPSBjb2xvcmVkLmJ5S2V5LmdldChiLmpvaW4oJywnKSk7XG4gICAgY29uc3QgY29sb3IgPSBWTS5kaXNjcmV0ZU1hdGgucGFpckNvbG9yKHBhLmdldENvbG9yKCksIHBiLmdldENvbG9yKCkpO1xuICAgIGlmICghY29sb3IpIGNvbnRpbnVlO1xuICAgIGNvbnN0IGNhID0gcGEuZ2V0Q29vcmRzKCk7XG4gICAgY29uc3QgY2IgPSBwYi5nZXRDb29yZHMoKTtcbiAgICBlZGdlcy5wdXNoKHsgeDE6IGNhLngsIHkxOiBjYS55LCB4MjogY2IueCwgeTI6IGNiLnksIGNvbG9yIH0pO1xuICB9XG4gIHJldHVybiBlZGdlcztcbn1cbiJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldCIsImNlbGxOYW1lIjoib2pzLWNlbGwtMTEiLCJpbmxpbmUiOmZhbHNlLCJzb3VyY2UiOiIvLyBwcmludCB0aGUgbnVtYmVyIG9mIFJHQiB0cmlhbmdsZXMgYXMgYSBodG1sIGVsZW1lbnRcbm51bVJHQlRyaWFuZ2xlcyA9IHtcbiAgbGV0IGNvdW50ID0gMDtcbiAgZm9yIChjb25zdCB0cmlhbmdsZSBvZiBzdWJUcmlhbmdsZXMpIHtcbiAgICBpZiAodHJpYW5nbGUudmVydGV4X2NvbG9ycy5zaXplID09PSAzKSBjb3VudCsrO1xuICB9XG4gIHJldHVybiBjb3VudDtcbn1cbmh0bWxgPGI+TnVtYmVyIG9mIFJHQiB0cmlhbmdsZXM6ICR7bnVtUkdCVHJpYW5nbGVzfTwvYj5gXG4ifSx7Im1ldGhvZE5hbWUiOiJpbnRlcnByZXRRdWlldCIsInNvdXJjZSI6InNoaW55SW5wdXQoJ04nKSJ9LHsibWV0aG9kTmFtZSI6ImludGVycHJldFF1aWV0Iiwic291cmNlIjoic2hpbnlJbnB1dCgncmVnZW5lcmF0ZScpIn0seyJtZXRob2ROYW1lIjoiaW50ZXJwcmV0UXVpZXQiLCJzb3VyY2UiOiJzaGlueUlucHV0KCdtYWluUGxvdCcpIn1dfQ==
 </script>
 <script type="module">
 if (window.location.protocol === "file:") { alert("The OJS runtime does not work with file:// URLs. Please use a web server to view this document."); }

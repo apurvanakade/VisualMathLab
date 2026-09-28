@@ -50,14 +50,31 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-5db7610fca3ea74ceab0226f71e3f166.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-274675e3d30973819a56aa271261c775.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-c52a8b1049e56201930b74ab82ee342d.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-274675e3d30973819a56aa271261c775.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-d71b394cfec3f5d196965bb32079d76c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-ea04064fa629b1c0b203013179750073.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-d71b394cfec3f5d196965bb32079d76c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <meta name="referrer" content="same-origin">
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="site_libs/quarto-contrib/mathviz-0.1.7/mathviz.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-0.1.7/mathviz.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-0.1.9/mathviz.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-0.1.9/mathviz.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-sidebar-rail-0.1.9/sidebar-rail.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-sidebar-rail-0.1.9/sidebar-rail.css" rel="stylesheet">
+<meta name="mathviz:sidebar-pin-key" content="vml-sidebar-pinned">
+<script src="site_libs/quarto-contrib/mathviz-mobile-warning-0.1.9/mobile-warning.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-mobile-warning-0.1.9/mobile-warning.css" rel="stylesheet">
+<meta name="mathviz:mobile-warning-key" content="vml-mobile-warning-dismissed">
+<script src="site_libs/quarto-contrib/mathviz-embed-0.1.9/embed.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-embed-0.1.9/embed.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-chrome-site-0.1.9/site.js"></script>
+<script src="site_libs/quarto-contrib/mathviz-share-0.1.9/share.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-share-0.1.9/share.css" rel="stylesheet">
+<meta name="mathviz:share-embed-docs" content="embed.html">
+<meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
+<script src="site_libs/quarto-contrib/mathviz-report-bug-0.1.9/report-bug.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-report-bug-0.1.9/report-bug.css" rel="stylesheet">
+<meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
+<link href="site_libs/quarto-contrib/mathviz-fonts-0.1.9/fonts.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -114,102 +131,6 @@ ul.task-list li input[type="checkbox"] {
     }
   })
   </script>
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
-
-<!--
-Third-party requests are a privacy surface, and privacy.qmd describes it, so
-keep that page in step with anything added here or to the mathviz block in
-_quarto.yml.
-
-- The <meta name="referrer" content="same-origin"> that used to sit here is
-  now emitted by the mathviz extension (`mathviz: {referrer: same-origin}` in
-  _quarto.yml), because the extension's own CDN tags (math.js, Plotly) land
-  in <head> *above* everything in include-in-header -- a meta here would come
-  too late to cover them. Every page's query string is the visitor's own math
-  input (see the URL-shareable inputs section of CLAUDE.md); the policy makes
-  privacy.qmd's "no third party sees it" claim independent of browser
-  defaults, and covers the MathJax and polyfill scripts Quarto injects too.
-  scripts/analytics.test.js asserts the option is set;
-  scripts/verify-analytics.mjs asserts the rendered order.
-- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
-  only third-party origins a page loads from are the two script CDNs the
-  extension adds plus Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
-- The shared VM.* library, its CSS and the two CDN scripts are all injected
-  by the mathviz extension -- nothing here loads them. Only site-specific
-  scripts belong below.
--->
-
-<link rel="stylesheet" href="./fonts/fonts.css">
-
-<!-- Embed mode: another site frames one of these apps with
-     <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
-     and gets the app alone -- styles.css hides the navbar, sidebar, rail,
-     title block, footer and page navigation on html.vm-embed, plus everything
-     in the content column that is not the page's tagged app (the
-     <div class="vm-app"> each app page wraps its controls and chart in), and
-     consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
-     each skip themselves. This runs in <head>, so the class goes on <html>
-     (<body> doesn't exist yet) and the chrome never paints at all -- no
-     flash of navbar before the CSS applies.
-
-     embed=1 shows the page's first .vm-app. A page with several tagged
-     blocks gives each an id, and embed=<id> shows that one instead. Either
-     way, once the DOM exists the chosen block gets vm-app-active, and
-     styles.css shows only that block, what is inside it and its ancestors
-     (Quarto wraps everything under a ## heading in a <section>, so a block
-     is not necessarily a direct child of the content column). Until then
-     the content column is blank -- DOMContentLoaded comes well before OJS
-     draws anything, so nothing visible is ever hidden. An id no block on
-     the page carries falls back to the first block rather than showing
-     nothing.
-
-     history.replaceState is wrapped because every app rewrites the URL with
-     its current inputs (the `committed`/`urlSyncControls` cells) -- most start
-     from location.search and so would keep embed, but a page that builds
-     its query string from scratch (distribution-relationships does) would
-     drop it, and the next reactive rerender would flash the chrome back in.
-     Same-origin URLs only; a page never passes anything else. -->
-<script>
-(function () {
-  var embed = new URLSearchParams(location.search).get("embed")
-  if (embed == null || embed === "") return
-  document.documentElement.classList.add("vm-embed")
-  document.addEventListener("DOMContentLoaded", function () {
-    var block = null
-    if (embed !== "1") block = document.getElementById(embed)
-    if (block === null || !block.classList.contains("vm-app")) {
-      block = document.querySelector(".vm-app")
-    }
-    if (block !== null) block.classList.add("vm-app-active")
-  })
-  var replaceState = history.replaceState.bind(history)
-  history.replaceState = function (state, title, url) {
-    if (url != null) {
-      var next = new URL(String(url), location.href)
-      if (next.origin === location.origin && !next.searchParams.has("embed")) {
-        next.searchParams.set("embed", embed)
-      }
-      url = next.pathname + next.search + next.hash
-    }
-    return replaceState(state, title, url)
-  }
-})()
-</script>
-
-<!-- Site-specific: the "Report bug" popup on text selection, which is
-     hardcoded to this repository and to this site's URL-to-.qmd layout, so it
-     is not part of the mathviz library. -->
-<script src="./js/report-bug.js"></script>
-
-<!-- Site-specific: the "Share" button injected above every app's controls
-     (<div class="vm-app">), opening a dialog that builds the ?embed= iframe
-     snippet embed.qmd documents. Skips itself on html.vm-embed, same as
-     report-bug.js and for the same reason -- see js/share.js. -->
-<script src="./js/share.js"></script>
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
   <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
@@ -241,7 +162,6 @@ window.Quarto = {
 };
 </script>
 
-<link rel="stylesheet" href="styles.css">
 <meta property="og:title" content="Visual Math Lab">
 <meta property="og:description" content="Interactive, browser-based visualizations of numerical methods.">
 <meta property="og:image" content="https://www.visualmathlab.com/apps/spirographs/spirographs.png">
@@ -699,8 +619,7 @@ Authors: Apurva Nakade
 #title-block-header { display: none; }
 
 /* Hero: centered title, kicker and call-to-action around the looping SVG
-   illustration below. Homepage-only, so it lives here rather than in
-   styles.css. */
+   illustration below. Homepage-only, so it lives here. */
 .vm-hero {
   margin: 1rem 0 2.5rem;
   text-align: center;
@@ -1173,7 +1092,7 @@ A picture is worth a thousand equations.
   // Grows the frame past its 900px default if this app's controls panel
   // would otherwise leave the chart shorter than FIT_CHART_HEIGHT. Can't
   // just read the embedded page's scrollHeight and copy it over -- the
-  // chart is a flex-grow item (see styles.css's "Embed mode" section) that
+  // chart is a flex-grow item (see mathviz's chrome/embed.css) that
   // always expands to fill whatever height the frame gives it, so it has
   // no natural height of its own to measure; scrollHeight would just echo
   // the frame's current height back. What does have a natural height is
@@ -1198,7 +1117,7 @@ A picture is worth a thousand equations.
       var chartBlock = appRoot ? appRoot.querySelector(".ojs-chart-block") : null
       if (!appRoot || !chartBlock) return
       // Only a Plotly chart is the flex-grow, no-natural-height case: the
-      // :has(.js-plotly-plot) rule in styles.css's "Embed mode" section is
+      // :has(.js-plotly-plot) rule in mathviz's chrome/embed.css is
       // what gives .ojs-chart-block flex-grow: 1, so reading it back here
       // (rather than re-deriving ".js-plotly-plot exists") is what keeps
       // this in step with that CSS. A page whose chart is Observable
@@ -1266,7 +1185,7 @@ Updating beliefs from new evidence, and smoothing noisy signals over time.</a></
 <h2 class="anchored" data-anchor-id="latest">Latest</h2>
 <div id="listing-latest-listing" class="quarto-listing quarto-listing-container-grid">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="TWF0aCUyMEFydCUyQ0NvbXBsZXglMjBOdW1iZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcyUyQ1BvbGFyJTIwQ29vcmRpbmF0ZXMlMkNSb3VsZXR0ZXM=" data-listing-date-sort="1790121600000" data-listing-file-modified-sort="1790620412930" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="25" data-listing-word-count-sort="4954">
+<div class="g-col-1" data-index="0" data-categories="TWF0aCUyMEFydCUyQ0NvbXBsZXglMjBOdW1iZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcyUyQ1BvbGFyJTIwQ29vcmRpbmF0ZXMlMkNSb3VsZXR0ZXM=" data-listing-date-sort="1790121600000" data-listing-file-modified-sort="1790627596189" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="25" data-listing-word-count-sort="4954">
 <a href="./apps/spirographs/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1282,7 +1201,7 @@ Spirographs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1790620412919" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16304">
+<div class="g-col-1" data-index="1" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1790627596178" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16309">
 <a href="./apps/distribution-relationships/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1298,7 +1217,7 @@ Distribution Relationships
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1790620412925" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4040">
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1790627596184" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4043">
 <a href="./apps/recursive-filters-1d/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1314,7 +1233,7 @@ Distribution Relationships
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1790620412924" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5464">
+<div class="g-col-1" data-index="3" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1790627596183" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5470">
 <a href="./apps/positive-predictive-value/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1330,7 +1249,7 @@ Positive Predictive Value
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="4" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1790620412922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2310">
+<div class="g-col-1" data-index="4" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1790627596181" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2313">
 <a href="./apps/l1-vs-l2-regression/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1346,7 +1265,7 @@ L1 vs.&nbsp;L2 Regression
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="5" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1790620412922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3178">
+<div class="g-col-1" data-index="5" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1790627596182" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3181">
 <a href="./apps/polynomial-fits/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1362,7 +1281,7 @@ Polynomial Fits
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="6" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412917" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3377">
+<div class="g-col-1" data-index="6" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596176" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3380">
 <a href="./apps/adaptive-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1378,7 +1297,7 @@ Adaptive Integration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412918" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3476">
+<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596176" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3479">
 <a href="./apps/adaptive-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1394,7 +1313,7 @@ Adaptive Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412919" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5389">
+<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596177" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5392">
 <a href="./apps/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1410,7 +1329,7 @@ Butcher Tableau Explorer
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412921" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4008">
+<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596180" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4011">
 <a href="./apps/explicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1426,7 +1345,7 @@ Explicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3546">
+<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596181" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3549">
 <a href="./apps/implicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1442,7 +1361,7 @@ Implicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5051">
+<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596181" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5054">
 <a href="./apps/numerical-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1458,7 +1377,7 @@ Numerical Integration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aCUyQ0Jhc2lzJTIwRnVuY3Rpb25z" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790620412924" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="31" data-listing-word-count-sort="6184">
+<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aCUyQ0Jhc2lzJTIwRnVuY3Rpb25z" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1790627596183" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="31" data-listing-word-count-sort="6187">
 <a href="./apps/polynomial-interpolation/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1474,7 +1393,7 @@ Polynomial Interpolation
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790620412918" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4017">
+<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790627596177" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4020">
 <a href="./apps/bisection-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1490,7 +1409,7 @@ Bisection Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790620412921" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3025">
+<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790627596180" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3028">
 <a href="./apps/fixed-point-iteration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1506,7 +1425,7 @@ Fixed Point Iteration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790620412922" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4131">
+<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790627596181" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4134">
 <a href="./apps/newton-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1522,7 +1441,7 @@ Newton’s Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="16" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ0ludmVyc2UlMjBRdWFkcmF0aWMlMjBJbnRlcnBvbGF0aW9uJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790620412926" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5131">
+<div class="g-col-1" data-index="16" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ0ludmVyc2UlMjBRdWFkcmF0aWMlMjBJbnRlcnBvbGF0aW9uJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1790627596185" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5134">
 <a href="./apps/secant-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1538,7 +1457,7 @@ Secant Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="17" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1790620412927" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2784">
+<div class="g-col-1" data-index="17" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1790627596186" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2787">
 <a href="./apps/sperners-lemma-geometric-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1554,7 +1473,7 @@ Sperner’s Lemma - Geometric Proof
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1790620412927" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3576">
+<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1790627596186" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3579">
 <a href="./apps/sperners-lemma-combinatorial-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1570,7 +1489,7 @@ Sperner’s Lemma - Combinatorial Proof
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1790620412928" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1263">
+<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1790627596187" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="7" data-listing-word-count-sort="1266">
 <a href="./apps/sperners-lemma-statement/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1586,7 +1505,7 @@ Sperner’s Lemma - Statement
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="20" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1790620412918" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2536">
+<div class="g-col-1" data-index="20" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1790627596177" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2539">
 <a href="./apps/barycentric-coordinates/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1701,8 +1620,8 @@ localStorage, so this site sets no cookies at all.
 <style>
   /* Colours come from Bootstrap's theme variables rather than literals, so
      the banner follows the site's light (cosmo) and dark (cyborg) themes
-     without a second palette here. Kept inline rather than in styles.css
-     since this markup is the only thing that uses these classes. */
+     without a second palette here. Kept inline, next to the only markup
+     that uses these classes. */
   .vml-consent {
     position: fixed;
     z-index: 1080;
@@ -1804,7 +1723,7 @@ localStorage, so this site sets no cookies at all.
   }
 </style>
 
-<div id="vml-consent" class="vml-consent" role="dialog" aria-labelledby="vml-consent-title" hidden="">
+<div id="vml-consent" class="vml-consent" data-vm-embed-hide="" role="dialog" aria-labelledby="vml-consent-title" hidden="">
   <div class="vml-consent-inner">
     <h2 id="vml-consent-title" class="vml-consent-title">Analytics</h2>
     <p class="vml-consent-text">
@@ -1971,7 +1890,7 @@ localStorage, so this site sets no cookies at all.
     }
   }
 
-  /* Embed mode (?embed=1, see _includes/head-scripts.html): the app is
+  /* Embed mode (?embed=1, mathviz's `embed` option): the app is
      framed by another site, so this site neither asks nor measures -- no
      banner, and no analytics even for a visitor who granted them here
      earlier. privacy.qmd states this. */
@@ -1994,274 +1913,6 @@ localStorage, so this site sets no cookies at all.
     if (choice === null && !privacySignalSet()) show();
   }
 })();
-</script>
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
-
-<!--
-One-time "this site is built for larger screens" notice, shown on a phone
-only. Charts on this site float a draggable trace legend over the plot;
-below the 991.98px breakpoint this uses, styles.css hides that legend
-(".ojs-legend-overlay") since there isn't room for it alongside the chart on
-a phone screen. The slider bar (".ojs-chart-controls") is NOT hidden -- it
-sits in normal flow just above the chart at every width, so scrubbing and the
-play button still work on a phone; only the legend needs fullscreen.
-The copy is deliberately short -- "meant for larger screens, tap fullscreen
-if a plot isn't fully visible" -- rather than spelling out which control is
-hidden and why; a phone visitor doesn't need the mechanics, only the fix.
-This banner shows once,
-remembered in localStorage so it never shows again -- same shape as
-_includes/consent.html's banner, just a single acknowledgement instead of a
-granted/denied choice.
--->
-
-<style>
-  .vml-mobile-warning {
-    position: fixed;
-    z-index: 1080;
-    left: 1rem;
-    right: 1rem;
-    bottom: 1rem;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-  }
-
-  .vml-mobile-warning[hidden] {
-    display: none;
-  }
-
-  .vml-mobile-warning-inner {
-    pointer-events: auto;
-    max-width: 32rem;
-    padding: 1.1rem 1.25rem;
-    border: 1px solid var(--bs-border-color, #dee2e6);
-    border-radius: 0.5rem;
-    background: var(--bs-body-bg, #fff);
-    color: var(--bs-body-color, #212529);
-    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.18);
-  }
-
-  .vml-mobile-warning-title {
-    margin: 0 0 0.4rem;
-    padding: 0;
-    border: none;
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
-  .vml-mobile-warning-text {
-    margin: 0;
-    font-size: 0.9rem;
-    line-height: 1.5;
-  }
-
-  .vml-mobile-warning-buttons {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 0.9rem;
-  }
-
-  .vml-mobile-warning-btn {
-    padding: 0.4rem 1rem;
-    border: 1px solid var(--bs-primary, #2563eb);
-    border-radius: 0.35rem;
-    background: var(--bs-primary, #2563eb);
-    color: #fff;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .vml-mobile-warning-btn:hover {
-    filter: brightness(1.08);
-  }
-</style>
-
-<div id="vml-mobile-warning" class="vml-mobile-warning" role="dialog" aria-labelledby="vml-mobile-warning-title" hidden="">
-  <div class="vml-mobile-warning-inner">
-    <h2 id="vml-mobile-warning-title" class="vml-mobile-warning-title">Built for a bigger screen</h2>
-    <p class="vml-mobile-warning-text">
-      This site is meant for larger screens. If a plot isn't fully visible, tap its fullscreen button.
-    </p>
-    <div class="vml-mobile-warning-buttons">
-      <button type="button" class="vml-mobile-warning-btn" data-mobile-warning-dismiss="">Got it</button>
-    </div>
-  </div>
-</div>
-
-<script>
-(function () {
-  const KEY = "vml-mobile-warning-dismissed"
-  const BREAKPOINT = "(max-width: 991.98px)"
-  const banner = document.getElementById("vml-mobile-warning")
-  if (!banner) return
-  // Embed mode (?embed=1): the framing site decides how much room the app
-  // gets; a warning about this site's layout would be about the wrong page.
-  if (document.documentElement.classList.contains("vm-embed")) return
-
-  function dismissed() {
-    try {
-      return localStorage.getItem(KEY) === "1"
-    } catch (e) {
-      return false
-    }
-  }
-
-  function dismiss() {
-    try {
-      localStorage.setItem(KEY, "1")
-    } catch (e) {
-      /* Private browsing with storage blocked: the choice just won't stick. */
-    }
-    banner.hidden = true
-  }
-
-  const button = banner.querySelector("[data-mobile-warning-dismiss]")
-  button.addEventListener("click", dismiss)
-
-  if (window.matchMedia(BREAKPOINT).matches && !dismissed()) {
-    banner.hidden = false
-  }
-})()
-</script>
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
-
-<!--
-Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
-hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
-JS; styles.css forces the same off-canvas treatment at every width, driven
-by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
-.collapse/.show. This script owns those two classes and provides the one
-thing that treatment removes: a permanently visible way back in -- a slim
-rail at the left edge with a hamburger toggle, click-to-pin for a session
-that stays open, Escape/click-outside to close.
-
-The rail used to open the sidebar on hover anywhere down its full-height
-box. That is gone: the hamburger is a visible control and can simply be
-clicked, and the hover version cost more than it gave. It fired on any
-pointer drift into the left edge, and since it announces itself by writing
-.vm-sidebar-open onto <body>, every one of those accidental opens churned a
-class list that chart pages observe (see VM.plotting.onThemeChange). It also
-forced the rail's box to span the viewport to catch the pointer, which left
-an invisible 21px strip lying over the content column below 768px, where the
-body's own left margin is narrower than the rail.
--->
-<script>
-(function () {
-  function init() {
-    // Embed mode (?embed=1): the sidebar is hidden, so no rail to open it.
-    if (document.documentElement.classList.contains("vm-embed")) return
-    var sidebar = document.getElementById("quarto-sidebar")
-    if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
-
-    var PIN_KEY = "vml-sidebar-pinned"
-    var body = document.body
-
-    // Below 992px Quarto renders its own .quarto-secondary-nav bar (mobile
-    // breadcrumbs) between the navbar and the sidebar/rail -- its height
-    // varies with breadcrumb depth/length and can wrap on a narrow phone,
-    // so it's measured here rather than hardcoded, and exposed as a CSS
-    // variable the top-offset media query in styles.css reads.
-    var secondaryNav = document.querySelector(".quarto-secondary-nav")
-    function updateSecondaryNavHeight() {
-      var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
-      document.documentElement.style.setProperty("--vm-secondary-nav-height", h + "px")
-    }
-    if (secondaryNav) {
-      updateSecondaryNavHeight()
-      window.addEventListener("resize", updateSecondaryNavHeight)
-    }
-
-    var rail = document.createElement("div")
-    rail.id = "vm-sidebar-rail"
-    // The buttons live in their own wrapper, which is what carries the
-    // painted surface. See the .vm-rail-cluster rules in styles.css.
-    rail.innerHTML =
-      '<div class="vm-rail-cluster">' +
-      '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
-      '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>' +
-      "</button>" +
-      '<button type="button" data-vm-pin aria-label="Keep sidebar open" title="Keep sidebar open">' +
-      '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.037l-1.394 1.393c.18.613.185 1.373.021 2.023-.212.828-.696 1.747-1.435 2.486l-.104.104a.5.5 0 0 1-.707 0l-2.404-2.404-2.968 2.967c-.09.09-.203.203-.401.401-.081.08-.181.18-.297.294a1.001 1.001 0 0 1-.399.245.998.998 0 0 1-.797-.061.998.998 0 0 1-.4-.245l-.106-.106a1 1 0 0 1-.06-.797 1 1 0 0 1 .245-.399l.294-.297.401-.401 2.967-2.968-2.404-2.404a.5.5 0 0 1 0-.707l.104-.104c.739-.739 1.658-1.223 2.486-1.435.65-.164 1.41-.159 2.023.021L9.617 2.65a5 5 0 0 1-.037-.46c0-.431.108-1.023.588-1.503A.5.5 0 0 1 9.828.722z"/></svg>' +
-      "</button>" +
-      "</div>"
-    document.body.appendChild(rail)
-
-    var toggleBtn = rail.querySelector("[data-vm-toggle]")
-    var pinBtn = rail.querySelector("[data-vm-pin]")
-
-    function isPinned() {
-      try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
-    }
-
-    function setPinned(pinned) {
-      try { localStorage.setItem(PIN_KEY, pinned ? "1" : "0") } catch (e) { /* storage unavailable */ }
-      body.classList.toggle("vm-sidebar-pinned", pinned)
-      pinBtn.setAttribute("aria-pressed", String(pinned))
-    }
-
-    function openSidebar() {
-      body.classList.add("vm-sidebar-open")
-      toggleBtn.setAttribute("aria-expanded", "true")
-    }
-
-    function closeSidebar() {
-      if (isPinned()) return
-      body.classList.remove("vm-sidebar-open")
-      toggleBtn.setAttribute("aria-expanded", "false")
-    }
-
-    toggleBtn.addEventListener("click", function () {
-      if (body.classList.contains("vm-sidebar-open")) {
-        setPinned(false)
-        closeSidebar()
-      } else {
-        openSidebar()
-      }
-    })
-
-    pinBtn.addEventListener("click", function () {
-      var next = !isPinned()
-      setPinned(next)
-      if (next) openSidebar()
-    })
-
-    document.addEventListener("keydown", function (event) {
-      if (event.key !== "Escape") return
-      if (!body.classList.contains("vm-sidebar-open")) return
-      setPinned(false)
-      closeSidebar()
-    })
-
-    // Click-outside, together with Escape and the toggle itself, is now the
-    // whole of how the sidebar closes.
-    document.addEventListener("click", function (event) {
-      if (!body.classList.contains("vm-sidebar-open")) return
-      if (isPinned()) return
-      if (sidebar.contains(event.target) || rail.contains(event.target)) return
-      closeSidebar()
-    })
-
-    if (isPinned()) {
-      setPinned(true)
-      openSidebar()
-    }
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init)
-  } else {
-    init()
-  }
-})()
 </script>
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {

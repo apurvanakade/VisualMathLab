@@ -1,0 +1,143 @@
+/**
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/*
+ * Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
+ * hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
+ * JS; sidebar-rail.css forces the same off-canvas treatment at every width, driven
+ * by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
+ * .collapse/.show. This script owns those two classes and provides the one
+ * thing that treatment removes: a permanently visible way back in -- a slim
+ * rail at the left edge with a hamburger toggle, click-to-pin for a session
+ * that stays open, Escape/click-outside to close.
+ * 
+ * The rail used to open the sidebar on hover anywhere down its full-height
+ * box. That is gone: the hamburger is a visible control and can simply be
+ * clicked, and the hover version cost more than it gave. It fired on any
+ * pointer drift into the left edge, and since it announces itself by writing
+ * .vm-sidebar-open onto <body>, every one of those accidental opens churned a
+ * class list that chart pages observe (see VM.plotting.onThemeChange). It also
+ * forced the rail's box to span the viewport to catch the pointer, which left
+ * an invisible 21px strip lying over the content column below 768px, where the
+ * body's own left margin is narrower than the rail.
+ *
+ * Shipped, with sidebar-rail.css, only when a site sets
+ * `mathviz: {sidebar-rail: true}` (or a string: the pin's localStorage key).
+ * Loaded in <head>, so it waits for DOMContentLoaded; it does nothing on a
+ * page with no Quarto sidebar navigation, or in embed mode (html.vm-embed).
+ */
+(function () {
+  function init() {
+    // Embed mode (?embed=1): the sidebar is hidden, so no rail to open it.
+    if (document.documentElement.classList.contains("vm-embed")) return
+    var sidebar = document.getElementById("quarto-sidebar")
+    if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
+
+    // The localStorage key the pin is kept under. A site names its own via
+    // `mathviz: {sidebar-rail: <key>}`, which the filter emits as this meta;
+    // two sites on one origin (say, two GitHub Pages project sites) would
+    // otherwise share one pin, and a site's privacy page may name the key.
+    var keyMeta = document.querySelector('meta[name="mathviz:sidebar-pin-key"]')
+    var PIN_KEY = keyMeta ? keyMeta.getAttribute("content") : "vm-sidebar-pinned"
+    var body = document.body
+
+    // Below 992px Quarto renders its own .quarto-secondary-nav bar (mobile
+    // breadcrumbs) between the navbar and the sidebar/rail -- its height
+    // varies with breadcrumb depth/length and can wrap on a narrow phone,
+    // so it's measured here rather than hardcoded, and exposed as a CSS
+    // variable the top-offset media query in sidebar-rail.css reads.
+    var secondaryNav = document.querySelector(".quarto-secondary-nav")
+    function updateSecondaryNavHeight() {
+      var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
+      document.documentElement.style.setProperty("--vm-secondary-nav-height", h + "px")
+    }
+    if (secondaryNav) {
+      updateSecondaryNavHeight()
+      window.addEventListener("resize", updateSecondaryNavHeight)
+    }
+
+    var rail = document.createElement("div")
+    rail.id = "vm-sidebar-rail"
+    // The buttons live in their own wrapper, which is what carries the
+    // painted surface. See the .vm-rail-cluster rules in sidebar-rail.css.
+    rail.innerHTML =
+      '<div class="vm-rail-cluster">' +
+      '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
+      '<svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/></svg>' +
+      "</button>" +
+      '<button type="button" data-vm-pin aria-label="Keep sidebar open" title="Keep sidebar open">' +
+      '<svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.037l-1.394 1.393c.18.613.185 1.373.021 2.023-.212.828-.696 1.747-1.435 2.486l-.104.104a.5.5 0 0 1-.707 0l-2.404-2.404-2.968 2.967c-.09.09-.203.203-.401.401-.081.08-.181.18-.297.294a1.001 1.001 0 0 1-.399.245.998.998 0 0 1-.797-.061.998.998 0 0 1-.4-.245l-.106-.106a1 1 0 0 1-.06-.797 1 1 0 0 1 .245-.399l.294-.297.401-.401 2.967-2.968-2.404-2.404a.5.5 0 0 1 0-.707l.104-.104c.739-.739 1.658-1.223 2.486-1.435.65-.164 1.41-.159 2.023.021L9.617 2.65a5 5 0 0 1-.037-.46c0-.431.108-1.023.588-1.503A.5.5 0 0 1 9.828.722z"/></svg>' +
+      "</button>" +
+      "</div>"
+    document.body.appendChild(rail)
+
+    var toggleBtn = rail.querySelector("[data-vm-toggle]")
+    var pinBtn = rail.querySelector("[data-vm-pin]")
+
+    function isPinned() {
+      try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
+    }
+
+    function setPinned(pinned) {
+      try { localStorage.setItem(PIN_KEY, pinned ? "1" : "0") } catch (e) { /* storage unavailable */ }
+      body.classList.toggle("vm-sidebar-pinned", pinned)
+      pinBtn.setAttribute("aria-pressed", String(pinned))
+    }
+
+    function openSidebar() {
+      body.classList.add("vm-sidebar-open")
+      toggleBtn.setAttribute("aria-expanded", "true")
+    }
+
+    function closeSidebar() {
+      if (isPinned()) return
+      body.classList.remove("vm-sidebar-open")
+      toggleBtn.setAttribute("aria-expanded", "false")
+    }
+
+    toggleBtn.addEventListener("click", function () {
+      if (body.classList.contains("vm-sidebar-open")) {
+        setPinned(false)
+        closeSidebar()
+      } else {
+        openSidebar()
+      }
+    })
+
+    pinBtn.addEventListener("click", function () {
+      var next = !isPinned()
+      setPinned(next)
+      if (next) openSidebar()
+    })
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape") return
+      if (!body.classList.contains("vm-sidebar-open")) return
+      setPinned(false)
+      closeSidebar()
+    })
+
+    // Click-outside, together with Escape and the toggle itself, is now the
+    // whole of how the sidebar closes.
+    document.addEventListener("click", function (event) {
+      if (!body.classList.contains("vm-sidebar-open")) return
+      if (isPinned()) return
+      if (sidebar.contains(event.target) || rail.contains(event.target)) return
+      closeSidebar()
+    })
+
+    if (isPinned()) {
+      setPinned(true)
+      openSidebar()
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init)
+  } else {
+    init()
+  }
+})()

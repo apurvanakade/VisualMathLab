@@ -17,6 +17,15 @@
 --     mathjs: "https://..."    # a different math.js build/version
 --     css: false               # bring your own stylesheet
 --     referrer: same-origin    # emit <meta name="referrer"> ahead of the CDN tags
+--     fonts: true              # self-host Inter + JetBrains Mono (off by default)
+--     sidebar-rail: my-site-pin  # collapsible sidebar rail (off by default); a
+--                                # string names the pin's localStorage key, true
+--                                # uses "vm-sidebar-pinned"
+--
+-- The optional Quarto theme is not an option here: a site opts in by listing
+-- theme/mathviz-light.scss / mathviz-dark.scss under format.html.theme (see
+-- the header comment in either file). fonts: true is its natural companion,
+-- since the theme names those two faces, but either works without the other.
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
@@ -80,5 +89,47 @@ function Meta(meta)
     dep.stylesheets = { "dist/mathviz.css" }
   end
   quarto.doc.add_html_dependency(dep)
+
+  -- Opt-in, because a site with its own typography shouldn't carry ~400kB of
+  -- font files it never loads. Self-hosted rather than a Google Fonts link:
+  -- that request hands Google every visitor's IP address before any consent
+  -- is asked for (see the header comment in fonts/fonts.css). fonts.css
+  -- names each woff2 by bare file name, so the files have to land in the
+  -- same folder as the stylesheet: Quarto copies a dependency's stylesheets
+  -- and resources flat into site_libs/quarto-contrib/mathviz-fonts-<v>/,
+  -- dropping the fonts/ prefix from each, which puts them side by side.
+  -- Opt-in site chrome, for a Quarto website or book whose sidebar is
+  -- `style: floating`: keeps it off-canvas at every width behind a slim
+  -- always-visible rail (see chrome/sidebar-rail.js). The pin's storage key
+  -- travels as a meta tag so the script needs no build-time templating.
+  local rail = option(meta, "sidebar-rail", false)
+  if rail ~= false then
+    local dep = {
+      name = "mathviz-sidebar-rail",
+      version = VERSION,
+      scripts = { "chrome/sidebar-rail.js" },
+      stylesheets = { "chrome/sidebar-rail.css" }
+    }
+    if type(rail) == "string" and rail ~= "" then
+      dep.head = '<meta name="mathviz:sidebar-pin-key" content="' .. rail .. '">'
+    end
+    quarto.doc.add_html_dependency(dep)
+  end
+
+  if option(meta, "fonts", false) == true then
+    local resources = {}
+    for _, name in ipairs(pandoc.system.list_directory(quarto.utils.resolve_path("fonts"))) do
+      if name:match("%.woff2$") or name:match("^LICENSE") then
+        table.insert(resources, "fonts/" .. name)
+      end
+    end
+    table.sort(resources)
+    quarto.doc.add_html_dependency({
+      name = "mathviz-fonts",
+      version = VERSION,
+      stylesheets = { "fonts/fonts.css" },
+      resources = resources
+    })
+  end
   return nil
 end

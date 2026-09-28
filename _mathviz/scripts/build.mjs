@@ -77,11 +77,82 @@ fs.writeFileSync(path.join(root, 'dist/mathviz.css'), cssOut)
 // one script (a file missing its trailing semicolon before an IIFE, say).
 execFileSync(process.execPath, ['--check', path.join(root, 'dist/mathviz.js')], { stdio: 'inherit' })
 
-const extDist = path.join(root, '_extensions/mathviz/dist')
+// The optional Quarto theme: src/theme/theme.scss filled in once per color
+// scheme with the chrome tokens' values from tokens.css (see the template's
+// header comment for how a site opts in). Generated rather than authored
+// twice so the Bootstrap chrome it colors can never disagree with the
+// --vm-* defaults the panels read.
+const themeTokens = [
+  'bg', 'surface', 'surface-hover', 'text', 'text-soft', 'border', 'accent',
+  'accent-hover', 'on-accent', 'grid', 'radius', 'radius-sm', 'shadow'
+]
+
+// Reads `--vm-<name>: <value>;` declarations out of the tokens.css block
+// whose selector starts with `selectorStart`. One declaration per line is
+// the file's own format; a value spanning lines would come back missing and
+// fail the check in theme() rather than be silently cut short.
+function tokenBlock(tokensCss, selectorStart) {
+  const start = tokensCss.indexOf(selectorStart)
+  if (start === -1) throw new Error(`tokens.css has no block starting ${selectorStart}`)
+  const body = tokensCss.slice(tokensCss.indexOf('{', start) + 1, tokensCss.indexOf('\n}', start))
+  const values = {}
+  for (const m of body.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/--vm-([\w-]+):\s*([^;\n]+);/g)) {
+    values[m[1]] = m[2].trim()
+  }
+  return values
+}
+
+const tokensCss = read('src/css/tokens.css')
+const lightTokens = tokenBlock(tokensCss, ':where(:root)')
+// The dark block only redeclares what changes; radius and the like carry over.
+const darkTokens = { ...lightTokens, ...tokenBlock(tokensCss, ':where(body.quarto-dark') }
+const themeTemplate = read('src/theme/theme.scss')
+
+function theme(scheme, values, selector) {
+  let tokens = ''
+  let properties = ''
+  for (const name of themeTokens) {
+    if (values[name] === undefined) throw new Error(`tokens.css declares no --vm-${name} for the ${scheme} theme`)
+    tokens += `$vm-${name}: ${values[name]} !default;\n`
+    properties += `  --vm-${name}: #{$vm-${name}};\n`
+  }
+  // The template's own license header stays; the banner goes right under it.
+  const out = themeTemplate
+    .replace('*/\n', `*/\n\n// ${banner} (${scheme} scheme)\n`)
+    .replace('{{tokens}}\n', tokens)
+    .replace('{{selector}}', selector)
+    .replace('{{properties}}\n', properties)
+  if (out.includes('{{tokens}}') || out.includes('{{selector}}') || out.includes('{{properties}}')) {
+    throw new Error('src/theme/theme.scss: a marker was left unfilled')
+  }
+  return out
+}
+
+fs.mkdirSync(path.join(root, 'dist/theme'), { recursive: true })
+fs.writeFileSync(path.join(root, 'dist/theme/mathviz-light.scss'), theme('light', lightTokens, ':root'))
+fs.writeFileSync(path.join(root, 'dist/theme/mathviz-dark.scss'), theme('dark', darkTokens, 'body.quarto-dark'))
+
+const ext = path.join(root, '_extensions/mathviz')
+const extDist = path.join(ext, 'dist')
 fs.mkdirSync(extDist, { recursive: true })
 for (const name of ['mathviz.js', 'mathviz.css']) {
   fs.copyFileSync(path.join(root, 'dist', name), path.join(extDist, name))
 }
+// The theme, fonts and chrome sit beside dist/ in the extension rather than
+// inside it: a site names the theme files by path in its _quarto.yml, and
+// the Lua filter adds the fonts and the sidebar rail as dependencies of
+// their own, each only when its option is set -- so none of them belongs in
+// the always-loaded bundle. Remove first so a file dropped from src/ doesn't
+// linger.
+for (const dir of ['theme', 'fonts', 'chrome']) fs.rmSync(path.join(ext, dir), { recursive: true, force: true })
+fs.cpSync(path.join(root, 'dist/theme'), path.join(ext, 'theme'), { recursive: true })
+for (const dir of ['fonts', 'chrome']) {
+  fs.cpSync(path.join(root, 'src', dir), path.join(ext, dir), {
+    recursive: true,
+    filter: (src) => !src.endsWith('.test.js')
+  })
+}
+execFileSync(process.execPath, ['--check', path.join(ext, 'chrome/sidebar-rail.js')], { stdio: 'inherit' })
 
 // starter/ is a complete Quarto site a newcomer copies and runs; it needs
 // the extension installed, which is exactly `_extensions/mathviz/` copied
@@ -105,3 +176,4 @@ if (fs.existsSync(path.join(root, 'starter'))) {
 const kb = (rel) => (fs.statSync(path.join(root, rel)).size / 1024).toFixed(0)
 console.log(`dist/mathviz.js  ${kb('dist/mathviz.js')} kB (${js.length} files)`)
 console.log(`dist/mathviz.css ${kb('dist/mathviz.css')} kB (${css.length} files)`)
+console.log(`dist/theme/mathviz-{light,dark}.scss (${themeTokens.length} tokens each)`)

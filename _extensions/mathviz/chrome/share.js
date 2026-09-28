@@ -148,9 +148,14 @@
     const buildDialog = () => {
       const el = document.createElement("dialog")
       el.className = "vm-share-dialog"
+      // Named by its own heading, so a screen reader announces "Share this
+      // app, dialog" on open rather than a bare "dialog". A fixed id is
+      // safe: the dialog is built once per page, however many Share
+      // buttons point at it.
+      el.setAttribute("aria-labelledby", "vm-share-title")
       el.innerHTML = `
         <form method="dialog" class="vm-share-form">
-          <h2>Share this app</h2>
+          <h2 id="vm-share-title">Share this app</h2>
           <h3>Link</h3>
           <p>Click a link to copy it.</p>
           <div class="vm-share-links">

@@ -266,6 +266,11 @@ async function checkShareDialog(page, errors) {
   const problem = await page.evaluate(() => {
     const dialog = document.querySelector('dialog.vm-share-dialog')
     if (!dialog || !dialog.open) return 'share button did not open the dialog'
+    // An accessible name: without one a screen reader announces a bare
+    // "dialog" and the reader can't tell what opened.
+    const labelledBy = dialog.getAttribute('aria-labelledby')
+    const label = labelledBy ? document.getElementById(labelledBy) : null
+    if (!label || !label.textContent.trim()) return 'share dialog has no accessible name (aria-labelledby)'
     const code = dialog.querySelector('.vm-share-code')
     if (!code) return 'share dialog has no snippet textarea'
     const snippet = code.value

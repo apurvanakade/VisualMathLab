@@ -10,14 +10,16 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// report-bug.js is one of the two site-specific scripts in js/ (the other
-// is share.js; the shared VM.* library lives in the mathviz extension,
-// tests included). Load the real file the way a <script> tag would: an IIFE
-// evaluated in global scope against a minimal window/document stub.
+// report-bug.js is one of mathviz's opt-in chrome scripts (see mathviz.lua),
+// loaded the way a <script> tag would: an IIFE evaluated in global scope
+// against a minimal window/document stub, after site.js.
 globalThis.window = globalThis
 globalThis.document = { addEventListener: () => {}, documentElement: { classList: { contains: () => false } } }
-;(0, eval)(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'report-bug.js'), 'utf8'))
-const { qmdSourcePath, buildReportBugUrl } = globalThis.VML.reportBug
+const here = path.dirname(fileURLToPath(import.meta.url))
+for (const name of ['site.js', 'report-bug.js']) {
+  ;(0, eval)(fs.readFileSync(path.join(here, name), 'utf8'))
+}
+const { qmdSourcePath, buildReportBugUrl } = globalThis.VM.chrome.reportBug
 
 test('qmdSourcePath maps a directory-style pathname to its index.qmd source', () => {
   assert.equal(qmdSourcePath('/apps/newton-method/'), 'apps/newton-method/index.qmd')
@@ -37,6 +39,8 @@ test('qmdSourcePath returns null for a pathname that is not a page', () => {
 
 test('buildReportBugUrl includes the page, source link, and quoted selection', () => {
   const url = buildReportBugUrl({
+    repo: 'apurvanakade/VisualMathLab',
+    branch: 'main',
     pageUrl: 'https://www.visualmathlab.com/apps/newton-method/',
     pageTitle: 'Newton’s Method',
     sourcePath: 'apps/newton-method/index.qmd',
@@ -53,6 +57,8 @@ test('buildReportBugUrl includes the page, source link, and quoted selection', (
 
 test('buildReportBugUrl falls back to the page title when nothing is selected', () => {
   const url = buildReportBugUrl({
+    repo: 'apurvanakade/VisualMathLab',
+    branch: 'main',
     pageUrl: 'https://www.visualmathlab.com/',
     pageTitle: 'Visual Math Lab',
     sourcePath: 'index.qmd',
@@ -66,6 +72,8 @@ test('buildReportBugUrl falls back to the page title when nothing is selected', 
 test('buildReportBugUrl truncates a long selection in the title but keeps it in full in the body', () => {
   const longText = 'x'.repeat(120)
   const url = buildReportBugUrl({
+    repo: 'apurvanakade/VisualMathLab',
+    branch: 'main',
     pageUrl: 'https://www.visualmathlab.com/',
     pageTitle: 'Visual Math Lab',
     sourcePath: 'index.qmd',
@@ -74,4 +82,18 @@ test('buildReportBugUrl truncates a long selection in the title but keeps it in 
   const parsed = new URL(url)
   assert.ok(parsed.searchParams.get('title').length < longText.length)
   assert.match(parsed.searchParams.get('body'), new RegExp(`> ${longText}`))
+})
+
+test('buildReportBugUrl links the source on the configured repo and branch', () => {
+  const url = buildReportBugUrl({
+    repo: 'apurvanakade/Monte-Carlo-Methods',
+    branch: 'develop',
+    pageUrl: 'https://apurvanakade.github.io/Monte-Carlo-Methods/chapters/intro.html',
+    pageTitle: 'Introduction',
+    sourcePath: 'chapters/intro.qmd',
+    selectedText: ''
+  })
+  const parsed = new URL(url)
+  assert.equal(parsed.origin + parsed.pathname, 'https://github.com/apurvanakade/Monte-Carlo-Methods/issues/new')
+  assert.match(parsed.searchParams.get('body'), /blob\/develop\/chapters\/intro\.qmd/)
 })

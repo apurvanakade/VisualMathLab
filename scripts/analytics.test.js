@@ -35,11 +35,14 @@ const repoRoot = path.resolve(__dirname, '..')
 
 const analyticsHtml = fs.readFileSync(path.join(repoRoot, '_includes/analytics.html'), 'utf8')
 const consentHtml = fs.readFileSync(path.join(repoRoot, '_includes/consent.html'), 'utf8')
-const headScriptsHtml = fs.readFileSync(path.join(repoRoot, '_includes/head-scripts.html'), 'utf8')
 const quartoYml = fs.readFileSync(path.join(repoRoot, '_quarto.yml'), 'utf8')
-// head-scripts.html's own comments quote the referrer meta and an example
-// embed URL in prose, so the markup assertions below run on the tags alone.
-const headScriptsTags = headScriptsHtml.replace(/<!--[\s\S]*?-->/g, '')
+// Every include this site still has of its own (the analytics snippet and
+// the consent banner; everything else comes from the mathviz extension),
+// comments stripped so prose that quotes a tag or URL doesn't count.
+const siteIncludeTags = fs.readdirSync(path.join(repoRoot, '_includes'))
+  .map((name) => fs.readFileSync(path.join(repoRoot, '_includes', name), 'utf8'))
+  .join('\n')
+  .replace(/<!--[\s\S]*?-->/g, '')
 // The mathviz extension's Lua filter is what adds the math.js and Plotly CDN
 // tags to every page; its URLs are third-party hosts privacy.qmd must name.
 // Installed under _extensions/<owner>/mathviz or _extensions/mathviz.
@@ -47,6 +50,8 @@ const mathvizLua = fs.readdirSync(path.join(repoRoot, '_extensions'), { recursiv
   .filter((f) => f.endsWith('mathviz.lua'))
   .map((f) => fs.readFileSync(path.join(repoRoot, '_extensions', f), 'utf8'))
   .join('\n')
+  // Lua comments document the options with placeholder URLs; only code counts.
+  .replace(/^\s*--.*$/gm, '')
 const privacyQmd = fs.readFileSync(path.join(repoRoot, 'privacy.qmd'), 'utf8')
 
 function extractScript(html) {
@@ -103,25 +108,20 @@ test('consent.html: sets no cookies either', () => {
 })
 
 // privacy.qmd's "Third-party resources" section is a factual claim about
-// head-scripts.html, the mathviz extension's CDN tags, and its fonts; these
-// pin the facts it states.
-
-test('head-scripts.html: no request to Google Fonts', () => {
-  // Self-hosted by the mathviz extension instead (`mathviz: {fonts: true}`,
-  // asserted in scripts/fonts.test.js).
-  assert.doesNotMatch(headScriptsHtml, /fonts\.googleapis\.com|fonts\.gstatic\.com/)
-})
+// the site's includes, the mathviz extension's CDN tags, and its fonts;
+// these pin the facts it states. (No include links Google Fonts: asserted
+// in scripts/fonts.test.js.)
 
 test('_quarto.yml: the mathviz extension emits the referrer policy ahead of its CDN tags', () => {
   // A page's query string is the visitor's math input; this is what keeps
   // it from reaching the script CDNs, including the MathJax/polyfill tags
-  // Quarto injects later in <head>. The meta used to live in
-  // head-scripts.html, but the extension's math.js/Plotly tags land above
-  // everything in include-in-header, so it has to come from the extension
-  // (its filter puts it first). scripts/verify-analytics.mjs checks the
-  // rendered order in a real page.
+  // Quarto injects later in <head>. The meta used to live in a site
+  // include, but the extension's math.js/Plotly tags land above everything
+  // in include-in-header, so it has to come from the extension (its filter
+  // puts it first). scripts/verify-analytics.mjs checks the rendered order
+  // in a real page.
   assert.match(quartoYml, /^mathviz:\n(?:  .*\n)*?  referrer: same-origin$/m)
-  assert.doesNotMatch(headScriptsTags, /<meta name="referrer"/, 'the meta belongs to the extension now')
+  assert.doesNotMatch(siteIncludeTags, /<meta name="referrer"/, 'the meta belongs to the extension now')
 })
 
 test('the extension\'s fonts.css fetches nothing from a third party', () => {
@@ -132,12 +132,14 @@ test('the extension\'s fonts.css fetches nothing from a third party', () => {
 })
 
 test('privacy.qmd: names every third-party host a page loads from', () => {
-  // The script CDNs come from the mathviz filter (math.js, Plotly) plus
-  // whatever head-scripts.html adds itself. Quarto's own MathJax/polyfill
+  // The script CDNs all come from the mathviz filter (math.js, Plotly): the
+  // site's own two includes add none -- analytics.html's Measurement
+  // Protocol endpoint is Google Analytics itself, which privacy.qmd covers
+  // in its own section rather than as a third-party resource. Quarto's own MathJax/polyfill
   // tags are in neither file, so the jsdelivr/cdnjs hosts are asserted
   // directly rather than derived.
   assert.ok(mathvizLua.length > 0, 'the mathviz extension is not installed under _extensions/')
-  const hosts = [...(headScriptsTags + mathvizLua).matchAll(/https:\/\/([^/"]+)\//g)].map((m) => m[1])
+  const hosts = [...mathvizLua.matchAll(/https:\/\/([^/"]+)\//g)].map((m) => m[1])
   assert.ok(hosts.includes('cdn.plot.ly'), 'expected the Plotly CDN host in the extension')
   for (const host of new Set([...hosts, 'cdn.jsdelivr.net', 'cdnjs.cloudflare.com'])) {
     assert.ok(privacyQmd.includes('`' + host + '`'), `privacy.qmd does not mention ${host}`)

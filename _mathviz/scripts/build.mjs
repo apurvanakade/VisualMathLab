@@ -140,8 +140,9 @@ for (const name of ['mathviz.js', 'mathviz.css']) {
 }
 // The theme, fonts and chrome sit beside dist/ in the extension rather than
 // inside it: a site names the theme files by path in its _quarto.yml, and
-// the Lua filter adds the fonts and the sidebar rail as dependencies of
-// their own, each only when its option is set -- so none of them belongs in
+// the Lua filter adds the fonts and each piece of chrome (sidebar rail,
+// embed mode, share, report-bug, mobile warning) as dependencies of their
+// own, each only when its option is set -- so none of them belongs in
 // the always-loaded bundle. Remove first so a file dropped from src/ doesn't
 // linger.
 for (const dir of ['theme', 'fonts', 'chrome']) fs.rmSync(path.join(ext, dir), { recursive: true, force: true })
@@ -152,7 +153,9 @@ for (const dir of ['fonts', 'chrome']) {
     filter: (src) => !src.endsWith('.test.js')
   })
 }
-execFileSync(process.execPath, ['--check', path.join(ext, 'chrome/sidebar-rail.js')], { stdio: 'inherit' })
+for (const name of fs.readdirSync(path.join(ext, 'chrome'))) {
+  if (name.endsWith('.js')) execFileSync(process.execPath, ['--check', path.join(ext, 'chrome', name)], { stdio: 'inherit' })
+}
 
 // starter/ is a complete Quarto site a newcomer copies and runs; it needs
 // the extension installed, which is exactly `_extensions/mathviz/` copied

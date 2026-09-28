@@ -22,8 +22,8 @@ Authors: Apurva Nakade
 <style>
 /* Page-local styles: the inline swatches in the explanation panels under
    each grid, and the three-stage detection flow in the closing section --
-   markup only this page emits, so it lives here rather than in styles.css
-   (see CLAUDE.md's page-local CSS convention). Colors are the --vm-*
+   markup only this page emits, so it lives here rather than in a shared
+   stylesheet (see CLAUDE.md's page-local CSS convention). Colors are the --vm-*
    tokens, so it re-themes with the site. */
 .ppv-swatch {
   display: inline-block;
@@ -72,8 +72,8 @@ Authors: Apurva Nakade
 }
 /* The grid's holder (see drawGrid): the SVG scales to the column's full
    width. The block is an .ojs-svg-block, so the fullscreen button and the
-   fullscreen letterboxing come from styles.css and
-   js/plotting/svg-fullscreen-button.js -- nothing page-local. */
+   fullscreen letterboxing come from mathviz (chart-block.css and
+   svg-fullscreen-button.js) -- nothing page-local. */
 .ppv-grid svg {
   display: block;
   width: 100%;
@@ -119,7 +119,7 @@ A screening mammogram in U.S. community practice has about <span class="vm-swatc
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded globally via _includes/head-scripts.html (js/**). This page uses VM.ui.renderTable and VM.sampling.seededRandom.
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.ui.renderTable and VM.sampling.seededRandom.
 VM = window.VM
 ```
 

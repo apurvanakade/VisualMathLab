@@ -4,36 +4,32 @@
  * Authors: Apurva Nakade
  */
 
-(function attachVM(globalThis) {
-  // Every embed snippet points at the public site, not wherever this page
-  // happens to be served from (a `quarto preview` port, a PR deploy) -- a
-  // snippet copied from a preview must still work when pasted somewhere
-  // else. Matches site-url in _quarto.yml.
-  const SITE_ORIGIN = "https://www.visualmathlab.com"
-
-  // Pure builders (exported as VML.share below for js/share.test.js) -- no
-  // DOM, so they don't need a real `document`/`location` to test.
-
-  // The page's path relative to the site root, which is what the public
-  // URL needs. location.pathname alone isn't: served from anywhere but the
-  // site root (a local server over the repo, where it reads /docs/apps/...,
-  // or a subpath deploy) it carries a prefix the public site doesn't have.
-  // `offset` is Quarto's quarto:offset meta -- the relative path from this
-  // page back to the root ("../../" for an app page) -- so resolving it
-  // against the page gives the root as served, and everything after that
-  // is the site-relative path.
-  const siteRelativePath = ({ href, offset }) => {
-    const pathname = new URL(href).pathname
-    if (!offset) return pathname
-    const root = new URL(offset, href).pathname
-    if (!pathname.startsWith(root)) return pathname
-    return "/" + pathname.slice(root.length)
+// The "Share" button and dialog: opt-in with `mathviz: {share: ...}`, which
+// also turns on embed mode (embed.js), since the dialog's <iframe> snippet
+// is an ?embed= URL. The filter passes the site's public URL (share.site-url)
+// as the mathviz:share-site-url meta, and
+// optionally a page explaining embedding (share.embed-docs) as
+// mathviz:share-embed-docs.
+(function attachShare(globalThis) {
+  // Every link and snippet points at the public site, not wherever this
+  // page happens to be served from (a `quarto preview` port, a PR deploy) --
+  // a snippet copied from a preview must still work when pasted somewhere
+  // else. Without a configured URL, the site root as served is the best
+  // guess. No trailing slash: a site-relative path starts with one.
+  const siteUrl = () => {
+    const configured = VM.chrome.meta("mathviz:share-site-url")
+    let url = configured
+    if (!url) url = new URL(VM.chrome.meta("quarto:offset") || "/", globalThis.location.href).href
+    return url.replace(/\/+$/, "")
   }
+
+  // Pure builders (exported as VM.chrome.share below for share.test.js) --
+  // no DOM, so they don't need a real `document`/`location` to test.
 
   // Builds the absolute URL an <iframe src> should use: the given page,
   // carrying its current inputs when `keepInputs` is true, with `embed`
   // set to the block's id (or "1" for the page's first/only app).
-  const embedSrc = ({ pathname, search, blockId, keepInputs }) => {
+  const embedSrc = ({ siteUrl, pathname, search, blockId, keepInputs }) => {
     let path = pathname
     if (path.endsWith("/index.html")) path = path.slice(0, -"index.html".length)
 
@@ -41,14 +37,14 @@
     params.delete("embed")
     params.set("embed", blockId || "1")
 
-    return `${SITE_ORIGIN}${path}?${params.toString()}`
+    return `${siteUrl}${path}?${params.toString()}`
   }
 
   // Builds the absolute URL of the page itself (the whole page, not the
   // embed view), with or without the current inputs. An `embed` param is
   // always dropped -- a shared link should open the full page -- and a
   // link with no inputs left carries no bare trailing "?".
-  const pageUrl = ({ pathname, search, keepInputs }) => {
+  const pageUrl = ({ siteUrl, pathname, search, keepInputs }) => {
     let path = pathname
     if (path.endsWith("/index.html")) path = path.slice(0, -"index.html".length)
 
@@ -56,12 +52,13 @@
     params.delete("embed")
 
     const query = params.toString()
-    if (query === "") return `${SITE_ORIGIN}${path}`
-    return `${SITE_ORIGIN}${path}?${query}`
+    if (query === "") return `${siteUrl}${path}`
+    return `${siteUrl}${path}?${query}`
   }
 
-  // Builds the exact <iframe> block embed.qmd documents, so the page and
-  // the button never drift apart. `&` between attributes is left raw, as in
+  // Builds the <iframe> block a site's embedding page documents (Visual Math
+  // Lab's embed.qmd shows this exact shape), so the page and the button
+  // never drift apart. `&` between attributes is left raw, as in
   // embed.qmd -- it isn't a valid entity reference there, so it pastes as
   // plain text with no HTML-decoding surprise.
   const buildEmbedSnippet = ({ src, height, title }) => {
@@ -75,13 +72,12 @@
 
   // Not in embed mode: an app framed by another site is that site's
   // content, and a Share button pointing back at this site would be noise
-  // there -- the same reasoning js/report-bug.js already uses. styles.css
-  // hides it too, belt and braces.
+  // there -- the same reasoning report-bug.js already uses. embed.css hides
+  // it too, belt and braces.
   const embedded = document.documentElement?.classList?.contains("vm-embed")
 
   if (!embedded) {
-    // A block containing a Plotly chart gets the 900px embed.qmd
-    // recommends (enough for every app's chart to clear 400px). A block
+    // A block containing a Plotly chart gets 900px (enough for every app's chart to clear 400px). A block
     // with no Plotly chart (an SVG figure, canvas, or no figure at all)
     // draws at its own fixed height and doesn't stretch to fill a taller
     // frame, so the default instead follows the block's own measured
@@ -93,19 +89,16 @@
       return Math.min(1200, Math.max(320, rounded))
     }
 
-    // The page's own title, stripped of the " – Visual Math Lab" suffix
-    // every page's <title> carries (see the site's title-block markup) --
-    // an iframe's own title attribute shouldn't repeat the site name.
+    // The page's own title, without the " – <site title>" suffix Quarto
+    // puts in every page's <title> -- an iframe's own title attribute
+    // shouldn't repeat the site name.
     const pageTitle = () => {
       const heading = document.querySelector("#title-block-header .quarto-title h1, #title-block-header h1")
       if (heading) return heading.textContent.trim()
-      return document.title.replace(/\s*[–-]\s*Visual Math Lab\s*$/, "").trim()
+      return document.title.replace(/\s+–\s+[^–]*$/, "").trim()
     }
 
-    const sitePath = () => siteRelativePath({
-      href: location.href,
-      offset: document.querySelector('meta[name="quarto:offset"]')?.content
-    })
+    const sitePath = () => VM.chrome.currentSitePath()
 
     let dialog = null
     let activeBlock = null
@@ -116,6 +109,7 @@
       const height = dialog.querySelector(".vm-share-height").value || "900"
       const blockId = activeBlock.id || ""
       const src = embedSrc({
+        siteUrl: siteUrl(),
         pathname: sitePath(),
         search: location.search,
         blockId,
@@ -131,8 +125,8 @@
     // The two page links are read from location.search when the dialog
     // opens, which the page's committed/urlSyncControls cells keep current.
     const renderLinks = () => {
-      const withInputs = pageUrl({ pathname: sitePath(), search: location.search, keepInputs: true })
-      const withoutInputs = pageUrl({ pathname: sitePath(), search: location.search, keepInputs: false })
+      const withInputs = pageUrl({ siteUrl: siteUrl(), pathname: sitePath(), search: location.search, keepInputs: true })
+      const withoutInputs = pageUrl({ siteUrl: siteUrl(), pathname: sitePath(), search: location.search, keepInputs: false })
       for (const [selector, url] of [[".vm-share-link-inputs", withInputs], [".vm-share-link-plain", withoutInputs]]) {
         const link = dialog.querySelector(selector)
         link.href = url
@@ -169,8 +163,8 @@
           </div>
           <h3>Embed</h3>
           <p>Paste this into another page to show the app alone, as an
-          <code>&lt;iframe&gt;</code>. See <a class="vm-share-docs-link">Embedding an app</a>
-          for details.</p>
+          <code>&lt;iframe&gt;</code>.<span class="vm-share-docs"> See
+          <a class="vm-share-docs-link">Embedding an app</a> for details.</span></p>
           <label class="vm-share-checkbox-row">
             <input type="checkbox" class="vm-share-keep-inputs" checked>
             Keep the current inputs
@@ -188,11 +182,16 @@
       `
       document.body.appendChild(el)
 
-      // Relative to the site root as served (quarto:offset), not a
-      // root-absolute "/embed.html", which breaks whenever the site is
-      // served under a prefix -- the same problem sitePath() solves.
-      const offset = document.querySelector('meta[name="quarto:offset"]')?.content ?? "/"
-      el.querySelector(".vm-share-docs-link").href = new URL(`${offset}embed.html`, location.href).href
+      // The site's own page on embedding, if it names one; relative to the
+      // site root as served (quarto:offset), not root-absolute, which breaks
+      // whenever the site is served under a prefix.
+      const docs = VM.chrome.meta("mathviz:share-embed-docs")
+      if (docs) {
+        const offset = VM.chrome.meta("quarto:offset") ?? "/"
+        el.querySelector(".vm-share-docs-link").href = new URL(`${offset}${docs}`, location.href).href
+      } else {
+        el.querySelector(".vm-share-docs").remove()
+      }
 
       el.querySelector(".vm-share-keep-inputs").addEventListener("change", renderSnippet)
       el.querySelector(".vm-share-height").addEventListener("input", renderSnippet)
@@ -278,12 +277,5 @@
     })
   }
 
-  // VML, not VM: VM is the mathviz library's namespace, and mathviz is
-  // published to other sites that have never heard of this file. Merging
-  // into VM.ui would put a site-local function where a library function is
-  // expected, and the day mathviz grows an embedSrc of its own one of the
-  // two would silently win (this script loads after the extension, so it
-  // would be this one). A separate global keeps the boundary the same in
-  // the code as it is in the repo.
-  globalThis.VML = {...globalThis.VML, share: {siteRelativePath, embedSrc, pageUrl, buildEmbedSnippet}}
+  VM.chrome.share = { embedSrc, pageUrl, buildEmbedSnippet }
 })(window)

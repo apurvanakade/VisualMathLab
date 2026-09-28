@@ -4,17 +4,18 @@
  * Authors: Apurva Nakade
  */
 
-(function attachVM(globalThis) {
-  const REPO = "apurvanakade/VisualMathLab"
-
-  // Maps a rendered page's pathname (e.g. "/apps/newton-method/",
-  // ".../index.html", or "/") back to its .qmd source path in the repo
-  // (e.g. "apps/newton-method/index.qmd"). This works because the
-  // site is served from a custom domain at the repo root (site-url in
-  // _quarto.yml), so a rendered page's pathname already matches its source
-  // file's path one-for-one, just with index.html swapped for index.qmd.
-  // Returns null for a pathname that isn't a normal content page (e.g. one
-  // ending in some other extension).
+// The "Report bug" popup on text selection: opt-in with
+// `mathviz: {report-bug: {repo: <owner>/<name>, branch: <branch>}}`. The
+// filter passes both as the mathviz:report-bug-repo/-branch metas; branch
+// defaults to main.
+(function attachReportBug(globalThis) {
+  // Maps a page's site-relative path (e.g. "/apps/newton-method/",
+  // ".../index.html", or "/"; see VM.chrome.siteRelativePath) back to its
+  // .qmd source path in the repo (e.g. "apps/newton-method/index.qmd").
+  // That holds for any Quarto project rendered from the repository root: a
+  // rendered page's path matches its source file's one-for-one, with .html
+  // swapped for .qmd. Returns null for a path that isn't a normal content
+  // page (e.g. one ending in some other extension).
   const qmdSourcePath = (pathname) => {
     let path = pathname
     if (path.endsWith("/")) path += "index.html"
@@ -34,13 +35,13 @@
   // quoted in the body -- so a report captures exactly what was on screen
   // without the reporter re-typing it. Pure function of its inputs so it's
   // unit-testable without a real DOM/location.
-  const buildReportBugUrl = ({ pageUrl, pageTitle, sourcePath, selectedText }) => {
+  const buildReportBugUrl = ({ repo, branch, pageUrl, pageTitle, sourcePath, selectedText }) => {
     const title = selectedText
       ? `Bug: "${truncate(selectedText, 60)}"`
       : `Bug: ${pageTitle}`
 
     let body = `**Page:** ${pageUrl}\n`
-    if (sourcePath) body += `**Source:** https://github.com/${REPO}/blob/main/${sourcePath}\n`
+    if (sourcePath) body += `**Source:** https://github.com/${repo}/blob/${branch}/${sourcePath}\n`
     if (selectedText) {
       body += `\n**Selected text/section:**\n\n> ${selectedText.replace(/\n/g, "\n> ")}\n`
     }
@@ -50,7 +51,7 @@
     params.set("title", title)
     params.set("body", body)
     params.set("labels", "bug")
-    return `https://github.com/${REPO}/issues/new?${params.toString()}`
+    return `https://github.com/${repo}/issues/new?${params.toString()}`
   }
 
   // Floating "Report bug" button that appears next to the current text
@@ -83,9 +84,11 @@
     popup.addEventListener("mousedown", (event) => event.preventDefault())
     popup.addEventListener("click", () => {
       const url = buildReportBugUrl({
+        repo: VM.chrome.meta("mathviz:report-bug-repo"),
+        branch: VM.chrome.meta("mathviz:report-bug-branch") || "main",
         pageUrl: globalThis.location.href,
         pageTitle: document.title,
-        sourcePath: qmdSourcePath(globalThis.location.pathname),
+        sourcePath: qmdSourcePath(VM.chrome.currentSitePath()),
         selectedText
       })
       globalThis.open(url, "_blank", "noopener")
@@ -96,7 +99,8 @@
   }
 
   // Not in embed mode: an app framed by another site is that site's content,
-  // and a "Report bug" button pointing at this repository would be noise there.
+  // and a "Report bug" button pointing at this site's repository would be
+  // noise there.
   const embedded = document.documentElement?.classList?.contains("vm-embed")
 
   let debounceId = null
@@ -115,7 +119,5 @@
     })
   }
 
-  // VML, not VM -- see the note at the foot of js/share.js. These two are
-  // about this repository's issue tracker and mean nothing in the library.
-  globalThis.VML = {...globalThis.VML, reportBug: {qmdSourcePath, buildReportBugUrl}}
+  VM.chrome.reportBug = { qmdSourcePath, buildReportBugUrl }
 })(window)

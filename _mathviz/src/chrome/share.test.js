@@ -10,52 +10,56 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// share.js is a site-specific script (the Share button/dialog wiring), same
-// shape as report-bug.js -- an IIFE evaluated in global scope against a
-// minimal window/document stub. Its DOM-building code only runs inside a
-// DOMContentLoaded listener, which this stub's addEventListener never fires,
-// so only the pure builders below are exercised.
+// share.js is one of mathviz's opt-in chrome scripts (see mathviz.lua): an
+// IIFE evaluated in global scope against a minimal window/document stub,
+// after site.js, which it reads VM.chrome helpers from. Its DOM-building
+// code only runs inside a DOMContentLoaded listener, which this stub's
+// addEventListener never fires, so only the pure builders are exercised.
 globalThis.window = globalThis
 globalThis.document = { addEventListener: () => {}, documentElement: { classList: { contains: () => false } } }
-;(0, eval)(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'share.js'), 'utf8'))
-const { siteRelativePath, embedSrc, pageUrl, buildEmbedSnippet } = globalThis.VML.share
+const here = path.dirname(fileURLToPath(import.meta.url))
+for (const name of ['site.js', 'share.js']) {
+  ;(0, eval)(fs.readFileSync(path.join(here, name), 'utf8'))
+}
+const { embedSrc, pageUrl, buildEmbedSnippet } = globalThis.VM.chrome.share
+const siteUrl = 'https://www.visualmathlab.com'
 
 test('embedSrc points at the public site, not the page origin', () => {
-  const src = embedSrc({ pathname: '/apps/newton-method/', search: '', blockId: '', keepInputs: false })
+  const src = embedSrc({ siteUrl, pathname: '/apps/newton-method/', search: '', blockId: '', keepInputs: false })
   assert.match(src, /^https:\/\/www\.visualmathlab\.com\/apps\/newton-method\/\?/)
 })
 
 test('embedSrc normalizes an explicit index.html pathname', () => {
-  const src = embedSrc({ pathname: '/apps/newton-method/index.html', search: '', blockId: '', keepInputs: false })
+  const src = embedSrc({ siteUrl, pathname: '/apps/newton-method/index.html', search: '', blockId: '', keepInputs: false })
   assert.match(src, /^https:\/\/www\.visualmathlab\.com\/apps\/newton-method\/\?/)
 })
 
 test('embedSrc defaults embed to 1 when no blockId is given', () => {
-  const src = embedSrc({ pathname: '/apps/newton-method/', search: '', blockId: '', keepInputs: false })
+  const src = embedSrc({ siteUrl, pathname: '/apps/newton-method/', search: '', blockId: '', keepInputs: false })
   assert.equal(new URL(src).searchParams.get('embed'), '1')
 })
 
 test('embedSrc uses the given blockId over the default', () => {
-  const src = embedSrc({ pathname: '/apps/sperners-lemma-combinatorial-proof/', search: '', blockId: 'doors', keepInputs: false })
+  const src = embedSrc({ siteUrl, pathname: '/apps/sperners-lemma-combinatorial-proof/', search: '', blockId: 'doors', keepInputs: false })
   assert.equal(new URL(src).searchParams.get('embed'), 'doors')
 })
 
 test('embedSrc drops the current inputs when keepInputs is false', () => {
-  const src = embedSrc({ pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', blockId: '', keepInputs: false })
+  const src = embedSrc({ siteUrl, pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', blockId: '', keepInputs: false })
   const params = new URL(src).searchParams
   assert.equal(params.get('f'), null)
   assert.equal(params.get('x0'), null)
 })
 
 test('embedSrc keeps the current inputs when keepInputs is true', () => {
-  const src = embedSrc({ pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', blockId: '', keepInputs: true })
+  const src = embedSrc({ siteUrl, pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', blockId: '', keepInputs: true })
   const params = new URL(src).searchParams
   assert.equal(params.get('f'), 'x^3-2')
   assert.equal(params.get('x0'), '1')
 })
 
 test('embedSrc replaces an embed param already present in the current search rather than duplicating it', () => {
-  const src = embedSrc({ pathname: '/apps/newton-method/', search: '?f=x&embed=1', blockId: 'boundary', keepInputs: true })
+  const src = embedSrc({ siteUrl, pathname: '/apps/newton-method/', search: '?f=x&embed=1', blockId: 'boundary', keepInputs: true })
   const params = new URL(src).searchParams
   assert.deepEqual(params.getAll('embed'), ['boundary'])
 })
@@ -83,34 +87,24 @@ test('buildEmbedSnippet escapes double quotes in the title', () => {
 })
 
 test('pageUrl keeps the current inputs when keepInputs is true', () => {
-  const url = pageUrl({ pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', keepInputs: true })
+  const url = pageUrl({ siteUrl, pathname: '/apps/newton-method/', search: '?f=x%5E3-2&x0=1', keepInputs: true })
   assert.equal(url, 'https://www.visualmathlab.com/apps/newton-method/?f=x%5E3-2&x0=1')
 })
 
 test('pageUrl drops the inputs, and leaves no bare "?", when keepInputs is false', () => {
-  const url = pageUrl({ pathname: '/apps/newton-method/index.html', search: '?f=x%5E3-2&x0=1', keepInputs: false })
+  const url = pageUrl({ siteUrl, pathname: '/apps/newton-method/index.html', search: '?f=x%5E3-2&x0=1', keepInputs: false })
   assert.equal(url, 'https://www.visualmathlab.com/apps/newton-method/')
 })
 
 test('pageUrl drops an embed param so the link opens the full page', () => {
-  const url = pageUrl({ pathname: '/apps/newton-method/', search: '?f=x&embed=1', keepInputs: true })
+  const url = pageUrl({ siteUrl, pathname: '/apps/newton-method/', search: '?f=x&embed=1', keepInputs: true })
   assert.equal(url, 'https://www.visualmathlab.com/apps/newton-method/?f=x')
 })
 
-test('siteRelativePath strips a /docs/ prefix when the repo root is served', () => {
-  const path = siteRelativePath({ href: 'http://localhost:8000/docs/apps/newton-method/?f=x', offset: '../../' })
-  assert.equal(path, '/apps/newton-method/')
-})
-
-test('siteRelativePath strips the prefix for a top-level page too', () => {
-  assert.equal(siteRelativePath({ href: 'http://localhost:8000/docs/embed.html', offset: './' }), '/embed.html')
-})
-
-test('siteRelativePath leaves a root-served path alone', () => {
-  const path = siteRelativePath({ href: 'https://www.visualmathlab.com/apps/newton-method/index.html', offset: '../../' })
-  assert.equal(path, '/apps/newton-method/index.html')
-})
-
-test('siteRelativePath falls back to the pathname when there is no offset meta', () => {
-  assert.equal(siteRelativePath({ href: 'http://localhost/docs/apps/x/', offset: undefined }), '/docs/apps/x/')
+test('embedSrc and pageUrl work under a project-site subpath', () => {
+  const base = 'https://apurvanakade.github.io/Monte-Carlo-Methods'
+  assert.equal(pageUrl({ siteUrl: base, pathname: '/apps/buffons-needle.html', search: '', keepInputs: false }),
+    'https://apurvanakade.github.io/Monte-Carlo-Methods/apps/buffons-needle.html')
+  assert.match(embedSrc({ siteUrl: base, pathname: '/apps/', search: '', blockId: '', keepInputs: false }),
+    /^https:\/\/apurvanakade\.github\.io\/Monte-Carlo-Methods\/apps\/\?embed=1$/)
 })

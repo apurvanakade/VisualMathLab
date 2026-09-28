@@ -19,15 +19,14 @@ _quarto.yml.
   defaults, and covers the MathJax and polyfill scripts Quarto injects too.
   scripts/analytics.test.js asserts the option is set;
   scripts/verify-analytics.mjs asserts the rendered order.
-- Fonts are self-hosted from /fonts (see fonts/fonts.css for why), so the
-  only third-party origins a page loads from are the two script CDNs the
-  extension adds plus Quarto's MathJax (jsdelivr) and polyfill (cdnjs).
-- The shared VM.* library, its CSS and the two CDN scripts are all injected
-  by the mathviz extension -- nothing here loads them. Only site-specific
-  scripts belong below.
+- Fonts are self-hosted by the mathviz extension (`mathviz: {fonts: true}`;
+  see its fonts/fonts.css for why), so the only third-party origins a page
+  loads from are the two script CDNs the extension adds plus Quarto's
+  MathJax (jsdelivr) and polyfill (cdnjs).
+- The shared VM.* library, its CSS, the fonts and the two CDN scripts are
+  all injected by the mathviz extension -- nothing here loads them. Only
+  site-specific scripts belong below.
 -->
-
-<link rel="stylesheet" href="/fonts/fonts.css">
 
 <!-- Embed mode: another site frames one of these apps with
      <iframe src="https://www.visualmathlab.com/apps/newton-method/?embed=1&f=...">
@@ -35,7 +34,7 @@ _quarto.yml.
      title block, footer and page navigation on html.vm-embed, plus everything
      in the content column that is not the page's tagged app (the
      <div class="vm-app"> each app page wraps its controls and chart in), and
-     consent.html / mobile-warning.html / sidebar-rail.html / report-bug.js
+     consent.html / mobile-warning.html / mathviz's sidebar-rail.js / report-bug.js
      each skip themselves. This runs in <head>, so the class goes on <html>
      (<body> doesn't exist yet) and the chrome never paints at all -- no
      flash of navbar before the CSS applies.

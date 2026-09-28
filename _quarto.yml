@@ -13,9 +13,6 @@ project:
     - "**/*.qmd"
   resources:
     - CNAME
-    # Self-hosted fonts (see fonts/fonts.css). Referenced only from
-    # _includes/head-scripts.html, which Quarto doesn't scan for resources.
-    - fonts/
 
 execute:
   echo: false
@@ -36,12 +33,22 @@ mathviz:
   # so no third-party origin sees a page's path or query string (which is
   # the visitor's own math input). privacy.qmd states this; keep them in step.
   referrer: same-origin
+  # Inter and JetBrains Mono, self-hosted from the extension (see its
+  # fonts/fonts.css for why never Google Fonts). The mathviz theme below
+  # names both faces; privacy.qmd states that no font request leaves the site.
+  fonts: true
+  # The collapsible sidebar rail (off-canvas sidebar + hamburger rail), with
+  # its pin kept under this localStorage key -- privacy.qmd lists it.
+  sidebar-rail: vml-sidebar-pinned
 
 format:
   html:
+    # mathviz's optional Quarto theme, generated from its tokens.css so the
+    # Bootstrap chrome and the mathviz panels share one palette. A site-only
+    # override goes in a second file listed after each of these.
     theme:
-      light: [_theme/vml-light.scss]
-      dark: [_theme/vml-dark.scss]
+      light: [_extensions/mathviz/theme/mathviz-light.scss]
+      dark: [_extensions/mathviz/theme/mathviz-dark.scss]
     css: styles.css
     toc: false
     html-math-method: mathjax
@@ -50,16 +57,13 @@ format:
       - _includes/head-scripts.html
     # Order matters: consent.html looks for the gated <script> that
     # analytics.html emits, so analytics.html has to be in the DOM first.
-    # sidebar-rail.html reads/reacts to the sidebar's own DOM, so it belongs
-    # after both.
     include-after-body:
       - _includes/analytics.html
       - _includes/consent.html
       - _includes/mobile-warning.html
-      - _includes/sidebar-rail.html
-    # Sidebar columns collapse to 0 above 992px too (styles.css), so the
-    # remaining body column can run wider than Quarto's ~750px default -- a
-    # 78vh chart needs the room. See styles.css's "Page grid" section.
+    # Sidebar columns collapse to 0 above 992px too (the sidebar rail's CSS,
+    # _mathviz/src/chrome/sidebar-rail.css), so the remaining body column can
+    # run wider than Quarto's ~750px default -- a 78vh chart needs the room.
     grid:
       body-width: 1000px
       sidebar-width: 260px

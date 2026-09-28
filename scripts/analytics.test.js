@@ -47,7 +47,6 @@ const mathvizLua = fs.readdirSync(path.join(repoRoot, '_extensions'), { recursiv
   .filter((f) => f.endsWith('mathviz.lua'))
   .map((f) => fs.readFileSync(path.join(repoRoot, '_extensions', f), 'utf8'))
   .join('\n')
-const fontsCss = fs.readFileSync(path.join(repoRoot, 'fonts/fonts.css'), 'utf8')
 const privacyQmd = fs.readFileSync(path.join(repoRoot, 'privacy.qmd'), 'utf8')
 
 function extractScript(html) {
@@ -104,13 +103,13 @@ test('consent.html: sets no cookies either', () => {
 })
 
 // privacy.qmd's "Third-party resources" section is a factual claim about
-// head-scripts.html, the mathviz extension's CDN tags, and fonts/; these pin
-// the facts it states.
+// head-scripts.html, the mathviz extension's CDN tags, and its fonts; these
+// pin the facts it states.
 
 test('head-scripts.html: no request to Google Fonts', () => {
-  // Self-hosted from /fonts instead -- see fonts/fonts.css for why.
+  // Self-hosted by the mathviz extension instead (`mathviz: {fonts: true}`,
+  // asserted in scripts/fonts.test.js).
   assert.doesNotMatch(headScriptsHtml, /fonts\.googleapis\.com|fonts\.gstatic\.com/)
-  assert.match(headScriptsHtml, /<link rel="stylesheet" href="\/fonts\/fonts\.css">/)
 })
 
 test('_quarto.yml: the mathviz extension emits the referrer policy ahead of its CDN tags', () => {
@@ -125,21 +124,11 @@ test('_quarto.yml: the mathviz extension emits the referrer policy ahead of its 
   assert.doesNotMatch(headScriptsTags, /<meta name="referrer"/, 'the meta belongs to the extension now')
 })
 
-test('fonts/fonts.css: every font file it references is in the repo', () => {
-  // Comments stripped first: the header comment mentions `url(...)` in prose.
-  const cssOnly = fontsCss.replace(/\/\*[\s\S]*?\*\//g, '')
-  const urls = [...cssOnly.matchAll(/url\(([^)]+)\)/g)].map((m) => m[1].replace(/^["']|["']$/g, ''))
-  assert.ok(urls.length >= 2, 'expected @font-face src urls')
-  for (const file of urls) {
-    // Bare file names, relative to the stylesheet. A root-relative
-    // `/fonts/x.woff2` is what Quarto mangles into `..fonts/x.woff2` when it
-    // copies the file into docs/ -- a 404 on every page, so no font loaded
-    // and the site silently fell back to system fonts (see the header
-    // comment in fonts/fonts.css).
-    assert.doesNotMatch(file, /^\/|^\.\.?\//, `font url must be a bare file name, got ${file}`)
-    assert.ok(fs.existsSync(path.join(repoRoot, 'fonts', file)), `missing fonts/${file}`)
-  }
-  assert.doesNotMatch(fontsCss, /https?:\/\//, 'a font must not be fetched from a third party')
+test('the extension\'s fonts.css fetches nothing from a third party', () => {
+  // The library's own fonts.test.js checks each url() resolves to a shipped
+  // file; this is the half privacy.qmd's "Third-party resources" rests on.
+  const fontsCss = fs.readFileSync(path.join(repoRoot, '_extensions/mathviz/fonts/fonts.css'), 'utf8')
+  assert.doesNotMatch(fontsCss.replace(/\/\*[\s\S]*?\*\//g, ''), /https?:\/\//, 'a font must not be fetched from a third party')
 })
 
 test('privacy.qmd: names every third-party host a page loads from', () => {

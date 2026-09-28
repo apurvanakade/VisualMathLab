@@ -22,7 +22,7 @@ a typo or wording fix in prose, a comment, or an edit to repo-only docs
 (`CLAUDE.md`, `README.md`, `CONTRIBUTING.md`, `.claude/**`). Stop after the
 push.
 
-Anything that touches an OJS cell, CSS, `_includes/`, `_theme/`, `js/`,
+Anything that touches an OJS cell, CSS, `_includes/`, `js/`,
 `_mathviz/`, `_extensions/`, `_quarto.yml` or `.github/` is **not** trivial,
 however small. Carry on.
 

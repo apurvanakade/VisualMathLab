@@ -1,30 +1,34 @@
-<!--
-Copyright (c) 2026 Apurva Nakade. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Apurva Nakade
--->
+/**
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
 
-<!--
-Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
-hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
-JS; styles.css forces the same off-canvas treatment at every width, driven
-by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
-.collapse/.show. This script owns those two classes and provides the one
-thing that treatment removes: a permanently visible way back in -- a slim
-rail at the left edge with a hamburger toggle, click-to-pin for a session
-that stays open, Escape/click-outside to close.
-
-The rail used to open the sidebar on hover anywhere down its full-height
-box. That is gone: the hamburger is a visible control and can simply be
-clicked, and the hover version cost more than it gave. It fired on any
-pointer drift into the left edge, and since it announces itself by writing
-.vm-sidebar-open onto <body>, every one of those accidental opens churned a
-class list that chart pages observe (see VM.plotting.onThemeChange). It also
-forced the rail's box to span the viewport to catch the pointer, which left
-an invisible 21px strip lying over the content column below 768px, where the
-body's own left margin is narrower than the rail.
--->
-<script>
+/*
+ * Collapsible sidebar rail. Quarto's own sidebar (#quarto-sidebar) is
+ * hidden-by-default only below 992px, via Bootstrap's collapse-horizontal
+ * JS; sidebar-rail.css forces the same off-canvas treatment at every width, driven
+ * by .vm-sidebar-open/.vm-sidebar-pinned on <body> instead of Bootstrap's own
+ * .collapse/.show. This script owns those two classes and provides the one
+ * thing that treatment removes: a permanently visible way back in -- a slim
+ * rail at the left edge with a hamburger toggle, click-to-pin for a session
+ * that stays open, Escape/click-outside to close.
+ * 
+ * The rail used to open the sidebar on hover anywhere down its full-height
+ * box. That is gone: the hamburger is a visible control and can simply be
+ * clicked, and the hover version cost more than it gave. It fired on any
+ * pointer drift into the left edge, and since it announces itself by writing
+ * .vm-sidebar-open onto <body>, every one of those accidental opens churned a
+ * class list that chart pages observe (see VM.plotting.onThemeChange). It also
+ * forced the rail's box to span the viewport to catch the pointer, which left
+ * an invisible 21px strip lying over the content column below 768px, where the
+ * body's own left margin is narrower than the rail.
+ *
+ * Shipped, with sidebar-rail.css, only when a site sets
+ * `mathviz: {sidebar-rail: true}` (or a string: the pin's localStorage key).
+ * Loaded in <head>, so it waits for DOMContentLoaded; it does nothing on a
+ * page with no Quarto sidebar navigation, or in embed mode (html.vm-embed).
+ */
 (function () {
   function init() {
     // Embed mode (?embed=1): the sidebar is hidden, so no rail to open it.
@@ -32,14 +36,19 @@ body's own left margin is narrower than the rail.
     var sidebar = document.getElementById("quarto-sidebar")
     if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
 
-    var PIN_KEY = "vml-sidebar-pinned"
+    // The localStorage key the pin is kept under. A site names its own via
+    // `mathviz: {sidebar-rail: <key>}`, which the filter emits as this meta;
+    // two sites on one origin (say, two GitHub Pages project sites) would
+    // otherwise share one pin, and a site's privacy page may name the key.
+    var keyMeta = document.querySelector('meta[name="mathviz:sidebar-pin-key"]')
+    var PIN_KEY = keyMeta ? keyMeta.getAttribute("content") : "vm-sidebar-pinned"
     var body = document.body
 
     // Below 992px Quarto renders its own .quarto-secondary-nav bar (mobile
     // breadcrumbs) between the navbar and the sidebar/rail -- its height
     // varies with breadcrumb depth/length and can wrap on a narrow phone,
     // so it's measured here rather than hardcoded, and exposed as a CSS
-    // variable the top-offset media query in styles.css reads.
+    // variable the top-offset media query in sidebar-rail.css reads.
     var secondaryNav = document.querySelector(".quarto-secondary-nav")
     function updateSecondaryNavHeight() {
       var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
@@ -53,7 +62,7 @@ body's own left margin is narrower than the rail.
     var rail = document.createElement("div")
     rail.id = "vm-sidebar-rail"
     // The buttons live in their own wrapper, which is what carries the
-    // painted surface. See the .vm-rail-cluster rules in styles.css.
+    // painted surface. See the .vm-rail-cluster rules in sidebar-rail.css.
     rail.innerHTML =
       '<div class="vm-rail-cluster">' +
       '<button type="button" data-vm-toggle aria-label="Open sidebar navigation" aria-expanded="false" title="Browse topics">' +
@@ -132,4 +141,3 @@ body's own left margin is narrower than the rail.
     init()
   }
 })()
-</script>

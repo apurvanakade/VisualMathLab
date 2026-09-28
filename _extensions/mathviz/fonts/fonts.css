@@ -12,9 +12,9 @@
  * request to fonts.googleapis.com / fonts.gstatic.com. Google Fonts hands
  * Google the visitor's IP address on every page view, before any consent is
  * asked for, and a German court (LG Muenchen, 2022) has held that to be a
- * GDPR violation. Self-hosting is the only fix that keeps privacy.qmd's
- * "nothing about you leaves your browser unless you allow analytics" claim
- * true; the fonts cost ~400kB in the repo and change nothing visible.
+ * GDPR violation. Self-hosting is the only fix that lets a site claim that
+ * nothing about a visitor leaves their browser unless they allow it. The
+ * files cost ~400kB, which is why `mathviz: {fonts: true}` is opt-in.
  *
  * The @font-face blocks below are exactly what Google Fonts served for
  *   css2?family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap
@@ -34,8 +34,9 @@
  * `url(/fonts/inter-v20-latin.woff2)` came out as
  * `url(..fonts/inter-v20-latin.woff2)`, a 404 on every page, so no font
  * ever loaded and the whole site silently fell back to system fonts. A
- * relative url() is left alone and resolves against /fonts/fonts.css to
- * the same file. scripts/fonts.test.js guards this, along with the rest of
+ * relative url() is left alone and resolves against wherever this
+ * stylesheet is served from -- mathviz.lua copies every woff2 into the same
+ * folder. fonts.test.js (next to this file) guards this, along with the rest of
  * what this file silently depends on -- every url() resolving to a file
  * that exists, no orphaned woff2, and no request to Google.
  */

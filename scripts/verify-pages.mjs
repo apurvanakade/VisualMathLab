@@ -29,7 +29,7 @@
 // for you: every page whose folder differs from `develop` (committed,
 // staged, unstaged or untracked). It falls back to the full site when the
 // diff also touches something that is baked into every page (the mathviz
-// extension, an include, the theme, styles.css, _quarto.yml, js/, fonts/),
+// extension -- theme and fonts included -- an include, styles.css, _quarto.yml, js/),
 // since a per-page check cannot see a regression on a page it did not load.
 //
 // Pages are crawled a few at a time (`--jobs N`, default 4) as separate tabs
@@ -61,7 +61,7 @@ const skipDirs = new Set(['docs', 'node_modules', '.quarto', '.git', '_freeze'])
 // _mathviz/ is the library's source, which `npm run build:mathviz` turns
 // into _extensions/mathviz/ -- listed alongside it so a diff that edits the
 // source without a rebuilt bundle still escalates to the full crawl.
-const siteWidePaths = ['_mathviz/', '_extensions/', '_includes/', '_theme/', 'styles.css', '_quarto.yml', 'js/', 'fonts/']
+const siteWidePaths = ['_mathviz/', '_extensions/', '_includes/', 'styles.css', '_quarto.yml', 'js/']
 
 function findQmdPages(dir, base = '') {
   const pages = []

@@ -17,7 +17,9 @@
    *   input is assumed, not checked; `A` itself is not modified.
    * @param {Object} [opts]
    * @param {number} [opts.tolerance=1e-12] - Stop once the off-diagonal
-   *   sum of squares falls below this.
+   *   sum of squares falls below this fraction of the whole matrix's sum of
+   *   squares (which the rotations preserve), so the result does not depend
+   *   on the matrix's scale.
    * @param {number} [opts.maxSweeps=100]
    * @returns {number[]} The `k` eigenvalues, sorted descending (with
    *   multiplicity). `[]` for an empty matrix.
@@ -29,12 +31,17 @@
     const a = []
     for (const row of A) a.push(row.slice())
 
+    let total = 0
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) total += a[i][j] * a[i][j]
+    }
+
     for (let sweep = 0; sweep < maxSweeps; sweep++) {
       let off = 0
       for (let i = 0; i < k; i++) {
         for (let j = i + 1; j < k; j++) off += a[i][j] * a[i][j]
       }
-      if (off < tolerance) break
+      if (off <= tolerance * total) break
 
       for (let p = 0; p < k; p++) {
         for (let q = p + 1; q < k; q++) {

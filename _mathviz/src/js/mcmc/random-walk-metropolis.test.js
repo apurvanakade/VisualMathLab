@@ -65,3 +65,12 @@ test('randomWalkMetropolis with a gaussian proposal also targets N(0, 1)', () =>
   const mean = sum / (run.samples.length - 1000)
   assert.ok(Math.abs(mean) < 0.08, `mean ${mean}`)
 })
+
+test('randomWalkMetropolis rejects an n that is not a positive integer', () => {
+  for (const n of [0, -3, 2.5, NaN]) {
+    assert.throws(
+      () => randomWalkMetropolis({logDensity: standardNormal, start: [0], n, scale: 1, rng: VM.sampling.seededRandom(1)}),
+      RangeError,
+    )
+  }
+})

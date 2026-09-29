@@ -113,4 +113,8 @@ export const mustPrecede = [
   ['numerical/linear-regression.js', 'numerical/l1-regression.js'],
   // effectiveSampleSize sums the autocorrelation helper's output.
   ['mcmc/autocorrelation.js', 'mcmc/effective-sample-size.js'],
+  // persistentPlot calls VM.plotting.config/autoResize; springLayout seeds
+  // its start positions with VM.sampling.seededRandom.
+  ['plotting/chart-theme.js', 'plotting/persistent-plot.js'],
+  ['sampling/seeded-random.js', 'discrete-math/spring-layout.js'],
 ]

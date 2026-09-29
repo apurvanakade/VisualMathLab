@@ -1941,7 +1941,9 @@
    *   input is assumed, not checked; `A` itself is not modified.
    * @param {Object} [opts]
    * @param {number} [opts.tolerance=1e-12] - Stop once the off-diagonal
-   *   sum of squares falls below this.
+   *   sum of squares falls below this fraction of the whole matrix's sum of
+   *   squares (which the rotations preserve), so the result does not depend
+   *   on the matrix's scale.
    * @param {number} [opts.maxSweeps=100]
    * @returns {number[]} The `k` eigenvalues, sorted descending (with
    *   multiplicity). `[]` for an empty matrix.
@@ -1953,12 +1955,17 @@
     const a = []
     for (const row of A) a.push(row.slice())
 
+    let total = 0
+    for (let i = 0; i < k; i++) {
+      for (let j = 0; j < k; j++) total += a[i][j] * a[i][j]
+    }
+
     for (let sweep = 0; sweep < maxSweeps; sweep++) {
       let off = 0
       for (let i = 0; i < k; i++) {
         for (let j = i + 1; j < k; j++) off += a[i][j] * a[i][j]
       }
-      if (off < tolerance) break
+      if (off <= tolerance * total) break
 
       for (let p = 0; p < k; p++) {
         for (let q = p + 1; q < k; q++) {
@@ -2885,7 +2892,9 @@
    *   `values.length - 1`.
    * @returns {number[]} `acf[0..maxLag]`, with `acf[0] = 1`. A constant
    *   series (zero variance) returns `[1, 0, 0, ...]` rather than `NaN`s,
-   *   and an empty or one-element series returns `[1]`.
+   *   and an empty or one-element series returns `[1]`. "Constant" is judged
+   *   relative to the values' own magnitude, so rescaling a series never
+   *   changes its autocorrelations.
    */
   const autocorrelation = (values, maxLag = 50) => {
     const n = values.length
@@ -2896,12 +2905,19 @@
     mean /= n
 
     let denom = 0
-    for (const v of values) denom += (v - mean) * (v - mean)
+    let maxAbs = 0
+    for (const v of values) {
+      denom += (v - mean) * (v - mean)
+      if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v)
+    }
+    // A constant series can still leave a denominator of rounding noise,
+    // since the computed mean is off by up to about n * eps * max|v|.
+    const noise = n * Number.EPSILON * maxAbs
 
     const lagMax = Math.min(maxLag, n - 1)
     const out = new Array(lagMax + 1).fill(0)
     out[0] = 1
-    if (!(denom > 1e-12)) return out
+    if (!(denom > n * noise * noise)) return out
 
     for (let lag = 1; lag <= lagMax; lag++) {
       let num = 0
@@ -2935,10 +2951,22 @@
    * @returns {number} A value in `(0, n]` for positively correlated
    *   chains. Never more than `n`: a chain whose lag-1 autocorrelation is
    *   already negative counts as independent. `0` for an empty series.
+   *   `NaN` for a chain that never moves (every value equal): its
+   *   autocorrelation is undefined, and reporting `n` would call the worst
+   *   possible chain a perfectly mixing one.
    */
   const effectiveSampleSize = (values, maxLag = 1000) => {
     const n = values.length
     if (n < 2) return n
+
+    let moved = false
+    for (const v of values) {
+      if (v !== values[0]) {
+        moved = true
+        break
+      }
+    }
+    if (!moved) return NaN
 
     const rho = globalThis.VM.mcmc.autocorrelation(values, maxLag)
     let sum = 0
@@ -3018,7 +3046,8 @@
    *   up to a constant.
    * @param {number[]} args.start - Initial state; its length sets the
    *   dimension. A one-dimensional chain uses `[x0]`.
-   * @param {number} args.n - Number of states returned, including `start`.
+   * @param {number} args.n - Number of states returned, including `start`;
+   *   a positive integer, else a `RangeError` is thrown.
    * @param {number} args.scale - Proposal half-width (`"uniform"`) or
    *   standard deviation (`"gaussian"`).
    * @param {() => number} args.rng - Uniform `[0, 1)` generator, e.g.
@@ -3033,6 +3062,9 @@
    *   `1..n-1` only.
    */
   const randomWalkMetropolis = ({logDensity, start, n, scale, rng, proposal = "uniform"}) => {
+    if (!Number.isInteger(n) || n < 1) {
+      throw new RangeError(`randomWalkMetropolis: n must be a positive integer, got ${n}`)
+    }
     const dim = start.length
     const samples = [start.slice()]
     const proposals = [null]

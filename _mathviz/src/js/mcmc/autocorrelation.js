@@ -16,7 +16,9 @@
    *   `values.length - 1`.
    * @returns {number[]} `acf[0..maxLag]`, with `acf[0] = 1`. A constant
    *   series (zero variance) returns `[1, 0, 0, ...]` rather than `NaN`s,
-   *   and an empty or one-element series returns `[1]`.
+   *   and an empty or one-element series returns `[1]`. "Constant" is judged
+   *   relative to the values' own magnitude, so rescaling a series never
+   *   changes its autocorrelations.
    */
   const autocorrelation = (values, maxLag = 50) => {
     const n = values.length
@@ -27,12 +29,19 @@
     mean /= n
 
     let denom = 0
-    for (const v of values) denom += (v - mean) * (v - mean)
+    let maxAbs = 0
+    for (const v of values) {
+      denom += (v - mean) * (v - mean)
+      if (Math.abs(v) > maxAbs) maxAbs = Math.abs(v)
+    }
+    // A constant series can still leave a denominator of rounding noise,
+    // since the computed mean is off by up to about n * eps * max|v|.
+    const noise = n * Number.EPSILON * maxAbs
 
     const lagMax = Math.min(maxLag, n - 1)
     const out = new Array(lagMax + 1).fill(0)
     out[0] = 1
-    if (!(denom > 1e-12)) return out
+    if (!(denom > n * noise * noise)) return out
 
     for (let lag = 1; lag <= lagMax; lag++) {
       let num = 0

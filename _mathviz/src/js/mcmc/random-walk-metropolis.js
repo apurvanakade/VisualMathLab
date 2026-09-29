@@ -30,7 +30,8 @@
    *   up to a constant.
    * @param {number[]} args.start - Initial state; its length sets the
    *   dimension. A one-dimensional chain uses `[x0]`.
-   * @param {number} args.n - Number of states returned, including `start`.
+   * @param {number} args.n - Number of states returned, including `start`;
+   *   a positive integer, else a `RangeError` is thrown.
    * @param {number} args.scale - Proposal half-width (`"uniform"`) or
    *   standard deviation (`"gaussian"`).
    * @param {() => number} args.rng - Uniform `[0, 1)` generator, e.g.
@@ -45,6 +46,9 @@
    *   `1..n-1` only.
    */
   const randomWalkMetropolis = ({logDensity, start, n, scale, rng, proposal = "uniform"}) => {
+    if (!Number.isInteger(n) || n < 1) {
+      throw new RangeError(`randomWalkMetropolis: n must be a positive integer, got ${n}`)
+    }
     const dim = start.length
     const samples = [start.slice()]
     const proposals = [null]

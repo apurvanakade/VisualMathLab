@@ -30,6 +30,13 @@ test('symmetricEigenvalues of the walk on a 4-cycle: 1, 0, 0, -1', () => {
   for (let i = 0; i < 4; i++) assert.ok(close(values[i], expected[i]), `${values}`)
 })
 
+test('symmetricEigenvalues is scale-invariant', () => {
+  for (const c of [1e-8, 1e8]) {
+    const values = symmetricEigenvalues([[2 * c, c], [c, 2 * c]])
+    assert.ok(close(values[0] / c, 3) && close(values[1] / c, 1), `scale ${c}: ${values}`)
+  }
+})
+
 test('symmetricEigenvalues preserves the trace and leaves A alone', () => {
   const A = [[4, 1, 2], [1, 3, 0.5], [2, 0.5, 1]]
   const copy = JSON.parse(JSON.stringify(A))

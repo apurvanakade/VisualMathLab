@@ -35,3 +35,12 @@ test('autocorrelation caps the lag at n - 1 and handles constant and tiny series
   assert.deepEqual(autocorrelation([7]), [1])
   assert.deepEqual(autocorrelation([]), [1])
 })
+
+test('autocorrelation does not depend on the scale of the data', () => {
+  // Lag-1: sum of (x_t - m)(x_{t-1} - m) = -3 * (5e-8)^2, over 4 * (5e-8)^2.
+  const acf = autocorrelation([0, 1e-7, 0, 1e-7], 1)
+  assert.ok(Math.abs(acf[1] + 0.75) < 1e-9, `${acf}`)
+  // A constant series whose mean doesn't round exactly still reads as constant.
+  const tenths = new Array(1000).fill(0.1)
+  assert.deepEqual(autocorrelation(tenths, 3), [1, 0, 0, 0])
+})

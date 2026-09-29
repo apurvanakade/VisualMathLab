@@ -33,3 +33,7 @@ test('effectiveSampleSize handles tiny series', () => {
   assert.equal(effectiveSampleSize([]), 0)
   assert.equal(effectiveSampleSize([1]), 1)
 })
+
+test('effectiveSampleSize of a chain that never moves is NaN', () => {
+  assert.ok(Number.isNaN(effectiveSampleSize([3, 3, 3, 3, 3])))
+})

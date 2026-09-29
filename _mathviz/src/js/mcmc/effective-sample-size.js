@@ -17,10 +17,22 @@
    * @returns {number} A value in `(0, n]` for positively correlated
    *   chains. Never more than `n`: a chain whose lag-1 autocorrelation is
    *   already negative counts as independent. `0` for an empty series.
+   *   `NaN` for a chain that never moves (every value equal): its
+   *   autocorrelation is undefined, and reporting `n` would call the worst
+   *   possible chain a perfectly mixing one.
    */
   const effectiveSampleSize = (values, maxLag = 1000) => {
     const n = values.length
     if (n < 2) return n
+
+    let moved = false
+    for (const v of values) {
+      if (v !== values[0]) {
+        moved = true
+        break
+      }
+    }
+    if (!moved) return NaN
 
     const rho = globalThis.VM.mcmc.autocorrelation(values, maxLag)
     let sum = 0

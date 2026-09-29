@@ -124,7 +124,7 @@ git -C <develop folder> pull
 
 ## 7. Release: fast-forward main
 
-Pushing `main` deploys the site (`publish.yml` → `gh-pages` → `deploy.yml`).
+Pushing `main` deploys the site (`publish.yml` → `gh-pages` → GitHub's built-in Pages build).
 
 In the `develop` folder with its preview stopped:
 

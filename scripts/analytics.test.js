@@ -127,7 +127,7 @@ test('_quarto.yml: the mathviz extension emits the referrer policy ahead of its 
 test('the extension\'s fonts.css fetches nothing from a third party', () => {
   // The library's own fonts.test.js checks each url() resolves to a shipped
   // file; this is the half privacy.qmd's "Third-party resources" rests on.
-  const fontsCss = fs.readFileSync(path.join(repoRoot, '_extensions/mathviz/fonts/fonts.css'), 'utf8')
+  const fontsCss = fs.readFileSync(path.join(repoRoot, '_extensions/apurvanakade/mathviz/fonts/fonts.css'), 'utf8')
   assert.doesNotMatch(fontsCss.replace(/\/\*[\s\S]*?\*\//g, ''), /https?:\/\//, 'a font must not be fetched from a third party')
 })
 

@@ -23,7 +23,7 @@ a typo or wording fix in prose, a comment, or an edit to repo-only docs
 push.
 
 Anything that touches an OJS cell, CSS, `_includes/`,
-`_mathviz/`, `_extensions/`, `_quarto.yml` or `.github/` is **not** trivial,
+`_extensions/`, `_quarto.yml` or `.github/` is **not** trivial,
 however small. Carry on.
 
 If a PR number was given, skip to step 2.
@@ -49,9 +49,10 @@ folder holds which branch.
 
 Before committing:
 
-- If anything under `_mathviz/` changed, run `npm test` and
-  `npm run build:mathviz`, and commit the rebuilt `_extensions/mathviz/` with
-  it (`pr-check.yml` fails on a stale build).
+- `_extensions/apurvanakade/mathviz/` is the installed mathviz release. If
+  it changed, it must be a release (`scripts/update-mathviz.sh`), never a
+  local build or a hand edit; library changes are pull requests to
+  apurvanakade/mathviz.
 - Don't run the full `npm run verify` crawl locally. `pr-check.yml` runs it.
 
 Commit with a message that says what changed and why, then:
@@ -79,8 +80,9 @@ gh api repos/apurvanakade/VisualMathLab/pulls/<N>/comments   # inline
 
 Copilot doesn't know CLAUDE.md. For each unresolved thread:
 
-- **Valid**: fix it. If it points at `_extensions/mathviz/**`, fix the source
-  in `_mathviz/src/**` and rebuild. Never edit the generated copy.
+- **Valid**: fix it. If it points at `_extensions/apurvanakade/mathviz/**`,
+  it belongs in apurvanakade/mathviz: tell the user rather than editing the
+  installed copy.
 - **Contradicts a convention** (e.g. "use `.map()`", "remove the `text/plain`
   script type", "use `:first-child`", "add `toc: false`"): decline it.
 - **Wrong or already handled**: decline it.
@@ -124,18 +126,7 @@ git -C <develop folder> pull
 
 Pushing `main` deploys the site (`publish.yml` → `gh-pages` → `deploy.yml`).
 
-**If the PR changed `_mathviz/`**, bump the library first, or returning
-visitors keep a cached stale bundle under the old version's path. Ask the
-user for the new version (patch bump unless they say otherwise; the current
-one is `version` in `_mathviz/package.json`), then:
-
-```sh
-gh workflow run release-mathviz.yml -f version=<x.y.z>
-gh run watch <run-id>
-git -C <develop folder> pull
-```
-
-Then, in the `develop` folder with its preview stopped:
+In the `develop` folder with its preview stopped:
 
 ```sh
 git checkout main && git merge --ff-only develop && git push origin main && git checkout develop
@@ -164,5 +155,5 @@ and stop if it lists a modified tracked file -- that is unmerged work.
 ## Report
 
 Say what shipped: the PR link, the review comments fixed or declined (with
-the reason), anything left open, the mathviz version if it was bumped, and
+the reason), anything left open, and
 that `main` was pushed.

@@ -15,18 +15,7 @@ The first `quarto preview` renders the whole site once -- about a minute, the sa
 
 **Checking your work**: open the page in `quarto preview` and use it -- `quarto render` only catches parse errors, not a cell that throws at runtime. For a scripted check of just your page, `npm install` once and run `npm run verify -- apps/<slug>/index.qmd`, which drives that one page in a headless browser and fails on any console error (`npm run verify -- --changed` does the same for every page you have touched since `develop`). You do not need to run the full-site crawl (`npm run verify` with no arguments, a minute or two) yourself: every pull request to `develop` runs it on GitHub Actions (`.github/workflows/pr-check.yml`), and the check has to be green before the page is merged.
 
-**The shared code** -- `VM.*` helpers, the `ojs-*` panel and chart classes, the `--vm-*` design tokens -- is the [mathviz](https://github.com/apurvanakade/mathviz) library, and it is **authored in this repository**, under `_mathviz/`. A change every page should get goes there, in the same pull request as the page that needs it:
-
-```sh
-# edit _mathviz/src/js/<category>/<name>.js, and list any new file in
-# _mathviz/src/manifest.mjs (the load order)
-npm test                 # the library's tests and the site's, together
-npm run build:mathviz    # rebuild, and install it as _extensions/mathviz/
-```
-
-`npm run build:mathviz` is not optional: the browser reads the built bundle in `_extensions/mathviz/`, so until you run it the page is still using the old one. Commit the rebuilt `_extensions/mathviz/` along with your source change -- it is generated, but it is committed, and the pull-request check rebuilds it and fails if the two disagree. Never edit `_extensions/mathviz/` by hand.
-
-A workflow mirrors `_mathviz/` out to the mathviz repository for other sites to install. **You do not need to write documentation there** -- that happens on the mirror's own branch, separately. Do give every new public function a JSDoc block, which is what that documentation gets written from.
+**The shared code** -- `VM.*` helpers, the `ojs-*` panel and chart classes, the `--vm-*` design tokens -- is the [mathviz](https://github.com/apurvanakade/mathviz) library. This site installs its latest release into `_extensions/apurvanakade/mathviz/` before every render (`scripts/update-mathviz.sh`); never edit that folder, the next update replaces it. A change every page should get is a pull request to mathviz; once it is released, the site picks it up on its next render. To try it on a page here first, build mathviz and run `quarto add /path/to/mathviz --no-prompt` in this repo (re-run after each build), then restore the release with `QUARTO_PROJECT_RENDER_ALL=1 scripts/update-mathviz.sh` before committing.
 
 `CLAUDE.md` documents the page conventions in depth (URL-synced inputs, the example dropdown, the chart block and its slider bar, the legend); read the section for whatever you are touching.
 

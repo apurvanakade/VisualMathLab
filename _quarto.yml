@@ -4,6 +4,10 @@
 
 project:
   type: website
+  # Installs the latest tagged mathviz release into
+  # _extensions/apurvanakade/mathviz/ before every render (at most hourly in
+  # preview; offline it keeps the installed copy). See CLAUDE.md.
+  pre-render: scripts/update-mathviz.sh
   output-dir: docs
   # An explicit allowlist, not the default "render everything renderable" --
   # without it Quarto compiles the repo's own docs (CLAUDE.md,
@@ -20,10 +24,9 @@ execute:
   message: false
 
 # The shared chart/control/numerics library (window.VM, the ojs-* design
-# system, the --vm-* tokens) is the mathviz Quarto extension. It is authored
-# in this repository under _mathviz/ and built into _extensions/mathviz/ by
-# `npm run build:mathviz`; a workflow mirrors it out to apurvanakade/mathviz
-# for other sites. Its filter puts math.js, Plotly, mathviz.js and
+# system, the --vm-* tokens) is the mathviz Quarto extension, installed from
+# apurvanakade/mathviz's latest release by the pre-render hook above. Its
+# filter puts math.js, Plotly, mathviz.js and
 # mathviz.css into every page's <head>, in that order -- ahead of everything
 # in include-in-header. See CLAUDE.md.
 filters:
@@ -59,8 +62,8 @@ format:
     # Bootstrap chrome and the mathviz panels share one palette. A site-only
     # override goes in a second file listed after each of these.
     theme:
-      light: [_extensions/mathviz/theme/mathviz-light.scss]
-      dark: [_extensions/mathviz/theme/mathviz-dark.scss]
+      light: [_extensions/apurvanakade/mathviz/theme/mathviz-light.scss]
+      dark: [_extensions/apurvanakade/mathviz/theme/mathviz-dark.scss]
     toc: false
     html-math-method: mathjax
     title-block-categories: false

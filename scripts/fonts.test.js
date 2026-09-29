@@ -7,7 +7,7 @@
 // Tier 1 (pure-logic, no browser) tests for this site's use of the mathviz
 // fonts and theme. The font files themselves, and the Lua that ships them,
 // are the library's and are tested next to them
-// (_mathviz/src/fonts/fonts.test.js); what is left here is what this site
+// (src/fonts/fonts.test.js in apurvanakade/mathviz); what is left here is what this site
 // claims: that it turns them on, and privacy.qmd's statement that no font
 // request goes to Google.
 //
@@ -33,9 +33,9 @@ test('_quarto.yml turns on the self-hosted fonts', () => {
 
 test('_quarto.yml uses the mathviz theme, and the files it names exist', () => {
   for (const scheme of ['light', 'dark']) {
-    const rel = `_extensions/mathviz/theme/mathviz-${scheme}.scss`
+    const rel = `_extensions/apurvanakade/mathviz/theme/mathviz-${scheme}.scss`
     assert.match(quartoYml, new RegExp(`^\\s*${scheme}: \\[${rel.replace(/[./]/g, '\\$&')}`, 'm'))
-    assert.ok(fs.existsSync(path.join(repoRoot, rel)), `${rel} is missing -- run npm run build:mathviz`)
+    assert.ok(fs.existsSync(path.join(repoRoot, rel)), `${rel} is missing -- run scripts/update-mathviz.sh`)
   }
 })
 

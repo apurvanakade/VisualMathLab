@@ -139,7 +139,7 @@ The sidebar (`#quarto-sidebar`) is forced off-canvas at *every* width (not just 
 
 ### The mathviz library (`_mathviz/`, built into `_extensions/mathviz/`)
 
-Everything a second site could reuse — the `VM.<category>.<fn>` utilities (`expressions`, `numerical`, `sampling`, `filters`, `distributions`, `plotting`, `ui`, `discreteMath`), the `ojs-*`/`vm-*` design-system CSS (panels, chart block and fullscreen chain, floating legend, slider bar and play button, modebar, swatches, iteration table) and the `--vm-*` token defaults — is the **mathviz** library. **It is authored here, in `_mathviz/`, and mirrored out** to [apurvanakade/mathviz](https://github.com/apurvanakade/mathviz) for other sites to install.
+Everything a second site could reuse — the `VM.<category>.<fn>` utilities (`expressions`, `numerical`, `sampling`, `filters`, `distributions`, `plotting`, `ui`, `discreteMath`, `mcmc`), the `ojs-*`/`vm-*` design-system CSS (panels, chart block and fullscreen chain, floating legend, slider bar and play button, modebar, swatches, iteration table) and the `--vm-*` token defaults — is the **mathviz** library. **It is authored here, in `_mathviz/`, and mirrored out** to [apurvanakade/mathviz](https://github.com/apurvanakade/mathviz) for other sites to install.
 
 That direction used to be reversed, and the reason it isn't is worth keeping: a shared function is almost always discovered while building a page *here*, and making it a release cycle in another repo before that page could use it put a tag, two commits and a round trip between the need and the fix.
 

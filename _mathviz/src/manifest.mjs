@@ -22,6 +22,7 @@ export const js = [
   'plotting/chart-theme.js',
   'plotting/plotly-fullscreen-button.js',
   'plotting/svg-fullscreen-button.js',
+  'plotting/persistent-plot.js',
   'numerical/linear-regression.js',
   'numerical/l1-regression.js',
   'numerical/polynomial-fit.js',
@@ -29,6 +30,7 @@ export const js = [
   'numerical/rk4-solve.js',
   'numerical/simpson-estimate.js',
   'numerical/lagrange-quadratic.js',
+  'numerical/symmetric-eigenvalues.js',
   'sampling/seeded-random.js',
   'sampling/gaussian-random.js',
   'distributions/log-gamma.js',
@@ -53,12 +55,21 @@ export const js = [
   'filters/moving-average-filter.js',
   'filters/ema-filter.js',
   'filters/kalman-1d-filter.js',
+  'mcmc/autocorrelation.js',
+  'mcmc/effective-sample-size.js',
+  'mcmc/running-mean.js',
+  'mcmc/random-walk-metropolis.js',
+  'mcmc/gibbs-bivariate-normal.js',
+  'mcmc/evolve-distribution.js',
+  'mcmc/total-variation.js',
   'ui/render-table.js',
   'ui/range-progress.js',
   'ui/slider-play.js',
   'ui/apply-example.js',
   'ui/legend-overlay.js',
   'ui/draggable-overlay.js',
+  'ui/stat-row.js',
+  'ui/url-params.js',
   'discrete-math/barycentric-triples.js',
   'discrete-math/sub-triangles.js',
   'discrete-math/triangulation-edges.js',
@@ -67,6 +78,8 @@ export const js = [
   'discrete-math/vertex-color.js',
   'discrete-math/mixed-pair-color.js',
   'discrete-math/triangle-fill-color.js',
+  'discrete-math/random-walk-matrix.js',
+  'discrete-math/spring-layout.js',
 ]
 
 // tokens.css first: it declares the --vm-* defaults everything after it reads.
@@ -79,6 +92,7 @@ export const css = [
   'modebar.css',
   'sliders.css',
   'table.css',
+  'stat-row.css',
 ]
 
 // [before, after] pairs -- `after` may be a string or a RegExp matched against
@@ -97,4 +111,6 @@ export const mustPrecede = [
   ['plotting/plotly-fullscreen-button.js', 'plotting/svg-fullscreen-button.js'],
   ['discrete-math/sub-triangles.js', 'discrete-math/triangulation-edges.js'],
   ['numerical/linear-regression.js', 'numerical/l1-regression.js'],
+  // effectiveSampleSize sums the autocorrelation helper's output.
+  ['mcmc/autocorrelation.js', 'mcmc/effective-sample-size.js'],
 ]

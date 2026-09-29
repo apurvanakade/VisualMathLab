@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-# Pulls the latest tagged release of the mathviz Quarto extension
+# Copyright (c) 2026 Apurva Nakade. All rights reserved.
+# Released under Apache 2.0 license as described in the file LICENSE.
+# Authors: Apurva Nakade
+
+# Installs the latest tagged release of the mathviz Quarto extension
 # (https://github.com/apurvanakade/mathviz) into _extensions/.
 #
 # Runs as a pre-render hook (see _quarto.yml), so every `quarto render` and
-# `quarto preview` builds against the newest mathviz. Offline, it keeps the
-# copy already in _extensions/ and lets the build continue.
+# `quarto preview` builds against the newest mathviz release. Offline, it
+# keeps the copy already in _extensions/ and lets the build continue.
+#
+# The newest v* tag is looked up explicitly and passed as EXT@tag: a bare
+# `quarto add owner/repo` installs whatever the default branch holds, which
+# can be ahead of the last release.
 set -u
 
 EXT="apurvanakade/mathviz"
@@ -20,28 +28,44 @@ if [ -d "$DIR" ] && [ -z "${QUARTO_PROJECT_RENDER_ALL:-}" ] \
   exit 0
 fi
 
-before="$(version)"
-if [ -d "$DIR" ]; then
-  log="$(quarto update extension "$EXT" --no-prompt 2>&1)"
-else
-  log="$(quarto add "$EXT" --no-prompt 2>&1)"
+if [ -d "_extensions/mathviz" ]; then
+  echo "mathviz: _extensions/mathviz/ is a second copy (the starter's). Delete it; this hook manages $DIR." >&2
 fi
-status=$?
-[ $status -ne 0 ] && printf '%s\n' "$log" >&2
-[ $status -eq 0 ] && mkdir -p .quarto && touch "$STAMP"
-after="$(version)"
 
-if [ $status -ne 0 ]; then
+before="$(version)"
+
+tag="$(git ls-remote --tags --refs --sort=-v:refname "https://github.com/$EXT" 'v*' 2>/dev/null \
+  | sed -n '1s|.*refs/tags/||p')"
+if [ -z "$tag" ]; then
   if [ -d "$DIR" ]; then
-    echo "mathviz: update failed (offline?); building with v${before}." >&2
+    echo "mathviz: could not look up the latest release (offline?); building with v${before}." >&2
     exit 0
   fi
-  echo "mathviz: could not install $EXT and no local copy exists." >&2
+  echo "mathviz: could not look up the latest release of $EXT and no local copy exists." >&2
   exit 1
 fi
 
-if [ "$before" != "$after" ]; then
-  echo "mathviz: v${before:-none} -> v${after}"
-else
-  echo "mathviz: v${after} (latest)"
+if [ "v$before" = "$tag" ]; then
+  mkdir -p .quarto && touch "$STAMP"
+  echo "mathviz: v${before} (latest)"
+  exit 0
 fi
+
+if [ -d "$DIR" ]; then
+  log="$(quarto update extension "$EXT@$tag" --no-prompt 2>&1)"
+else
+  log="$(quarto add "$EXT@$tag" --no-prompt 2>&1)"
+fi
+status=$?
+if [ $status -ne 0 ]; then
+  printf '%s\n' "$log" >&2
+  if [ -d "$DIR" ]; then
+    echo "mathviz: update to $tag failed; building with v${before}." >&2
+    exit 0
+  fi
+  echo "mathviz: could not install $EXT@$tag and no local copy exists." >&2
+  exit 1
+fi
+
+mkdir -p .quarto && touch "$STAMP"
+echo "mathviz: v${before:-none} -> v$(version)"

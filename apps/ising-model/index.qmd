@@ -1,0 +1,612 @@
+---
+title: "Ising Model"
+topic: "Probability"
+description: "Simulates single-spin-flip Monte Carlo dynamics on a periodic (toroidal) lattice, showing the order/disorder phase transition near the critical temperature."
+author: Dhruv Azad
+date: 2026-10-05
+order: 4
+image: ising-model.png
+categories:
+  - Computational Math
+  - Monte Carlo
+  - Statistical Mechanics
+  - Phase Transitions
+  - Metropolis Algorithm
+---
+
+<!--
+Copyright (c) 2026 Dhruv Azad. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Dhruv Azad
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.sampling.seededRandom, VM.expressions.makeNumber, VM.mcmc.runningMean, VM.plotting.colors/onThemeChange/config/autoResize/emptyState/plotOptions, and VM.ui.renderTable/applyExampleParams/syncExampleSelect.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// urlParams backs the Max sweeps field's default below — every other input
+// on this page is already URL-shareable (N/T/J/h via committed, the sweep
+// step via its own slider), max sweeps was the one exception.
+urlParams = new URLSearchParams(window.location.search)
+
+initialMax = urlParams.get("max") ?? "200"
+```
+
+```{ojs}
+//| output: false
+// vmTheme is what makes the colors below reactive. The chart's own chrome
+// (background, axes, gridlines) repaints on a dark-mode toggle by itself,
+// via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
+// colors are values this page bakes into the heatmap it builds, so nothing
+// repaints them unless mainPlot re-runs. Depending on vmTheme is what
+// re-runs it. See VM.plotting.onThemeChange for why it fires a couple of
+// frames after the toggle rather than inline.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+// No floating legend on this page: the heatmap is a single trace (spin up
+// vs. spin down), so there's nothing to toggle — chartColors is still
+// needed for the spin colors, the diagnostic plots, and the color words in
+// the explanation at the bottom.
+chartColors = VM.plotting.colors(vmTheme)
+```
+
+```{ojs}
+//| output: false
+// examples backs the "Try an example" dropdown near the top controls. Tc =
+// 2/ln(1+sqrt2) ≈ 2.269 is the exact critical temperature for this model
+// (J = 1, h = 0, infinite lattice) — see the explanation below.
+examples = [
+  {
+    title: "Ordered phase (T = 1.5, below Tc)",
+    params: {max: "200", N: "30", T: "1.5", J: "1", h: "0", seed: "1"}
+  },
+  {
+    title: "Near the critical temperature (T ≈ 2.269)",
+    params: {max: "200", N: "30", T: "2.269", J: "1", h: "0", seed: "1"}
+  },
+  {
+    title: "Disordered phase (T = 4, above Tc)",
+    params: {max: "200", N: "30", T: "4", J: "1", h: "0", seed: "1"}
+  },
+  {
+    title: "Biased by an external field (h = 1)",
+    params: {max: "200", N: "30", T: "2", J: "1", h: "1", seed: "1"}
+  },
+  {
+    title: "Antiferromagnetic coupling (J = -1)",
+    params: {max: "200", N: "30", T: "1.5", J: "-1", h: "0", seed: "1"}
+  }
+]
+```
+
+<div class="vm-app">
+
+<div class="ojs-panel">
+
+<div class="ojs-row">
+
+```{ojs}
+viewof NInput = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Lattice size N (N × N torus)", value: params.get("N") ?? "30", placeholder: "Example: 30, 50"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "N"
+  return input
+}
+```
+
+```{ojs}
+// Run commits the current N/T/J/h/seed fields — edits above don't take
+// effect until this is clicked, so result/mainPlot don't recompute on
+// every keystroke. The sweep slider overlaid on the plot is unaffected and
+// stays reactive.
+viewof plotTrigger = {
+  const runButton = Inputs.button("Run simulation", {value: 0, reduce: v => v + 1})
+  runButton.classList.add("ojs-auto")
+  return runButton
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof TInput = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Temperature T", value: params.get("T") ?? "2.269", placeholder: "Example: 1.5, 2.269, 4"})
+  input.dataset.exampleField = "T"
+  return input
+}
+```
+
+```{ojs}
+viewof JInput = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Coupling constant J", value: params.get("J") ?? "1", placeholder: "Example: 1, -1"})
+  input.dataset.exampleField = "J"
+  return input
+}
+```
+
+```{ojs}
+viewof hInput = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "External field h", value: params.get("h") ?? "0", placeholder: "Example: 0, 1"})
+  input.dataset.exampleField = "h"
+  return input
+}
+```
+
+```{ojs}
+viewof seedInput = {
+  const params = new URLSearchParams(window.location.search)
+  const input = Inputs.text({label: "Random seed", value: params.get("seed") ?? "1", placeholder: "Example: 1, 42"})
+  input.dataset.exampleField = "seed"
+  return input
+}
+```
+
+```{ojs}
+// Always-live (not gated behind Run) — it bounds the sweep slider and
+// result's own loop directly, so there's no reason to wait for a commit:
+// changing it just extends or truncates the same seeded run. See
+// urlSyncControls below for how it stays in the URL.
+viewof maxSweepsInput = {
+  const input = Inputs.text({value: initialMax, label: "Max sweeps", placeholder: "Example: 200, 500"})
+  input.dataset.exampleField = "max"
+  return input
+}
+```
+
+```{ojs}
+viewof exampleSelect = {
+  const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references -- see
+// apply-example.js's comment for why. max is listed last: nothing on this
+// page depends on it the way a step slider's own bounds would, but it's
+// kept alongside the others per the site-wide contract that every
+// exampleFieldSelectors entry is a real field.
+exampleFieldSelectors = ({
+  N: '[data-example-field="N"]',
+  T: '[data-example-field="T"]',
+  J: '[data-example-field="J"]',
+  h: '[data-example-field="h"]',
+  seed: '[data-example-field="seed"]',
+  max: '[data-example-field="max"]'
+})
+```
+
+```{ojs}
+//| output: false
+// Applies the selected example's params to the fields above and clicks
+// Run, in place — no page reload, so no scroll jump either. A plain
+// "change" listener attached once to the stable native <select> (rather
+// than an OJS cell reactive on exampleSelect's value) — a <select> fires
+// both "input" and "change" per selection, and a reactive cell would run
+// once per event, with two overlapping calls racing each other.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+//| output: false
+// Keeps the dropdown naming the example the fields above hold ("Custom
+// inputs" once none does). Reads every example field's value so it re-runs
+// whenever one changes; it only sets the dropdown, never a field.
+syncExampleFromFields = {
+  NInput; TInput; JInput; hInput; seedInput; maxSweepsInput
+  VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// Enter in any of the commit-gated fields clicks Run instead of submitting
+// the field's own (invisible) form. Depends only on the stable views, so
+// this wiring runs once and is never re-attached.
+enterToPlot = {
+  for (const view of [viewof NInput, viewof TInput, viewof JInput, viewof hInput, viewof seedInput]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// committed snapshots N/T/J/h/seed only when Run is clicked, and writes
+// them back into the URL so the address bar stays a shareable link. It
+// reads the stable `viewof` DOM views (not the reactive values), so it
+// does NOT rerun on every keystroke — only when `plotTrigger` changes. It
+// still runs once on initial page load, so the first render uses the
+// URL-provided (or default) values with no click.
+committed = {
+  plotTrigger
+  const math = window.math
+  const NText = (viewof NInput).value
+  const TText = (viewof TInput).value
+  const JText = (viewof JInput).value
+  const hText = (viewof hInput).value
+  const seedText = (viewof seedInput).value
+
+  const params = new URLSearchParams(window.location.search)
+  params.set("N", NText)
+  params.set("T", TText)
+  params.set("J", JText)
+  params.set("h", hText)
+  params.set("seed", seedText)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+
+  // N is rounded and clamped here (not just parsed): unlike a scalar field
+  // such as x0 in Newton's method, N drives an N×N simulation, so an
+  // unclamped value could hang the tab. [2, 100] keeps the worst case (100
+  // × 100 lattice, 2000 sweeps — see maxSweeps below) well under a second.
+  let NVal = VM.expressions.makeNumber(math, NText)
+  if (Number.isFinite(NVal)) NVal = Math.max(2, Math.min(100, Math.round(NVal)))
+
+  return {
+    N: NVal,
+    T: VM.expressions.makeNumber(math, TText),
+    J: VM.expressions.makeNumber(math, JText),
+    h: VM.expressions.makeNumber(math, hText),
+    seed: VM.expressions.makeNumber(math, seedText)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// max sweeps is always-live rather than commit-gated, so it gets its own
+// sync cell instead of piggybacking on committed above (which only runs
+// when Run is clicked).
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("max", maxSweepsInput)
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// maxSweeps parses the Max sweeps field's expression, falling back to 200
+// for invalid input. Clamped to 2000: each sweep is N² attempted flips
+// plus an O(N²) energy/magnetization recompute, and a snapshot of the
+// whole lattice is stored every sweep — an unclamped value here, combined
+// with a large N, could take the tab down.
+maxSweeps = {
+  const parsed = VM.expressions.makeNumber(window.math, maxSweepsInput)
+  if (parsed === null || !Number.isFinite(parsed)) return 200
+  return Math.max(1, Math.min(2000, Math.round(parsed)))
+}
+```
+
+```{ojs}
+//| output: false
+// result: runs single-spin-flip Metropolis dynamics on an N×N lattice with
+// periodic boundary conditions (a torus — each site's four neighbors wrap
+// around both edges) for maxSweeps sweeps, one sweep being N² randomly
+// chosen single-spin flip attempts. Starts from a random ("hot") initial
+// configuration, seeded so the whole run is reproducible from the URL.
+//   rows — one entry per sweep (0 = the initial state): { sweep, grid,
+//     energy, magnetization, acceptRate }. grid is a flat Int8Array of ±1,
+//     row-major (index = y*N + x); energy and magnetization are already
+//     divided by N² (per site); acceptRate is null for sweep 0.
+//   N — the lattice size actually used (0 if parsed is false)
+//   parsed — false when N, T, J, h, or seed couldn't be read
+result = {
+  const N = committed.N
+  const T = committed.T
+  const J = committed.J
+  const h = committed.h
+  const seed = committed.seed
+
+  const valid = Number.isFinite(N) && N >= 2 && Number.isFinite(T) && T >= 0 && Number.isFinite(J) && Number.isFinite(h) && Number.isFinite(seed)
+  if (!valid) return {rows: [], N: 0, parsed: false}
+
+  const rng = VM.sampling.seededRandom(Math.round(seed))
+  const size = N * N
+
+  const grid = new Int8Array(size)
+  for (let i = 0; i < size; i++) grid[i] = rng() < 0.5 ? -1 : 1
+
+  // Sum of the four periodic neighbors of (x, y) — wrap-around is what
+  // makes this a torus rather than a plain square with an edge.
+  const neighborSum = (x, y) => {
+    const xm = (x - 1 + N) % N, xp = (x + 1) % N
+    const ym = (y - 1 + N) % N, yp = (y + 1) % N
+    return grid[y * N + xm] + grid[y * N + xp] + grid[ym * N + x] + grid[yp * N + x]
+  }
+
+  // Each bond counted once: the bond to the right and the bond below every
+  // site covers every edge of the periodic lattice exactly once.
+  const totalEnergy = () => {
+    let e = 0
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) {
+        const s = grid[y * N + x]
+        const right = grid[y * N + (x + 1) % N]
+        const down = grid[((y + 1) % N) * N + x]
+        e += -J * s * (right + down) - h * s
+      }
+    }
+    return e
+  }
+
+  const totalMagnetization = () => {
+    let m = 0
+    for (let i = 0; i < size; i++) m += grid[i]
+    return m
+  }
+
+  const rows = []
+  rows.push({sweep: 0, grid: grid.slice(), energy: totalEnergy() / size, magnetization: totalMagnetization() / size, acceptRate: null})
+
+  for (let sweep = 1; sweep <= maxSweeps; sweep++) {
+    let accepted = 0
+    for (let k = 0; k < size; k++) {
+      // A randomly chosen site each attempt (not a fixed scan order) is
+      // the standard single-spin-flip Metropolis sweep.
+      const x = Math.floor(rng() * N)
+      const y = Math.floor(rng() * N)
+      const i = y * N + x
+      const s = grid[i]
+
+      // Flipping s -> -s changes the energy by ΔE = 2 s (J Σ_neighbors + h).
+      const localField = J * neighborSum(x, y) + h
+      const deltaE = 2 * s * localField
+
+      let accept = deltaE <= 0
+      if (!accept && T > 0) accept = rng() < Math.exp(-deltaE / T)
+      // T === 0: zero-temperature (greedy) dynamics — only accept if it
+      // lowers the energy, never by chance.
+
+      if (accept) {
+        grid[i] = -s
+        accepted++
+      }
+    }
+    rows.push({sweep, grid: grid.slice(), energy: totalEnergy() / size, magnetization: totalMagnetization() / size, acceptRate: accepted / size})
+  }
+
+  return {rows, N, parsed: true}
+}
+```
+
+```{ojs}
+//| output: false
+// setup picks the lattice snapshot visible at the current sweep.
+setup = {
+  const rows = result.rows
+  if (rows.length === 0) return {row: null, N: 0, parsed: result.parsed}
+  const idx = Math.max(0, Math.min(Math.round(stepControl), rows.length - 1))
+  return {row: rows[idx], N: result.N, parsed: result.parsed}
+}
+```
+
+```{ojs}
+//| output: false
+// mainPlot draws the current sweep's lattice as a two-color heatmap: one
+// color per spin value. _plotDiv is kept in a closure so Plotly reuses the
+// same DOM node across reactive re-renders (Plotly.react instead of
+// Plotly.newPlot after the first render) — this preserves zoom/pan when
+// the sweep slider moves.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({row, N, parsed}) => {
+    const data = []
+
+    if (row) {
+      const z = []
+      for (let y = 0; y < N; y++) {
+        const line = []
+        for (let x = 0; x < N; x++) line.push(row.grid[y * N + x])
+        z.push(line)
+      }
+      data.push({
+        z, type: "heatmap", zmin: -1, zmax: 1,
+        // A two-stop discrete colorscale (each color repeated at the 0.5
+        // boundary) rather than a continuous one — spin is binary, not a
+        // smoothly varying quantity.
+        colorscale: [[0, chartColors.alt], [0.5, chartColors.alt], [0.5, chartColors.fn], [1, chartColors.fn]],
+        showscale: false,
+        hovertemplate: "(x, y) = (%{x}, %{y})<br>spin = %{z:+d}<extra></extra>"
+      })
+    }
+
+    const layout = {
+      xaxis: {title: "x (mod N)", range: [-0.5, N - 0.5], showgrid: false, zeroline: false, scaleanchor: "y", constrain: "domain"},
+      yaxis: {title: "y (mod N)", range: [-0.5, N - 0.5], showgrid: false, zeroline: false},
+      annotations: parsed ? [] : VM.plotting.emptyState("Couldn't read that — check N, T, J, h, and the seed."),
+      hovermode: "closest",
+      uirevision: "static",
+      autosize: true
+    }
+    const config = VM.plotting.config()
+
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
+      // A ResizeObserver catches the real size once it's inserted and laid out,
+      // and keeps correcting it on any later layout/viewport change.
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-chart-block">
+
+```{ojs}
+mainPlot(setup)
+```
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+// The sweep scrubber. It gets a play button automatically.
+viewof stepControl = {
+  const slider = Inputs.range([0, maxSweeps], {step: 1, value: 0, label: "Sweep"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+</div>
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// iteratesPlot draws the energy per site against the sweep number, for the
+// entire run — it doesn't depend on the current step. Starting from a
+// random configuration, this falls (for T below Tc) from near 0 toward the
+// ordered ground-state energy as the lattice relaxes.
+iteratesPlot = {
+  const points = []
+  for (const r of result.rows) points.push({sweep: r.sweep, energy: r.energy})
+  return Plot.plot(VM.plotting.plotOptions({
+    height: 260,
+    x: {label: "sweep"},
+    y: {label: "energy / site"},
+    marks: [
+      Plot.line(points, {x: "sweep", y: "energy", stroke: chartColors.fn}),
+      Plot.dot(points, {x: "sweep", y: "energy", fill: chartColors.fn, r: 2.5})
+    ]
+  }))
+}
+```
+
+```{ojs}
+// convergencePlot draws |magnetization| per site against the sweep number,
+// raw and as a running mean (VM.mcmc.runningMean) — the quantity a Monte
+// Carlo estimate of the equilibrium magnetization converges through. Below
+// Tc the raw series settles near one of the two ordered values (the finite
+// lattice spontaneously picks a sign); above Tc it fluctuates around 0.
+convergencePlot = {
+  const rawPoints = []
+  const absMagnetization = []
+  for (const r of result.rows) {
+    rawPoints.push({sweep: r.sweep, m: r.magnetization})
+    absMagnetization.push(Math.abs(r.magnetization))
+  }
+  const running = VM.mcmc.runningMean(absMagnetization)
+  const runningPoints = []
+  for (let i = 0; i < running.length; i++) runningPoints.push({sweep: result.rows[i].sweep, m: running[i]})
+
+  const rawName = "magnetization / site"
+  const runName = "running mean of |magnetization| / site"
+  const colorDomain = [rawName, runName]
+  const colorRange = [chartColors.alt, chartColors.accent2]
+
+  const chart = Plot.plot(VM.plotting.plotOptions({
+    height: 260,
+    x: {label: "sweep"},
+    y: {label: "magnetization / site"},
+    color: {domain: colorDomain, range: colorRange},
+    marks: [
+      Plot.dot(rawPoints, {x: "sweep", y: "m", fill: () => rawName, r: 2.5, opacity: 0.5}),
+      Plot.line(runningPoints, {x: "sweep", y: "m", stroke: () => runName, strokeWidth: 2.5})
+    ]
+  }))
+
+  const container = document.createElement("div")
+  container.append(chart)
+  container.append(Plot.legend({color: {domain: colorDomain, range: colorRange}}))
+  return container
+}
+```
+
+:::
+
+::::
+
+:::: {.callout-note collapse="true" title="Iteration table"}
+
+```{ojs}
+// Sweep table — shows the entire run, not just the current step.
+iterationTable = {
+  if (result.rows.length === 0) {
+    // Always return a Node so Quarto's OJS runtime never latches this
+    // declaration cell as hidden.
+    return document.createElement("div")
+  }
+
+  const formattedRows = []
+  for (const row of result.rows) {
+    const energyCell = row.energy.toPrecision(6)
+    const magnetizationCell = row.magnetization.toPrecision(6)
+    let acceptCell = "—"
+    if (row.acceptRate !== null) acceptCell = (row.acceptRate * 100).toFixed(1) + "%"
+    formattedRows.push([row.sweep, energyCell, magnetizationCell, acceptCell])
+  }
+
+  return VM.ui.renderTable({
+    html,
+    headers: ["Sweep", tex`E / N^2`, tex`M / N^2`, "Accepted flips"],
+    csvHeaders: ["sweep", "energy_per_site", "magnetization_per_site", "accepted_flip_fraction"],
+    filename: "ising-model-sweeps.csv",
+    rows: formattedRows
+  })
+}
+```
+
+::::
+
+The 2D Ising model places a spin $\sigma_i \in \{-1, +1\}$ on every site of a lattice. On an $N \times N$ **torus** — opposite edges identified, so site $(x, y)$'s neighbors wrap around both directions — every site has exactly four neighbors and there is no boundary to introduce edge effects. The energy of a configuration is
+
+$$
+H(\sigma) = -J \sum_{\langle i, j \rangle} \sigma_i \sigma_j - h \sum_i \sigma_i,
+$$
+
+summed over nearest-neighbor pairs $\langle i, j \rangle$. $J > 0$ favors aligned neighbors (<span class="vm-swatch vm-swatch-fn">ferromagnetic</span>), $J < 0$ favors anti-aligned ones (antiferromagnetic), and $h$ is a uniform external field.
+
+The simulation above runs the **Metropolis algorithm**: each sweep attempts $N^2$ single-spin flips, each at a site chosen uniformly at random. Flipping the spin at that site changes the energy by $\Delta E = 2 \sigma_i \left( J \sum_{\text{neighbors}} \sigma_j + h \right)$, and the flip is accepted with probability $\min\!\left(1, e^{-\Delta E / T}\right)$ — always accepted if it lowers the energy, accepted with decreasing probability the more it raises it. This converges to the Boltzmann equilibrium distribution $P(\sigma) \propto e^{-H(\sigma)/T}$ at temperature $T$ (units with $k_B = 1$).
+
+For $J = 1$, $h = 0$, and an infinite lattice, this model has an exact phase transition at the critical temperature
+
+$$
+T_c = \frac{2}{\ln(1 + \sqrt{2})} \approx 2.269,
+$$
+
+found by Onsager (1944). Below $T_c$ the lattice settles into one of two <span class="vm-swatch vm-swatch-fn">ordered</span> ground states (mostly spin-up or mostly spin-down — try the "Ordered phase" example); above $T_c$ thermal noise wins and spins point in <span class="vm-swatch vm-swatch-alt">random</span> directions with no net magnetization (the "Disordered phase" example). Near $T_c$ itself, clusters of aligned spins appear at every scale — the finite lattice's echo of the transition (the default view above, and the "Near the critical temperature" example).

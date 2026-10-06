@@ -21,10 +21,9 @@ Authors: Apurva Nakade
 
 <style>
 /* Page-local styles: the inline swatches in the explanation panels under
-   each grid, and the three-stage detection flow in the closing section --
-   markup only this page emits, so it lives here rather than in a shared
-   stylesheet (see CLAUDE.md's page-local CSS convention). Colors are the --vm-*
-   tokens, so it re-themes with the site. */
+   each grid -- markup only this page emits, so it lives here rather than in
+   a shared stylesheet (see CLAUDE.md's page-local CSS convention). Colors
+   are the --vm-* tokens, so it re-themes with the site. */
 .ppv-swatch {
   display: inline-block;
   width: 0.8em;
@@ -78,38 +77,6 @@ Authors: Apurva Nakade
   display: block;
   width: 100%;
   height: auto;
-}
-.ppv-flow {
-  margin: 1rem 0 1.25rem;
-}
-/* Pandoc emits each stage as one <p> holding the label span and its text;
-   a two-column grid puts the loose text in its own column (anonymous grid
-   item), so a wrapped description hangs beside the chip, not under it. */
-.ppv-flow-step p {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  align-items: baseline;
-  gap: 0.6em;
-  margin: 0;
-}
-/* The arrow between stages, indented so it hangs under the label chip. */
-.ppv-flow-step + .ppv-flow-step::before {
-  content: "\25BC";
-  display: block;
-  margin: 0.45rem 0 0.45rem 1.1em;
-  color: var(--vm-text-soft);
-  font-size: 0.75em;
-  line-height: 1;
-}
-.ppv-flow-label {
-  display: inline-block;
-  padding: 0.2em 0.7em;
-  border: 1px solid var(--vm-border);
-  border-radius: var(--vm-radius);
-  background: var(--vm-surface);
-  color: var(--vm-text);
-  font-weight: 600;
-  white-space: nowrap;
 }
 </style>
 
@@ -767,20 +734,33 @@ $$
 
 A positive mammogram is not a diagnosis; it starts a three-round process that works the same way, with the PPV out of each round becoming the prevalence going into the next.
 
-::: {.ppv-flow}
-::: {.ppv-flow-step}
-[Screening mammogram]{.ppv-flow-label}
+::::: {.vm-flow}
+
+:::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Screening mammogram]{.vm-flow-label}
+
 flags about 8% of women for a closer look (recall)
 :::
-::: {.ppv-flow-step}
-[Diagnostic imaging]{.ppv-flow-label}
+::::
+
+:::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Diagnostic imaging]{.vm-flow-label}
+
 additional views, ultrasound or MRI clear about four in five of those recalled
 :::
-::: {.ppv-flow-step}
-[Biopsy]{.ppv-flow-label}
+::::
+
+:::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Biopsy]{.vm-flow-label}
+
 confirms cancer in about a third of the remaining cases
 :::
-:::
+::::
+
+:::::
 
 Per 1,000 women screened in Lee et al.'s data, 83 are recalled, about 18 go on to biopsy, and 6 have cancer: the PPV rises from 7% after the mammogram to 32% after biopsy.
 

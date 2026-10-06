@@ -1,7 +1,7 @@
 ---
 title: "Particle Filter Tracking"
 topic: "Probability"
-description: "Tracks a moving object from noisy range-only sensor readings using a particle filter, showing the weighted particle cloud collapse onto the target as evidence accumulates."
+description: "Tracks a moving object from noisy range-only readings taken by several fixed sensors using a particle filter, showing how the weighted particle cloud follows the target, or loses it."
 author:
   - Dhruv Azad
 date: 2026-10-02
@@ -34,27 +34,28 @@ VM = window.VM
 
 ```{ojs}
 //| output: false
-// URL preset helpers. The commit-gated fields (xt, yt, sx, sy,
+// URL preset helpers. The commit-gated fields (xt, yt, sensors,
 // sigmaProcess, sigmaRange) read their own default inline below, the same
 // way every other method page does; this cell only backs the always-live
 // fields, which bound/tune the chart rather than feed `committed`.
 //
 // Supported query parameters:
 //   xt, yt        the object's true path, x(t) and y(t)
-//   sx, sy        the fixed sensor's location
+//   sensors       the fixed sensors' locations, as a list of points:
+//                 "(10, 0), (-5, 9), (-5, -9)"
 //   sigmaProcess  how far the true object wanders from x(t),y(t) each step
-//   sigmaRange    the sensor's true range-measurement noise (std dev)
+//   sigmaRange    every sensor's true range-measurement noise (std dev)
 //   max           number of time steps simulated
 //   N             number of particles
 //   threshold     resample whenever ESS / N falls below this fraction
 //   sigmaFilter   the filter's ASSUMED sensor noise (std dev) -- deliberately
 //                 a separate, always-live knob from sigmaRange, so "what the
 //                 filter believes" can be wrong on purpose
-//   show          comma-separated trace slugs: nominal, true, ring,
-//                 particles, estimate, sensor
+//   show          comma-separated trace slugs: nominal, true, particles,
+//                 estimate, sensors
 urlParams = new URLSearchParams(window.location.search)
 
-initialMax = urlParams.get("max") ?? "50"
+initialMax = urlParams.get("max") ?? "60"
 
 initialParticleCount = {
   const raw = Number.parseInt(urlParams.get("N"), 10)
@@ -71,27 +72,25 @@ initialSigmaFilter = {
   return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.05), 3) : 0.6
 }
 
-traceOptions = ["Nominal path", "True position", "Measurement ring", "Particles", "Estimate", "Sensor"]
+traceOptions = ["Nominal path", "True position", "Particles", "Estimate", "Sensors"]
 
 traceSlugToLabel = new Map([
   ["nominal", "Nominal path"],
   ["nominal-path", "Nominal path"],
   ["true", "True position"],
   ["true-position", "True position"],
-  ["ring", "Measurement ring"],
-  ["measurement-ring", "Measurement ring"],
   ["particles", "Particles"],
   ["estimate", "Estimate"],
-  ["sensor", "Sensor"]
+  ["sensors", "Sensors"],
+  ["sensor", "Sensors"]
 ])
 
 traceLabelToSlug = new Map([
   ["Nominal path", "nominal"],
   ["True position", "true"],
-  ["Measurement ring", "ring"],
   ["Particles", "particles"],
   ["Estimate", "estimate"],
-  ["Sensor", "sensor"]
+  ["Sensors", "sensors"]
 ])
 
 initialTraces = {
@@ -115,10 +114,9 @@ chartColors = VM.plotting.colors(vmTheme)
 traceColors = new Map([
   ["Nominal path", chartColors.muted],
   ["True position", chartColors.fn],
-  ["Measurement ring", chartColors.warn],
   ["Particles", chartColors.accent2],
   ["Estimate", chartColors.alt],
-  ["Sensor", chartColors.ink]
+  ["Sensors", chartColors.ink]
 ])
 ```
 
@@ -131,32 +129,37 @@ traceColors = new Map([
 examples = [
   {
     title: "Circular orbit",
-    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sx: "10", sy: "0", sigmaProcess: "0.15", sigmaRange: "0.6",
+    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: "(10, 0), (-5, 9), (-5, -9)", sigmaProcess: "0.15", sigmaRange: "0.6",
       max: "60", N: 150, threshold: 0.5, sigmaFilter: 0.6}
   },
   {
     title: "Drifting target",
-    params: {xt: "0.25*t - 8", yt: "5*sin(t/12)", sx: "0", sy: "-6", sigmaProcess: "0.2", sigmaRange: "0.8",
+    params: {xt: "0.25*t - 8", yt: "5*sin(t/12)", sensors: "(0, -6), (-8, 6), (10, 6)", sigmaProcess: "0.2", sigmaRange: "0.8",
       max: "80", N: 200, threshold: 0.5, sigmaFilter: 0.8}
   },
   {
     title: "Too few particles lose the target",
-    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sx: "10", sy: "0", sigmaProcess: "0.15", sigmaRange: "0.6",
+    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: "(10, 0), (-5, 9), (-5, -9)", sigmaProcess: "0.15", sigmaRange: "0.6",
       max: "60", N: 15, threshold: 0.5, sigmaFilter: 0.6}
   },
   {
     title: "Never resample: weights collapse",
-    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sx: "10", sy: "0", sigmaProcess: "0.15", sigmaRange: "0.6",
+    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: "(10, 0), (-5, 9), (-5, -9)", sigmaProcess: "0.15", sigmaRange: "0.6",
       max: "60", N: 150, threshold: 0, sigmaFilter: 0.6}
   },
   {
     title: "Overconfident sensor model",
-    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sx: "10", sy: "0", sigmaProcess: "0.15", sigmaRange: "0.6",
+    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: "(10, 0), (-5, 9), (-5, -9)", sigmaProcess: "0.15", sigmaRange: "0.6",
       max: "60", N: 150, threshold: 0.5, sigmaFilter: 0.08}
   },
   {
-    title: "Sensor at the center: range alone can't find the angle",
-    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sx: "0", sy: "0", sigmaProcess: "0.15", sigmaRange: "0.6",
+    title: "Two sensors: a mirror-image ambiguity",
+    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: "(10, 0), (-10, 0)", sigmaProcess: "0.15", sigmaRange: "0.6",
+      max: "60", N: 150, threshold: 0.5, sigmaFilter: 0.6}
+  },
+  {
+    title: "One sensor at the center: range alone can't find the angle",
+    params: {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: "(0, 0)", sigmaProcess: "0.15", sigmaRange: "0.6",
       max: "60", N: 150, threshold: 0.5, sigmaFilter: 0.6}
   }
 ]
@@ -216,19 +219,14 @@ viewof plotTrigger = {
 <div class="ojs-grid">
 
 ```{ojs}
-viewof sxText = {
+// Every sensor's location in one field, as a list of (x, y) points -- the
+// number of sensors is the reader's to choose, so it can't be one field
+// per coordinate. parseSensors below reads it.
+viewof sensorsText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Sensor x", value: params.get("sx") ?? "10", placeholder: "Example: 10, 0"})
-  input.dataset.exampleField = "sx"
-  return input
-}
-```
-
-```{ojs}
-viewof syText = {
-  const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Sensor y", value: params.get("sy") ?? "0", placeholder: "Example: 0, -6"})
-  input.dataset.exampleField = "sy"
+  const input = Inputs.text({label: "Sensors", value: params.get("sensors") ?? "(10, 0), (-5, 9), (-5, -9)", placeholder: "Example: (10, 0), (-5, 9)"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "sensors"
   return input
 }
 ```
@@ -281,8 +279,7 @@ viewof exampleSelect = {
 exampleFieldSelectors = ({
   xt: '[data-example-field="xt"]',
   yt: '[data-example-field="yt"]',
-  sx: '[data-example-field="sx"]',
-  sy: '[data-example-field="sy"]',
+  sensors: '[data-example-field="sensors"]',
   sigmaProcess: '[data-example-field="sigmaProcess"]',
   sigmaRange: '[data-example-field="sigmaRange"]',
   max: '[data-example-field="max"]',
@@ -313,7 +310,7 @@ applyExampleFromSelect = {
 // Keeps the dropdown naming the example the fields above hold ("Custom
 // inputs" once none does).
 syncExampleFromFields = {
-  xtText; ytText; sxText; syText; sigmaProcessText; sigmaRangeText; maxStepsInput; particleCount; resampleThreshold; sigmaRangeFilter
+  xtText; ytText; sensorsText; sigmaProcessText; sigmaRangeText; maxStepsInput; particleCount; resampleThreshold; sigmaRangeFilter
   VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
 }
 ```
@@ -325,7 +322,7 @@ syncExampleFromFields = {
 // Enter in a path/sensor/noise field clicks Plot instead of submitting
 // the field's own (invisible) form.
 enterToPlot = {
-  for (const view of [viewof xtText, viewof ytText, viewof sxText, viewof syText, viewof sigmaProcessText, viewof sigmaRangeText]) {
+  for (const view of [viewof xtText, viewof ytText, viewof sensorsText, viewof sigmaProcessText, viewof sigmaRangeText]) {
     const input = view.querySelector("input")
     if (!input) continue
     input.addEventListener("keydown", (e) => {
@@ -374,8 +371,7 @@ committed = {
   const math = window.math
   const xtVal = (viewof xtText).value
   const ytVal = (viewof ytText).value
-  const sxVal = (viewof sxText).value
-  const syVal = (viewof syText).value
+  const sensorsVal = (viewof sensorsText).value
   const sigmaProcessVal = (viewof sigmaProcessText).value
   const sigmaRangeVal = (viewof sigmaRangeText).value
   const seedVal = Date.now() ^ (plotTrigger * 1000003)
@@ -383,8 +379,7 @@ committed = {
   const params = new URLSearchParams(window.location.search)
   params.set("xt", xtVal)
   params.set("yt", ytVal)
-  params.set("sx", sxVal)
-  params.set("sy", syVal)
+  params.set("sensors", sensorsVal)
   params.set("sigmaProcess", sigmaProcessVal)
   params.set("sigmaRange", sigmaRangeVal)
   // The always-live controls (max, N, threshold, sigmaFilter, show) are
@@ -394,7 +389,7 @@ committed = {
 
   return {
     xtText: xtVal, ytText: ytVal,
-    sx: VM.expressions.makeNumber(math, sxVal), sy: VM.expressions.makeNumber(math, syVal),
+    sensors: parseSensors(sensorsVal),
     sigmaProcess: VM.expressions.makeNumber(math, sigmaProcessVal),
     sigmaRange: VM.expressions.makeNumber(math, sigmaRangeVal),
     seed: seedVal
@@ -414,11 +409,6 @@ showTrue = traces.includes("True position")
 
 ```{ojs}
 //| output: false
-showRing = traces.includes("Measurement ring")
-```
-
-```{ojs}
-//| output: false
 showParticles = traces.includes("Particles")
 ```
 
@@ -429,7 +419,33 @@ showEstimate = traces.includes("Estimate")
 
 ```{ojs}
 //| output: false
-showSensor = traces.includes("Sensor")
+showSensors = traces.includes("Sensors")
+```
+
+```{ojs}
+//| output: false
+// parseSensors: "(10, 0), (-5, 9)" -> [{x: 10, y: 0}, {x: -5, y: 9}], or
+// null if the text isn't a non-empty list of (x, y) points. Each coordinate
+// goes through VM.expressions.makeNumber, so "(2*pi, 0)" works; a
+// coordinate with parentheses of its own ("(5*cos(1), 0)") does not, since
+// the points are found by matching parentheses. Anything left over besides
+// the separating commas makes the whole list invalid rather than silently
+// dropping a sensor.
+parseSensors = (text) => {
+  const pattern = /\(([^()]*)\)/g
+  const sensors = []
+  for (const match of String(text).matchAll(pattern)) {
+    const parts = match[1].split(",")
+    if (parts.length !== 2) return null
+    const x = VM.expressions.makeNumber(window.math, parts[0])
+    const y = VM.expressions.makeNumber(window.math, parts[1])
+    if (x === null || y === null) return null
+    sensors.push({x, y})
+  }
+  const leftover = String(text).replace(pattern, "").replace(/[\s,;]/g, "")
+  if (sensors.length === 0 || leftover !== "") return null
+  return sensors
+}
 ```
 
 ```{ojs}
@@ -466,10 +482,11 @@ systematicResample = (particles, rng) => {
 ```{ojs}
 //| output: false
 // result: the bootstrap (SIR) particle filter. Returns {rows, parsed,
-// xFn, yFn}. `rows` is the full run, one entry per time step:
+// sensorsParsed, xFn, yFn}. `rows` is the full run, one entry per time step:
 //   i            step index, t = i
 //   trueX, trueY the object's actual (noisy) position this step
-//   range        the noisy range measurement z_i
+//   ranges       the noisy range measurements z_i, one per sensor, in the
+//                order the Sensors field lists them
 //   particles    the weighted cloud AFTER the update, BEFORE any resample
 //                (this is what shows degeneracy when the next step skips
 //                resampling) -- [{x, y, w}, ...], length N
@@ -480,7 +497,7 @@ systematicResample = (particles, rng) => {
 //   resampled    whether this step's cloud WAS resampled before step i+1
 //
 // Two separate seeded RNG streams: `dataRng` draws the true path's wander
-// and the sensor noise (fixed once Plot is clicked, same as every other
+// and the sensors' noise (fixed once Plot is clicked, same as every other
 // page's noisy-data draw); `filterRng` draws the particle filter's own
 // randomness -- initial particles, process noise, resampling -- derived
 // from the same committed seed so it is ALSO fixed per Plot click, and
@@ -491,16 +508,17 @@ result = {
   const xFn = VM.expressions.makeFunctionOfT(math, committed.xtText)
   const yFn = VM.expressions.makeFunctionOfT(math, committed.ytText)
   const fallback = t => NaN
-  if (!xFn || !yFn) return {rows: [], parsed: false, xFn: fallback, yFn: fallback}
+  if (!xFn || !yFn) return {rows: [], parsed: false, sensorsParsed: true, xFn: fallback, yFn: fallback}
 
-  const sx = committed.sx
-  const sy = committed.sy
+  const sensors = committed.sensors
+  if (!sensors) return {rows: [], parsed: true, sensorsParsed: false, xFn, yFn}
+
   const sigmaProcess = committed.sigmaProcess
   const sigmaRange = committed.sigmaRange
   const seed = committed.seed
-  if (!Number.isFinite(sx) || !Number.isFinite(sy) || !Number.isFinite(sigmaProcess) || sigmaProcess < 0
+  if (!Number.isFinite(sigmaProcess) || sigmaProcess < 0
       || !Number.isFinite(sigmaRange) || sigmaRange <= 0 || !Number.isFinite(seed)) {
-    return {rows: [], parsed: true, xFn, yFn}
+    return {rows: [], parsed: true, sensorsParsed: true, xFn, yFn}
   }
 
   const n = maxSteps
@@ -513,36 +531,33 @@ result = {
   const filterRng = VM.sampling.seededRandom(seed ^ 0x5bd1e995)
   const filterGaussian = VM.sampling.gaussianRandom(filterRng)
 
-  // The true (noisy) trajectory and the sensor's noisy range reading at
-  // each step.
+  // The true (noisy) trajectory and every sensor's noisy range reading at
+  // each step -- independent noise per sensor.
   const trueXs = [], trueYs = [], ranges = []
   for (let i = 0; i < n; i++) {
     const tx = xFn(i) + sigmaProcess * dataGaussian()
     const ty = yFn(i) + sigmaProcess * dataGaussian()
     trueXs.push(tx)
     trueYs.push(ty)
-    const dx = tx - sx, dy = ty - sy
-    const trueRange = Math.sqrt(dx * dx + dy * dy)
-    ranges.push(Math.max(0, trueRange + sigmaRange * dataGaussian()))
+    const stepRanges = []
+    for (const sensor of sensors) {
+      const dx = tx - sensor.x, dy = ty - sensor.y
+      const trueRange = Math.sqrt(dx * dx + dy * dy)
+      stepRanges.push(Math.max(0, trueRange + sigmaRange * dataGaussian()))
+    }
+    ranges.push(stepRanges)
   }
 
-  // Initial particles: a generous uniform prior over the nominal
-  // (noise-free) path's bounding box, padded. A teaching simplification --
-  // a real tracker would not see the future path -- not a claim that the
-  // filter can.
-  const nominalXs = [], nominalYs = []
-  for (let i = 0; i < n; i++) {
-    nominalXs.push(xFn(i))
-    nominalYs.push(yFn(i))
-  }
-  const initXBox = VM.plotting.paddedRange(nominalXs, {emptyRange: [-5, 5], relativePadding: 0.4, minPadding: 2})
-  const initYBox = VM.plotting.paddedRange(nominalYs, {emptyRange: [-5, 5], relativePadding: 0.4, minPadding: 2})
-
+  // Initial particles: a Gaussian cloud around the target's true starting
+  // position -- the tracker is told roughly where the target starts, the
+  // usual setup for tracking (as opposed to finding the target from
+  // scratch, which a uniform prior over the whole plane would model).
+  const initialSpread = 1
   let particles = []
   for (let p = 0; p < particleCountLocal; p++) {
     particles.push({
-      x: initXBox.lo + (initXBox.hi - initXBox.lo) * filterRng(),
-      y: initYBox.lo + (initYBox.hi - initYBox.lo) * filterRng(),
+      x: trueXs[0] + initialSpread * filterGaussian(),
+      y: trueYs[0] + initialSpread * filterGaussian(),
       w: 1 / particleCountLocal
     })
   }
@@ -561,15 +576,22 @@ result = {
       }
     }
 
-    // Update: weight by how well each particle's own predicted range
-    // matches the measurement, carrying forward last step's weight (which
-    // is already uniform if last step resampled).
+    // Update: weight by how well each particle's own predicted ranges
+    // match the measurements, carrying forward last step's weight (which
+    // is already uniform if last step resampled). The sensors' noise is
+    // independent, so the likelihood is a product over sensors -- summed
+    // here as squared residuals inside one exp, the same number with less
+    // underflow.
     let weightSum = 0
     for (const particle of particles) {
-      const dx = particle.x - sx, dy = particle.y - sy
-      const predictedRange = Math.sqrt(dx * dx + dy * dy)
-      const residual = ranges[i] - predictedRange
-      const likelihood = Math.exp(-(residual * residual) / (2 * sigmaFilter * sigmaFilter))
+      let sumSquaredResiduals = 0
+      for (let k = 0; k < sensors.length; k++) {
+        const dx = particle.x - sensors[k].x, dy = particle.y - sensors[k].y
+        const predictedRange = Math.sqrt(dx * dx + dy * dy)
+        const residual = ranges[i][k] - predictedRange
+        sumSquaredResiduals += residual * residual
+      }
+      const likelihood = Math.exp(-sumSquaredResiduals / (2 * sigmaFilter * sigmaFilter))
       particle.w *= likelihood
       weightSum += particle.w
     }
@@ -608,13 +630,13 @@ result = {
     }
 
     rows.push({
-      i, trueX: trueXs[i], trueY: trueYs[i], range: ranges[i],
+      i, trueX: trueXs[i], trueY: trueYs[i], ranges: ranges[i],
       particles: snapshot, estX, estY, ess, essFraction: ess / particleCountLocal,
       error, resampled
     })
   }
 
-  return {rows, parsed: true, xFn, yFn}
+  return {rows, parsed: true, sensorsParsed: true, xFn, yFn}
 }
 ```
 
@@ -622,7 +644,7 @@ result = {
 //| output: false
 // setup: what the plots share -- the nominal (noise-free) reference curve
 // over the whole run, the true/estimate trails up to the current step,
-// the current step's weighted particle cloud and measurement ring, and
+// the current step's weighted particle cloud, and
 // axis ranges from EVERY step (not just the current one) so the axes hold
 // still while the step slider moves.
 setup = {
@@ -631,7 +653,8 @@ setup = {
     return {
       step: 0, xRange: empty, yRange: empty, nominalXs: [], nominalYs: [],
       trueXsSoFar: [], trueYsSoFar: [], estimatesXSoFar: [], estimatesYSoFar: [],
-      particles: [], estX: 0, estY: 0, ringXs: [], ringYs: [], parsed: result.parsed
+      particles: [], estX: 0, estY: 0, sensors: [],
+      parsed: result.parsed, sensorsParsed: result.sensorsParsed
     }
   }
 
@@ -654,25 +677,22 @@ setup = {
     estimatesYSoFar.push(result.rows[i].estY)
   }
 
+  const sensors = committed.sensors
   const currentRow = result.rows[step]
-  const ringPoints = 100
-  const ringXs = [], ringYs = []
-  for (let k = 0; k <= ringPoints; k++) {
-    const theta = 2 * Math.PI * k / ringPoints
-    ringXs.push(committed.sx + currentRow.range * Math.cos(theta))
-    ringYs.push(committed.sy + currentRow.range * Math.sin(theta))
-  }
 
   // Axis ranges from the ENTIRE run -- every step's particle cloud, true
-  // position, estimate and measurement ring, plus the nominal path and
-  // the sensor -- so moving the step slider never rescales the axes.
-  const allXs = [committed.sx, committed.sx]
-  const allYs = [committed.sy, committed.sy]
+  // position and estimate, plus the nominal path and the sensors -- so
+  // moving the step slider never rescales the axes.
+  const allXs = [], allYs = []
+  for (const sensor of sensors) {
+    allXs.push(sensor.x)
+    allYs.push(sensor.y)
+  }
   for (const x of nominalXs) allXs.push(x)
   for (const y of nominalYs) allYs.push(y)
   for (const row of result.rows) {
-    allXs.push(row.trueX, row.estX, committed.sx - row.range, committed.sx + row.range)
-    allYs.push(row.trueY, row.estY, committed.sy - row.range, committed.sy + row.range)
+    allXs.push(row.trueX, row.estX)
+    allYs.push(row.trueY, row.estY)
     for (const particle of row.particles) {
       allXs.push(particle.x)
       allYs.push(particle.y)
@@ -685,7 +705,7 @@ setup = {
     step, xRange, yRange, nominalXs, nominalYs,
     trueXsSoFar, trueYsSoFar, estimatesXSoFar, estimatesYSoFar,
     particles: currentRow.particles, estX: currentRow.estX, estY: currentRow.estY,
-    ringXs, ringYs, parsed: result.parsed
+    sensors, parsed: result.parsed, sensorsParsed: result.sensorsParsed
   }
 }
 ```
@@ -693,9 +713,9 @@ setup = {
 ```{ojs}
 //| output: false
 // mainPlot: the current step's scene. Equal x/y scale (scaleanchor) is
-// not cosmetic here -- the measurement ring is a literal circle around the
-// sensor, and an unequal scale would draw it as an ellipse and misstate
-// the geometry the whole app is demonstrating.
+// not cosmetic here -- the sensors measure Euclidean distance, and an
+// unequal scale would misstate which positions are equally far from a
+// sensor, the geometry the whole app is demonstrating.
 //
 // _plotDiv is a closure so the same DOM node is reused across reactive
 // re-renders (Plotly.react after the first render) -- this is what
@@ -704,7 +724,7 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (data, showNominal, showTrue, showRing, showParticles, showEstimate, showSensor) => {
+  return (data, showNominal, showTrue, showParticles, showEstimate, showSensors) => {
     const traces = []
 
     if (showNominal) {
@@ -716,10 +736,6 @@ mainPlot = {
         line: {color: chartColors.fn, width: 2},
         marker: {color: chartColors.fn, size: 5, line: {color: chartColors.halo, width: 1}},
         hovertemplate: "true (%{x:.3g}, %{y:.3g})<extra></extra>"})
-    }
-    if (showRing) {
-      traces.push({x: data.ringXs, y: data.ringYs, type: "scatter", mode: "lines", name: "Measurement ring", showlegend: false,
-        line: {color: chartColors.warn, width: 2, dash: "dash"}, hoverinfo: "skip"})
     }
     if (showParticles && data.particles.length > 0) {
       let maxW = 0
@@ -743,16 +759,29 @@ mainPlot = {
         marker: {color: chartColors.alt, size: 13, symbol: "diamond", line: {color: chartColors.halo, width: 1.5}},
         hovertemplate: "estimate (%{x:.3g}, %{y:.3g})<extra></extra>"})
     }
-    if (showSensor) {
-      traces.push({x: [committed.sx], y: [committed.sy], type: "scatter", mode: "markers", name: "Sensor", showlegend: false,
+    if (showSensors && data.sensors.length > 0) {
+      const xs = [], ys = [], labels = []
+      for (let s = 0; s < data.sensors.length; s++) {
+        xs.push(data.sensors[s].x)
+        ys.push(data.sensors[s].y)
+        labels.push(`sensor ${s + 1}`)
+      }
+      traces.push({x: xs, y: ys, text: labels, type: "scatter", mode: "markers", name: "Sensors", showlegend: false,
         marker: {color: chartColors.ink, size: 12, symbol: "x", line: {color: chartColors.halo, width: 1.5}},
-        hovertemplate: "sensor (%{x:.3g}, %{y:.3g})<extra></extra>"})
+        hovertemplate: "%{text} (%{x:.3g}, %{y:.3g})<extra></extra>"})
+    }
+
+    let annotations = []
+    if (!data.parsed) {
+      annotations = VM.plotting.emptyState("Couldn't read x(t) or y(t) — check both formulas.")
+    } else if (!data.sensorsParsed) {
+      annotations = VM.plotting.emptyState("Couldn't read the sensors — list points like (10, 0), (-5, 9).")
     }
 
     const layout = {
       xaxis: {title: "x", range: [data.xRange.lo, data.xRange.hi], zeroline: true},
       yaxis: {title: "y", range: [data.yRange.lo, data.yRange.hi], zeroline: true, scaleanchor: "x", scaleratio: 1},
-      annotations: data.parsed ? [] : VM.plotting.emptyState("Couldn't read x(t) or y(t) — check both formulas."),
+      annotations,
       hovermode: "closest",
       uirevision: "static",
       autosize: true
@@ -764,6 +793,26 @@ mainPlot = {
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, traces, layout, config)
       VM.plotting.autoResize(_plotDiv)
+      // The first draw happens detached, at Plotly's 700x450 default, and
+      // scaleanchor widens the ranges to keep x and y at the same scale in
+      // that box; the resize to the real box then keeps the widened ranges.
+      // So once the div is on the page, resize it and redraw with the
+      // intended ranges, or the first step-slider move (or press of play)
+      // would visibly zoom in. Same fix as apps/spirographs/index.qmd. A
+      // fresh layout, since Plotly writes its adjusted ranges back into the
+      // one newPlot was given.
+      const div = _plotDiv
+      const firstFit = new ResizeObserver(() => {
+        if (!div.isConnected || div.getClientRects().length === 0) return
+        firstFit.disconnect()
+        const fittedLayout = {
+          ...layout,
+          xaxis: {...layout.xaxis, range: [data.xRange.lo, data.xRange.hi]},
+          yaxis: {...layout.yaxis, range: [data.yRange.lo, data.yRange.hi]}
+        }
+        Plotly.Plots.resize(div).then(() => Plotly.react(div, traces, fittedLayout, config))
+      })
+      firstFit.observe(div)
     } else {
       Plotly.react(_plotDiv, traces, layout, config)
     }
@@ -779,7 +828,7 @@ mainPlot = {
 // grid slot meant for a visible sibling.
 maxSteps = {
   const parsed = VM.expressions.makeNumber(window.math, maxStepsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 50
+  if (parsed === null || !Number.isFinite(parsed)) return 60
   return Math.max(1, Math.round(parsed))
 }
 ```
@@ -787,7 +836,7 @@ maxSteps = {
 <div class="ojs-chart-block">
 
 ```{ojs}
-mainPlot(setup, showNominal, showTrue, showRing, showParticles, showEstimate, showSensor)
+mainPlot(setup, showNominal, showTrue, showParticles, showEstimate, showSensors)
 ```
 
 ```{ojs}
@@ -907,29 +956,40 @@ convergencePlot = {
 :::: {.callout-note collapse="true" title="Iteration table"}
 
 ```{ojs}
-// The raw run: every step's true position, measurement, estimate, error
-// and resampling diagnostics. Always returns a Node, even when empty, so
+// The raw run: every step's true position, measurements (one column per
+// sensor), estimate, error and resampling diagnostics. Always returns a
+// Node, even when empty, so
 // Quarto's OJS runtime never latches this cell as hidden.
 iterationTable = {
   if (result.rows.length === 0) return document.createElement("div")
 
+  const sensorCount = result.rows[0].ranges.length
   const formattedRows = []
   for (const row of result.rows) {
-    formattedRows.push([
-      row.i,
-      row.trueX.toPrecision(6), row.trueY.toPrecision(6),
-      row.range.toPrecision(6),
+    const cells = [row.i, row.trueX.toPrecision(6), row.trueY.toPrecision(6)]
+    for (const range of row.ranges) cells.push(range.toPrecision(6))
+    cells.push(
       row.estX.toPrecision(6), row.estY.toPrecision(6),
       row.error.toExponential(3),
       row.ess.toFixed(1), row.essFraction.toFixed(3),
       row.resampled ? "Yes" : "No"
-    ])
+    )
+    formattedRows.push(cells)
   }
+
+  const headers = ["Step", tex`x_{\text{true}}`, tex`y_{\text{true}}`]
+  const csvHeaders = ["step", "true_x", "true_y"]
+  for (let k = 1; k <= sensorCount; k++) {
+    headers.push(tex`z_{i,${k}}`)
+    csvHeaders.push(`range_sensor_${k}`)
+  }
+  headers.push(tex`\hat x_i`, tex`\hat y_i`, "Error", "ESS", "ESS / N", "Resampled?")
+  csvHeaders.push("estimate_x", "estimate_y", "error", "ess", "ess_fraction", "resampled")
 
   return VM.ui.renderTable({
     html,
-    headers: ["Step", tex`x_{\text{true}}`, tex`y_{\text{true}}`, tex`z_i`, tex`\hat x_i`, tex`\hat y_i`, "Error", "ESS", "ESS / N", "Resampled?"],
-    csvHeaders: ["step", "true_x", "true_y", "range_measurement", "estimate_x", "estimate_y", "error", "ess", "ess_fraction", "resampled"],
+    headers,
+    csvHeaders,
     filename: "particle-filter-tracking.csv",
     rows: formattedRows
   })
@@ -938,25 +998,25 @@ iterationTable = {
 
 ::::
 
-A **particle filter** (sequential Monte Carlo) represents an unknown state as a cloud of weighted samples — particles — rather than a single Gaussian belief. That is what lets it represent things a Kalman filter cannot: multiple hypotheses, or, as here, the thin ring of positions a single range-only reading leaves equally plausible. Each step repeats three operations, writing $x_i^{(p)}$ for particle $p$'s 2D position and $s$ for the sensor's fixed location:
+A **particle filter** (sequential Monte Carlo) represents an unknown state as a cloud of weighted samples — particles — rather than a single Gaussian belief. That is what lets it represent things a Kalman filter cannot: multiple hypotheses, or, as here, the thin ring of positions a single range-only reading leaves equally plausible. Each step repeats three operations, writing $x_i^{(p)}$ for particle $p$'s 2D position and $s_1, \dots, s_K$ for the $K$ sensors' fixed locations:
 
 $$
 \textbf{Predict: } \; x_i^{(p)} = x_{i-1}^{(p)} + \varepsilon_i^{(p)}, \qquad \varepsilon_i^{(p)} \sim \mathcal N(0,\, \sigma_{\text{process}}^2 I)
 $$
 
 $$
-\textbf{Update: } \; w_i^{(p)} \;\propto\; w_{i-1}^{(p)} \cdot \exp\!\left(-\,\frac{\bigl(z_i - \lVert x_i^{(p)} - s \rVert\bigr)^2}{2\,\sigma_{\text{filter}}^2}\right), \qquad \sum_p w_i^{(p)} = 1
+\textbf{Update: } \; w_i^{(p)} \;\propto\; w_{i-1}^{(p)} \cdot \prod_{k=1}^{K} \exp\!\left(-\,\frac{\bigl(z_{i,k} - \lVert x_i^{(p)} - s_k \rVert\bigr)^2}{2\,\sigma_{\text{filter}}^2}\right), \qquad \sum_p w_i^{(p)} = 1
 $$
 
 $$
 \textbf{Resample: } \; \text{if } \mathrm{ESS}_i = \frac{1}{\sum_p \bigl(w_i^{(p)}\bigr)^2} < \tau N, \text{ draw } N \text{ new particles with probability} \propto w_i^{(p)}.
 $$
 
-where $z_i$ is the noisy range measurement at step $i$ and $\tau$ is the "Resample if ESS/N <" slider. The weighted mean $\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$ — the diamond on the chart — is the filter's point estimate; $\mathrm{ESS}_i$ (plotted below) is the number of particles the weighted cloud is *effectively* behaving like, out of the $N$ it actually holds, and it is what degenerate weights erode.
+where $z_{i,k}$ is sensor $k$'s noisy range measurement at step $i$ — each sensor's noise independent of the others', which is why their likelihoods multiply — and $\tau$ is the "Resample if ESS/N <" slider. The weighted mean $\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$ — the diamond on the chart — is the filter's point estimate; $\mathrm{ESS}_i$ (plotted below) is the number of particles the weighted cloud is *effectively* behaving like, out of the $N$ it actually holds, and it is what degenerate weights erode.
 
-The particles here know only that the target diffuses — a plain random walk with the same $\sigma_{\text{process}}$ used to generate the true path — not the actual drift written into $x(t), y(t)$. A drifting target therefore needs enough process noise for the cloud to keep up with it, the same trade-off [1D recursive filters](../recursive-filters-1d/index.qmd) makes with its Kalman filter's process-noise parameter $Q$.
+The particles start in a small Gaussian cloud (standard deviation $1$) around the target's true starting position: the tracker is told roughly where the target begins, and its job is to follow it from there. After that, the particles know only that the target diffuses — a plain random walk with the same $\sigma_{\text{process}}$ used to generate the true path — not the actual drift written into $x(t), y(t)$. A drifting target therefore needs enough process noise for the cloud to keep up with it, the same trade-off [1D recursive filters](../recursive-filters-1d/index.qmd) makes with its Kalman filter's process-noise parameter $Q$.
 
-Watch the particle cloud collapse from a diffuse ring — everything consistent with the *first* range reading alone — down onto the target as more measurements accumulate. Try "Too few particles" to watch the cloud lose the target outright, "Never resample" to watch $\mathrm{ESS}$ collapse toward $1$ with no correction, "Overconfident sensor model" to see the filter overreact to sensor noise it doesn't actually have, and "Sensor at the center" to see exactly what a single range-only reading *cannot* tell you — the object's angle around the sensor.
+A single range reading pins the target only to a circle around its sensor. Two circles meet in (at most) two points, mirror images across the line through the two sensors; a third sensor off that line picks out one of them. That is why the default setup uses three sensors, and why the particle cloud collapses onto the one point all three circles share rather than spreading around one circle. Try "Too few particles" to watch the cloud lose the target outright, "Never resample" to watch $\mathrm{ESS}$ collapse toward $1$ with no correction, "Overconfident sensor model" to see the filter overreact to sensor noise it doesn't actually have, "Two sensors" to see the cloud split between the target and its mirror image, and "One sensor at the center" to see exactly what a single range-only reading *cannot* tell you — the object's angle around the sensor.
 
 ## References
 

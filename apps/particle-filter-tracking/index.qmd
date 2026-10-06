@@ -43,6 +43,10 @@ Authors: Dhruv Azad
 }
 </style>
 
+Three sensors at fixed positions each report only how far away a moving object is, not in which direction, and every reading is noisy. Below, the object's <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight, and a particle filter tries to follow it using nothing but those readings. It keeps a cloud of guesses, the <span class="vm-swatch vm-swatch-accent2">particles</span>, weights each one by how well it explains the latest readings (bigger dots carry more weight), and takes their weighted average as its <span class="vm-swatch vm-swatch-alt">estimate</span>.
+
+**Why do you think the particles are falling behind?** Press play on the step slider to watch it happen.
+
 ```{ojs}
 //| output: false
 // VM is the shared utility library, loaded on every page by the mathviz
@@ -81,27 +85,17 @@ VM = window.VM
 //                 estimate, sensors
 urlParams = new URLSearchParams(window.location.search)
 
-initialMax = urlParams.get("max") ?? "50"
+initialMax = urlParams.get("max") ?? "100"
 
-initialParticleCount = {
-  const raw = Number.parseInt(urlParams.get("N"), 10)
-  return Number.isFinite(raw) ? Math.min(Math.max(raw, 10), 500) : 150
-}
+initialParticleCount = urlParams.get("N") ?? "150"
 
-initialResampleThreshold = {
-  const raw = Number.parseFloat(urlParams.get("threshold"))
-  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0), 1) : 0.5
-}
+initialResampleThreshold = urlParams.get("threshold") ?? "0.5"
 
-initialSigmaFilter = {
-  const raw = Number.parseFloat(urlParams.get("sigmaFilter"))
-  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.05), 3) : 0.6
-}
+initialSigmaFilter = urlParams.get("sigmaFilter") ?? "0.6"
 
-initialProcessFilter = {
-  const raw = Number.parseFloat(urlParams.get("processFilter"))
-  return Number.isFinite(raw) ? Math.min(Math.max(raw, 0.05), 3) : 1
-}
+// The default is the "Too little process noise" example on purpose: the
+// page opens on the cloud falling behind, and the intro asks the reader why.
+initialProcessFilter = urlParams.get("processFilter") ?? "0.15"
 
 traceOptions = ["Nominal path", "True position", "Particles", "Estimate", "Sensors"]
 
@@ -150,13 +144,18 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// Presets for the "Try an example" dropdown. Every example after the
-// first changes one setting from "Three sensors", so whatever it shows is
-// down to that one setting.
+// Presets for the "Try an example" dropdown. The first is the page's
+// default (every input cell's fallback value matches it). Every example
+// but "Three sensors" changes one setting from that baseline, so whatever
+// it shows is down to that one setting.
 //
-// 50 steps is one lap of the circle (2*pi*8 ≈ 50): a longer run draws the
-// nominal circle twice over its first stretch, and the two overlapping
-// dotted lines read as one solid one.
+// The path is a figure eight (Gerono's lemniscate), symmetric about the
+// x-axis so the two-sensor examples' mirror image travels the same curve.
+// One lap is 2*pi*8 ≈ 50 steps, so 100 steps is two laps: the second shows
+// whether the filter recovered, or settled on the mirror image, after the
+// first. Its speed swings from about 0.6 per step at the ends to about 1.2
+// through the crossing, so the baseline filter step of 1 keeps up on the
+// loops but strains through the middle.
 //
 // "max" is listed before N so that if a future edit ever makes a slider's
 // bounds depend on it, the upstream field is still applied first -- see
@@ -166,8 +165,8 @@ examples = {
   const twoSensors = "(10, 0), (-10, 0)"
   const oneSensor = "(0, 0)"
   const variations = [
-    {title: "Three sensors", sensors: threeSensors, change: {}},
     {title: "Too little process noise: the cloud falls behind", sensors: threeSensors, change: {processFilter: 0.15}},
+    {title: "Three sensors", sensors: threeSensors, change: {}},
     {title: "Never resample: weights collapse", sensors: threeSensors, change: {threshold: 0}},
     {title: "Overconfident sensor model", sensors: threeSensors, change: {sigmaFilter: 0.1}},
     {title: "Two sensors: a mirror-image ambiguity", sensors: twoSensors, change: {N: 300}},
@@ -175,11 +174,11 @@ examples = {
     {title: "One sensor at the center: range alone can't find the angle", sensors: oneSensor, change: {}}
   ]
 
-  const baseline = {sigmaProcess: "0.15", sigmaRange: "0.6", max: "50", N: 150, threshold: 0.5, sigmaFilter: 0.6, processFilter: 1}
+  const baseline = {sigmaProcess: "0.15", sigmaRange: "0.6", max: "100", N: 150, threshold: 0.5, sigmaFilter: 0.6, processFilter: 1}
   const list = []
   for (const variation of variations) {
     // Key order is the order applyExampleParams applies them in.
-    const params = {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: variation.sensors}
+    const params = {xt: "7*cos(t/8)", yt: "3.5*sin(t/4)", sensors: variation.sensors}
     for (const key in baseline) params[key] = baseline[key]
     for (const key in variation.change) params[key] = variation.change[key]
     list.push({title: variation.title, params})
@@ -207,7 +206,7 @@ examples = {
 // data-example-field exactly like a single-field page would.
 viewof xtText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "x(t)", value: params.get("xt") ?? "6*cos(t/8)", placeholder: "Example: 6*cos(t/8)"})
+  const input = Inputs.text({label: "x(t)", value: params.get("xt") ?? "7*cos(t/8)", placeholder: "Example: 7*cos(t/8)"})
   input.classList.add("ojs-fill")
   input.dataset.exampleField = "xt"
   return input
@@ -217,7 +216,7 @@ viewof xtText = {
 ```{ojs}
 viewof ytText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "y(t)", value: params.get("yt") ?? "6*sin(t/8)", placeholder: "Example: 6*sin(t/8)"})
+  const input = Inputs.text({label: "y(t)", value: params.get("yt") ?? "3.5*sin(t/4)", placeholder: "Example: 3.5*sin(t/4)"})
   input.classList.add("ojs-fill")
   input.dataset.exampleField = "yt"
   return input
@@ -242,7 +241,7 @@ viewof sensorsText = {
 // trajectory and noisy range readings with a fresh seed -- edits above
 // don't take effect until this is clicked. The step slider and the
 // filter's own settings (particle count, resample threshold, assumed
-// sensor and process noise) are unaffected and stay reactive.
+// sensor and process noise) are unaffected and stay always-live.
 viewof plotTrigger = {
   const button = Inputs.button("Plot", {value: 0, reduce: v => v + 1})
   button.classList.add("ojs-auto")
@@ -273,11 +272,49 @@ viewof sigmaRangeText = {
 ```
 
 ```{ojs}
+// The filter's own settings. Always-live (not gated behind Plot): changing
+// one reruns the filter on the same true path and readings, so the reader
+// can compare settings against identical data. Text fields rather than
+// sliders -- none of them tells a story when animated, and the step
+// slider is the only control worth playing. Parsed and clamped in
+// particleCount, resampleThreshold, sigmaRangeFilter, sigmaProcessFilter.
+viewof particleCountText = {
+  const input = Inputs.text({value: initialParticleCount, label: "Particles N", placeholder: "10 to 500"})
+  input.dataset.exampleField = "N"
+  return input
+}
+```
+
+```{ojs}
+viewof resampleThresholdText = {
+  const input = Inputs.text({value: initialResampleThreshold, label: "Resample if ESS/N <", placeholder: "0 to 1"})
+  input.dataset.exampleField = "threshold"
+  return input
+}
+```
+
+```{ojs}
+viewof sigmaRangeFilterText = {
+  const input = Inputs.text({value: initialSigmaFilter, label: "Filter's assumed sensor σ", placeholder: "0.05 to 3"})
+  input.dataset.exampleField = "sigmaFilter"
+  return input
+}
+```
+
+```{ojs}
+viewof sigmaProcessFilterText = {
+  const input = Inputs.text({value: initialProcessFilter, label: "Filter's assumed process σ", placeholder: "0.05 to 3"})
+  input.dataset.exampleField = "processFilter"
+  return input
+}
+```
+
+```{ojs}
 // Always-live (not gated behind Plot) -- it bounds the step slider rather
 // than feeding result, so it shares this row with the commit-gated fields
 // instead of waiting for one. urlSyncControls below keeps it in the URL.
 viewof maxStepsInput = {
-  const input = Inputs.text({value: initialMax, label: "Max steps", placeholder: "Example: 50, 10*6"})
+  const input = Inputs.text({value: initialMax, label: "Max steps", placeholder: "Example: 100, 10*6"})
   input.dataset.exampleField = "max"
   return input
 }
@@ -334,7 +371,7 @@ applyExampleFromSelect = {
 // Keeps the dropdown naming the example the fields above hold ("Custom
 // inputs" once none does).
 syncExampleFromFields = {
-  xtText; ytText; sensorsText; sigmaProcessText; sigmaRangeText; maxStepsInput; particleCount; resampleThreshold; sigmaRangeFilter; sigmaProcessFilter
+  xtText; ytText; sensorsText; sigmaProcessText; sigmaRangeText; maxStepsInput; particleCountText; resampleThresholdText; sigmaRangeFilterText; sigmaProcessFilterText
   VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
 }
 ```
@@ -366,10 +403,10 @@ enterToPlot = {
 urlSyncControls = {
   const params = new URLSearchParams(window.location.search)
   params.set("max", maxStepsInput)
-  params.set("N", String(particleCount))
-  params.set("threshold", String(resampleThreshold))
-  params.set("sigmaFilter", String(sigmaRangeFilter))
-  params.set("processFilter", String(sigmaProcessFilter))
+  params.set("N", particleCountText)
+  params.set("threshold", resampleThresholdText)
+  params.set("sigmaFilter", sigmaRangeFilterText)
+  params.set("processFilter", sigmaProcessFilterText)
 
   const slugs = []
   for (const label of traces) {
@@ -411,7 +448,7 @@ committed = {
   // The always-live controls (max, N, threshold, sigmaFilter,
   // processFilter, show) are
   // written by urlSyncControls. Naming them here would make this cell
-  // reactive on them, so every slider move would redraw a fresh true path.
+  // reactive on them, so every edit to one would redraw a fresh true path.
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 
   return {
@@ -528,7 +565,7 @@ systematicResample = (particles, rng) => {
 // page's noisy-data draw); `filterRng` draws the particle filter's own
 // randomness -- initial particles, process noise, resampling -- derived
 // from the same committed seed so it is ALSO fixed per Plot click, and
-// moving the particle-count/threshold/filter-noise sliders changes the
+// editing the particle-count/threshold/filter-noise fields changes the
 // computation rather than reshuffling unrelated randomness.
 result = {
   const math = window.math
@@ -597,7 +634,7 @@ result = {
     // x(t), y(t), the same way a Kalman filter's process-noise term Q
     // assumes no particular trend either -- so the step has to be big
     // enough to cover the target's actual motion, not just its wander
-    // (sigmaProcess). The circular orbit moves about 0.75 per step; a
+    // (sigmaProcess). The figure eight moves 0.6 to 1.2 per step; a
     // random walk of 0.15 falls behind and loses it. (Step 0 uses the
     // initial draw above; there is nothing to predict from yet.)
     if (i > 0) {
@@ -713,7 +750,7 @@ setup = {
   // Axis ranges from what only Plot can change -- the sensors, the nominal
   // path and the whole true path -- so no slider ever rescales the axes.
   // The particles and the estimate depend on the N, threshold and filter-σ
-  // sliders, so they are deliberately left out: a cloud that wanders off
+  // fields, so they are deliberately left out: a cloud that wanders off
   // (too few particles, an overconfident sensor model) leaves the plot
   // rather than zooming it out.
   const allXs = [], allYs = []
@@ -753,6 +790,26 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
+  // The true-position and estimate trails show only their last trailSteps
+  // steps, oldest faintest: after a lap the reader knows the path's shape
+  // (the nominal path still shows it), and a full two-lap trail buries the
+  // cloud. Plotly can't vary opacity along one line, so each segment is its
+  // own short trace with its own opacity.
+  const trailSteps = 15
+  function fadeOpacity(age) {
+    return Math.max(0.05, 1 - age / trailSteps)
+  }
+  function fadingSegments(xs, ys, name, line) {
+    const segments = []
+    const last = xs.length - 1
+    const first = Math.max(0, last - trailSteps)
+    for (let i = first; i < last; i++) {
+      segments.push({x: [xs[i], xs[i + 1]], y: [ys[i], ys[i + 1]], type: "scatter", mode: "lines", name, showlegend: false,
+        line, opacity: fadeOpacity(last - i - 1), hoverinfo: "skip"})
+    }
+    return segments
+  }
+
   return (data, showNominal, showTrue, showParticles, showEstimate, showSensors) => {
     const traces = []
 
@@ -761,9 +818,18 @@ mainPlot = {
         line: {color: chartColors.muted, width: 1.5, dash: "dot"}, hoverinfo: "skip"})
     }
     if (showTrue) {
-      traces.push({x: data.trueXsSoFar, y: data.trueYsSoFar, type: "scatter", mode: "lines+markers", name: "True position", showlegend: false,
-        line: {color: chartColors.fn, width: 2},
-        marker: {color: chartColors.fn, size: 5, line: {color: chartColors.halo, width: 1}},
+      for (const segment of fadingSegments(data.trueXsSoFar, data.trueYsSoFar, "True position (trail)", {color: chartColors.fn, width: 2})) {
+        traces.push(segment)
+      }
+      const xs = [], ys = [], opacities = []
+      const last = data.trueXsSoFar.length - 1
+      for (let i = Math.max(0, last - trailSteps); i <= last; i++) {
+        xs.push(data.trueXsSoFar[i])
+        ys.push(data.trueYsSoFar[i])
+        opacities.push(fadeOpacity(last - i))
+      }
+      traces.push({x: xs, y: ys, type: "scatter", mode: "markers", name: "True position", showlegend: false,
+        marker: {color: chartColors.fn, size: 5, opacity: opacities, line: {color: chartColors.halo, width: 1}},
         hovertemplate: "true (%{x:.3g}, %{y:.3g})<extra></extra>"})
     }
     if (showParticles && data.particles.length > 0) {
@@ -798,8 +864,9 @@ mainPlot = {
         hovertemplate: "particle (%{x:.3g}, %{y:.3g})<extra></extra>"})
     }
     if (showEstimate) {
-      traces.push({x: data.estimatesXSoFar, y: data.estimatesYSoFar, type: "scatter", mode: "lines", name: "Estimate (trail)", showlegend: false,
-        line: {color: chartColors.alt, width: 1.5, dash: "dot"}, hoverinfo: "skip"})
+      for (const segment of fadingSegments(data.estimatesXSoFar, data.estimatesYSoFar, "Estimate (trail)", {color: chartColors.alt, width: 1.5, dash: "dot"})) {
+        traces.push(segment)
+      }
       traces.push({x: [data.estX], y: [data.estY], type: "scatter", mode: "markers", name: "Estimate", showlegend: false,
         marker: {color: chartColors.alt, size: 13, symbol: "diamond", line: {color: chartColors.halo, width: 1.5}},
         hovertemplate: "estimate (%{x:.3g}, %{y:.3g})<extra></extra>"})
@@ -873,9 +940,26 @@ mainPlot = {
 // grid slot meant for a visible sibling.
 maxSteps = {
   const parsed = VM.expressions.makeNumber(window.math, maxStepsInput)
-  if (parsed === null || !Number.isFinite(parsed)) return 50
+  if (parsed === null || !Number.isFinite(parsed)) return 100
   return Math.max(1, Math.round(parsed))
 }
+
+// The filter-setting fields, parsed and clamped to the ranges the filter
+// handles sensibly. An unparseable value falls back to the page default
+// rather than blanking the chart mid-edit.
+parseClamped = (text, lo, hi, fallback) => {
+  const parsed = VM.expressions.makeNumber(window.math, text)
+  if (parsed === null || !Number.isFinite(parsed)) return fallback
+  return Math.min(Math.max(parsed, lo), hi)
+}
+
+particleCount = Math.round(parseClamped(particleCountText, 10, 500, 150))
+
+resampleThreshold = parseClamped(resampleThresholdText, 0, 1, 0.5)
+
+sigmaRangeFilter = parseClamped(sigmaRangeFilterText, 0.05, 3, 0.6)
+
+sigmaProcessFilter = parseClamped(sigmaProcessFilterText, 0.05, 3, 0.15)
 ```
 
 <div class="ojs-chart-block">
@@ -892,11 +976,6 @@ viewof traces = {
 }
 ```
 
-<!-- Two bars: the step scrubber alone, full width like every method page's,
-     then the filter's own four settings as a 2x2 grid like
-     recursive-filters-1d's. In one grid, the scrubber's wider track sat
-     beside and above narrower parameter tracks, so nothing lined up. -->
-
 <div class="ojs-chart-controls">
 
 ```{ojs}
@@ -909,43 +988,6 @@ viewof stepControl = {
 }
 ```
 
-</div>
-
-<div class="ojs-chart-controls ojs-grid">
-
-```{ojs}
-viewof particleCount = {
-  const input = Inputs.range([10, 500], {step: 10, value: initialParticleCount, label: "Particles N"})
-  input.dataset.exampleField = "N"
-  return input
-}
-```
-
-```{ojs}
-viewof resampleThreshold = {
-  const input = Inputs.range([0, 1], {step: 0.05, value: initialResampleThreshold, label: "Resample if ESS/N <"})
-  input.dataset.exampleField = "threshold"
-  return input
-}
-```
-
-```{ojs}
-viewof sigmaRangeFilter = {
-  const input = Inputs.range([0.05, 3], {step: 0.05, value: initialSigmaFilter, label: "Filter's assumed sensor σ"})
-  input.dataset.exampleField = "sigmaFilter"
-  return input
-}
-```
-
-```{ojs}
-viewof sigmaProcessFilter = {
-  const input = Inputs.range([0.05, 3], {step: 0.05, value: initialProcessFilter, label: "Filter's assumed process σ"})
-  input.dataset.exampleField = "processFilter"
-  return input
-}
-```
-
-</div>
 
 </div>
 
@@ -1058,27 +1100,63 @@ iterationTable = {
 
 ::::
 
-A **particle filter** (sequential Monte Carlo) represents an unknown state as a cloud of weighted samples — particles — rather than a single Gaussian belief. That is what lets it represent things a Kalman filter cannot: multiple hypotheses, or, as here, the thin ring of positions a single range-only reading leaves equally plausible. Each step repeats three operations, writing $x_i^{(p)}$ for particle $p$'s 2D position and $s_1, \dots, s_K$ for the $K$ sensors' fixed locations:
+A particle filter represents its belief about the object's position as a cloud of weighted particles $x_i^{(p)}$, and repeats the same steps for every new set of readings:
 
-$$
-\textbf{Predict: } \; x_i^{(p)} = x_{i-1}^{(p)} + \varepsilon_i^{(p)}, \qquad \varepsilon_i^{(p)} \sim \mathcal N(0,\, \sigma_{\text{step}}^2 I)
-$$
+:::::: {.vm-flow style="--vm-flow-loop-label: 'next step'"}
 
-$$
-\textbf{Update: } \; w_i^{(p)} \;\propto\; w_{i-1}^{(p)} \cdot \prod_{k=1}^{K} \exp\!\left(-\,\frac{\bigl(z_{i,k} - \lVert x_i^{(p)} - s_k \rVert\bigr)^2}{2\,\sigma_{\text{filter}}^2}\right), \qquad \sum_p w_i^{(p)} = 1
-$$
+::::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Start]{.vm-flow-label}
 
-$$
-\textbf{Resample: } \; \text{if } \mathrm{ESS}_i = \frac{1}{\sum_p \bigl(w_i^{(p)}\bigr)^2} < \tau N, \text{ draw } N \text{ new particles with probability} \propto w_i^{(p)}.
-$$
+$N$ particles around the starting position, each with weight $1/N$
+:::
+:::::
 
-where $z_{i,k}$ is sensor $k$'s noisy range measurement at step $i$ — each sensor's noise independent of the others', which is why their likelihoods multiply — and $\tau$ is the "Resample if ESS/N <" slider. The weighted mean $\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$ — the diamond on the chart — is the filter's point estimate; $\mathrm{ESS}_i$ (plotted below) is the number of particles the weighted cloud is *effectively* behaving like, out of the $N$ it actually holds, and it is what degenerate weights erode.
+::::: {.vm-flow-step .vm-flow-loop-to}
+::: {.vm-flow-box}
+[Predict]{.vm-flow-label}
 
-The particles start in a small Gaussian cloud (standard deviation $1$) around the target's true starting position: the tracker is told roughly where the target begins, and its job is to follow it from there. After that, the particles know only that the target moves — a plain random walk whose step size $\sigma_{\text{step}}$ is the "Filter's assumed process σ" slider — not the actual drift written into $x(t), y(t)$. That step has to cover the target's real motion, not just the small wander $\sigma_{\text{process}}$ around its path: the circular orbit moves about $0.75$ per step, and a cloud that steps $0.15$ falls behind and loses it. It is the same trade-off [1D recursive filters](../recursive-filters-1d/index.qmd) makes with its Kalman filter's process-noise parameter $Q$.
+$x_i^{(p)} = x_{i-1}^{(p)} + \varepsilon_i^{(p)}$
 
-A single range reading pins the target only to a circle around its sensor. Two circles meet in (at most) two points, mirror images across the line through the two sensors; a third sensor off that line picks out one of them. That is why the default setup uses three sensors, and why the particle cloud collapses onto the one point all three circles share rather than spreading around one circle.
+$\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \sigma_{\text{step}}^2 I\bigr)$
+:::
+:::::
 
-Each example after "Three sensors" changes one setting from it. "Too little process noise" makes the cloud fall behind the target and lose it. "Never resample" makes $\mathrm{ESS}$ collapse toward $1$ with no correction. In "Overconfident sensor model" the filter trusts its sensors far more than it should, so every reading puts nearly all the weight on a handful of particles: the estimate still tracks, but $\mathrm{ESS}/N$ sits near zero and the filter resamples at every step. "Two sensors" splits the cloud between the target and its mirror image. "Too few particles" makes a small cloud commit to one of the two, the wrong one about half the time. "One sensor at the center" shows exactly what a single range-only reading *cannot* tell you: the object's angle around the sensor. Every run is random, so press Plot again if one doesn't show its effect.
+::::: {.vm-flow-step}
+::: {.vm-flow-box .vm-flow-in}
+[Measure]{.vm-flow-label}
+
+$z_{i,k}$: sensor $k$'s noisy distance to the object
+:::
+
+::: {.vm-flow-box}
+[Update]{.vm-flow-label}
+
+[$w_i^{(p)} \propto w_{i-1}^{(p)} \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \sigma_{\text{filter}}^2\bigr)$]{.vm-flow-nowrap}
+
+weights normalized to sum to $1$
+:::
+
+::: {.vm-flow-box .vm-flow-out}
+[Estimate]{.vm-flow-label}
+
+$\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-loop-from}
+::: {.vm-flow-box}
+[Resample]{.vm-flow-label}
+
+if $\mathrm{ESS}_i = 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2 < \tau N$, draw $N$ particles $\propto w_i^{(p)}$, each with weight $1/N$
+:::
+:::::
+
+::::::
+
+Here $s_k$ is sensor $k$'s location, and $\sigma_{\text{step}}$, $\sigma_{\text{filter}}$, $\tau$ and $N$ are the four filter settings in the controls above the chart. $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
+
+**[Example 1](?xt=7%2Acos%28t%2F8%29&yt=3.5%2Asin%28t%2F4%29&sensors=%2810%2C%200%29%2C%20%28-5%2C%209%29%2C%20%28-5%2C%20-9%29&sigmaProcess=0.15&sigmaRange=0.6&max=100&N=150&threshold=0.5&sigmaFilter=0.6&processFilter=0.15): Why the particles fall behind.** The predict step is a random walk: the particles don't know which way the object is heading. The object moves between $0.6$ and $1.2$ along the figure eight each step, but with $\sigma_{\text{step}} = 0.15$ the particles spread only about $0.15$, so they can't keep up. Raise "Filter's assumed process σ" to about $1$ and the cloud keeps pace. It is the same trade-off as the Kalman filter's $Q$ in [1D recursive filters](../recursive-filters-1d/index.qmd).
 
 ## References
 

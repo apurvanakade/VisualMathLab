@@ -67,9 +67,12 @@ attribution line from the system reminder.
 
 ## 2. Wait for Copilot's review
 
-Copilot reviews a few minutes after a PR opens or a push lands. Poll
-`gh pr view <N> --json reviews,reviewRequests` every minute or two, for up
-to ~10 minutes. If nothing arrives, go on and say so in the final report.
+Copilot reviews once, a few minutes after the PR opens. It does not
+re-review later pushes. Poll `gh pr view <N> --json reviews,reviewRequests`
+every minute or two. Its first review is a gate for the merge: if it hasn't
+arrived after ~30 minutes, ask the user rather than merging without it.
+GitHub ignores a review request on a merged PR, so a missed review can't be
+had afterwards.
 
 ## 3. Triage every comment
 
@@ -99,8 +102,8 @@ Then resolve it (`resolveReviewThread` GraphQL mutation; get thread ids from
 ## 4. Push the fixes
 
 Commit the fixes on the same branch and `git push`. The PR picks them up and
-`pr-check.yml` re-runs. If the push brings a new Copilot review, go back to
-step 2. Stop after two rounds and report whatever is still open.
+`pr-check.yml` re-runs. Don't wait for Copilot to review the fixes; it
+won't. Go on to CI.
 
 ## 5. Wait for CI
 

@@ -146,17 +146,18 @@ traceColors = new Map([
 ```{ojs}
 //| output: false
 // Presets for the "Try an example" dropdown. The first is the page's
-// default (every input cell's fallback value matches it). Every example
-// but "Good tracking" changes one setting from that baseline, so whatever
-// it shows is down to that one setting.
+// default (every input cell's fallback value matches it). Each example is
+// `baseline` -- the "Good tracking" settings -- with the few settings in
+// its `change` (and its own sensor layout) swapped in, so whatever it shows
+// is down to those.
 //
 // The path is a figure eight (Gerono's lemniscate), symmetric about the
 // x-axis so the two-sensor examples' mirror image travels the same curve.
 // One lap is 2*pi*8 ≈ 50 steps, so 100 steps is two laps: the second shows
 // whether the filter recovered, or settled on the mirror image, after the
-// first. Its speed swings from about 0.6 per step at the ends to about 1.2
-// through the crossing, so the baseline filter step of 1 keeps up on the
-// loops but strains through the middle.
+// first. Its speed swings from about 0.6 per step partway along each loop
+// to about 1.2 through the crossing, so the baseline filter step of 1 keeps
+// up on the loops but strains through the middle.
 //
 // "max" is listed before N so that if a future edit ever makes a slider's
 // bounds depend on it, the upstream field is still applied first -- see
@@ -169,7 +170,7 @@ examples = {
     {title: "Too little process noise: the cloud falls behind", sensors: threeSensors, change: {processFilter: 0.15}},
     {title: "Enough process noise: good tracking", sensors: threeSensors, change: {}},
     {title: "Never resample: weights collapse", sensors: threeSensors, change: {threshold: 0}},
-    {title: "Overconfident sensor model", sensors: threeSensors, change: {sigmaFilter: 0.1}},
+    {title: "Overconfident sensor model: all the weight on one particle", sensors: threeSensors, change: {sigmaFilter: 0.1}},
     {title: "Two sensors: a mirror-image ambiguity", sensors: twoSensors, change: {N: 300}},
     {title: "Too few particles: stuck on one mirror image", sensors: twoSensors, change: {N: 10}},
     {title: "One sensor at the center: range alone can't find the angle", sensors: oneSensor, change: {}}
@@ -542,23 +543,23 @@ result = {
   const xFn = VM.expressions.makeFunctionOfT(math, committed.xtText)
   const yFn = VM.expressions.makeFunctionOfT(math, committed.ytText)
   const fallback = t => NaN
-  if (!xFn || !yFn) return {rows: [], parsed: false, sensorsParsed: true, xFn: fallback, yFn: fallback}
+  if (!xFn || !yFn) return {rows: [], parsed: false, sensorsParsed: true, noiseParsed: true, xFn: fallback, yFn: fallback}
 
   const sensors = committed.sensors
-  if (!sensors) return {rows: [], parsed: true, sensorsParsed: false, xFn, yFn}
+  if (!sensors) return {rows: [], parsed: true, sensorsParsed: false, noiseParsed: true, xFn, yFn}
 
   const sigmaProcess = committed.sigmaProcess
   const sigmaRange = committed.sigmaRange
   const seed = committed.seed
   if (!Number.isFinite(sigmaProcess) || sigmaProcess < 0
       || !Number.isFinite(sigmaRange) || sigmaRange <= 0 || !Number.isFinite(seed)) {
-    return {rows: [], parsed: true, sensorsParsed: true, xFn, yFn}
+    return {rows: [], parsed: true, sensorsParsed: true, noiseParsed: false, xFn, yFn}
   }
 
   const n = maxSteps
   const particleCountLocal = particleCount
   const threshold = resampleThreshold
-  const sigmaFilter = Math.max(sigmaRangeFilter, 1e-6)
+  const sigmaFilter = sigmaRangeFilter
   const processFilter = sigmaProcessFilter
 
   const dataRng = VM.sampling.seededRandom(seed)
@@ -617,10 +618,15 @@ result = {
     // Update: weight by how well each particle's own predicted ranges
     // match the measurements, carrying forward last step's weight (which
     // is already uniform if last step resampled). The sensors' noise is
-    // independent, so the likelihood is a product over sensors -- summed
-    // here as squared residuals inside one exp, the same number with less
-    // underflow.
-    let weightSum = 0
+    // independent, so the likelihood is a product over sensors.
+    //
+    // Computed in logs: once the cloud is a few σ_filter from the target,
+    // every particle's likelihood underflows to 0 in floating point and the
+    // weights are lost. Subtracting the largest log-weight before
+    // exponentiating gives the same normalized weights, and the best
+    // particle always gets exp(0) = 1, so their sum is never 0.
+    const logWeights = []
+    let maxLogWeight = -Infinity
     for (const particle of particles) {
       let sumSquaredResiduals = 0
       for (let k = 0; k < sensors.length; k++) {
@@ -629,18 +635,16 @@ result = {
         const residual = ranges[i][k] - predictedRange
         sumSquaredResiduals += residual * residual
       }
-      const likelihood = Math.exp(-sumSquaredResiduals / (2 * sigmaFilter * sigmaFilter))
-      particle.w *= likelihood
-      weightSum += particle.w
+      const logWeight = Math.log(particle.w) - sumSquaredResiduals / (2 * sigmaFilter * sigmaFilter)
+      logWeights.push(logWeight)
+      if (logWeight > maxLogWeight) maxLogWeight = logWeight
     }
-    if (weightSum > 0) {
-      for (const particle of particles) particle.w /= weightSum
-    } else {
-      // Every particle had ~zero likelihood (filter badly mismatched) --
-      // fall back to uniform rather than propagate NaN through the rest
-      // of the run.
-      for (const particle of particles) particle.w = 1 / particleCountLocal
+    let weightSum = 0
+    for (let p = 0; p < particles.length; p++) {
+      particles[p].w = Math.exp(logWeights[p] - maxLogWeight)
+      weightSum += particles[p].w
     }
+    for (const particle of particles) particle.w /= weightSum
 
     let sumSquares = 0
     for (const particle of particles) sumSquares += particle.w * particle.w
@@ -684,7 +688,7 @@ result = {
     })
   }
 
-  return {rows, parsed: true, sensorsParsed: true, xFn, yFn}
+  return {rows, parsed: true, sensorsParsed: true, noiseParsed: true, xFn, yFn}
 }
 ```
 
@@ -701,7 +705,7 @@ setup = {
       step: 0, xRange: empty, yRange: empty, nominalXs: [], nominalYs: [],
       trueXsSoFar: [], trueYsSoFar: [], estimatesXSoFar: [], estimatesYSoFar: [],
       particles: [], estX: 0, estY: 0, sensors: [],
-      parsed: result.parsed, sensorsParsed: result.sensorsParsed
+      parsed: result.parsed, sensorsParsed: result.sensorsParsed, noiseParsed: result.noiseParsed
     }
   }
 
@@ -751,7 +755,7 @@ setup = {
     step, xRange, yRange, nominalXs, nominalYs,
     trueXsSoFar, trueYsSoFar, estimatesXSoFar, estimatesYSoFar,
     particles: currentRow.particles, estX: currentRow.estX, estY: currentRow.estY,
-    sensors, parsed: result.parsed, sensorsParsed: result.sensorsParsed
+    sensors, parsed: result.parsed, sensorsParsed: result.sensorsParsed, noiseParsed: result.noiseParsed
   }
 }
 ```
@@ -773,8 +777,9 @@ mainPlot = {
   // The true-position trail shows only its last trailSteps steps, oldest
   // faintest: after a lap the reader knows the path's shape (the nominal
   // path still shows it), and a full two-lap trail buries the cloud. The
-  // estimate's trail stays whole -- where the filter has been is the point. Plotly can't vary opacity along one line, so each segment is its
-  // own short trace with its own opacity.
+  // estimate's trail stays whole -- where the filter has been is the
+  // point. Plotly can't vary opacity along one line, so each segment is
+  // its own short trace with its own opacity.
   const trailSteps = 15
   function fadeOpacity(age) {
     return Math.max(0.05, 1 - age / trailSteps)
@@ -867,6 +872,8 @@ mainPlot = {
       annotations = VM.plotting.emptyState("Couldn't read x(t) or y(t) — check both formulas.")
     } else if (!data.sensorsParsed) {
       annotations = VM.plotting.emptyState("Couldn't read the sensors — list points like (10, 0), (-5, 9).")
+    } else if (!data.noiseParsed) {
+      annotations = VM.plotting.emptyState("Couldn't read the noise — process σ must be ≥ 0 and sensor σ > 0.")
     }
 
     const layout = {
@@ -1137,12 +1144,10 @@ back to Predict
 
 ::::::
 
-Here $s_k$ is sensor $k$'s location, and $\sigma_{\text{step}}$, $\sigma_{\text{filter}}$, $\tau$ and $N$ are the four filter settings in the controls above the chart. $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
+Here $s_k$ is sensor $k$'s location. The four filter settings in the controls above the chart are $\sigma_{\text{step}}$ ("Filter's assumed process σ"), $\sigma_{\text{filter}}$ ("Filter's assumed sensor σ"), $\tau$ ("Resample if ESS/N <") and $N$ ("Particles N"). $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
 
 **[Example 1](?xt=7%2Acos%28t%2F8%29&yt=3.5%2Asin%28t%2F4%29&sensors=%2810%2C%200%29%2C%20%28-5%2C%209%29%2C%20%28-5%2C%20-9%29&sigmaProcess=0.15&sigmaRange=0.6&max=100&N=150&threshold=0.5&sigmaFilter=0.6&processFilter=0.15): Why the particles fall behind.** The predict step is a random walk: the particles don't know which way the object is heading. The object moves between $0.6$ and $1.2$ along the figure eight each step, but with $\sigma_{\text{step}} = 0.15$ the particles spread only about $0.15$, so they can't keep up. Raise "Filter's assumed process σ" to about $1$ and the cloud keeps pace. It is the same trade-off as the Kalman filter's $Q$ in [1D recursive filters](../recursive-filters-1d/index.qmd).
 
 ## References
 
 Gordon, N. J., Salmond, D. J., and Smith, A. F. M. (1993). "Novel approach to nonlinear/non-Gaussian Bayesian state estimation." *IEE Proceedings F (Radar and Signal Processing)*, 140(2), 107–113. [doi:10.1049/ip-f-2.1993.0015](https://doi.org/10.1049/ip-f-2.1993.0015).
-
-Arulampalam, M. S., Maskell, S., Gordon, N., and Clapp, T. (2002). "A Tutorial on Particle Filters for Online Nonlinear/Non-Gaussian Bayesian Tracking." *IEEE Transactions on Signal Processing*, 50(2), 174–188. [doi:10.1109/78.978374](https://doi.org/10.1109/78.978374).

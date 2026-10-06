@@ -821,15 +821,17 @@ mainPlot = {
       // its square root), since area is what a reader compares. The size
       // and opacity floors keep a near-zero-weight particle visible:
       // weights after an update are very uneven, and a linear scale left
-      // most of the cloud as faint 3px specks.
+      // most of the cloud as faint 3px specks. The caps (13px, 0.8) keep
+      // the heavy particles packed around the estimate apart: any larger
+      // or more opaque and they merged into one solid patch.
       const xs = [], ys = [], sizes = [], opacities = []
       for (const particle of byWeight) {
         xs.push(particle.x)
         ys.push(particle.y)
         let relative = 0
         if (maxW > 0) relative = Math.sqrt(particle.w / maxW)
-        sizes.push(4.5 + 12.5 * relative)
-        opacities.push(0.45 + 0.5 * relative)
+        sizes.push(4.5 + 8.5 * relative)
+        opacities.push(0.45 + 0.35 * relative)
       }
       // No halo outline, unlike the single markers below: on a dot this
       // small a background-colored ring eats most of the fill.

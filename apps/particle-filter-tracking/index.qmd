@@ -52,7 +52,8 @@ Three sensors at fixed positions each report only how far away a moving object i
 // VM is the shared utility library, loaded on every page by the mathviz
 // extension. This page uses VM.expressions.makeFunctionOfT,
 // VM.expressions.makeNumber, VM.sampling.seededRandom,
-// VM.sampling.gaussianRandom, VM.mcmc.runningMean, VM.plotting.*,
+// VM.sampling.gaussianRandom, VM.filters.systematicResample,
+// VM.mcmc.runningMean, VM.plotting.*,
 // VM.ui.renderTable, VM.ui.legendOverlay, VM.ui.applyExampleParams,
 // VM.ui.syncExampleSelect.
 VM = window.VM
@@ -514,37 +515,6 @@ parseSensors = (text) => {
 
 ```{ojs}
 //| output: false
-// Standard systematic resampling: draws N new particles with probability
-// proportional to weight, replacing a random multinomial draw with one
-// evenly-spaced random offset -- lower variance for the same N, and the
-// reason it's the usual default over naive multinomial resampling.
-// Returns particles with uniform weight 1/N, page-local since no second
-// page needs it yet (see CLAUDE.md's rule on utilities used by one page).
-systematicResample = (particles, rng) => {
-  const n = particles.length
-  const cumulative = []
-  let sum = 0
-  for (const particle of particles) {
-    sum += particle.w
-    cumulative.push(sum)
-  }
-
-  const step = 1 / n
-  const resampled = []
-  let u = rng() * step
-  let i = 0
-  for (let m = 0; m < n; m++) {
-    while (u > cumulative[i] && i < n - 1) i++
-    const source = particles[i]
-    resampled.push({x: source.x, y: source.y, w: step})
-    u += step
-  }
-  return resampled
-}
-```
-
-```{ojs}
-//| output: false
 // result: the bootstrap (SIR) particle filter. Returns {rows, parsed,
 // sensorsParsed, xFn, yFn}. `rows` is the full run, one entry per time step:
 //   i            step index, t = i
@@ -691,9 +661,19 @@ result = {
     const dx = trueXs[i] - estX, dy = trueYs[i] - estY
     const error = Math.sqrt(dx * dx + dy * dy)
 
+    // Systematic resampling: VM.filters.systematicResample turns the
+    // weights and one uniform draw into the indices of the particles to
+    // copy, each copy starting again at weight 1/N.
     let resampled = false
     if (ess / particleCountLocal < threshold) {
-      particles = systematicResample(particles, filterRng)
+      const weights = []
+      for (const particle of particles) weights.push(particle.w)
+      const indices = VM.filters.systematicResample(weights, filterRng())
+      const copies = []
+      for (const index of indices) {
+        copies.push({x: particles[index].x, y: particles[index].y, w: 1 / particleCountLocal})
+      }
+      particles = copies
       resampled = true
     }
 
@@ -987,6 +967,7 @@ viewof stepControl = {
 }
 ```
 
+</div>
 
 </div>
 
@@ -1101,7 +1082,7 @@ iterationTable = {
 
 A particle filter represents its belief about the object's position as a cloud of weighted particles $x_i^{(p)}$, and repeats the same steps for every new set of readings:
 
-:::::: {.vm-flow style="--vm-flow-loop-label: 'next step'"}
+:::::: {.vm-flow}
 
 ::::: {.vm-flow-step}
 ::: {.vm-flow-box}
@@ -1148,6 +1129,9 @@ $\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$
 [Resample]{.vm-flow-label}
 
 if $\mathrm{ESS}_i = 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2 < \tau N$, draw $N$ particles $\propto w_i^{(p)}$, each with weight $1/N$
+:::
+::: {.vm-flow-loop-label}
+back to Predict
 :::
 :::::
 

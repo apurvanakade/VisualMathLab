@@ -118,7 +118,9 @@ traceLabelToSlug = new Map([
 
 initialTraces = {
   const raw = urlParams.get("show")
-  if (raw === null || raw.trim() === "") return traceOptions
+  if (raw === null) return traceOptions
+  // "show=" is a real state: the reader unchecked every trace.
+  if (raw.trim() === "") return []
 
   const selected = []
   for (const token of raw.split(",")) {
@@ -557,6 +559,14 @@ result = {
   }
 
   const n = maxSteps
+
+  // A formula that parses can still evaluate to NaN (sqrt(-1)); treat that
+  // as unreadable rather than letting NaN reach every range and weight.
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(xFn(i)) || !Number.isFinite(yFn(i))) {
+      return {rows: [], parsed: false, sensorsParsed: true, noiseParsed: true, xFn: fallback, yFn: fallback}
+    }
+  }
   const particleCountLocal = particleCount
   const threshold = resampleThreshold
   const sigmaFilter = sigmaRangeFilter
@@ -579,7 +589,9 @@ result = {
     for (const sensor of sensors) {
       const dx = tx - sensor.x, dy = ty - sensor.y
       const trueRange = Math.sqrt(dx * dx + dy * dy)
-      stepRanges.push(Math.max(0, trueRange + sigmaRange * dataGaussian()))
+      // Plain additive Gaussian noise, not clamped at 0, so the data come
+      // from exactly the model the update step below scores them with.
+      stepRanges.push(trueRange + sigmaRange * dataGaussian())
     }
     ranges.push(stepRanges)
   }
@@ -927,7 +939,9 @@ mainPlot = {
 maxSteps = {
   const parsed = VM.expressions.makeNumber(window.math, maxStepsInput)
   if (parsed === null || !Number.isFinite(parsed)) return 100
-  return Math.max(1, Math.round(parsed))
+  // Capped: result keeps every step's whole particle cloud, so an
+  // unbounded value (say ?max=10000000) would freeze the tab.
+  return Math.min(Math.max(1, Math.round(parsed)), 1000)
 }
 
 // The filter-setting fields, parsed and clamped to the ranges the filter

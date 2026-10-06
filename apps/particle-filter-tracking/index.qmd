@@ -790,10 +790,10 @@ mainPlot = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  // The true-position and estimate trails show only their last trailSteps
-  // steps, oldest faintest: after a lap the reader knows the path's shape
-  // (the nominal path still shows it), and a full two-lap trail buries the
-  // cloud. Plotly can't vary opacity along one line, so each segment is its
+  // The true-position trail shows only its last trailSteps steps, oldest
+  // faintest: after a lap the reader knows the path's shape (the nominal
+  // path still shows it), and a full two-lap trail buries the cloud. The
+  // estimate's trail stays whole -- where the filter has been is the point. Plotly can't vary opacity along one line, so each segment is its
   // own short trace with its own opacity.
   const trailSteps = 15
   function fadeOpacity(age) {
@@ -864,9 +864,8 @@ mainPlot = {
         hovertemplate: "particle (%{x:.3g}, %{y:.3g})<extra></extra>"})
     }
     if (showEstimate) {
-      for (const segment of fadingSegments(data.estimatesXSoFar, data.estimatesYSoFar, "Estimate (trail)", {color: chartColors.alt, width: 1.5, dash: "dot"})) {
-        traces.push(segment)
-      }
+      traces.push({x: data.estimatesXSoFar, y: data.estimatesYSoFar, type: "scatter", mode: "lines", name: "Estimate (trail)", showlegend: false,
+        line: {color: chartColors.alt, width: 1.5, dash: "dot"}, hoverinfo: "skip"})
       traces.push({x: [data.estX], y: [data.estY], type: "scatter", mode: "markers", name: "Estimate", showlegend: false,
         marker: {color: chartColors.alt, size: 13, symbol: "diamond", line: {color: chartColors.halo, width: 1.5}},
         hovertemplate: "estimate (%{x:.3g}, %{y:.3g})<extra></extra>"})

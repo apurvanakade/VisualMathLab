@@ -811,16 +811,30 @@ mainPlot = {
     if (showParticles && data.particles.length > 0) {
       let maxW = 0
       for (const particle of data.particles) if (particle.w > maxW) maxW = particle.w
+
+      // Lightest first, so the heavy particles are drawn on top and the
+      // light ones show around their edges rather than under them.
+      const byWeight = [...data.particles]
+      byWeight.sort((a, b) => a.w - b.w)
+
+      // A marker's AREA carries the weight (size, a diameter, grows with
+      // its square root), since area is what a reader compares. The size
+      // and opacity floors keep a near-zero-weight particle visible:
+      // weights after an update are very uneven, and a linear scale left
+      // most of the cloud as faint 3px specks.
       const xs = [], ys = [], sizes = [], opacities = []
-      for (const particle of data.particles) {
+      for (const particle of byWeight) {
         xs.push(particle.x)
         ys.push(particle.y)
-        const relative = maxW > 0 ? particle.w / maxW : 0
-        sizes.push(3 + 14 * relative)
-        opacities.push(0.25 + 0.65 * relative)
+        let relative = 0
+        if (maxW > 0) relative = Math.sqrt(particle.w / maxW)
+        sizes.push(4.5 + 12.5 * relative)
+        opacities.push(0.45 + 0.5 * relative)
       }
+      // No halo outline, unlike the single markers below: on a dot this
+      // small a background-colored ring eats most of the fill.
       traces.push({x: xs, y: ys, type: "scatter", mode: "markers", name: "Particles", showlegend: false,
-        marker: {color: chartColors.accent2, size: sizes, opacity: opacities, line: {color: chartColors.halo, width: 0.5}},
+        marker: {color: chartColors.accent2, size: sizes, opacity: opacities, line: {width: 0}},
         hovertemplate: "particle (%{x:.3g}, %{y:.3g})<extra></extra>"})
     }
     if (showEstimate) {

@@ -150,64 +150,39 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// Presets for the "Try an example" dropdown, in two groups -- a circle and
-// a sine curve -- that show the same phenomena in the same order, so a
-// reader can check that each one is about the filter, not about one path.
-// `group` is the dropdown's <optgroup> label (see viewof exampleSelect);
-// consecutive examples with the same group share one.
+// Presets for the "Try an example" dropdown. Every example after the
+// first changes one setting from "Three sensors", so whatever it shows is
+// down to that one setting.
 //
-// Both paths run 50 steps at a similar speed (up to ~0.8 per step) and
-// start on the line through their two-sensor pair, so every phenomenon
-// carries over. 50 steps is also one lap of the circle (2*pi*8 ≈ 50): a
-// longer run draws the nominal circle twice over its first stretch, and
-// the two overlapping dotted lines read as one solid one.
+// 50 steps is one lap of the circle (2*pi*8 ≈ 50): a longer run draws the
+// nominal circle twice over its first stretch, and the two overlapping
+// dotted lines read as one solid one.
 //
 // "max" is listed before N so that if a future edit ever makes a slider's
 // bounds depend on it, the upstream field is still applied first -- see
 // CLAUDE.md's gotcha on VM.ui.applyExampleParams's ordering.
 examples = {
-  const curves = [
-    {
-      group: "Circle",
-      xt: "6*cos(t/8)", yt: "6*sin(t/8)",
-      three: "(10, 0), (-5, 9), (-5, -9)",
-      two: "(10, 0), (-10, 0)",
-      one: "(0, 0)",
-      oneTitle: "One sensor at the center: range alone can't find the angle"
-    },
-    {
-      group: "Sine curve",
-      xt: "0.3*t - 7.5", yt: "5*sin(t/6)",
-      three: "(0, -9), (-9, 8), (9, 8)",
-      two: "(-11, 0), (11, 0)",
-      one: "(0, 0)",
-      oneTitle: "One sensor: range alone can't find the angle"
-    }
+  const threeSensors = "(10, 0), (-5, 9), (-5, -9)"
+  const twoSensors = "(10, 0), (-10, 0)"
+  const oneSensor = "(0, 0)"
+  const variations = [
+    {title: "Three sensors", sensors: threeSensors, change: {}},
+    {title: "Too little process noise: the cloud falls behind", sensors: threeSensors, change: {processFilter: 0.15}},
+    {title: "Never resample: weights collapse", sensors: threeSensors, change: {threshold: 0}},
+    {title: "Overconfident sensor model", sensors: threeSensors, change: {sigmaFilter: 0.1}},
+    {title: "Two sensors: a mirror-image ambiguity", sensors: twoSensors, change: {N: 300}},
+    {title: "Too few particles: stuck on one mirror image", sensors: twoSensors, change: {N: 10}},
+    {title: "One sensor at the center: range alone can't find the angle", sensors: oneSensor, change: {}}
   ]
 
-  // Every phenomenon is one change from the "Three sensors" baseline.
   const baseline = {sigmaProcess: "0.15", sigmaRange: "0.6", max: "50", N: 150, threshold: 0.5, sigmaFilter: 0.6, processFilter: 1}
-  const phenomena = [
-    {title: "Three sensors", sensors: "three", change: {}},
-    {title: "Too little process noise: the cloud falls behind", sensors: "three", change: {processFilter: 0.15}},
-    {title: "Never resample: weights collapse", sensors: "three", change: {threshold: 0}},
-    {title: "Overconfident sensor model", sensors: "three", change: {sigmaFilter: 0.1}},
-    {title: "Two sensors: a mirror-image ambiguity", sensors: "two", change: {N: 300}},
-    {title: "Too few particles: stuck on one mirror image", sensors: "two", change: {N: 10}},
-    {title: null, sensors: "one", change: {}}
-  ]
-
   const list = []
-  for (const curve of curves) {
-    for (const phenomenon of phenomena) {
-      let title = phenomenon.title
-      if (title === null) title = curve.oneTitle
-      // Key order is the order applyExampleParams applies them in.
-      const params = {xt: curve.xt, yt: curve.yt, sensors: curve[phenomenon.sensors]}
-      for (const key in baseline) params[key] = baseline[key]
-      for (const key in phenomenon.change) params[key] = phenomenon.change[key]
-      list.push({group: curve.group, title, params})
-    }
+  for (const variation of variations) {
+    // Key order is the order applyExampleParams applies them in.
+    const params = {xt: "6*cos(t/8)", yt: "6*sin(t/8)", sensors: variation.sensors}
+    for (const key in baseline) params[key] = baseline[key]
+    for (const key in variation.change) params[key] = variation.change[key]
+    list.push({title: variation.title, params})
   }
   return list
 }
@@ -309,26 +284,9 @@ viewof maxStepsInput = {
 ```
 
 ```{ojs}
-// Inputs.select has no option groups of its own, so the cell moves its
-// <option>s into one <optgroup> per curve after the fact. That keeps every
-// option in the same order (select.options counts through optgroups), which
-// is all Inputs.select and VM.ui.syncExampleSelect rely on. Option 0 is
-// "Custom inputs" (the leading null), which stays outside any group.
 viewof exampleSelect = {
   const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
   select.classList.add("ojs-fill")
-
-  const nativeSelect = select.querySelector("select")
-  const options = [...nativeSelect.options]
-  let group = null
-  for (let i = 0; i < examples.length; i++) {
-    if (group === null || group.label !== examples[i].group) {
-      group = document.createElement("optgroup")
-      group.label = examples[i].group
-      nativeSelect.append(group)
-    }
-    group.append(options[i + 1])
-  }
   return select
 }
 ```
@@ -1118,9 +1076,9 @@ where $z_{i,k}$ is sensor $k$'s noisy range measurement at step $i$ — each sen
 
 The particles start in a small Gaussian cloud (standard deviation $1$) around the target's true starting position: the tracker is told roughly where the target begins, and its job is to follow it from there. After that, the particles know only that the target moves — a plain random walk whose step size $\sigma_{\text{step}}$ is the "Filter's assumed process σ" slider — not the actual drift written into $x(t), y(t)$. That step has to cover the target's real motion, not just the small wander $\sigma_{\text{process}}$ around its path: the circular orbit moves about $0.75$ per step, and a cloud that steps $0.15$ falls behind and loses it. It is the same trade-off [1D recursive filters](../recursive-filters-1d/index.qmd) makes with its Kalman filter's process-noise parameter $Q$.
 
-A single range reading pins the target only to a circle around its sensor. Two circles meet in (at most) two points, mirror images across the line through the two sensors; a third sensor off that line picks out one of them. That is why each example group starts from three sensors, and why the particle cloud collapses onto the one point all three circles share rather than spreading around one circle.
+A single range reading pins the target only to a circle around its sensor. Two circles meet in (at most) two points, mirror images across the line through the two sensors; a third sensor off that line picks out one of them. That is why the default setup uses three sensors, and why the particle cloud collapses onto the one point all three circles share rather than spreading around one circle.
 
-The examples come in two groups, a circle and a sine curve, which show the same phenomena in the same order. Each one changes a single setting from the group's "Three sensors" example, so anything that happens on both paths is about the filter, not about the path. "Too little process noise" makes the cloud fall behind the target and lose it. "Never resample" makes $\mathrm{ESS}$ collapse toward $1$ with no correction. In "Overconfident sensor model" the filter trusts its sensors far more than it should, so every reading puts nearly all the weight on a handful of particles: the estimate still tracks, but $\mathrm{ESS}/N$ sits near zero and the filter resamples at every step. "Two sensors" splits the cloud between the target and its mirror image. "Too few particles" makes a small cloud commit to one of the two, the wrong one about half the time. The one-sensor examples show exactly what a single range-only reading *cannot* tell you: the object's angle around the sensor. Every run is random, so press Plot again if one doesn't show its effect.
+Each example after "Three sensors" changes one setting from it. "Too little process noise" makes the cloud fall behind the target and lose it. "Never resample" makes $\mathrm{ESS}$ collapse toward $1$ with no correction. In "Overconfident sensor model" the filter trusts its sensors far more than it should, so every reading puts nearly all the weight on a handful of particles: the estimate still tracks, but $\mathrm{ESS}/N$ sits near zero and the filter resamples at every step. "Two sensors" splits the cloud between the target and its mirror image. "Too few particles" makes a small cloud commit to one of the two, the wrong one about half the time. "One sensor at the center" shows exactly what a single range-only reading *cannot* tell you: the object's angle around the sensor. Every run is random, so press Plot again if one doesn't show its effect.
 
 ## References
 

@@ -47,6 +47,12 @@ urlParams = new URLSearchParams(window.location.search)
 
 methodOptions = ["True Signal", "Noisy measurements", "Simple Moving Average", "Exponential Moving Average", "Kalman Filter"]
 
+// Shown by default and by every example but "Fast oscillation exposes lag",
+// which adds the EMA it is about: the Kalman filter is the page's main
+// algorithm, with the true signal and the measurements as context. SMA and
+// EMA are one legend click away.
+defaultMethods = ["True Signal", "Noisy measurements", "Kalman Filter"]
+
 methodSlugToLabel = new Map([
   ["true", "True Signal"],
   ["true-signal", "True Signal"],
@@ -103,7 +109,7 @@ methodColors = new Map([
 
 initialMethods = {
   const raw = urlParams.get("show")
-  if (raw === null || raw.trim() === "") return methodOptions
+  if (raw === null || raw.trim() === "") return defaultMethods
 
   const selected = raw
     .split(",")
@@ -111,7 +117,7 @@ initialMethods = {
     .map(s => methodSlugToLabel.get(s))
     .filter(Boolean)
 
-  return selected.length > 0 ? Array.from(new Set(selected)) : methodOptions
+  return selected.length > 0 ? Array.from(new Set(selected)) : defaultMethods
 }
 
 initialMax = urlParams.get("max") ?? "80"
@@ -151,27 +157,27 @@ initialQ = {
 examples = [
   {
     title: "Sudden regime change",
-    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05}
+    params: {f: "x > 10 ? 6 : 0", sigma: "0.5", b: "20", max: "80", alpha: 0.9, k: 8, R: 0.25, Q: 0.05, show: defaultMethods}
   },
   {
     title: "Fast oscillation exposes lag",
-    params: {f: "sin(3*x)", sigma: "0.3", b: "10", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05}
+    params: {f: "sin(3*x)", sigma: "0.3", b: "10", max: "100", alpha: 0.9, k: 6, R: 0.09, Q: 0.05, show: ["True Signal", "Noisy measurements", "Exponential Moving Average", "Kalman Filter"]}
   },
   {
     title: "Zero process noise stops tracking",
-    params: {f: "sin(x)", sigma: "0.3", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0}
+    params: {f: "sin(x)", sigma: "0.3", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.09, Q: 0, show: defaultMethods}
   },
   {
     title: "Overconfident sensor model",
-    params: {f: "sin(x)", sigma: "0.6", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05}
+    params: {f: "sin(x)", sigma: "0.6", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.01, Q: 0.05, show: defaultMethods}
   },
   {
     title: "Estimating a hidden constant",
-    params: {f: "5", sigma: "1", b: "20", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0}
+    params: {f: "5", sigma: "1", b: "20", max: "60", alpha: 0.9, k: 8, R: 1, Q: 0, show: defaultMethods}
   },
   {
     title: "Noisy sine wave",
-    params: {f: "sin(x)", sigma: "0.4", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05}
+    params: {f: "sin(x)", sigma: "0.4", b: "20", max: "60", alpha: 0.9, k: 5, R: 0.16, Q: 0.05, show: defaultMethods}
   }
 ]
 ```
@@ -263,7 +269,8 @@ exampleFieldSelectors = ({
   alpha: '[data-example-field="alpha"]',
   k: '[data-example-field="k"]',
   R: '[data-example-field="R"]',
-  Q: '[data-example-field="Q"]'
+  Q: '[data-example-field="Q"]',
+  show: '[data-example-field="show"]'
 })
 ```
 
@@ -293,7 +300,7 @@ applyExampleFromSelect = {
 // inputs" once none does). Reads every example field's value so it re-runs
 // whenever one changes; it only sets the dropdown, never a field.
 syncExampleFromFields = {
-  fText; sigmaText; bText; maxNInput; alpha; windowK; R; Q
+  fText; sigmaText; bText; maxNInput; alpha; windowK; R; Q; methods
   VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
 }
 ```
@@ -614,17 +621,19 @@ viewof windowK = {
 ```
 
 ```{ojs}
-viewof R = {
-  const input = Inputs.range([0.001, 2], {step: 0.001, value: initialR, label: "Kalman R"})
-  input.dataset.exampleField = "R"
+// Q before R: the order the flowchart below uses them in (Grow variance, then
+// Update).
+viewof Q = {
+  const input = Inputs.range([0, 1], {step: 0.001, value: initialQ, label: "Assumed process noise Q"})
+  input.dataset.exampleField = "Q"
   return input
 }
 ```
 
 ```{ojs}
-viewof Q = {
-  const input = Inputs.range([0, 1], {step: 0.001, value: initialQ, label: "Kalman Q"})
-  input.dataset.exampleField = "Q"
+viewof R = {
+  const input = Inputs.range([0.001, 2], {step: 0.001, value: initialR, label: "Assumed sensor noise R"})
+  input.dataset.exampleField = "R"
   return input
 }
 ```
@@ -799,7 +808,7 @@ $$
 \text{EMA: } \hat x_i = \alpha\, \hat x_{i-1} + (1-\alpha)\, z_i.
 $$
 
-The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $R$, the assumed measurement-noise (sensor) variance, and $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples). It repeats the same steps for every new measurement:
+The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples), and $R$, the assumed sensor-noise variance (how noisy each measurement is).
 
 :::::: {.vm-flow}
 
@@ -811,17 +820,31 @@ Set $\hat x \leftarrow$ the first measurement, with variance $P \leftarrow R$
 :::
 :::::
 
-::::: {.vm-flow-step .vm-flow-loop-to}
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-to}
+::: {.vm-flow-phase-label}
+Predict
+:::
+
 ::: {.vm-flow-box}
-[Predict]{.vm-flow-label}
+[Grow variance]{.vm-flow-label}
 
-Set $\hat x_i^- \leftarrow \hat x_{i-1}$
-
-Set $P_i^- \leftarrow P_{i-1} + Q$
+Set $\bar P_i \leftarrow P_{i-1} + Q$
 :::
 :::::
 
-::::: {.vm-flow-step .vm-flow-loop-from}
+::::: {.vm-flow-step .vm-flow-phase}
+::: {.vm-flow-phase-label}
+Update
+:::
+
+::: {.vm-flow-box}
+[Compute Gain]{.vm-flow-label}
+
+Set $K_i \leftarrow \bar P_i \big/ \bigl(\bar P_i + R\bigr)$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase}
 ::: {.vm-flow-box .vm-flow-in}
 [Measure]{.vm-flow-label}
 
@@ -829,17 +852,21 @@ $z_i$: the newest noisy measurement
 :::
 
 ::: {.vm-flow-box}
-[Update]{.vm-flow-label}
+[Update estimate]{.vm-flow-label}
 
-Compute gain $K_i \leftarrow P_i^- \big/ \bigl(P_i^- + R\bigr)$
+Set $\hat x_i \leftarrow \hat x_{i-1} + K_i\,\bigl(z_i - \hat x_{i-1}\bigr)$
+:::
+:::::
 
-Set $\hat x_i \leftarrow \hat x_i^- + K_i\,\bigl(z_i - \hat x_i^-\bigr)$
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-from}
+::: {.vm-flow-box}
+[Update variance]{.vm-flow-label}
 
-Set $P_i \leftarrow (1 - K_i)\, P_i^-$
+Set $P_i \leftarrow (1 - K_i)\, \bar P_i$
 :::
 
 ::: {.vm-flow-loop-label}
-back to Predict
+next measurement
 :::
 :::::
 

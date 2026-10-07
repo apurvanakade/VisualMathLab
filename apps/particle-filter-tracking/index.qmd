@@ -43,9 +43,11 @@ Authors: Dhruv Azad
 }
 </style>
 
-Three sensors at fixed positions each report only how far away a moving object is, not in which direction, and every reading is noisy. Below, the object's <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight, and a particle filter tries to follow it using nothing but those readings. It keeps a cloud of guesses, the <span class="vm-swatch vm-swatch-accent2">particles</span>, weights each one by how well it explains the latest readings (bigger dots carry more weight), and takes their weighted average as its <span class="vm-swatch vm-swatch-alt">estimate</span>.
+Particle filtering is a sequential Monte Carlo method for estimating the hidden state of a system that changes over time, updating that estimate each time a new noisy measurement arrives. It represents its belief about the state as a cloud of weighted samples: at every step it moves each sample forward according to how the system evolves, reweights it by how well it explains the new measurement, and resamples when a few samples end up carrying most of the weight.
 
-**Why do you think the particles are falling behind?** Press play on the step slider to watch it happen.
+In the app below, we use it to track the position of a jittery moving object (its <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight) using three <span class="vm-swatch vm-swatch-ink">sensors</span> at fixed positions, each of which reports only a *noisy distance to the object*. The <span class="vm-swatch vm-swatch-accent2">particles</span> are the filter's guesses (bigger dots carry more weight), and the <span class="vm-swatch vm-swatch-alt">estimate</span> is the weighted average of the particles.
+
+**In the example shown below, why do you think the particles are falling behind?** Press play to watch it happen.
 
 ```{ojs}
 //| output: false
@@ -260,7 +262,7 @@ viewof plotTrigger = {
 ```{ojs}
 viewof sigmaProcessText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Process noise σ", value: params.get("sigmaProcess") ?? "0.15", placeholder: "Example: 0.15, 0.3"})
+  const input = Inputs.text({label: html`Process noise ${tex`\sigma_{\text{process}}`}`, value: params.get("sigmaProcess") ?? "0.15", placeholder: "Example: 0.15, 0.3"})
   input.dataset.exampleField = "sigmaProcess"
   return input
 }
@@ -269,7 +271,7 @@ viewof sigmaProcessText = {
 ```{ojs}
 viewof sigmaRangeText = {
   const params = new URLSearchParams(window.location.search)
-  const input = Inputs.text({label: "Sensor noise σ (true)", value: params.get("sigmaRange") ?? "0.6", placeholder: "Example: 0.6, 0.3"})
+  const input = Inputs.text({label: html`Sensor noise ${tex`\sigma_{\text{sensor}}`}`, value: params.get("sigmaRange") ?? "0.6", placeholder: "Example: 0.6, 0.3"})
   input.dataset.exampleField = "sigmaRange"
   return input
 }
@@ -283,7 +285,7 @@ viewof sigmaRangeText = {
 // slider is the only control worth playing. Parsed and clamped in
 // particleCount, resampleThreshold, sigmaRangeFilter, sigmaProcessFilter.
 viewof particleCountText = {
-  const input = Inputs.text({value: initialParticleCount, label: "Particles N", placeholder: "10 to 500"})
+  const input = Inputs.text({value: initialParticleCount, label: html`Particles ${tex`N`}`, placeholder: "10 to 500"})
   input.dataset.exampleField = "N"
   return input
 }
@@ -291,7 +293,7 @@ viewof particleCountText = {
 
 ```{ojs}
 viewof resampleThresholdText = {
-  const input = Inputs.text({value: initialResampleThreshold, label: "Resample if ESS/N <", placeholder: "0 to 1"})
+  const input = Inputs.text({value: initialResampleThreshold, label: html`Resample if ESS/${tex`N`} < ${tex`\tau`}`, placeholder: "0 to 1"})
   input.dataset.exampleField = "threshold"
   return input
 }
@@ -299,7 +301,7 @@ viewof resampleThresholdText = {
 
 ```{ojs}
 viewof sigmaRangeFilterText = {
-  const input = Inputs.text({value: initialSigmaFilter, label: "Filter's assumed sensor σ", placeholder: "0.05 to 3"})
+  const input = Inputs.text({value: initialSigmaFilter, label: html`Filter's sensor noise ${tex`\hat\sigma_{\text{sensor}}`}`, placeholder: "0.05 to 3"})
   input.dataset.exampleField = "sigmaFilter"
   return input
 }
@@ -307,7 +309,7 @@ viewof sigmaRangeFilterText = {
 
 ```{ojs}
 viewof sigmaProcessFilterText = {
-  const input = Inputs.text({value: initialProcessFilter, label: "Filter's assumed process σ", placeholder: "0.05 to 3"})
+  const input = Inputs.text({value: initialProcessFilter, label: html`Filter's process noise ${tex`\hat\sigma_{\text{process}}`}`, placeholder: "0.05 to 3"})
   input.dataset.exampleField = "processFilter"
   return input
 }
@@ -1115,11 +1117,11 @@ $N$ particles around the starting position, each with weight $1/N$
 
 ::::: {.vm-flow-step .vm-flow-loop-to}
 ::: {.vm-flow-box}
-[Predict]{.vm-flow-label}
+[Predict (for each $p$)]{.vm-flow-label}
 
-$x_i^{(p)} = x_{i-1}^{(p)} + \varepsilon_i^{(p)}$
+Generate $\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \hat\sigma_{\text{process}}^2 I\bigr)$
 
-$\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \sigma_{\text{step}}^2 I\bigr)$
+Set $x_i^{(p)} \leftarrow x_{i-1}^{(p)} + \varepsilon_i^{(p)}$
 :::
 :::::
 
@@ -1131,11 +1133,21 @@ $z_{i,k}$: sensor $k$'s noisy distance to the object
 :::
 
 ::: {.vm-flow-box}
-[Update]{.vm-flow-label}
+[Update (for each $p$)]{.vm-flow-label}
 
-[$w_i^{(p)} \propto w_{i-1}^{(p)} \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \sigma_{\text{filter}}^2\bigr)$]{.vm-flow-nowrap}
+Compute likelihood [$\ell_i^{(p)} \leftarrow \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \hat\sigma_{\text{sensor}}^2\bigr)$]{.vm-flow-nowrap}
 
-weights normalized to sum to $1$
+Set $w_i^{\prime(p)} \leftarrow w_{i-1}^{(p)}\, \ell_i^{(p)}$
+:::
+:::::
+
+::::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Normalize]{.vm-flow-label}
+
+Compute total weight $W_i \leftarrow \sum_p w_i^{\prime(p)}$
+
+Set $w_i^{(p)} \leftarrow w_i^{\prime(p)} / W_i$ for each $p$
 :::
 
 ::: {.vm-flow-box .vm-flow-out}
@@ -1149,7 +1161,11 @@ $\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$
 ::: {.vm-flow-box}
 [Resample]{.vm-flow-label}
 
-if $\mathrm{ESS}_i = 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2 < \tau N$, draw $N$ particles $\propto w_i^{(p)}$, each with weight $1/N$
+Compute $\mathrm{ESS}_i \leftarrow 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2$
+
+If $\mathrm{ESS}_i < \tau N$: draw $N$ new particles from the current ones, picking $x_i^{(p)}$ with probability $w_i^{(p)}$
+
+Then set every weight to $1/N$
 :::
 ::: {.vm-flow-loop-label}
 back to Predict
@@ -1158,9 +1174,9 @@ back to Predict
 
 ::::::
 
-Here $s_k$ is sensor $k$'s location. The four filter settings in the controls above the chart are $\sigma_{\text{step}}$ ("Filter's assumed process σ"), $\sigma_{\text{filter}}$ ("Filter's assumed sensor σ"), $\tau$ ("Resample if ESS/N <") and $N$ ("Particles N"). $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
+Here $s_k$ is sensor $k$'s location. The filter's four settings are the controls $\hat\sigma_{\text{process}}$ and $\hat\sigma_{\text{sensor}}$ (its guesses at the true noise levels $\sigma_{\text{process}}$ and $\sigma_{\text{sensor}}$, which it never sees), $\tau$ and $N$. $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
 
-**[Example 1](?xt=7%2Acos%28t%2F8%29&yt=3.5%2Asin%28t%2F4%29&sensors=%2810%2C%200%29%2C%20%28-5%2C%209%29%2C%20%28-5%2C%20-9%29&sigmaProcess=0.15&sigmaRange=0.6&max=100&N=150&threshold=0.5&sigmaFilter=0.6&processFilter=0.15): Why the particles fall behind.** The predict step is a random walk: the particles don't know which way the object is heading. The object moves between $0.6$ and $1.2$ along the figure eight each step, but with $\sigma_{\text{step}} = 0.15$ the particles spread only about $0.15$, so they can't keep up. Raise "Filter's assumed process σ" to about $1$ and the cloud keeps pace. It is the same trade-off as the Kalman filter's $Q$ in [1D recursive filters](../recursive-filters-1d/index.qmd).
+**[Example 1](?xt=7%2Acos%28t%2F8%29&yt=3.5%2Asin%28t%2F4%29&sensors=%2810%2C%200%29%2C%20%28-5%2C%209%29%2C%20%28-5%2C%20-9%29&sigmaProcess=0.15&sigmaRange=0.6&max=100&N=150&threshold=0.5&sigmaFilter=0.6&processFilter=0.15): Why the particles fall behind.** The predict step is a random walk: the particles don't know which way the object is heading. The object moves between $0.6$ and $1.2$ along the figure eight each step, but with $\hat\sigma_{\text{process}} = 0.15$ the particles spread only about $0.15$, so they can't keep up. Raise $\hat\sigma_{\text{process}}$ to about $1$ and the cloud keeps pace. It is the same trade-off as the Kalman filter's $Q$ in [1D recursive filters](../recursive-filters-1d/index.qmd).
 
 ## References
 

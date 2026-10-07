@@ -799,16 +799,51 @@ $$
 \text{EMA: } \hat x_i = \alpha\, \hat x_{i-1} + (1-\alpha)\, z_i.
 $$
 
-The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $R$, the assumed measurement-noise (sensor) variance, and $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples):
+The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $R$, the assumed measurement-noise (sensor) variance, and $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples). It repeats the same steps for every new measurement:
 
-$$
-P_i^- = P_{i-1} + Q,\qquad
-K_i = \frac{P_i^-}{P_i^- + R},\qquad
-\hat x_i = \hat x_{i-1} + K_i\,(z_i - \hat x_{i-1}),\qquad
-P_i = (1-K_i)\,P_i^-,
-$$
+:::::: {.vm-flow}
 
-with no $\alpha$ or $k$ to tune by hand — pick "Estimating a hidden constant" from the example dropdown and open the convergence plots to watch $K_i$ shrink automatically as the filter grows more confident.
+::::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Start]{.vm-flow-label}
+
+Set $\hat x \leftarrow$ the first measurement, with variance $P \leftarrow R$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-loop-to}
+::: {.vm-flow-box}
+[Predict]{.vm-flow-label}
+
+Set $\hat x_i^- \leftarrow \hat x_{i-1}$
+
+Set $P_i^- \leftarrow P_{i-1} + Q$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-loop-from}
+::: {.vm-flow-box .vm-flow-in}
+[Measure]{.vm-flow-label}
+
+$z_i$: the newest noisy measurement
+:::
+
+::: {.vm-flow-box}
+[Update]{.vm-flow-label}
+
+Compute gain $K_i \leftarrow P_i^- \big/ \bigl(P_i^- + R\bigr)$
+
+Set $\hat x_i \leftarrow \hat x_i^- + K_i\,\bigl(z_i - \hat x_i^-\bigr)$
+
+Set $P_i \leftarrow (1 - K_i)\, P_i^-$
+:::
+
+::: {.vm-flow-loop-label}
+back to Predict
+:::
+:::::
+
+::::::
 
 ## References
 

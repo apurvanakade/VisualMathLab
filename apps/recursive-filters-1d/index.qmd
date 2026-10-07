@@ -837,14 +837,6 @@ Set $\bar P_i \leftarrow P_{i-1} + Q$
 Update
 :::
 
-::: {.vm-flow-box}
-[Compute Gain]{.vm-flow-label}
-
-Set $K_i \leftarrow \bar P_i \big/ \bigl(\bar P_i + R\bigr)$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase}
 ::: {.vm-flow-box .vm-flow-in}
 [Measure]{.vm-flow-label}
 
@@ -852,6 +844,12 @@ $z_i$: the newest noisy measurement
 :::
 
 ::: {.vm-flow-box}
+[Compute Gain]{.vm-flow-label}
+
+Set $K_i \leftarrow \bar P_i \big/ \bigl(\bar P_i + R\bigr)$
+:::
+
+::: {.vm-flow-box .vm-flow-out}
 [Update estimate]{.vm-flow-label}
 
 Set $\hat x_i \leftarrow \hat x_{i-1} + K_i\,\bigl(z_i - \hat x_{i-1}\bigr)$

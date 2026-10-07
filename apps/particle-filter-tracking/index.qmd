@@ -1115,9 +1115,13 @@ $N$ particles around the starting position, each with weight $1/N$
 :::
 :::::
 
-::::: {.vm-flow-step .vm-flow-loop-to}
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-to}
+::: {.vm-flow-phase-label}
+Predict
+:::
+
 ::: {.vm-flow-box}
-[Predict (for each $p$)]{.vm-flow-label}
+[Move particles (for each $p$)]{.vm-flow-label}
 
 Generate $\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \hat\sigma_{\text{process}}^2 I\bigr)$
 
@@ -1125,7 +1129,11 @@ Set $x_i^{(p)} \leftarrow x_{i-1}^{(p)} + \varepsilon_i^{(p)}$
 :::
 :::::
 
-::::: {.vm-flow-step}
+::::: {.vm-flow-step .vm-flow-phase}
+::: {.vm-flow-phase-label}
+Update
+:::
+
 ::: {.vm-flow-box .vm-flow-in}
 [Measure]{.vm-flow-label}
 
@@ -1133,7 +1141,7 @@ $z_{i,k}$: sensor $k$'s noisy distance to the object
 :::
 
 ::: {.vm-flow-box}
-[Update (for each $p$)]{.vm-flow-label}
+[Reweight (for each $p$)]{.vm-flow-label}
 
 Compute likelihood [$\ell_i^{(p)} \leftarrow \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \hat\sigma_{\text{sensor}}^2\bigr)$]{.vm-flow-nowrap}
 
@@ -1141,7 +1149,7 @@ Set $w_i^{\prime(p)} \leftarrow w_{i-1}^{(p)}\, \ell_i^{(p)}$
 :::
 :::::
 
-::::: {.vm-flow-step}
+::::: {.vm-flow-step .vm-flow-phase}
 ::: {.vm-flow-box}
 [Normalize]{.vm-flow-label}
 
@@ -1157,9 +1165,13 @@ $\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$
 :::
 :::::
 
-::::: {.vm-flow-step .vm-flow-loop-from}
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-from}
+::: {.vm-flow-phase-label}
+Resample
+:::
+
 ::: {.vm-flow-box}
-[Resample]{.vm-flow-label}
+[Resample if degenerate]{.vm-flow-label}
 
 Compute $\mathrm{ESS}_i \leftarrow 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2$
 

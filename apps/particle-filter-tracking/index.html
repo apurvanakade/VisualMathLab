@@ -106,8 +106,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.1.16/site.js"></script>
 <script src="../../site_libs/quarto-contrib/mathviz-share-0.1.16/share.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-share-0.1.16/share.css" rel="stylesheet">
-<meta name="mathviz:share-embed-docs" content="embed.html">
 <meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
+<meta name="mathviz:share-embed-docs" content="embed.html">
 <script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.1.16/report-bug.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.1.16/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
@@ -1963,25 +1963,31 @@ Authors: Dhruv Azad
 <p><span class="math inline">\(N\)</span> particles around the starting position, each with weight <span class="math inline">\(1/N\)</span></p>
 </div>
 </div>
-<div class="vm-flow-step vm-flow-loop-to">
+<div class="vm-flow-step vm-flow-phase vm-flow-loop-to">
+<div class="vm-flow-phase-label">
+<p>Predict</p>
+</div>
 <div class="vm-flow-box">
-<p><span class="vm-flow-label">Predict (for each <span class="math inline">\(p\)</span>)</span></p>
+<p><span class="vm-flow-label">Move particles (for each <span class="math inline">\(p\)</span>)</span></p>
 <p>Generate <span class="math inline">\(\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \hat\sigma_{\text{process}}^2 I\bigr)\)</span></p>
 <p>Set <span class="math inline">\(x_i^{(p)} \leftarrow x_{i-1}^{(p)} + \varepsilon_i^{(p)}\)</span></p>
 </div>
 </div>
-<div class="vm-flow-step">
+<div class="vm-flow-step vm-flow-phase">
+<div class="vm-flow-phase-label">
+<p>Update</p>
+</div>
 <div class="vm-flow-box vm-flow-in">
 <p><span class="vm-flow-label">Measure</span></p>
 <p><span class="math inline">\(z_{i,k}\)</span>: sensor <span class="math inline">\(k\)</span>’s noisy distance to the object</p>
 </div>
 <div class="vm-flow-box">
-<p><span class="vm-flow-label">Update (for each <span class="math inline">\(p\)</span>)</span></p>
+<p><span class="vm-flow-label">Reweight (for each <span class="math inline">\(p\)</span>)</span></p>
 <p>Compute likelihood <span class="vm-flow-nowrap"><span class="math inline">\(\ell_i^{(p)} \leftarrow \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \hat\sigma_{\text{sensor}}^2\bigr)\)</span></span></p>
 <p>Set <span class="math inline">\(w_i^{\prime(p)} \leftarrow w_{i-1}^{(p)}\, \ell_i^{(p)}\)</span></p>
 </div>
 </div>
-<div class="vm-flow-step">
+<div class="vm-flow-step vm-flow-phase">
 <div class="vm-flow-box">
 <p><span class="vm-flow-label">Normalize</span></p>
 <p>Compute total weight <span class="math inline">\(W_i \leftarrow \sum_p w_i^{\prime(p)}\)</span></p>
@@ -1992,9 +1998,12 @@ Authors: Dhruv Azad
 <p><span class="math inline">\(\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}\)</span></p>
 </div>
 </div>
-<div class="vm-flow-step vm-flow-loop-from">
+<div class="vm-flow-step vm-flow-phase vm-flow-loop-from">
+<div class="vm-flow-phase-label">
+<p>Resample</p>
+</div>
 <div class="vm-flow-box">
-<p><span class="vm-flow-label">Resample</span></p>
+<p><span class="vm-flow-label">Resample if degenerate</span></p>
 <p>Compute <span class="math inline">\(\mathrm{ESS}_i \leftarrow 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2\)</span></p>
 <p>If <span class="math inline">\(\mathrm{ESS}_i &lt; \tau N\)</span>: draw <span class="math inline">\(N\)</span> new particles from the current ones, picking <span class="math inline">\(x_i^{(p)}\)</span> with probability <span class="math inline">\(w_i^{(p)}\)</span></p>
 <p>Then set every weight to <span class="math inline">\(1/N\)</span></p>

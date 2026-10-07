@@ -1615,14 +1615,37 @@ Authors: Apurva Nakade
 \qquad
 \text{EMA: } \hat x_i = \alpha\, \hat x_{i-1} + (1-\alpha)\, z_i.
 \]</span></p>
-<p>The <strong>Kalman filter</strong> instead maintains a running estimate of its own uncertainty <span class="math inline">\(P_i\)</span> and derives its gain from it at every step, given only two beliefs about the noise: <span class="math inline">\(R\)</span>, the assumed measurement-noise (sensor) variance, and <span class="math inline">\(Q\)</span>, the assumed process-noise variance (how much the true value is expected to drift between samples):</p>
-<p><span class="math display">\[
-P_i^- = P_{i-1} + Q,\qquad
-K_i = \frac{P_i^-}{P_i^- + R},\qquad
-\hat x_i = \hat x_{i-1} + K_i\,(z_i - \hat x_{i-1}),\qquad
-P_i = (1-K_i)\,P_i^-,
-\]</span></p>
-<p>with no <span class="math inline">\(\alpha\)</span> or <span class="math inline">\(k\)</span> to tune by hand — pick “Estimating a hidden constant” from the example dropdown and open the convergence plots to watch <span class="math inline">\(K_i\)</span> shrink automatically as the filter grows more confident.</p>
+<p>The <strong>Kalman filter</strong> instead maintains a running estimate of its own uncertainty <span class="math inline">\(P_i\)</span> and derives its gain from it at every step, given only two beliefs about the noise: <span class="math inline">\(R\)</span>, the assumed measurement-noise (sensor) variance, and <span class="math inline">\(Q\)</span>, the assumed process-noise variance (how much the true value is expected to drift between samples). It repeats the same steps for every new measurement:</p>
+<div class="vm-flow">
+<div class="vm-flow-step">
+<div class="vm-flow-box">
+<p><span class="vm-flow-label">Start</span></p>
+<p>Set <span class="math inline">\(\hat x \leftarrow\)</span> the first measurement, with variance <span class="math inline">\(P \leftarrow R\)</span></p>
+</div>
+</div>
+<div class="vm-flow-step vm-flow-loop-to">
+<div class="vm-flow-box">
+<p><span class="vm-flow-label">Predict</span></p>
+<p>Set <span class="math inline">\(\hat x_i^- \leftarrow \hat x_{i-1}\)</span></p>
+<p>Set <span class="math inline">\(P_i^- \leftarrow P_{i-1} + Q\)</span></p>
+</div>
+</div>
+<div class="vm-flow-step vm-flow-loop-from">
+<div class="vm-flow-box vm-flow-in">
+<p><span class="vm-flow-label">Measure</span></p>
+<p><span class="math inline">\(z_i\)</span>: the newest noisy measurement</p>
+</div>
+<div class="vm-flow-box">
+<p><span class="vm-flow-label">Update</span></p>
+<p>Compute gain <span class="math inline">\(K_i \leftarrow P_i^- \big/ \bigl(P_i^- + R\bigr)\)</span></p>
+<p>Set <span class="math inline">\(\hat x_i \leftarrow \hat x_i^- + K_i\,\bigl(z_i - \hat x_i^-\bigr)\)</span></p>
+<p>Set <span class="math inline">\(P_i \leftarrow (1 - K_i)\, P_i^-\)</span></p>
+</div>
+<div class="vm-flow-loop-label">
+<p>back to Predict</p>
+</div>
+</div>
+</div>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
 <p>Staszewski, Kuba. “Recursive Filters.” Blog post. <a href="https://www.staszewski.xyz/blog/recursive-filters/">https://www.staszewski.xyz/blog/recursive-filters/</a></p>

@@ -24,6 +24,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
+<style>
+/* The Kalman flowchart's center steps hold short equations, while the
+   "Update estimate" output holds the longest one, so narrow the center
+   column and widen the output column relative to mathviz's defaults
+   (1fr / 1.6fr / 1fr). Same line names, so every box still lands. */
+@media (min-width: 761px) {
+  .vm-flow {
+    grid-template-columns:
+      [loop-start] 2.75rem [loop-end out-start] minmax(0, 1.4fr) [out-end]
+      2rem [main-start] minmax(0, 1fr) [main-end]
+      2rem [in-start] minmax(0, 1fr) [in-end];
+  }
+}
+</style>
+
 ```{ojs}
 //| output: false
 // VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.expressions.makeFunction, VM.expressions.makeNumber, VM.sampling.seededRandom, VM.sampling.gaussianRandom, VM.filters.movingAverageFilter, VM.filters.emaFilter, VM.filters.kalman1DFilter, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
@@ -816,7 +831,9 @@ The **Kalman filter** instead maintains a running estimate of its own uncertaint
 ::: {.vm-flow-box}
 [Start]{.vm-flow-label}
 
-Set $\hat x_0 \leftarrow z_0$, the first measurement, with variance $P_0 \leftarrow R$, then run the loop for [$i = 1, 2, 3, \dots$]{.vm-flow-nowrap}
+Set $\hat x_0 \leftarrow z_0$
+
+Set $P_0 \leftarrow R$
 :::
 :::::
 
@@ -852,7 +869,7 @@ Set $K_i \leftarrow \bar P_i \big/ \bigl(\bar P_i + R\bigr)$
 ::: {.vm-flow-box .vm-flow-out}
 [Update estimate]{.vm-flow-label}
 
-Set $\hat x_i \leftarrow \hat x_{i-1} + K_i\,\bigl(z_i - \hat x_{i-1}\bigr)$
+Set ${\hat x_i \leftarrow (1 - K_i)\, \hat x_{i-1} + K_i\, z_i}$
 :::
 :::::
 

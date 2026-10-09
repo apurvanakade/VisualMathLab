@@ -19,7 +19,7 @@ This picture is a combinatorial proof of [Sperner's Lemma](../sperners-lemma-sta
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.triangulationEdges, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
 VM = window.VM
 ```
 
@@ -79,12 +79,11 @@ viewof mainPlot = {
     marks: [
       Plot.geo(
         { type: "FeatureCollection", features: triangleFeatures(triangles.all, cpMap) },
-        { fill: d => d.properties.fillColor, stroke: chartColors.ink, strokeWidth: 1 }
+        { fill: d => d.properties.fillColor, stroke: chartColors.muted, strokeWidth: 1 }
       ),
-      Plot.link(mixedEdgeFeatures(N, cpMap), {
+      Plot.link(doorEdges(N, cpMap), {
         x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-        stroke: "color",
-        strokeWidth: 3
+        stroke: chartColors.ink, strokeWidth: 2, strokeDasharray: "6,4"
       }),
       ...makeEdgeLines(triangles.rg, chartColors),
       ...makeEdgeLines(triangles.rgb, chartColors),
@@ -94,7 +93,7 @@ viewof mainPlot = {
           x: "x",
           y: "y",
           fill: d => VM.discreteMath.vertexColor(d.color),
-          r: 4,
+          r: 6,
           title: "title"
         }
       ),
@@ -268,20 +267,19 @@ triangleFeatures = (triangles, cpMap) => {
   return features;
 }
 
-// Edges between differently-colored vertices, in the shared amber/teal/
-// purple pair palette (VM.discreteMath.pairColor). Distinct from the
-// ink-colored "door" path below -- this is a general structural layer, not
-// specific to RG doors.
-mixedEdgeFeatures = (N, cpMap) => {
+// The RG edges -- the doors -- dashed in ink, the same style as the
+// rooms diagram below. Every other edge is left to the muted grid, so the
+// doors are the only edges that stand out.
+doorEdges = (N, cpMap) => {
   const edges = [];
   for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
     const pa = cpMap.get(a.join(','));
     const pb = cpMap.get(b.join(','));
-    const color = VM.discreteMath.pairColor(pa.getColor(), pb.getColor());
-    if (!color) continue;
+    const pair = new Set([pa.getColor(), pb.getColor()]);
+    if (!(pair.has('red') && pair.has('green'))) continue;
     const ca = pa.getCoords();
     const cb = pb.getCoords();
-    edges.push({ x1: ca.x, y1: ca.y, x2: cb.x, y2: cb.y, color });
+    edges.push({ x1: ca.x, y1: ca.y, x2: cb.x, y2: cb.y });
   }
   return edges;
 }
@@ -381,7 +379,7 @@ Imagine each small triangle as a **room with three walls**. Treat each `RG` edge
 2. <span class="vm-swatch vm-swatch-warn">**RRG**</span> and <span class="vm-swatch vm-swatch-warn">**RGG**</span> triangles have **two** doors.
 3. All other triangles have **no** doors.
 
-(In the plot above, `RRG`/`RGG` triangles are shaded a much fainter amber than in the diagram below, so the rainbow triangles stay the visual focus; every other non-rainbow triangle is left unfilled. Mixed-color edges still get a colored line, the same convention used on the other Sperner's lemma pages.)
+(In the plot above, `RRG`/`RGG` triangles are shaded a much fainter amber than in the diagram below, so the rainbow triangles stay the visual focus; every other non-rainbow triangle is left unfilled. Doors are dashed, as in the diagram below; every other edge is a plain gray line.)
 
 ```{ojs}
 // The three room types, each drawn with its vertex colors; the fill is
@@ -421,7 +419,7 @@ doorExamples = [
 // per example triangle (the shared rainbow purple for RGB, a solid amber
 // for the two-door rooms -- stronger than the faint amber in the main
 // plot, since here nothing competes with it), a bold dashed line on each
-// RG ("door") edge, a colored dot per vertex, and a label above each
+// RG ("door") edge, muted walls elsewhere, a colored dot per vertex, and a label above each
 // triangle. chartColors is referenced so the fills are recomputed on a
 // theme toggle.
 doorExampleMarks = {
@@ -482,13 +480,13 @@ viewof doorExamplePlot = Plot.plot(VM.plotting.plotOptions({
   marks: [
     Plot.geo(
       { type: "FeatureCollection", features: doorExampleMarks.fills },
-      { fill: d => d.properties.fill, stroke: chartColors.ink, strokeWidth: 1 }
+      { fill: d => d.properties.fill, stroke: chartColors.muted, strokeWidth: 1 }
     ),
     Plot.link(doorExampleMarks.doors, {
       x1: "x1", y1: "y1", x2: "x2", y2: "y2",
       stroke: chartColors.ink, strokeWidth: 4, strokeDasharray: "8,4"
     }),
-    Plot.dot(doorExampleMarks.dots, { x: "x", y: "y", fill: d => VM.discreteMath.vertexColor(d.color), stroke: chartColors.ink, r: 4 }),
+    Plot.dot(doorExampleMarks.dots, { x: "x", y: "y", fill: d => VM.discreteMath.vertexColor(d.color), r: 6 }),
     Plot.text(doorExampleMarks.labels, { x: "x", y: "y", text: "text", dy: -10, fontSize: 12 })
   ]
 }))
@@ -502,7 +500,7 @@ In other words, we can identify <span class="vm-swatch vm-swatch-accent2">**RGB*
 
 ## Following the Doors
 
-Picture all the possible paths that can be formed by stepping through these `RG` doors — the thick dark lines in the diagram represent all of these paths.
+Picture all the possible paths that can be formed by stepping through these `RG` doors — the thick solid lines in the first diagram represent all of these paths, crossing the dashed doors.
 
 - The <span class="vm-swatch vm-swatch-warn">amber</span> triangles have paths that **enter through one door and exit through another** — like hallways.
 - The <span class="vm-swatch vm-swatch-accent2">**RGB**</span> triangles have **only one door**, so they are endpoints — there's no way to pass through.
@@ -588,11 +586,19 @@ viewof boundaryPlot = Plot.plot(VM.plotting.plotOptions({
   x: { domain: [0, M], axis: null },
   y: { domain: [0, 1], axis: null },
   marks: [
+    // Doors (RG edges) dashed in ink, as in the diagrams above; every
+    // other edge a thin muted line.
     Plot.link(boundaryEdges.segments, {
+      filter: d => !d.bold,
       x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
-      stroke: chartColors.ink, strokeWidth: d => d.bold ? 6 : 1
+      stroke: chartColors.muted, strokeWidth: 1
     }),
-    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: d => VM.discreteMath.vertexColor(d.color), stroke: chartColors.ink, r: 5 }),
+    Plot.link(boundaryEdges.segments, {
+      filter: d => d.bold,
+      x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
+      stroke: chartColors.ink, strokeWidth: 4, strokeDasharray: "8,4"
+    }),
+    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: d => VM.discreteMath.vertexColor(d.color), r: 6 }),
     Plot.text([{ x: M / 2, y: 0.9, text: `Number of RG edges: ${boundaryEdges.boldCount}` }], {
       x: "x", y: "y", text: "text", fontSize: 16
     })

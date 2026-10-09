@@ -42,7 +42,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangulationEdges, VM.discreteMath.pairColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.discreteMath.barycentricTriples, VM.discreteMath.subTriangleTriples, VM.discreteMath.spernerColor, VM.discreteMath.randomColor, VM.discreteMath.triangleFillColor, VM.discreteMath.vertexColor.
 VM = window.VM
 ```
 
@@ -213,17 +213,6 @@ function makeOrientationDefs(ccwId, cwId, color) {
 // `colors` is the caller's VM.plotting.colors() snapshot (chartColors), so
 // a plot cell that passes it re-runs, and repaints, on a theme toggle.
 function plotTriangles(triangles, morphedPoints, N, colors) {
-  // Edges between differently-colored (morphed) vertices, in the shared
-  // amber/teal/purple pair palette used elsewhere for mixed edges.
-  const mixedEdges = [];
-  for (const { a, b } of VM.discreteMath.triangulationEdges(N)) {
-    const pa = morphedPoints.morphedMap.get(a.join(','));
-    const pb = morphedPoints.morphedMap.get(b.join(','));
-    const color = VM.discreteMath.pairColor(pa.color, pb.color);
-    if (!color) continue;
-    mixedEdges.push({ x1: pa.x, y1: pa.y, x2: pb.x, y2: pb.y, color });
-  }
-
   const uid = Math.random().toString(36).slice(2);
   const ccwId = `hatch-ccw-${uid}`;
   const cwId = `hatch-cw-${uid}`;
@@ -268,16 +257,11 @@ function plotTriangles(triangles, morphedPoints, N, colors) {
     marks: [
       Plot.geo({ type: "FeatureCollection", features }, {
         fill: d => d.properties.fillColor,
-        stroke: colors.ink,
+        stroke: colors.muted,
         strokeWidth: 1
       }),
-      Plot.link(mixedEdges, {
-        x1: "x1", y1: "y1", x2: "x2", y2: "y2",
-        stroke: "color",
-        strokeWidth: 3
-      }),
       Plot.dot(morphedPoints.morphedPoints, {
-        x: "x", y: "y", fill: d => VM.discreteMath.vertexColor(d.color), r: 4
+        x: "x", y: "y", fill: d => VM.discreteMath.vertexColor(d.color), r: 6
       })
     ]
   }));

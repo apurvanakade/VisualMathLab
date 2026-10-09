@@ -41,7 +41,7 @@ chartColors = VM.plotting.colors(vmTheme)
 
 ```{ojs}
 viewof N = {
-  const slider = Inputs.range([2, 25], {step: 1, value: 15, label: "Number of subdivisions"})
+  const slider = Inputs.range([2, 25], {step: 1, value: 5, label: "Number of subdivisions"})
   slider.classList.add("ojs-fill")
   return slider
 }
@@ -386,12 +386,14 @@ Imagine each small triangle as a **room with three walls**. Treat each `RG` edge
 ```{ojs}
 // The three room types, each drawn with its vertex colors; the fill is
 // resolved from the palette when the marks are built, not stored here.
+// Each room is equilateral: side 100, so the apex sits 50 * sqrt(3) above
+// the base.
 doorExamples = [
   {
     label: "RGB",
     vertices: [
       {x: 50, y: 150, color: "red"},
-      {x: 100, y: 50, color: "green"},
+      {x: 100, y: 150 - 50 * Math.sqrt(3), color: "green"},
       {x: 150, y: 150, color: "blue"}
     ]
   },
@@ -399,7 +401,7 @@ doorExamples = [
     label: "RRG",
     vertices: [
       {x: 250, y: 150, color: "red"},
-      {x: 300, y: 50, color: "red"},
+      {x: 300, y: 150 - 50 * Math.sqrt(3), color: "red"},
       {x: 350, y: 150, color: "green"}
     ]
   },
@@ -407,7 +409,7 @@ doorExamples = [
     label: "RGG",
     vertices: [
       {x: 450, y: 150, color: "red"},
-      {x: 500, y: 50, color: "green"},
+      {x: 500, y: 150 - 50 * Math.sqrt(3), color: "green"},
       {x: 550, y: 150, color: "green"}
     ]
   }
@@ -467,9 +469,12 @@ doorExampleMarks = {
 <div class="ojs-chart-block ojs-svg-block">
 
 ```{ojs}
+// Plot maps each domain onto its size minus the margins, so the 600 x 200
+// domain gets 600 x 200 pixels plus margins: one pixel per unit on both
+// axes, and the equilateral rooms are drawn to scale.
 viewof doorExamplePlot = Plot.plot(VM.plotting.plotOptions({
-  width: 600,
-  height: 200,
+  width: 600 + 2 * 10,
+  height: 200 + 2 * 10,
   margin: 10,
   grid: false,
   x: { domain: [0, 600], axis: null },

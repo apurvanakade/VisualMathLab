@@ -110,8 +110,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.3.1/site.js"></script>
 <script src="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.css" rel="stylesheet">
-<meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
 <meta name="mathviz:share-embed-docs" content="embed.html">
+<meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
 <script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
@@ -1225,6 +1225,13 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
+<p>A degree-<span class="math inline">\(d\)</span> least-squares fit chooses coefficients <span class="math inline">\(\beta_0,\dots,\beta_d\)</span> minimizing the sum of squared residuals over the <span class="math inline">\(n\)</span> data points:</p>
+<p><span class="math display">\[
+\hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
+\]</span></p>
+<p>A low-degree polynomial (e.g.&nbsp;a line) can’t bend to match every point — high <strong>bias</strong>, low <strong>variance</strong>, <strong>underfitting</strong>. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, <strong>overfitting</strong>. Drag the noise slider to push 6 points off a line and compare how degree 1–5 fits respond; click “Regenerate points” for a new line and noise pattern.</p>
+<p>The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — its training error stays at zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degrees 1 and 2 move far less with the noise, at the cost of never capturing real curvature either.</p>
+<p>Training error alone can’t reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a <strong>held-out validation or test set</strong> — why train/validation/test splits and cross-validation are standard practice.</p>
 <div class="callout callout-style-default callout-note callout-titled" title="Model comparison">
 <div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1238,38 +1245,38 @@ Authors: Apurva Nakade
 <div id="callout-1" class="callout-1-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb23" data-startfrom="498" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 497;"><span id="cb23-498"><a href="#cb23-498" aria-hidden="true" tabindex="-1"></a><span class="co">// errorTable reports each model's parameter count and total squared error</span></span>
-<span id="cb23-499"><a href="#cb23-499" aria-hidden="true" tabindex="-1"></a><span class="co">// over the 6 data points, updating live as the slider moves — for all 5</span></span>
-<span id="cb23-500"><a href="#cb23-500" aria-hidden="true" tabindex="-1"></a><span class="co">// degrees, regardless of which curves the checkboxes currently show. The</span></span>
-<span id="cb23-501"><a href="#cb23-501" aria-hidden="true" tabindex="-1"></a><span class="co">// degree-5 row stays near zero regardless of the slider — it has exactly</span></span>
-<span id="cb23-502"><a href="#cb23-502" aria-hidden="true" tabindex="-1"></a><span class="co">// as many parameters as points, so it can always interpolate them exactly.</span></span>
-<span id="cb23-503"><a href="#cb23-503" aria-hidden="true" tabindex="-1"></a>errorTable <span class="op">=</span> {</span>
-<span id="cb23-504"><a href="#cb23-504" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> labels <span class="op">=</span> {</span>
-<span id="cb23-505"><a href="#cb23-505" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span><span class="op">:</span> <span class="st">"Degree 1 (line)"</span><span class="op">,</span></span>
-<span id="cb23-506"><a href="#cb23-506" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span><span class="op">:</span> <span class="st">"Degree 2 (parabola)"</span><span class="op">,</span></span>
-<span id="cb23-507"><a href="#cb23-507" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span><span class="op">:</span> <span class="st">"Degree 3"</span><span class="op">,</span></span>
-<span id="cb23-508"><a href="#cb23-508" aria-hidden="true" tabindex="-1"></a>    <span class="dv">4</span><span class="op">:</span> <span class="st">"Degree 4"</span><span class="op">,</span></span>
-<span id="cb23-509"><a href="#cb23-509" aria-hidden="true" tabindex="-1"></a>    <span class="dv">5</span><span class="op">:</span> <span class="st">"Degree 5 (interpolates all 6 points)"</span></span>
-<span id="cb23-510"><a href="#cb23-510" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb23-511"><a href="#cb23-511" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-512"><a href="#cb23-512" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
-<span id="cb23-513"><a href="#cb23-513" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb23-514"><a href="#cb23-514" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
-<span id="cb23-515"><a href="#cb23-515" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>fit) {</span>
-<span id="cb23-516"><a href="#cb23-516" aria-hidden="true" tabindex="-1"></a>      rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> <span class="st">"—"</span><span class="op">,</span> <span class="st">"—"</span>])</span>
-<span id="cb23-517"><a href="#cb23-517" aria-hidden="true" tabindex="-1"></a>      <span class="cf">continue</span></span>
-<span id="cb23-518"><a href="#cb23-518" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb23-519"><a href="#cb23-519" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> fit<span class="op">.</span><span class="at">coeffs</span><span class="op">.</span><span class="at">length</span><span class="op">,</span> fit<span class="op">.</span><span class="at">totalSquaredError</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)])</span>
-<span id="cb23-520"><a href="#cb23-520" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb23-521"><a href="#cb23-521" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-522"><a href="#cb23-522" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb23-523"><a href="#cb23-523" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb23-524"><a href="#cb23-524" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
-<span id="cb23-525"><a href="#cb23-525" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
-<span id="cb23-526"><a href="#cb23-526" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"polynomial-fit-errors.csv"</span><span class="op">,</span></span>
-<span id="cb23-527"><a href="#cb23-527" aria-hidden="true" tabindex="-1"></a>    rows</span>
-<span id="cb23-528"><a href="#cb23-528" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb23-529"><a href="#cb23-529" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb23" data-startfrom="510" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 509;"><span id="cb23-510"><a href="#cb23-510" aria-hidden="true" tabindex="-1"></a><span class="co">// errorTable reports each model's parameter count and total squared error</span></span>
+<span id="cb23-511"><a href="#cb23-511" aria-hidden="true" tabindex="-1"></a><span class="co">// over the 6 data points, updating live as the slider moves — for all 5</span></span>
+<span id="cb23-512"><a href="#cb23-512" aria-hidden="true" tabindex="-1"></a><span class="co">// degrees, regardless of which curves the checkboxes currently show. The</span></span>
+<span id="cb23-513"><a href="#cb23-513" aria-hidden="true" tabindex="-1"></a><span class="co">// degree-5 row stays near zero regardless of the slider — it has exactly</span></span>
+<span id="cb23-514"><a href="#cb23-514" aria-hidden="true" tabindex="-1"></a><span class="co">// as many parameters as points, so it can always interpolate them exactly.</span></span>
+<span id="cb23-515"><a href="#cb23-515" aria-hidden="true" tabindex="-1"></a>errorTable <span class="op">=</span> {</span>
+<span id="cb23-516"><a href="#cb23-516" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> labels <span class="op">=</span> {</span>
+<span id="cb23-517"><a href="#cb23-517" aria-hidden="true" tabindex="-1"></a>    <span class="dv">1</span><span class="op">:</span> <span class="st">"Degree 1 (line)"</span><span class="op">,</span></span>
+<span id="cb23-518"><a href="#cb23-518" aria-hidden="true" tabindex="-1"></a>    <span class="dv">2</span><span class="op">:</span> <span class="st">"Degree 2 (parabola)"</span><span class="op">,</span></span>
+<span id="cb23-519"><a href="#cb23-519" aria-hidden="true" tabindex="-1"></a>    <span class="dv">3</span><span class="op">:</span> <span class="st">"Degree 3"</span><span class="op">,</span></span>
+<span id="cb23-520"><a href="#cb23-520" aria-hidden="true" tabindex="-1"></a>    <span class="dv">4</span><span class="op">:</span> <span class="st">"Degree 4"</span><span class="op">,</span></span>
+<span id="cb23-521"><a href="#cb23-521" aria-hidden="true" tabindex="-1"></a>    <span class="dv">5</span><span class="op">:</span> <span class="st">"Degree 5 (interpolates all 6 points)"</span></span>
+<span id="cb23-522"><a href="#cb23-522" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb23-523"><a href="#cb23-523" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-524"><a href="#cb23-524" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
+<span id="cb23-525"><a href="#cb23-525" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb23-526"><a href="#cb23-526" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
+<span id="cb23-527"><a href="#cb23-527" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>fit) {</span>
+<span id="cb23-528"><a href="#cb23-528" aria-hidden="true" tabindex="-1"></a>      rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> <span class="st">"—"</span><span class="op">,</span> <span class="st">"—"</span>])</span>
+<span id="cb23-529"><a href="#cb23-529" aria-hidden="true" tabindex="-1"></a>      <span class="cf">continue</span></span>
+<span id="cb23-530"><a href="#cb23-530" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb23-531"><a href="#cb23-531" aria-hidden="true" tabindex="-1"></a>    rows<span class="op">.</span><span class="fu">push</span>([labels[degree]<span class="op">,</span> fit<span class="op">.</span><span class="at">coeffs</span><span class="op">.</span><span class="at">length</span><span class="op">,</span> fit<span class="op">.</span><span class="at">totalSquaredError</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)])</span>
+<span id="cb23-532"><a href="#cb23-532" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb23-533"><a href="#cb23-533" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-534"><a href="#cb23-534" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb23-535"><a href="#cb23-535" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb23-536"><a href="#cb23-536" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
+<span id="cb23-537"><a href="#cb23-537" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"Model"</span><span class="op">,</span> <span class="st">"Parameters"</span><span class="op">,</span> <span class="st">"Total squared error"</span>]<span class="op">,</span></span>
+<span id="cb23-538"><a href="#cb23-538" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"polynomial-fit-errors.csv"</span><span class="op">,</span></span>
+<span id="cb23-539"><a href="#cb23-539" aria-hidden="true" tabindex="-1"></a>    rows</span>
+<span id="cb23-540"><a href="#cb23-540" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb23-541"><a href="#cb23-541" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-23" data-nodetype="declaration">
 
@@ -1292,27 +1299,27 @@ Authors: Apurva Nakade
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb24" data-startfrom="537" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 536;"><span id="cb24-537"><a href="#cb24-537" aria-hidden="true" tabindex="-1"></a><span class="co">// errorPlot: total squared error as a function of degree, for the current</span></span>
-<span id="cb24-538"><a href="#cb24-538" aria-hidden="true" tabindex="-1"></a><span class="co">// points. Training error decreases monotonically with degree — more</span></span>
-<span id="cb24-539"><a href="#cb24-539" aria-hidden="true" tabindex="-1"></a><span class="co">// parameters can only help fit the training data — which is exactly why</span></span>
-<span id="cb24-540"><a href="#cb24-540" aria-hidden="true" tabindex="-1"></a><span class="co">// training error alone can't tell you when a model is overfitting.</span></span>
-<span id="cb24-541"><a href="#cb24-541" aria-hidden="true" tabindex="-1"></a>errorPlot <span class="op">=</span> {</span>
-<span id="cb24-542"><a href="#cb24-542" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
-<span id="cb24-543"><a href="#cb24-543" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
-<span id="cb24-544"><a href="#cb24-544" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
-<span id="cb24-545"><a href="#cb24-545" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (fit) rows<span class="op">.</span><span class="fu">push</span>({degree<span class="op">,</span> <span class="dt">error</span><span class="op">:</span> fit<span class="op">.</span><span class="at">totalSquaredError</span>})</span>
-<span id="cb24-546"><a href="#cb24-546" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb24-547"><a href="#cb24-547" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-548"><a href="#cb24-548" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb24-549"><a href="#cb24-549" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">500</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb24-550"><a href="#cb24-550" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Polynomial degree"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">1</span><span class="op">,</span> <span class="dv">5</span>]<span class="op">,</span> <span class="dt">ticks</span><span class="op">:</span> [<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">,</span> <span class="dv">5</span>]}<span class="op">,</span></span>
-<span id="cb24-551"><a href="#cb24-551" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Total squared error (training data)"</span>}<span class="op">,</span></span>
-<span id="cb24-552"><a href="#cb24-552" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
-<span id="cb24-553"><a href="#cb24-553" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">line</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">accent2</span>})<span class="op">,</span></span>
-<span id="cb24-554"><a href="#cb24-554" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">accent2</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">5</span>})</span>
-<span id="cb24-555"><a href="#cb24-555" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb24-556"><a href="#cb24-556" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb24-557"><a href="#cb24-557" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb24" data-startfrom="549" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 548;"><span id="cb24-549"><a href="#cb24-549" aria-hidden="true" tabindex="-1"></a><span class="co">// errorPlot: total squared error as a function of degree, for the current</span></span>
+<span id="cb24-550"><a href="#cb24-550" aria-hidden="true" tabindex="-1"></a><span class="co">// points. Training error decreases monotonically with degree — more</span></span>
+<span id="cb24-551"><a href="#cb24-551" aria-hidden="true" tabindex="-1"></a><span class="co">// parameters can only help fit the training data — which is exactly why</span></span>
+<span id="cb24-552"><a href="#cb24-552" aria-hidden="true" tabindex="-1"></a><span class="co">// training error alone can't tell you when a model is overfitting.</span></span>
+<span id="cb24-553"><a href="#cb24-553" aria-hidden="true" tabindex="-1"></a>errorPlot <span class="op">=</span> {</span>
+<span id="cb24-554"><a href="#cb24-554" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> rows <span class="op">=</span> []</span>
+<span id="cb24-555"><a href="#cb24-555" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> degree <span class="op">=</span> <span class="dv">1</span><span class="op">;</span> degree <span class="op">&lt;=</span> <span class="dv">5</span><span class="op">;</span> degree<span class="op">++</span>) {</span>
+<span id="cb24-556"><a href="#cb24-556" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> fit <span class="op">=</span> result<span class="op">.</span><span class="at">fits</span>[degree]</span>
+<span id="cb24-557"><a href="#cb24-557" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (fit) rows<span class="op">.</span><span class="fu">push</span>({degree<span class="op">,</span> <span class="dt">error</span><span class="op">:</span> fit<span class="op">.</span><span class="at">totalSquaredError</span>})</span>
+<span id="cb24-558"><a href="#cb24-558" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb24-559"><a href="#cb24-559" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-560"><a href="#cb24-560" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb24-561"><a href="#cb24-561" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">500</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb24-562"><a href="#cb24-562" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Polynomial degree"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">1</span><span class="op">,</span> <span class="dv">5</span>]<span class="op">,</span> <span class="dt">ticks</span><span class="op">:</span> [<span class="dv">1</span><span class="op">,</span> <span class="dv">2</span><span class="op">,</span> <span class="dv">3</span><span class="op">,</span> <span class="dv">4</span><span class="op">,</span> <span class="dv">5</span>]}<span class="op">,</span></span>
+<span id="cb24-563"><a href="#cb24-563" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"Total squared error (training data)"</span>}<span class="op">,</span></span>
+<span id="cb24-564"><a href="#cb24-564" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb24-565"><a href="#cb24-565" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">line</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">accent2</span>})<span class="op">,</span></span>
+<span id="cb24-566"><a href="#cb24-566" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(rows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"degree"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"error"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">accent2</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">5</span>})</span>
+<span id="cb24-567"><a href="#cb24-567" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb24-568"><a href="#cb24-568" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb24-569"><a href="#cb24-569" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-24" data-nodetype="declaration">
 
@@ -1322,13 +1329,6 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<p>A degree-<span class="math inline">\(d\)</span> least-squares fit chooses coefficients <span class="math inline">\(\beta_0,\dots,\beta_d\)</span> minimizing the sum of squared residuals over the <span class="math inline">\(n\)</span> data points:</p>
-<p><span class="math display">\[
-\hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
-\]</span></p>
-<p>A low-degree polynomial (e.g.&nbsp;a line) can’t bend to match every point — high <strong>bias</strong>, low <strong>variance</strong>, <strong>underfitting</strong>. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, <strong>overfitting</strong>. Drag the noise slider to push 6 points off a line and compare how degree 1–5 fits respond; click “Regenerate points” for a new line and noise pattern.</p>
-<p>The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — its training error stays at zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degrees 1 and 2 move far less with the noise, at the cost of never capturing real curvature either.</p>
-<p>Training error alone can’t reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a <strong>held-out validation or test set</strong> — why train/validation/test splits and cross-validation are standard practice.</p>
 </div>
 
 

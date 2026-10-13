@@ -110,8 +110,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.3.1/site.js"></script>
 <script src="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.css" rel="stylesheet">
-<meta name="mathviz:share-embed-docs" content="embed.html">
 <meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
+<meta name="mathviz:share-embed-docs" content="embed.html">
 <script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
@@ -1293,57 +1293,6 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<div class="callout callout-style-default callout-note callout-titled" title="Step table">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Step table
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-1" class="callout-1-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb28" data-startfrom="565" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 564;"><span id="cb28-565"><a href="#cb28-565" aria-hidden="true" tabindex="-1"></a><span class="co">// Step table — one row per accepted step, left to right.</span></span>
-<span id="cb28-566"><a href="#cb28-566" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
-<span id="cb28-567"><a href="#cb28-567" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">steps</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb28-568"><a href="#cb28-568" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
-<span id="cb28-569"><a href="#cb28-569" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
-<span id="cb28-570"><a href="#cb28-570" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb28-571"><a href="#cb28-571" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb28-572"><a href="#cb28-572" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-573"><a href="#cb28-573" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
-<span id="cb28-574"><a href="#cb28-574" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">steps</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb28-575"><a href="#cb28-575" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> step <span class="op">=</span> result<span class="op">.</span><span class="at">steps</span>[i]</span>
-<span id="cb28-576"><a href="#cb28-576" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
-<span id="cb28-577"><a href="#cb28-577" aria-hidden="true" tabindex="-1"></a>      i<span class="op">,</span></span>
-<span id="cb28-578"><a href="#cb28-578" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">t0</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb28-579"><a href="#cb28-579" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">t1</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb28-580"><a href="#cb28-580" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">h</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb28-581"><a href="#cb28-581" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">dy</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb28-582"><a href="#cb28-582" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">deriv</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
-<span id="cb28-583"><a href="#cb28-583" aria-hidden="true" tabindex="-1"></a>    ])</span>
-<span id="cb28-584"><a href="#cb28-584" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb28-585"><a href="#cb28-585" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-586"><a href="#cb28-586" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb28-587"><a href="#cb28-587" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb28-588"><a href="#cb28-588" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`t_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`t_{i+1}`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`h_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`</span><span class="sc">\D</span><span class="vs">elta y_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`y'(t_i)`</span>]<span class="op">,</span></span>
-<span id="cb28-589"><a href="#cb28-589" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"t_i"</span><span class="op">,</span> <span class="st">"t_{i+1}"</span><span class="op">,</span> <span class="st">"h_i"</span><span class="op">,</span> <span class="st">"dy_i"</span><span class="op">,</span> <span class="st">"yprime_t_i"</span>]<span class="op">,</span></span>
-<span id="cb28-590"><a href="#cb28-590" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"adaptive-rk45-steps.csv"</span><span class="op">,</span></span>
-<span id="cb28-591"><a href="#cb28-591" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
-<span id="cb28-592"><a href="#cb28-592" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb28-593"><a href="#cb28-593" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div id="ojs-cell-28" data-nodetype="declaration">
-
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
 <section id="how-it-works" class="level2">
 <h2 class="anchored" data-anchor-id="how-it-works">How it works</h2>
 <p>The <a href="../../apps/explicit-ode-methods/index.html">explicit methods</a> take every step with the same size <span class="math inline">\(h\)</span>. An <strong>adaptive</strong> method instead picks a new <span class="math inline">\(h\)</span> at each step: small where the solution is changing quickly, large where it is nearly straight.</p>
@@ -1358,6 +1307,57 @@ E = \bigl|\, y_{\text{5th}} - y_{\text{4th}} \,\bigr|
 </ul>
 <p>Either way the next step size is <span class="math inline">\(h \cdot 0.9\,(\varepsilon / E)^{1/5}\)</span>, so a step well inside tolerance grows <span class="math inline">\(h\)</span> and a step outside it shrinks <span class="math inline">\(h\)</span>. The factor is capped between <span class="math inline">\(0.1\)</span> and <span class="math inline">\(5\)</span> so a single step can’t change <span class="math inline">\(h\)</span> too drastically.</p>
 <p>A larger <span class="math inline">\(\varepsilon\)</span> means fewer, bigger steps and a rougher curve; a smaller <span class="math inline">\(\varepsilon\)</span> means more steps and a curve that hugs the reference solution.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Step table">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Step table
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb28" data-startfrom="584" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 583;"><span id="cb28-584"><a href="#cb28-584" aria-hidden="true" tabindex="-1"></a><span class="co">// Step table — one row per accepted step, left to right.</span></span>
+<span id="cb28-585"><a href="#cb28-585" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
+<span id="cb28-586"><a href="#cb28-586" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">steps</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb28-587"><a href="#cb28-587" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
+<span id="cb28-588"><a href="#cb28-588" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
+<span id="cb28-589"><a href="#cb28-589" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb28-590"><a href="#cb28-590" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb28-591"><a href="#cb28-591" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-592"><a href="#cb28-592" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
+<span id="cb28-593"><a href="#cb28-593" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">steps</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb28-594"><a href="#cb28-594" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> step <span class="op">=</span> result<span class="op">.</span><span class="at">steps</span>[i]</span>
+<span id="cb28-595"><a href="#cb28-595" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
+<span id="cb28-596"><a href="#cb28-596" aria-hidden="true" tabindex="-1"></a>      i<span class="op">,</span></span>
+<span id="cb28-597"><a href="#cb28-597" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">t0</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb28-598"><a href="#cb28-598" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">t1</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb28-599"><a href="#cb28-599" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">h</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb28-600"><a href="#cb28-600" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">dy</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb28-601"><a href="#cb28-601" aria-hidden="true" tabindex="-1"></a>      step<span class="op">.</span><span class="at">deriv</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
+<span id="cb28-602"><a href="#cb28-602" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb28-603"><a href="#cb28-603" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb28-604"><a href="#cb28-604" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-605"><a href="#cb28-605" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb28-606"><a href="#cb28-606" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb28-607"><a href="#cb28-607" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`t_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`t_{i+1}`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`h_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`</span><span class="sc">\D</span><span class="vs">elta y_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`y'(t_i)`</span>]<span class="op">,</span></span>
+<span id="cb28-608"><a href="#cb28-608" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"t_i"</span><span class="op">,</span> <span class="st">"t_{i+1}"</span><span class="op">,</span> <span class="st">"h_i"</span><span class="op">,</span> <span class="st">"dy_i"</span><span class="op">,</span> <span class="st">"yprime_t_i"</span>]<span class="op">,</span></span>
+<span id="cb28-609"><a href="#cb28-609" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"adaptive-rk45-steps.csv"</span><span class="op">,</span></span>
+<span id="cb28-610"><a href="#cb28-610" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
+<span id="cb28-611"><a href="#cb28-611" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb28-612"><a href="#cb28-612" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-28" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </section>
 </div>
 

@@ -110,8 +110,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.3.1/site.js"></script>
 <script src="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.css" rel="stylesheet">
-<meta name="mathviz:share-embed-docs" content="embed.html">
 <meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
+<meta name="mathviz:share-embed-docs" content="embed.html">
 <script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
@@ -1287,6 +1287,15 @@ Authors: Dhruv Azad
 </div>
 </div>
 </div>
+<p>The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a_n,b_n]\)</span> that brackets a sign change of <span class="math inline">\(f\)</span>, keeping whichever half still brackets it:</p>
+<p><span class="math display">\[
+m_n=\frac{a_n+b_n}{2},\qquad
+(a_{n+1},b_{n+1})=
+\begin{cases}
+(a_n,m_n) &amp; f(a_n)f(m_n)&lt;0,\\[2pt]
+(m_n,b_n) &amp; \text{otherwise.}
+\end{cases}
+\]</span></p>
 <div class="callout callout-style-default callout-note callout-titled" title="Convergence plots">
 <div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
 <div class="callout-icon-container">
@@ -1299,112 +1308,112 @@ Authors: Dhruv Azad
 </div>
 <div id="callout-1" class="callout-1-contents callout-collapse collapse show">
 <div class="callout-body-container callout-body">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb29" data-startfrom="559" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 558;"><span id="cb29-559"><a href="#cb29-559" aria-hidden="true" tabindex="-1"></a><span class="co">// iteratesPlot draws the midpoint mₙ vs n for the entire run — it doesn't</span></span>
-<span id="cb29-560"><a href="#cb29-560" aria-hidden="true" tabindex="-1"></a><span class="co">// depend on the current step, so it's just plotted once per run.</span></span>
-<span id="cb29-561"><a href="#cb29-561" aria-hidden="true" tabindex="-1"></a>iteratesPlot <span class="op">=</span> {</span>
-<span id="cb29-562"><a href="#cb29-562" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> midpointAccessor <span class="op">=</span> row <span class="kw">=&gt;</span> {</span>
-<span id="cb29-563"><a href="#cb29-563" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">m</span>)) <span class="cf">return</span> row<span class="op">.</span><span class="at">m</span></span>
-<span id="cb29-564"><a href="#cb29-564" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">null</span></span>
-<span id="cb29-565"><a href="#cb29-565" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb29-566"><a href="#cb29-566" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb29-567"><a href="#cb29-567" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb29-568"><a href="#cb29-568" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"n"</span>}<span class="op">,</span></span>
-<span id="cb29-569"><a href="#cb29-569" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"mₙ"</span>}<span class="op">,</span></span>
-<span id="cb29-570"><a href="#cb29-570" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
-<span id="cb29-571"><a href="#cb29-571" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">lineY</span>(result<span class="op">.</span><span class="at">rows</span><span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> midpointAccessor<span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span>})<span class="op">,</span></span>
-<span id="cb29-572"><a href="#cb29-572" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(result<span class="op">.</span><span class="at">rows</span><span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> midpointAccessor<span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">4</span>})</span>
-<span id="cb29-573"><a href="#cb29-573" aria-hidden="true" tabindex="-1"></a>    ]</span>
-<span id="cb29-574"><a href="#cb29-574" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb29-575"><a href="#cb29-575" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb29-576"><a href="#cb29-576" aria-hidden="true" tabindex="-1"></a><span class="co">// convergencePlot draws log₁₀|f(mₙ)| vs n (semi-log) with a linear</span></span>
-<span id="cb29-577"><a href="#cb29-577" aria-hidden="true" tabindex="-1"></a><span class="co">// regression line, for the entire run — it doesn't depend on the current</span></span>
-<span id="cb29-578"><a href="#cb29-578" aria-hidden="true" tabindex="-1"></a><span class="co">// step, so it's just plotted once per run.</span></span>
-<span id="cb29-579"><a href="#cb29-579" aria-hidden="true" tabindex="-1"></a>convergencePlot <span class="op">=</span> {</span>
-<span id="cb29-580"><a href="#cb29-580" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> finiteLogRows <span class="op">=</span> []</span>
-<span id="cb29-581"><a href="#cb29-581" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> exactZeroRows <span class="op">=</span> []</span>
-<span id="cb29-582"><a href="#cb29-582" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-583"><a href="#cb29-583" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> r <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) {</span>
-<span id="cb29-584"><a href="#cb29-584" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span><span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(r<span class="op">.</span><span class="at">fm</span>)) <span class="cf">continue</span></span>
-<span id="cb29-585"><a href="#cb29-585" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-586"><a href="#cb29-586" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (r<span class="op">.</span><span class="at">fm</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb29-587"><a href="#cb29-587" aria-hidden="true" tabindex="-1"></a>      exactZeroRows<span class="op">.</span><span class="fu">push</span>(r)</span>
-<span id="cb29-588"><a href="#cb29-588" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
-<span id="cb29-589"><a href="#cb29-589" aria-hidden="true" tabindex="-1"></a>      finiteLogRows<span class="op">.</span><span class="fu">push</span>({<span class="dt">n</span><span class="op">:</span> r<span class="op">.</span><span class="at">n</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log10</span>(<span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(r<span class="op">.</span><span class="at">fm</span>))})</span>
-<span id="cb29-590"><a href="#cb29-590" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb29-591"><a href="#cb29-591" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb29-592"><a href="#cb29-592" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-593"><a href="#cb29-593" aria-hidden="true" tabindex="-1"></a>  <span class="co">// log10(0) is -Infinity, so exact roots cannot be plotted literally.</span></span>
-<span id="cb29-594"><a href="#cb29-594" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Instead, place exact-zero residuals one decade below the smallest</span></span>
-<span id="cb29-595"><a href="#cb29-595" aria-hidden="true" tabindex="-1"></a>  <span class="co">// nonzero residual, or at -16 if there are no nonzero residuals.</span></span>
-<span id="cb29-596"><a href="#cb29-596" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> zeroPlotY <span class="op">=</span> <span class="op">-</span><span class="dv">16</span></span>
-<span id="cb29-597"><a href="#cb29-597" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (finiteLogRows<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb29-598"><a href="#cb29-598" aria-hidden="true" tabindex="-1"></a>    zeroPlotY <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(<span class="op">...</span>finiteLogRows<span class="op">.</span><span class="fu">map</span>(d <span class="kw">=&gt;</span> d<span class="op">.</span><span class="at">y</span>)) <span class="op">-</span> <span class="dv">1</span></span>
-<span id="cb29-599"><a href="#cb29-599" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb29-600"><a href="#cb29-600" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-601"><a href="#cb29-601" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> zeroRows <span class="op">=</span> exactZeroRows<span class="op">.</span><span class="fu">map</span>(r <span class="kw">=&gt;</span> ({</span>
-<span id="cb29-602"><a href="#cb29-602" aria-hidden="true" tabindex="-1"></a>    <span class="dt">n</span><span class="op">:</span> r<span class="op">.</span><span class="at">n</span><span class="op">,</span></span>
-<span id="cb29-603"><a href="#cb29-603" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> zeroPlotY<span class="op">,</span></span>
-<span id="cb29-604"><a href="#cb29-604" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">"exact root"</span></span>
-<span id="cb29-605"><a href="#cb29-605" aria-hidden="true" tabindex="-1"></a>  }))</span>
-<span id="cb29-606"><a href="#cb29-606" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-607"><a href="#cb29-607" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pointsName <span class="op">=</span> <span class="st">"log₁₀|f(mₙ)|"</span></span>
-<span id="cb29-608"><a href="#cb29-608" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> exactName <span class="op">=</span> <span class="st">"f(mₙ) = 0"</span></span>
-<span id="cb29-609"><a href="#cb29-609" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-610"><a href="#cb29-610" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> marks <span class="op">=</span> [</span>
-<span id="cb29-611"><a href="#cb29-611" aria-hidden="true" tabindex="-1"></a>    Plot<span class="op">.</span><span class="fu">dot</span>(finiteLogRows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> () <span class="kw">=&gt;</span> pointsName<span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">4</span>})</span>
-<span id="cb29-612"><a href="#cb29-612" aria-hidden="true" tabindex="-1"></a>  ]</span>
-<span id="cb29-613"><a href="#cb29-613" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-614"><a href="#cb29-614" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> [pointsName]<span class="op">,</span> colorRange <span class="op">=</span> [chartColors<span class="op">.</span><span class="at">alt</span>]</span>
-<span id="cb29-615"><a href="#cb29-615" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-616"><a href="#cb29-616" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (zeroRows<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb29-617"><a href="#cb29-617" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(</span>
-<span id="cb29-618"><a href="#cb29-618" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(zeroRows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> () <span class="kw">=&gt;</span> exactName<span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">6</span><span class="op">,</span> <span class="dt">symbol</span><span class="op">:</span> <span class="st">"star"</span>})<span class="op">,</span></span>
-<span id="cb29-619"><a href="#cb29-619" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">text</span>(zeroRows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">text</span><span class="op">:</span> <span class="st">"label"</span><span class="op">,</span> <span class="dt">dy</span><span class="op">:</span> <span class="op">-</span><span class="dv">10</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ok</span>})</span>
-<span id="cb29-620"><a href="#cb29-620" aria-hidden="true" tabindex="-1"></a>    )</span>
-<span id="cb29-621"><a href="#cb29-621" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(exactName)</span>
-<span id="cb29-622"><a href="#cb29-622" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">ok</span>)</span>
-<span id="cb29-623"><a href="#cb29-623" aria-hidden="true" tabindex="-1"></a>  }</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb29" data-startfrom="570" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 569;"><span id="cb29-570"><a href="#cb29-570" aria-hidden="true" tabindex="-1"></a><span class="co">// iteratesPlot draws the midpoint mₙ vs n for the entire run — it doesn't</span></span>
+<span id="cb29-571"><a href="#cb29-571" aria-hidden="true" tabindex="-1"></a><span class="co">// depend on the current step, so it's just plotted once per run.</span></span>
+<span id="cb29-572"><a href="#cb29-572" aria-hidden="true" tabindex="-1"></a>iteratesPlot <span class="op">=</span> {</span>
+<span id="cb29-573"><a href="#cb29-573" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> midpointAccessor <span class="op">=</span> row <span class="kw">=&gt;</span> {</span>
+<span id="cb29-574"><a href="#cb29-574" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">m</span>)) <span class="cf">return</span> row<span class="op">.</span><span class="at">m</span></span>
+<span id="cb29-575"><a href="#cb29-575" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">null</span></span>
+<span id="cb29-576"><a href="#cb29-576" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb29-577"><a href="#cb29-577" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb29-578"><a href="#cb29-578" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb29-579"><a href="#cb29-579" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"n"</span>}<span class="op">,</span></span>
+<span id="cb29-580"><a href="#cb29-580" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"mₙ"</span>}<span class="op">,</span></span>
+<span id="cb29-581"><a href="#cb29-581" aria-hidden="true" tabindex="-1"></a>    <span class="dt">marks</span><span class="op">:</span> [</span>
+<span id="cb29-582"><a href="#cb29-582" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">lineY</span>(result<span class="op">.</span><span class="at">rows</span><span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> midpointAccessor<span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span>})<span class="op">,</span></span>
+<span id="cb29-583"><a href="#cb29-583" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(result<span class="op">.</span><span class="at">rows</span><span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> midpointAccessor<span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">fn</span><span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">4</span>})</span>
+<span id="cb29-584"><a href="#cb29-584" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb29-585"><a href="#cb29-585" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb29-586"><a href="#cb29-586" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb29-587"><a href="#cb29-587" aria-hidden="true" tabindex="-1"></a><span class="co">// convergencePlot draws log₁₀|f(mₙ)| vs n (semi-log) with a linear</span></span>
+<span id="cb29-588"><a href="#cb29-588" aria-hidden="true" tabindex="-1"></a><span class="co">// regression line, for the entire run — it doesn't depend on the current</span></span>
+<span id="cb29-589"><a href="#cb29-589" aria-hidden="true" tabindex="-1"></a><span class="co">// step, so it's just plotted once per run.</span></span>
+<span id="cb29-590"><a href="#cb29-590" aria-hidden="true" tabindex="-1"></a>convergencePlot <span class="op">=</span> {</span>
+<span id="cb29-591"><a href="#cb29-591" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> finiteLogRows <span class="op">=</span> []</span>
+<span id="cb29-592"><a href="#cb29-592" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> exactZeroRows <span class="op">=</span> []</span>
+<span id="cb29-593"><a href="#cb29-593" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-594"><a href="#cb29-594" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> r <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) {</span>
+<span id="cb29-595"><a href="#cb29-595" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span><span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(r<span class="op">.</span><span class="at">fm</span>)) <span class="cf">continue</span></span>
+<span id="cb29-596"><a href="#cb29-596" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-597"><a href="#cb29-597" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (r<span class="op">.</span><span class="at">fm</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb29-598"><a href="#cb29-598" aria-hidden="true" tabindex="-1"></a>      exactZeroRows<span class="op">.</span><span class="fu">push</span>(r)</span>
+<span id="cb29-599"><a href="#cb29-599" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> {</span>
+<span id="cb29-600"><a href="#cb29-600" aria-hidden="true" tabindex="-1"></a>      finiteLogRows<span class="op">.</span><span class="fu">push</span>({<span class="dt">n</span><span class="op">:</span> r<span class="op">.</span><span class="at">n</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">log10</span>(<span class="bu">Math</span><span class="op">.</span><span class="fu">abs</span>(r<span class="op">.</span><span class="at">fm</span>))})</span>
+<span id="cb29-601"><a href="#cb29-601" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb29-602"><a href="#cb29-602" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb29-603"><a href="#cb29-603" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-604"><a href="#cb29-604" aria-hidden="true" tabindex="-1"></a>  <span class="co">// log10(0) is -Infinity, so exact roots cannot be plotted literally.</span></span>
+<span id="cb29-605"><a href="#cb29-605" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Instead, place exact-zero residuals one decade below the smallest</span></span>
+<span id="cb29-606"><a href="#cb29-606" aria-hidden="true" tabindex="-1"></a>  <span class="co">// nonzero residual, or at -16 if there are no nonzero residuals.</span></span>
+<span id="cb29-607"><a href="#cb29-607" aria-hidden="true" tabindex="-1"></a>  <span class="kw">let</span> zeroPlotY <span class="op">=</span> <span class="op">-</span><span class="dv">16</span></span>
+<span id="cb29-608"><a href="#cb29-608" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (finiteLogRows<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb29-609"><a href="#cb29-609" aria-hidden="true" tabindex="-1"></a>    zeroPlotY <span class="op">=</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">min</span>(<span class="op">...</span>finiteLogRows<span class="op">.</span><span class="fu">map</span>(d <span class="kw">=&gt;</span> d<span class="op">.</span><span class="at">y</span>)) <span class="op">-</span> <span class="dv">1</span></span>
+<span id="cb29-610"><a href="#cb29-610" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb29-611"><a href="#cb29-611" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-612"><a href="#cb29-612" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> zeroRows <span class="op">=</span> exactZeroRows<span class="op">.</span><span class="fu">map</span>(r <span class="kw">=&gt;</span> ({</span>
+<span id="cb29-613"><a href="#cb29-613" aria-hidden="true" tabindex="-1"></a>    <span class="dt">n</span><span class="op">:</span> r<span class="op">.</span><span class="at">n</span><span class="op">,</span></span>
+<span id="cb29-614"><a href="#cb29-614" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> zeroPlotY<span class="op">,</span></span>
+<span id="cb29-615"><a href="#cb29-615" aria-hidden="true" tabindex="-1"></a>    <span class="dt">label</span><span class="op">:</span> <span class="st">"exact root"</span></span>
+<span id="cb29-616"><a href="#cb29-616" aria-hidden="true" tabindex="-1"></a>  }))</span>
+<span id="cb29-617"><a href="#cb29-617" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-618"><a href="#cb29-618" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> pointsName <span class="op">=</span> <span class="st">"log₁₀|f(mₙ)|"</span></span>
+<span id="cb29-619"><a href="#cb29-619" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> exactName <span class="op">=</span> <span class="st">"f(mₙ) = 0"</span></span>
+<span id="cb29-620"><a href="#cb29-620" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-621"><a href="#cb29-621" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> marks <span class="op">=</span> [</span>
+<span id="cb29-622"><a href="#cb29-622" aria-hidden="true" tabindex="-1"></a>    Plot<span class="op">.</span><span class="fu">dot</span>(finiteLogRows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> () <span class="kw">=&gt;</span> pointsName<span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">4</span>})</span>
+<span id="cb29-623"><a href="#cb29-623" aria-hidden="true" tabindex="-1"></a>  ]</span>
 <span id="cb29-624"><a href="#cb29-624" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-625"><a href="#cb29-625" aria-hidden="true" tabindex="-1"></a>  <span class="co">// legendDomain/legendRange hold only the regression line(s) — the legend</span></span>
-<span id="cb29-626"><a href="#cb29-626" aria-hidden="true" tabindex="-1"></a>  <span class="co">// shown below the chart displays just the fitted slope, not the raw</span></span>
-<span id="cb29-627"><a href="#cb29-627" aria-hidden="true" tabindex="-1"></a>  <span class="co">// point series, to keep it uncluttered.</span></span>
-<span id="cb29-628"><a href="#cb29-628" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legendDomain <span class="op">=</span> []<span class="op">,</span> legendRange <span class="op">=</span> []</span>
-<span id="cb29-629"><a href="#cb29-629" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-630"><a href="#cb29-630" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> regressionPoints <span class="op">=</span> []</span>
-<span id="cb29-631"><a href="#cb29-631" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> finiteLogRows) regressionPoints<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> row<span class="op">.</span><span class="at">n</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> row<span class="op">.</span><span class="at">y</span>})</span>
-<span id="cb29-632"><a href="#cb29-632" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-633"><a href="#cb29-633" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> fit <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">linearRegression</span>(regressionPoints)</span>
-<span id="cb29-634"><a href="#cb29-634" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (fit) {</span>
-<span id="cb29-635"><a href="#cb29-635" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> lineName <span class="op">=</span> <span class="vs">`slope ≈ </span><span class="sc">${</span>fit<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">`</span></span>
-<span id="cb29-636"><a href="#cb29-636" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">line</span>(</span>
-<span id="cb29-637"><a href="#cb29-637" aria-hidden="true" tabindex="-1"></a>      [{<span class="dt">n</span><span class="op">:</span> fit<span class="op">.</span><span class="at">xlo</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> fit<span class="op">.</span><span class="at">xlo</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>}<span class="op">,</span> {<span class="dt">n</span><span class="op">:</span> fit<span class="op">.</span><span class="at">xhi</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> fit<span class="op">.</span><span class="at">xhi</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>}]<span class="op">,</span></span>
-<span id="cb29-638"><a href="#cb29-638" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> lineName<span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"6,4"</span>}</span>
-<span id="cb29-639"><a href="#cb29-639" aria-hidden="true" tabindex="-1"></a>    ))</span>
-<span id="cb29-640"><a href="#cb29-640" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(lineName)</span>
-<span id="cb29-641"><a href="#cb29-641" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">accent2</span>)</span>
-<span id="cb29-642"><a href="#cb29-642" aria-hidden="true" tabindex="-1"></a>    legendDomain<span class="op">.</span><span class="fu">push</span>(lineName)</span>
-<span id="cb29-643"><a href="#cb29-643" aria-hidden="true" tabindex="-1"></a>    legendRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">accent2</span>)</span>
-<span id="cb29-644"><a href="#cb29-644" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb29-645"><a href="#cb29-645" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-646"><a href="#cb29-646" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb29-647"><a href="#cb29-647" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb29-648"><a href="#cb29-648" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"n"</span>}<span class="op">,</span></span>
-<span id="cb29-649"><a href="#cb29-649" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"log₁₀|f(mₙ)|"</span>}<span class="op">,</span></span>
-<span id="cb29-650"><a href="#cb29-650" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
-<span id="cb29-651"><a href="#cb29-651" aria-hidden="true" tabindex="-1"></a>    marks</span>
-<span id="cb29-652"><a href="#cb29-652" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb29-653"><a href="#cb29-653" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb29-654"><a href="#cb29-654" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb29-655"><a href="#cb29-655" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart)</span>
-<span id="cb29-656"><a href="#cb29-656" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Plot.legend throws on an empty domain/range — there's no legend to</span></span>
-<span id="cb29-657"><a href="#cb29-657" aria-hidden="true" tabindex="-1"></a>  <span class="co">// show when the run didn't produce a regression line (e.g. a</span></span>
-<span id="cb29-658"><a href="#cb29-658" aria-hidden="true" tabindex="-1"></a>  <span class="co">// non-converging example).</span></span>
-<span id="cb29-659"><a href="#cb29-659" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (legendDomain<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb29-660"><a href="#cb29-660" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> legendDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> legendRange}})</span>
-<span id="cb29-661"><a href="#cb29-661" aria-hidden="true" tabindex="-1"></a>    container<span class="op">.</span><span class="fu">append</span>(legend)</span>
-<span id="cb29-662"><a href="#cb29-662" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb29-663"><a href="#cb29-663" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
-<span id="cb29-664"><a href="#cb29-664" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb29-625"><a href="#cb29-625" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> [pointsName]<span class="op">,</span> colorRange <span class="op">=</span> [chartColors<span class="op">.</span><span class="at">alt</span>]</span>
+<span id="cb29-626"><a href="#cb29-626" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-627"><a href="#cb29-627" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (zeroRows<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb29-628"><a href="#cb29-628" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(</span>
+<span id="cb29-629"><a href="#cb29-629" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">dot</span>(zeroRows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> () <span class="kw">=&gt;</span> exactName<span class="op">,</span> <span class="dt">r</span><span class="op">:</span> <span class="dv">6</span><span class="op">,</span> <span class="dt">symbol</span><span class="op">:</span> <span class="st">"star"</span>})<span class="op">,</span></span>
+<span id="cb29-630"><a href="#cb29-630" aria-hidden="true" tabindex="-1"></a>      Plot<span class="op">.</span><span class="fu">text</span>(zeroRows<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">text</span><span class="op">:</span> <span class="st">"label"</span><span class="op">,</span> <span class="dt">dy</span><span class="op">:</span> <span class="op">-</span><span class="dv">10</span><span class="op">,</span> <span class="dt">fill</span><span class="op">:</span> chartColors<span class="op">.</span><span class="at">ok</span>})</span>
+<span id="cb29-631"><a href="#cb29-631" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb29-632"><a href="#cb29-632" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(exactName)</span>
+<span id="cb29-633"><a href="#cb29-633" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">ok</span>)</span>
+<span id="cb29-634"><a href="#cb29-634" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb29-635"><a href="#cb29-635" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-636"><a href="#cb29-636" aria-hidden="true" tabindex="-1"></a>  <span class="co">// legendDomain/legendRange hold only the regression line(s) — the legend</span></span>
+<span id="cb29-637"><a href="#cb29-637" aria-hidden="true" tabindex="-1"></a>  <span class="co">// shown below the chart displays just the fitted slope, not the raw</span></span>
+<span id="cb29-638"><a href="#cb29-638" aria-hidden="true" tabindex="-1"></a>  <span class="co">// point series, to keep it uncluttered.</span></span>
+<span id="cb29-639"><a href="#cb29-639" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legendDomain <span class="op">=</span> []<span class="op">,</span> legendRange <span class="op">=</span> []</span>
+<span id="cb29-640"><a href="#cb29-640" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-641"><a href="#cb29-641" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> regressionPoints <span class="op">=</span> []</span>
+<span id="cb29-642"><a href="#cb29-642" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> finiteLogRows) regressionPoints<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> row<span class="op">.</span><span class="at">n</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> row<span class="op">.</span><span class="at">y</span>})</span>
+<span id="cb29-643"><a href="#cb29-643" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-644"><a href="#cb29-644" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> fit <span class="op">=</span> VM<span class="op">.</span><span class="at">numerical</span><span class="op">.</span><span class="fu">linearRegression</span>(regressionPoints)</span>
+<span id="cb29-645"><a href="#cb29-645" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (fit) {</span>
+<span id="cb29-646"><a href="#cb29-646" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> lineName <span class="op">=</span> <span class="vs">`slope ≈ </span><span class="sc">${</span>fit<span class="op">.</span><span class="at">slope</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">2</span>)<span class="sc">}</span><span class="vs">`</span></span>
+<span id="cb29-647"><a href="#cb29-647" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">line</span>(</span>
+<span id="cb29-648"><a href="#cb29-648" aria-hidden="true" tabindex="-1"></a>      [{<span class="dt">n</span><span class="op">:</span> fit<span class="op">.</span><span class="at">xlo</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> fit<span class="op">.</span><span class="at">xlo</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>}<span class="op">,</span> {<span class="dt">n</span><span class="op">:</span> fit<span class="op">.</span><span class="at">xhi</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> fit<span class="op">.</span><span class="at">slope</span> <span class="op">*</span> fit<span class="op">.</span><span class="at">xhi</span> <span class="op">+</span> fit<span class="op">.</span><span class="at">intercept</span>}]<span class="op">,</span></span>
+<span id="cb29-649"><a href="#cb29-649" aria-hidden="true" tabindex="-1"></a>      {<span class="dt">x</span><span class="op">:</span> <span class="st">"n"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> lineName<span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"6,4"</span>}</span>
+<span id="cb29-650"><a href="#cb29-650" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb29-651"><a href="#cb29-651" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(lineName)</span>
+<span id="cb29-652"><a href="#cb29-652" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">accent2</span>)</span>
+<span id="cb29-653"><a href="#cb29-653" aria-hidden="true" tabindex="-1"></a>    legendDomain<span class="op">.</span><span class="fu">push</span>(lineName)</span>
+<span id="cb29-654"><a href="#cb29-654" aria-hidden="true" tabindex="-1"></a>    legendRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">accent2</span>)</span>
+<span id="cb29-655"><a href="#cb29-655" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb29-656"><a href="#cb29-656" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-657"><a href="#cb29-657" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb29-658"><a href="#cb29-658" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb29-659"><a href="#cb29-659" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"n"</span>}<span class="op">,</span></span>
+<span id="cb29-660"><a href="#cb29-660" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"log₁₀|f(mₙ)|"</span>}<span class="op">,</span></span>
+<span id="cb29-661"><a href="#cb29-661" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
+<span id="cb29-662"><a href="#cb29-662" aria-hidden="true" tabindex="-1"></a>    marks</span>
+<span id="cb29-663"><a href="#cb29-663" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb29-664"><a href="#cb29-664" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-665"><a href="#cb29-665" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb29-666"><a href="#cb29-666" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart)</span>
+<span id="cb29-667"><a href="#cb29-667" aria-hidden="true" tabindex="-1"></a>  <span class="co">// Plot.legend throws on an empty domain/range — there's no legend to</span></span>
+<span id="cb29-668"><a href="#cb29-668" aria-hidden="true" tabindex="-1"></a>  <span class="co">// show when the run didn't produce a regression line (e.g. a</span></span>
+<span id="cb29-669"><a href="#cb29-669" aria-hidden="true" tabindex="-1"></a>  <span class="co">// non-converging example).</span></span>
+<span id="cb29-670"><a href="#cb29-670" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (legendDomain<span class="op">.</span><span class="at">length</span> <span class="op">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb29-671"><a href="#cb29-671" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> legendDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> legendRange}})</span>
+<span id="cb29-672"><a href="#cb29-672" aria-hidden="true" tabindex="-1"></a>    container<span class="op">.</span><span class="fu">append</span>(legend)</span>
+<span id="cb29-673"><a href="#cb29-673" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb29-674"><a href="#cb29-674" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
+<span id="cb29-675"><a href="#cb29-675" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="quarto-layout-panel" data-layout-ncol="2">
 <div class="quarto-layout-row">
 <div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
@@ -1439,48 +1448,48 @@ Authors: Dhruv Azad
 <div id="callout-2" class="callout-2-contents callout-collapse collapse">
 <div class="callout-body-container callout-body">
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb30" data-startfrom="677" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 676;"><span id="cb30-677"><a href="#cb30-677" aria-hidden="true" tabindex="-1"></a><span class="co">// Iteration table — shows the entire run, not just the current step.</span></span>
-<span id="cb30-678"><a href="#cb30-678" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
-<span id="cb30-679"><a href="#cb30-679" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb30-680"><a href="#cb30-680" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
-<span id="cb30-681"><a href="#cb30-681" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
-<span id="cb30-682"><a href="#cb30-682" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb30-683"><a href="#cb30-683" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb30-684"><a href="#cb30-684" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-685"><a href="#cb30-685" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
-<span id="cb30-686"><a href="#cb30-686" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) {</span>
-<span id="cb30-687"><a href="#cb30-687" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> aCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-688"><a href="#cb30-688" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">a</span>)) aCell <span class="op">=</span> row<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)</span>
-<span id="cb30-689"><a href="#cb30-689" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-690"><a href="#cb30-690" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> bCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-691"><a href="#cb30-691" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">b</span>)) bCell <span class="op">=</span> row<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)</span>
-<span id="cb30-692"><a href="#cb30-692" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-693"><a href="#cb30-693" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> mCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-694"><a href="#cb30-694" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">m</span>)) mCell <span class="op">=</span> row<span class="op">.</span><span class="at">m</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb30" data-startfrom="688" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 687;"><span id="cb30-688"><a href="#cb30-688" aria-hidden="true" tabindex="-1"></a><span class="co">// Iteration table — shows the entire run, not just the current step.</span></span>
+<span id="cb30-689"><a href="#cb30-689" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
+<span id="cb30-690"><a href="#cb30-690" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb30-691"><a href="#cb30-691" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
+<span id="cb30-692"><a href="#cb30-692" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
+<span id="cb30-693"><a href="#cb30-693" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb30-694"><a href="#cb30-694" aria-hidden="true" tabindex="-1"></a>  }</span>
 <span id="cb30-695"><a href="#cb30-695" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-696"><a href="#cb30-696" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> faCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-697"><a href="#cb30-697" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">fa</span>)) faCell <span class="op">=</span> row<span class="op">.</span><span class="at">fa</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">5</span>)</span>
-<span id="cb30-698"><a href="#cb30-698" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-699"><a href="#cb30-699" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> fbCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-700"><a href="#cb30-700" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">fb</span>)) fbCell <span class="op">=</span> row<span class="op">.</span><span class="at">fb</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">5</span>)</span>
-<span id="cb30-701"><a href="#cb30-701" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-702"><a href="#cb30-702" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> fmCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-703"><a href="#cb30-703" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">fm</span>)) fmCell <span class="op">=</span> row<span class="op">.</span><span class="at">fm</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">5</span>)</span>
-<span id="cb30-704"><a href="#cb30-704" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-705"><a href="#cb30-705" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> widthCell <span class="op">=</span> <span class="st">"NaN"</span></span>
-<span id="cb30-706"><a href="#cb30-706" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">width</span>)) widthCell <span class="op">=</span> row<span class="op">.</span><span class="at">width</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
-<span id="cb30-707"><a href="#cb30-707" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-708"><a href="#cb30-708" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([row<span class="op">.</span><span class="at">n</span><span class="op">,</span> aCell<span class="op">,</span> bCell<span class="op">,</span> mCell<span class="op">,</span> faCell<span class="op">,</span> fbCell<span class="op">,</span> fmCell<span class="op">,</span> widthCell])</span>
-<span id="cb30-709"><a href="#cb30-709" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb30-710"><a href="#cb30-710" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-711"><a href="#cb30-711" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb30-712"><a href="#cb30-712" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb30-713"><a href="#cb30-713" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"n"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`a_n`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`b_n`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`m_n`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(a_n)`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(b_n)`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(m_n)`</span><span class="op">,</span> <span class="st">"width"</span>]<span class="op">,</span></span>
-<span id="cb30-714"><a href="#cb30-714" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"n"</span><span class="op">,</span> <span class="st">"a_n"</span><span class="op">,</span> <span class="st">"b_n"</span><span class="op">,</span> <span class="st">"m_n"</span><span class="op">,</span> <span class="st">"f(a_n)"</span><span class="op">,</span> <span class="st">"f(b_n)"</span><span class="op">,</span> <span class="st">"f(m_n)"</span><span class="op">,</span> <span class="st">"width"</span>]<span class="op">,</span></span>
-<span id="cb30-715"><a href="#cb30-715" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"bisection-method-iterations.csv"</span><span class="op">,</span></span>
-<span id="cb30-716"><a href="#cb30-716" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
-<span id="cb30-717"><a href="#cb30-717" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb30-718"><a href="#cb30-718" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb30-696"><a href="#cb30-696" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
+<span id="cb30-697"><a href="#cb30-697" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) {</span>
+<span id="cb30-698"><a href="#cb30-698" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> aCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-699"><a href="#cb30-699" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">a</span>)) aCell <span class="op">=</span> row<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)</span>
+<span id="cb30-700"><a href="#cb30-700" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-701"><a href="#cb30-701" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> bCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-702"><a href="#cb30-702" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">b</span>)) bCell <span class="op">=</span> row<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)</span>
+<span id="cb30-703"><a href="#cb30-703" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-704"><a href="#cb30-704" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> mCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-705"><a href="#cb30-705" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">m</span>)) mCell <span class="op">=</span> row<span class="op">.</span><span class="at">m</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)</span>
+<span id="cb30-706"><a href="#cb30-706" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-707"><a href="#cb30-707" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> faCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-708"><a href="#cb30-708" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">fa</span>)) faCell <span class="op">=</span> row<span class="op">.</span><span class="at">fa</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">5</span>)</span>
+<span id="cb30-709"><a href="#cb30-709" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-710"><a href="#cb30-710" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> fbCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-711"><a href="#cb30-711" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">fb</span>)) fbCell <span class="op">=</span> row<span class="op">.</span><span class="at">fb</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">5</span>)</span>
+<span id="cb30-712"><a href="#cb30-712" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-713"><a href="#cb30-713" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> fmCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-714"><a href="#cb30-714" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">fm</span>)) fmCell <span class="op">=</span> row<span class="op">.</span><span class="at">fm</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">5</span>)</span>
+<span id="cb30-715"><a href="#cb30-715" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-716"><a href="#cb30-716" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> widthCell <span class="op">=</span> <span class="st">"NaN"</span></span>
+<span id="cb30-717"><a href="#cb30-717" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="bu">Number</span><span class="op">.</span><span class="fu">isFinite</span>(row<span class="op">.</span><span class="at">width</span>)) widthCell <span class="op">=</span> row<span class="op">.</span><span class="at">width</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
+<span id="cb30-718"><a href="#cb30-718" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-719"><a href="#cb30-719" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([row<span class="op">.</span><span class="at">n</span><span class="op">,</span> aCell<span class="op">,</span> bCell<span class="op">,</span> mCell<span class="op">,</span> faCell<span class="op">,</span> fbCell<span class="op">,</span> fmCell<span class="op">,</span> widthCell])</span>
+<span id="cb30-720"><a href="#cb30-720" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb30-721"><a href="#cb30-721" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-722"><a href="#cb30-722" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb30-723"><a href="#cb30-723" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb30-724"><a href="#cb30-724" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"n"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`a_n`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`b_n`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`m_n`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(a_n)`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(b_n)`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(m_n)`</span><span class="op">,</span> <span class="st">"width"</span>]<span class="op">,</span></span>
+<span id="cb30-725"><a href="#cb30-725" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"n"</span><span class="op">,</span> <span class="st">"a_n"</span><span class="op">,</span> <span class="st">"b_n"</span><span class="op">,</span> <span class="st">"m_n"</span><span class="op">,</span> <span class="st">"f(a_n)"</span><span class="op">,</span> <span class="st">"f(b_n)"</span><span class="op">,</span> <span class="st">"f(m_n)"</span><span class="op">,</span> <span class="st">"width"</span>]<span class="op">,</span></span>
+<span id="cb30-726"><a href="#cb30-726" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"bisection-method-iterations.csv"</span><span class="op">,</span></span>
+<span id="cb30-727"><a href="#cb30-727" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
+<span id="cb30-728"><a href="#cb30-728" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb30-729"><a href="#cb30-729" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div id="ojs-cell-31" data-nodetype="declaration">
 
@@ -1490,15 +1499,6 @@ Authors: Dhruv Azad
 </div>
 </div>
 </div>
-<p>The bisection method finds a root of <span class="math inline">\(f(x)=0\)</span> by repeatedly halving an interval <span class="math inline">\([a_n,b_n]\)</span> that brackets a sign change of <span class="math inline">\(f\)</span>, keeping whichever half still brackets it:</p>
-<p><span class="math display">\[
-m_n=\frac{a_n+b_n}{2},\qquad
-(a_{n+1},b_{n+1})=
-\begin{cases}
-(a_n,m_n) &amp; f(a_n)f(m_n)&lt;0,\\[2pt]
-(m_n,b_n) &amp; \text{otherwise.}
-\end{cases}
-\]</span></p>
 </div>
 
 

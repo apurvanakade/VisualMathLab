@@ -110,8 +110,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.3.1/site.js"></script>
 <script src="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.css" rel="stylesheet">
-<meta name="mathviz:share-embed-docs" content="embed.html">
 <meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
+<meta name="mathviz:share-embed-docs" content="embed.html">
 <script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
@@ -1301,59 +1301,6 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<div class="callout callout-style-default callout-note callout-titled" title="Partition table">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Partition table
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-1" class="callout-1-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb28" data-startfrom="573" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 572;"><span id="cb28-573"><a href="#cb28-573" aria-hidden="true" tabindex="-1"></a><span class="co">// Partition table — one row per leaf of the accepted adaptive partition,</span></span>
-<span id="cb28-574"><a href="#cb28-574" aria-hidden="true" tabindex="-1"></a><span class="co">// left to right.</span></span>
-<span id="cb28-575"><a href="#cb28-575" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
-<span id="cb28-576"><a href="#cb28-576" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb28-577"><a href="#cb28-577" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
-<span id="cb28-578"><a href="#cb28-578" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
-<span id="cb28-579"><a href="#cb28-579" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb28-580"><a href="#cb28-580" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb28-581"><a href="#cb28-581" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-582"><a href="#cb28-582" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
-<span id="cb28-583"><a href="#cb28-583" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb28-584"><a href="#cb28-584" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> leaf <span class="op">=</span> result<span class="op">.</span><span class="at">leaves</span>[i]</span>
-<span id="cb28-585"><a href="#cb28-585" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
-<span id="cb28-586"><a href="#cb28-586" aria-hidden="true" tabindex="-1"></a>      i<span class="op">,</span></span>
-<span id="cb28-587"><a href="#cb28-587" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb28-588"><a href="#cb28-588" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb28-589"><a href="#cb28-589" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">width</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb28-590"><a href="#cb28-590" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">depth</span><span class="op">,</span></span>
-<span id="cb28-591"><a href="#cb28-591" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">estimate</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
-<span id="cb28-592"><a href="#cb28-592" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">errorEstimate</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
-<span id="cb28-593"><a href="#cb28-593" aria-hidden="true" tabindex="-1"></a>    ])</span>
-<span id="cb28-594"><a href="#cb28-594" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb28-595"><a href="#cb28-595" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb28-596"><a href="#cb28-596" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb28-597"><a href="#cb28-597" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb28-598"><a href="#cb28-598" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`a_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`b_i`</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`S_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`|E_i|`</span>]<span class="op">,</span></span>
-<span id="cb28-599"><a href="#cb28-599" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"a_i"</span><span class="op">,</span> <span class="st">"b_i"</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="st">"S_i (leaf estimate)"</span><span class="op">,</span> <span class="st">"|E_i| (leaf error estimate)"</span>]<span class="op">,</span></span>
-<span id="cb28-600"><a href="#cb28-600" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"adaptive-integration-partition.csv"</span><span class="op">,</span></span>
-<span id="cb28-601"><a href="#cb28-601" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
-<span id="cb28-602"><a href="#cb28-602" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb28-603"><a href="#cb28-603" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div id="ojs-cell-28" data-nodetype="declaration">
-
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
 <section id="how-it-works" class="level2">
 <h2 class="anchored" data-anchor-id="how-it-works">How it works</h2>
 <p><a href="../../apps/numerical-integration/index.html">Numerical integration</a> lays a fixed grid over <span class="math inline">\([a,b]\)</span> and uses the same panel width everywhere. An <strong>adaptive</strong> method instead subdivides only where it has to: narrow panels where <span class="math inline">\(f\)</span> wiggles or turns sharply, wide ones where <span class="math inline">\(f\)</span> is nearly a parabola already.</p>
@@ -1371,6 +1318,59 @@ E = \frac{\bigl|\, S[p,m] + S[m,q] - S[p,q] \,\bigr|}{15}.
 <li><strong>Refine</strong> if <span class="math inline">\(E &gt; \varepsilon\)</span>: bisect at <span class="math inline">\(m\)</span> and recurse on each half with <span class="math inline">\(\varepsilon/2\)</span>, so the total error stays bounded by the original tolerance.</li>
 </ul>
 <p>A larger <span class="math inline">\(\varepsilon\)</span> means fewer, wider panels and a coarser partition; a smaller <span class="math inline">\(\varepsilon\)</span> means more panels, clustered exactly where <span class="math inline">\(f\)</span> is hardest to approximate.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Partition table">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Partition table
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb28" data-startfrom="596" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 595;"><span id="cb28-596"><a href="#cb28-596" aria-hidden="true" tabindex="-1"></a><span class="co">// Partition table — one row per leaf of the accepted adaptive partition,</span></span>
+<span id="cb28-597"><a href="#cb28-597" aria-hidden="true" tabindex="-1"></a><span class="co">// left to right.</span></span>
+<span id="cb28-598"><a href="#cb28-598" aria-hidden="true" tabindex="-1"></a>iterationTable <span class="op">=</span> {</span>
+<span id="cb28-599"><a href="#cb28-599" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb28-600"><a href="#cb28-600" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
+<span id="cb28-601"><a href="#cb28-601" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
+<span id="cb28-602"><a href="#cb28-602" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb28-603"><a href="#cb28-603" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb28-604"><a href="#cb28-604" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-605"><a href="#cb28-605" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
+<span id="cb28-606"><a href="#cb28-606" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">leaves</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb28-607"><a href="#cb28-607" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> leaf <span class="op">=</span> result<span class="op">.</span><span class="at">leaves</span>[i]</span>
+<span id="cb28-608"><a href="#cb28-608" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
+<span id="cb28-609"><a href="#cb28-609" aria-hidden="true" tabindex="-1"></a>      i<span class="op">,</span></span>
+<span id="cb28-610"><a href="#cb28-610" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">a</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb28-611"><a href="#cb28-611" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">b</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb28-612"><a href="#cb28-612" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">width</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb28-613"><a href="#cb28-613" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">depth</span><span class="op">,</span></span>
+<span id="cb28-614"><a href="#cb28-614" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">estimate</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">10</span>)<span class="op">,</span></span>
+<span id="cb28-615"><a href="#cb28-615" aria-hidden="true" tabindex="-1"></a>      leaf<span class="op">.</span><span class="at">errorEstimate</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">4</span>)</span>
+<span id="cb28-616"><a href="#cb28-616" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb28-617"><a href="#cb28-617" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb28-618"><a href="#cb28-618" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-619"><a href="#cb28-619" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb28-620"><a href="#cb28-620" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb28-621"><a href="#cb28-621" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`a_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`b_i`</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`S_i`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`|E_i|`</span>]<span class="op">,</span></span>
+<span id="cb28-622"><a href="#cb28-622" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"a_i"</span><span class="op">,</span> <span class="st">"b_i"</span><span class="op">,</span> <span class="st">"width"</span><span class="op">,</span> <span class="st">"depth"</span><span class="op">,</span> <span class="st">"S_i (leaf estimate)"</span><span class="op">,</span> <span class="st">"|E_i| (leaf error estimate)"</span>]<span class="op">,</span></span>
+<span id="cb28-623"><a href="#cb28-623" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"adaptive-integration-partition.csv"</span><span class="op">,</span></span>
+<span id="cb28-624"><a href="#cb28-624" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
+<span id="cb28-625"><a href="#cb28-625" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb28-626"><a href="#cb28-626" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-28" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 </section>
 </div>
 

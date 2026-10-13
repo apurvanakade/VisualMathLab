@@ -110,8 +110,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../../site_libs/quarto-contrib/mathviz-chrome-site-0.3.1/site.js"></script>
 <script src="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-share-0.3.1/share.css" rel="stylesheet">
-<meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
 <meta name="mathviz:share-embed-docs" content="embed.html">
+<meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
 <script src="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.js"></script>
 <link href="../../site_libs/quarto-contrib/mathviz-report-bug-0.3.1/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
@@ -1453,196 +1453,6 @@ Authors: Apurva Nakade
 </div>
 </div>
 </div>
-<div class="callout callout-style-default callout-note callout-titled" title="Convergence plots">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Convergence plots
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-1" class="callout-1-contents callout-collapse collapse show">
-<div class="callout-body-container callout-body">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb31" data-startfrom="668" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 667;"><span id="cb31-668"><a href="#cb31-668" aria-hidden="true" tabindex="-1"></a><span class="co">// iteratesPlot compares each filter's "weight on the newest sample" —</span></span>
-<span id="cb31-669"><a href="#cb31-669" aria-hidden="true" tabindex="-1"></a><span class="co">// the fraction of the new estimate that comes directly from the latest</span></span>
-<span id="cb31-670"><a href="#cb31-670" aria-hidden="true" tabindex="-1"></a><span class="co">// measurement rather than the filter's own history. For EMA this weight</span></span>
-<span id="cb31-671"><a href="#cb31-671" aria-hidden="true" tabindex="-1"></a><span class="co">// is the fixed constant 1-α; for SMA it's the fixed constant 1/k; for</span></span>
-<span id="cb31-672"><a href="#cb31-672" aria-hidden="true" tabindex="-1"></a><span class="co">// Kalman it's the gain K_i, which the filter adapts on its own every</span></span>
-<span id="cb31-673"><a href="#cb31-673" aria-hidden="true" tabindex="-1"></a><span class="co">// step.</span></span>
-<span id="cb31-674"><a href="#cb31-674" aria-hidden="true" tabindex="-1"></a>iteratesPlot <span class="op">=</span> {</span>
-<span id="cb31-675"><a href="#cb31-675" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> kalmanName <span class="op">=</span> <span class="st">"Kalman gain (adaptive)"</span></span>
-<span id="cb31-676"><a href="#cb31-676" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> emaName <span class="op">=</span> <span class="st">"EMA weight 1-α (fixed)"</span></span>
-<span id="cb31-677"><a href="#cb31-677" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> smaName <span class="op">=</span> <span class="st">"SMA weight 1/k (fixed)"</span></span>
-<span id="cb31-678"><a href="#cb31-678" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-679"><a href="#cb31-679" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> marks <span class="op">=</span> []</span>
-<span id="cb31-680"><a href="#cb31-680" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> []</span>
-<span id="cb31-681"><a href="#cb31-681" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorRange <span class="op">=</span> []</span>
-<span id="cb31-682"><a href="#cb31-682" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-683"><a href="#cb31-683" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showKalman) {</span>
-<span id="cb31-684"><a href="#cb31-684" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pts <span class="op">=</span> []</span>
-<span id="cb31-685"><a href="#cb31-685" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> row<span class="op">.</span><span class="at">i</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> row<span class="op">.</span><span class="at">kalmanGain</span>})</span>
-<span id="cb31-686"><a href="#cb31-686" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(pts<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> kalmanName}))</span>
-<span id="cb31-687"><a href="#cb31-687" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(kalmanName)</span>
-<span id="cb31-688"><a href="#cb31-688" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">alt</span>)</span>
-<span id="cb31-689"><a href="#cb31-689" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-690"><a href="#cb31-690" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-691"><a href="#cb31-691" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showEMA) {</span>
-<span id="cb31-692"><a href="#cb31-692" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">ruleY</span>([<span class="dv">1</span> <span class="op">-</span> alpha]<span class="op">,</span> {<span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> emaName<span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"4,3"</span>}))</span>
-<span id="cb31-693"><a href="#cb31-693" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(emaName)</span>
-<span id="cb31-694"><a href="#cb31-694" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">ok</span>)</span>
-<span id="cb31-695"><a href="#cb31-695" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-696"><a href="#cb31-696" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-697"><a href="#cb31-697" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showSMA) {</span>
-<span id="cb31-698"><a href="#cb31-698" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">ruleY</span>([<span class="dv">1</span> <span class="op">/</span> windowK]<span class="op">,</span> {<span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> smaName<span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"4,3"</span>}))</span>
-<span id="cb31-699"><a href="#cb31-699" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(smaName)</span>
-<span id="cb31-700"><a href="#cb31-700" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">warn</span>)</span>
-<span id="cb31-701"><a href="#cb31-701" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-702"><a href="#cb31-702" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-703"><a href="#cb31-703" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb31-704"><a href="#cb31-704" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb31-705"><a href="#cb31-705" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"sample index"</span>}<span class="op">,</span></span>
-<span id="cb31-706"><a href="#cb31-706" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"weight on newest sample"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]}<span class="op">,</span></span>
-<span id="cb31-707"><a href="#cb31-707" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
-<span id="cb31-708"><a href="#cb31-708" aria-hidden="true" tabindex="-1"></a>    marks</span>
-<span id="cb31-709"><a href="#cb31-709" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb31-710"><a href="#cb31-710" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}})</span>
-<span id="cb31-711"><a href="#cb31-711" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-712"><a href="#cb31-712" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb31-713"><a href="#cb31-713" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart<span class="op">,</span> legend)</span>
-<span id="cb31-714"><a href="#cb31-714" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
-<span id="cb31-715"><a href="#cb31-715" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb31-716"><a href="#cb31-716" aria-hidden="true" tabindex="-1"></a><span class="co">// convergencePlot draws each enabled filter's running RMSE (root-mean-</span></span>
-<span id="cb31-717"><a href="#cb31-717" aria-hidden="true" tabindex="-1"></a><span class="co">// square error against the true signal, accumulated from sample 0 up to</span></span>
-<span id="cb31-718"><a href="#cb31-718" aria-hidden="true" tabindex="-1"></a><span class="co">// sample i) vs sample index, for the entire run.</span></span>
-<span id="cb31-719"><a href="#cb31-719" aria-hidden="true" tabindex="-1"></a>convergencePlot <span class="op">=</span> {</span>
-<span id="cb31-720"><a href="#cb31-720" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> smaName <span class="op">=</span> <span class="st">"SMA running RMSE"</span></span>
-<span id="cb31-721"><a href="#cb31-721" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> emaName <span class="op">=</span> <span class="st">"EMA running RMSE"</span></span>
-<span id="cb31-722"><a href="#cb31-722" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> kalmanName <span class="op">=</span> <span class="st">"Kalman running RMSE"</span></span>
-<span id="cb31-723"><a href="#cb31-723" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-724"><a href="#cb31-724" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> runningRmse <span class="op">=</span> (errKey) <span class="kw">=&gt;</span> {</span>
-<span id="cb31-725"><a href="#cb31-725" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pts <span class="op">=</span> []</span>
-<span id="cb31-726"><a href="#cb31-726" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> sumSquares <span class="op">=</span> <span class="dv">0</span></span>
-<span id="cb31-727"><a href="#cb31-727" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
-<span id="cb31-728"><a href="#cb31-728" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> err <span class="op">=</span> result<span class="op">.</span><span class="at">rows</span>[i][errKey]</span>
-<span id="cb31-729"><a href="#cb31-729" aria-hidden="true" tabindex="-1"></a>      sumSquares <span class="op">+=</span> err <span class="op">*</span> err</span>
-<span id="cb31-730"><a href="#cb31-730" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> result<span class="op">.</span><span class="at">rows</span>[i]<span class="op">.</span><span class="at">i</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(sumSquares <span class="op">/</span> (i <span class="op">+</span> <span class="dv">1</span>))})</span>
-<span id="cb31-731"><a href="#cb31-731" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb31-732"><a href="#cb31-732" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pts</span>
-<span id="cb31-733"><a href="#cb31-733" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-734"><a href="#cb31-734" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-735"><a href="#cb31-735" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> marks <span class="op">=</span> []</span>
-<span id="cb31-736"><a href="#cb31-736" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> []</span>
-<span id="cb31-737"><a href="#cb31-737" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorRange <span class="op">=</span> []</span>
-<span id="cb31-738"><a href="#cb31-738" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-739"><a href="#cb31-739" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showSMA) {</span>
-<span id="cb31-740"><a href="#cb31-740" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(<span class="fu">runningRmse</span>(<span class="st">"smaErr"</span>)<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> smaName}))</span>
-<span id="cb31-741"><a href="#cb31-741" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(smaName)</span>
-<span id="cb31-742"><a href="#cb31-742" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">warn</span>)</span>
-<span id="cb31-743"><a href="#cb31-743" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-744"><a href="#cb31-744" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showEMA) {</span>
-<span id="cb31-745"><a href="#cb31-745" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(<span class="fu">runningRmse</span>(<span class="st">"emaErr"</span>)<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> emaName}))</span>
-<span id="cb31-746"><a href="#cb31-746" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(emaName)</span>
-<span id="cb31-747"><a href="#cb31-747" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">ok</span>)</span>
-<span id="cb31-748"><a href="#cb31-748" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-749"><a href="#cb31-749" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showKalman) {</span>
-<span id="cb31-750"><a href="#cb31-750" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(<span class="fu">runningRmse</span>(<span class="st">"kalmanErr"</span>)<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> kalmanName}))</span>
-<span id="cb31-751"><a href="#cb31-751" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(kalmanName)</span>
-<span id="cb31-752"><a href="#cb31-752" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">alt</span>)</span>
-<span id="cb31-753"><a href="#cb31-753" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb31-754"><a href="#cb31-754" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-755"><a href="#cb31-755" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
-<span id="cb31-756"><a href="#cb31-756" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
-<span id="cb31-757"><a href="#cb31-757" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"sample index"</span>}<span class="op">,</span></span>
-<span id="cb31-758"><a href="#cb31-758" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"running RMSE"</span>}<span class="op">,</span></span>
-<span id="cb31-759"><a href="#cb31-759" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
-<span id="cb31-760"><a href="#cb31-760" aria-hidden="true" tabindex="-1"></a>    marks</span>
-<span id="cb31-761"><a href="#cb31-761" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb31-762"><a href="#cb31-762" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}})</span>
-<span id="cb31-763"><a href="#cb31-763" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb31-764"><a href="#cb31-764" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb31-765"><a href="#cb31-765" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart<span class="op">,</span> legend)</span>
-<span id="cb31-766"><a href="#cb31-766" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
-<span id="cb31-767"><a href="#cb31-767" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="quarto-layout-panel" data-layout-ncol="2">
-<div class="quarto-layout-row">
-<div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="cell-output cell-output-display">
-<div id="ojs-cell-31" data-nodetype="declaration">
-
-</div>
-</div>
-</div>
-<div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
-<div class="cell-output cell-output-display">
-<div id="ojs-cell-32" data-nodetype="declaration">
-
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="callout callout-style-default callout-note callout-titled" title="Sample table">
-<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-<span class="screen-reader-only">Note</span>Sample table
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb32" data-startfrom="780" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 779;"><span id="cb32-780"><a href="#cb32-780" aria-hidden="true" tabindex="-1"></a><span class="co">// Sample table — shows every sample in the run, with every filter's</span></span>
-<span id="cb32-781"><a href="#cb32-781" aria-hidden="true" tabindex="-1"></a><span class="co">// estimate, the Kalman gain, and each method's error against the true</span></span>
-<span id="cb32-782"><a href="#cb32-782" aria-hidden="true" tabindex="-1"></a><span class="co">// signal.</span></span>
-<span id="cb32-783"><a href="#cb32-783" aria-hidden="true" tabindex="-1"></a>sampleTable <span class="op">=</span> {</span>
-<span id="cb32-784"><a href="#cb32-784" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
-<span id="cb32-785"><a href="#cb32-785" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
-<span id="cb32-786"><a href="#cb32-786" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
-<span id="cb32-787"><a href="#cb32-787" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
-<span id="cb32-788"><a href="#cb32-788" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb32-789"><a href="#cb32-789" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-790"><a href="#cb32-790" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
-<span id="cb32-791"><a href="#cb32-791" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) {</span>
-<span id="cb32-792"><a href="#cb32-792" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
-<span id="cb32-793"><a href="#cb32-793" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">i</span><span class="op">,</span></span>
-<span id="cb32-794"><a href="#cb32-794" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">x</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">3</span>)<span class="op">,</span></span>
-<span id="cb32-795"><a href="#cb32-795" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">trueVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
-<span id="cb32-796"><a href="#cb32-796" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">noisyVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
-<span id="cb32-797"><a href="#cb32-797" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">smaVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
-<span id="cb32-798"><a href="#cb32-798" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">emaVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
-<span id="cb32-799"><a href="#cb32-799" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">kalmanVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
-<span id="cb32-800"><a href="#cb32-800" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">kalmanGain</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
-<span id="cb32-801"><a href="#cb32-801" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">smaErr</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
-<span id="cb32-802"><a href="#cb32-802" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">emaErr</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
-<span id="cb32-803"><a href="#cb32-803" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">kalmanErr</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)</span>
-<span id="cb32-804"><a href="#cb32-804" aria-hidden="true" tabindex="-1"></a>    ])</span>
-<span id="cb32-805"><a href="#cb32-805" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb32-806"><a href="#cb32-806" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb32-807"><a href="#cb32-807" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
-<span id="cb32-808"><a href="#cb32-808" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
-<span id="cb32-809"><a href="#cb32-809" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"x"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(x)`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`z_i`</span><span class="op">,</span> <span class="st">"SMA"</span><span class="op">,</span> <span class="st">"EMA"</span><span class="op">,</span> <span class="st">"Kalman"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`K_i`</span><span class="op">,</span> <span class="st">"|SMA err|"</span><span class="op">,</span> <span class="st">"|EMA err|"</span><span class="op">,</span> <span class="st">"|Kalman err|"</span>]<span class="op">,</span></span>
-<span id="cb32-810"><a href="#cb32-810" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"x"</span><span class="op">,</span> <span class="st">"true f(x)"</span><span class="op">,</span> <span class="st">"noisy z_i"</span><span class="op">,</span> <span class="st">"SMA"</span><span class="op">,</span> <span class="st">"EMA"</span><span class="op">,</span> <span class="st">"Kalman"</span><span class="op">,</span> <span class="st">"Kalman gain K_i"</span><span class="op">,</span> <span class="st">"SMA abs error"</span><span class="op">,</span> <span class="st">"EMA abs error"</span><span class="op">,</span> <span class="st">"Kalman abs error"</span>]<span class="op">,</span></span>
-<span id="cb32-811"><a href="#cb32-811" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"1d-recursive-filters-samples.csv"</span><span class="op">,</span></span>
-<span id="cb32-812"><a href="#cb32-812" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
-<span id="cb32-813"><a href="#cb32-813" aria-hidden="true" tabindex="-1"></a>  })</span>
-<span id="cb32-814"><a href="#cb32-814" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-display">
-<div id="ojs-cell-33" data-nodetype="declaration">
-
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
 <p>Each of these filters updates a running estimate from only the previous estimate and the newest measurement <span class="math inline">\(z_i\)</span> — no stored history of the stream — which is what makes them run in <strong>O(1) memory and O(1) compute per sample</strong>. The <strong>simple moving average</strong> and <strong>exponential moving average</strong> (a.k.a. a first-order low-pass filter) both trade responsiveness for smoothness through a hand-picked constant (<span class="math inline">\(k\)</span> or <span class="math inline">\(\alpha\)</span>) that never changes:</p>
 <p><span class="math display">\[
 \text{SMA: } \hat x_i = \frac{1}{k}\sum_{j=i-k+1}^{i} z_j,
@@ -1691,6 +1501,196 @@ Authors: Apurva Nakade
 </div>
 <div class="vm-flow-loop-label">
 <p>next measurement</p>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled" title="Convergence plots">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Convergence plots
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb31" data-startfrom="740" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 739;"><span id="cb31-740"><a href="#cb31-740" aria-hidden="true" tabindex="-1"></a><span class="co">// iteratesPlot compares each filter's "weight on the newest sample" —</span></span>
+<span id="cb31-741"><a href="#cb31-741" aria-hidden="true" tabindex="-1"></a><span class="co">// the fraction of the new estimate that comes directly from the latest</span></span>
+<span id="cb31-742"><a href="#cb31-742" aria-hidden="true" tabindex="-1"></a><span class="co">// measurement rather than the filter's own history. For EMA this weight</span></span>
+<span id="cb31-743"><a href="#cb31-743" aria-hidden="true" tabindex="-1"></a><span class="co">// is the fixed constant 1-α; for SMA it's the fixed constant 1/k; for</span></span>
+<span id="cb31-744"><a href="#cb31-744" aria-hidden="true" tabindex="-1"></a><span class="co">// Kalman it's the gain K_i, which the filter adapts on its own every</span></span>
+<span id="cb31-745"><a href="#cb31-745" aria-hidden="true" tabindex="-1"></a><span class="co">// step.</span></span>
+<span id="cb31-746"><a href="#cb31-746" aria-hidden="true" tabindex="-1"></a>iteratesPlot <span class="op">=</span> {</span>
+<span id="cb31-747"><a href="#cb31-747" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> kalmanName <span class="op">=</span> <span class="st">"Kalman gain (adaptive)"</span></span>
+<span id="cb31-748"><a href="#cb31-748" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> emaName <span class="op">=</span> <span class="st">"EMA weight 1-α (fixed)"</span></span>
+<span id="cb31-749"><a href="#cb31-749" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> smaName <span class="op">=</span> <span class="st">"SMA weight 1/k (fixed)"</span></span>
+<span id="cb31-750"><a href="#cb31-750" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-751"><a href="#cb31-751" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> marks <span class="op">=</span> []</span>
+<span id="cb31-752"><a href="#cb31-752" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> []</span>
+<span id="cb31-753"><a href="#cb31-753" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorRange <span class="op">=</span> []</span>
+<span id="cb31-754"><a href="#cb31-754" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-755"><a href="#cb31-755" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showKalman) {</span>
+<span id="cb31-756"><a href="#cb31-756" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pts <span class="op">=</span> []</span>
+<span id="cb31-757"><a href="#cb31-757" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> row<span class="op">.</span><span class="at">i</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> row<span class="op">.</span><span class="at">kalmanGain</span>})</span>
+<span id="cb31-758"><a href="#cb31-758" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(pts<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> kalmanName}))</span>
+<span id="cb31-759"><a href="#cb31-759" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(kalmanName)</span>
+<span id="cb31-760"><a href="#cb31-760" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">alt</span>)</span>
+<span id="cb31-761"><a href="#cb31-761" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-762"><a href="#cb31-762" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-763"><a href="#cb31-763" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showEMA) {</span>
+<span id="cb31-764"><a href="#cb31-764" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">ruleY</span>([<span class="dv">1</span> <span class="op">-</span> alpha]<span class="op">,</span> {<span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> emaName<span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"4,3"</span>}))</span>
+<span id="cb31-765"><a href="#cb31-765" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(emaName)</span>
+<span id="cb31-766"><a href="#cb31-766" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">ok</span>)</span>
+<span id="cb31-767"><a href="#cb31-767" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-768"><a href="#cb31-768" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-769"><a href="#cb31-769" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showSMA) {</span>
+<span id="cb31-770"><a href="#cb31-770" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">ruleY</span>([<span class="dv">1</span> <span class="op">/</span> windowK]<span class="op">,</span> {<span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> smaName<span class="op">,</span> <span class="dt">strokeDasharray</span><span class="op">:</span> <span class="st">"4,3"</span>}))</span>
+<span id="cb31-771"><a href="#cb31-771" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(smaName)</span>
+<span id="cb31-772"><a href="#cb31-772" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">warn</span>)</span>
+<span id="cb31-773"><a href="#cb31-773" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-774"><a href="#cb31-774" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-775"><a href="#cb31-775" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb31-776"><a href="#cb31-776" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb31-777"><a href="#cb31-777" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"sample index"</span>}<span class="op">,</span></span>
+<span id="cb31-778"><a href="#cb31-778" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"weight on newest sample"</span><span class="op">,</span> <span class="dt">domain</span><span class="op">:</span> [<span class="dv">0</span><span class="op">,</span> <span class="dv">1</span>]}<span class="op">,</span></span>
+<span id="cb31-779"><a href="#cb31-779" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
+<span id="cb31-780"><a href="#cb31-780" aria-hidden="true" tabindex="-1"></a>    marks</span>
+<span id="cb31-781"><a href="#cb31-781" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb31-782"><a href="#cb31-782" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}})</span>
+<span id="cb31-783"><a href="#cb31-783" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-784"><a href="#cb31-784" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb31-785"><a href="#cb31-785" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart<span class="op">,</span> legend)</span>
+<span id="cb31-786"><a href="#cb31-786" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
+<span id="cb31-787"><a href="#cb31-787" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb31-788"><a href="#cb31-788" aria-hidden="true" tabindex="-1"></a><span class="co">// convergencePlot draws each enabled filter's running RMSE (root-mean-</span></span>
+<span id="cb31-789"><a href="#cb31-789" aria-hidden="true" tabindex="-1"></a><span class="co">// square error against the true signal, accumulated from sample 0 up to</span></span>
+<span id="cb31-790"><a href="#cb31-790" aria-hidden="true" tabindex="-1"></a><span class="co">// sample i) vs sample index, for the entire run.</span></span>
+<span id="cb31-791"><a href="#cb31-791" aria-hidden="true" tabindex="-1"></a>convergencePlot <span class="op">=</span> {</span>
+<span id="cb31-792"><a href="#cb31-792" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> smaName <span class="op">=</span> <span class="st">"SMA running RMSE"</span></span>
+<span id="cb31-793"><a href="#cb31-793" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> emaName <span class="op">=</span> <span class="st">"EMA running RMSE"</span></span>
+<span id="cb31-794"><a href="#cb31-794" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> kalmanName <span class="op">=</span> <span class="st">"Kalman running RMSE"</span></span>
+<span id="cb31-795"><a href="#cb31-795" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-796"><a href="#cb31-796" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> runningRmse <span class="op">=</span> (errKey) <span class="kw">=&gt;</span> {</span>
+<span id="cb31-797"><a href="#cb31-797" aria-hidden="true" tabindex="-1"></a>    <span class="kw">const</span> pts <span class="op">=</span> []</span>
+<span id="cb31-798"><a href="#cb31-798" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> sumSquares <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb31-799"><a href="#cb31-799" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="kw">let</span> i <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> i <span class="op">&lt;</span> result<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span><span class="op">;</span> i<span class="op">++</span>) {</span>
+<span id="cb31-800"><a href="#cb31-800" aria-hidden="true" tabindex="-1"></a>      <span class="kw">const</span> err <span class="op">=</span> result<span class="op">.</span><span class="at">rows</span>[i][errKey]</span>
+<span id="cb31-801"><a href="#cb31-801" aria-hidden="true" tabindex="-1"></a>      sumSquares <span class="op">+=</span> err <span class="op">*</span> err</span>
+<span id="cb31-802"><a href="#cb31-802" aria-hidden="true" tabindex="-1"></a>      pts<span class="op">.</span><span class="fu">push</span>({<span class="dt">x</span><span class="op">:</span> result<span class="op">.</span><span class="at">rows</span>[i]<span class="op">.</span><span class="at">i</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">sqrt</span>(sumSquares <span class="op">/</span> (i <span class="op">+</span> <span class="dv">1</span>))})</span>
+<span id="cb31-803"><a href="#cb31-803" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb31-804"><a href="#cb31-804" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pts</span>
+<span id="cb31-805"><a href="#cb31-805" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-806"><a href="#cb31-806" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-807"><a href="#cb31-807" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> marks <span class="op">=</span> []</span>
+<span id="cb31-808"><a href="#cb31-808" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorDomain <span class="op">=</span> []</span>
+<span id="cb31-809"><a href="#cb31-809" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> colorRange <span class="op">=</span> []</span>
+<span id="cb31-810"><a href="#cb31-810" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-811"><a href="#cb31-811" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showSMA) {</span>
+<span id="cb31-812"><a href="#cb31-812" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(<span class="fu">runningRmse</span>(<span class="st">"smaErr"</span>)<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> smaName}))</span>
+<span id="cb31-813"><a href="#cb31-813" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(smaName)</span>
+<span id="cb31-814"><a href="#cb31-814" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">warn</span>)</span>
+<span id="cb31-815"><a href="#cb31-815" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-816"><a href="#cb31-816" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showEMA) {</span>
+<span id="cb31-817"><a href="#cb31-817" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(<span class="fu">runningRmse</span>(<span class="st">"emaErr"</span>)<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> emaName}))</span>
+<span id="cb31-818"><a href="#cb31-818" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(emaName)</span>
+<span id="cb31-819"><a href="#cb31-819" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">ok</span>)</span>
+<span id="cb31-820"><a href="#cb31-820" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-821"><a href="#cb31-821" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (showKalman) {</span>
+<span id="cb31-822"><a href="#cb31-822" aria-hidden="true" tabindex="-1"></a>    marks<span class="op">.</span><span class="fu">push</span>(Plot<span class="op">.</span><span class="fu">lineY</span>(<span class="fu">runningRmse</span>(<span class="st">"kalmanErr"</span>)<span class="op">,</span> {<span class="dt">x</span><span class="op">:</span> <span class="st">"x"</span><span class="op">,</span> <span class="dt">y</span><span class="op">:</span> <span class="st">"y"</span><span class="op">,</span> <span class="dt">stroke</span><span class="op">:</span> () <span class="kw">=&gt;</span> kalmanName}))</span>
+<span id="cb31-823"><a href="#cb31-823" aria-hidden="true" tabindex="-1"></a>    colorDomain<span class="op">.</span><span class="fu">push</span>(kalmanName)</span>
+<span id="cb31-824"><a href="#cb31-824" aria-hidden="true" tabindex="-1"></a>    colorRange<span class="op">.</span><span class="fu">push</span>(chartColors<span class="op">.</span><span class="at">alt</span>)</span>
+<span id="cb31-825"><a href="#cb31-825" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb31-826"><a href="#cb31-826" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-827"><a href="#cb31-827" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> chart <span class="op">=</span> Plot<span class="op">.</span><span class="fu">plot</span>({</span>
+<span id="cb31-828"><a href="#cb31-828" aria-hidden="true" tabindex="-1"></a>    <span class="dt">width</span><span class="op">:</span> <span class="dv">340</span><span class="op">,</span> <span class="dt">height</span><span class="op">:</span> <span class="dv">300</span><span class="op">,</span> <span class="dt">marginLeft</span><span class="op">:</span> <span class="dv">46</span><span class="op">,</span></span>
+<span id="cb31-829"><a href="#cb31-829" aria-hidden="true" tabindex="-1"></a>    <span class="dt">x</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"sample index"</span>}<span class="op">,</span></span>
+<span id="cb31-830"><a href="#cb31-830" aria-hidden="true" tabindex="-1"></a>    <span class="dt">y</span><span class="op">:</span> {<span class="dt">label</span><span class="op">:</span> <span class="st">"running RMSE"</span>}<span class="op">,</span></span>
+<span id="cb31-831"><a href="#cb31-831" aria-hidden="true" tabindex="-1"></a>    <span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}<span class="op">,</span></span>
+<span id="cb31-832"><a href="#cb31-832" aria-hidden="true" tabindex="-1"></a>    marks</span>
+<span id="cb31-833"><a href="#cb31-833" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb31-834"><a href="#cb31-834" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> legend <span class="op">=</span> Plot<span class="op">.</span><span class="fu">legend</span>({<span class="dt">color</span><span class="op">:</span> {<span class="dt">domain</span><span class="op">:</span> colorDomain<span class="op">,</span> <span class="dt">range</span><span class="op">:</span> colorRange}})</span>
+<span id="cb31-835"><a href="#cb31-835" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-836"><a href="#cb31-836" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> container <span class="op">=</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb31-837"><a href="#cb31-837" aria-hidden="true" tabindex="-1"></a>  container<span class="op">.</span><span class="fu">append</span>(chart<span class="op">,</span> legend)</span>
+<span id="cb31-838"><a href="#cb31-838" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> container</span>
+<span id="cb31-839"><a href="#cb31-839" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="quarto-layout-panel" data-layout-ncol="2">
+<div class="quarto-layout-row">
+<div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-31" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+<div class="cell quarto-layout-cell" style="flex-basis: 50.0%;justify-content: flex-start;">
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-32" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled" title="Sample table">
+<div class="callout-header d-flex align-content-center collapsed" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Sample table
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-2" class="callout-2-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code hidden" id="cb32" data-startfrom="852" data-source-offset="0"><pre class="sourceCode js code-with-copy"><code class="sourceCode javascript" style="counter-reset: source-line 851;"><span id="cb32-852"><a href="#cb32-852" aria-hidden="true" tabindex="-1"></a><span class="co">// Sample table — shows every sample in the run, with every filter's</span></span>
+<span id="cb32-853"><a href="#cb32-853" aria-hidden="true" tabindex="-1"></a><span class="co">// estimate, the Kalman gain, and each method's error against the true</span></span>
+<span id="cb32-854"><a href="#cb32-854" aria-hidden="true" tabindex="-1"></a><span class="co">// signal.</span></span>
+<span id="cb32-855"><a href="#cb32-855" aria-hidden="true" tabindex="-1"></a>sampleTable <span class="op">=</span> {</span>
+<span id="cb32-856"><a href="#cb32-856" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (result<span class="op">.</span><span class="at">rows</span><span class="op">.</span><span class="at">length</span> <span class="op">===</span> <span class="dv">0</span>) {</span>
+<span id="cb32-857"><a href="#cb32-857" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Always return a Node so Quarto's OJS runtime never latches this</span></span>
+<span id="cb32-858"><a href="#cb32-858" aria-hidden="true" tabindex="-1"></a>    <span class="co">// declaration cell as hidden.</span></span>
+<span id="cb32-859"><a href="#cb32-859" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">document</span><span class="op">.</span><span class="fu">createElement</span>(<span class="st">"div"</span>)</span>
+<span id="cb32-860"><a href="#cb32-860" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb32-861"><a href="#cb32-861" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-862"><a href="#cb32-862" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> formattedRows <span class="op">=</span> []</span>
+<span id="cb32-863"><a href="#cb32-863" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> row <span class="kw">of</span> result<span class="op">.</span><span class="at">rows</span>) {</span>
+<span id="cb32-864"><a href="#cb32-864" aria-hidden="true" tabindex="-1"></a>    formattedRows<span class="op">.</span><span class="fu">push</span>([</span>
+<span id="cb32-865"><a href="#cb32-865" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">i</span><span class="op">,</span></span>
+<span id="cb32-866"><a href="#cb32-866" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">x</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb32-867"><a href="#cb32-867" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">trueVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
+<span id="cb32-868"><a href="#cb32-868" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">noisyVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
+<span id="cb32-869"><a href="#cb32-869" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">smaVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
+<span id="cb32-870"><a href="#cb32-870" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">emaVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
+<span id="cb32-871"><a href="#cb32-871" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">kalmanVal</span><span class="op">.</span><span class="fu">toPrecision</span>(<span class="dv">6</span>)<span class="op">,</span></span>
+<span id="cb32-872"><a href="#cb32-872" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">kalmanGain</span><span class="op">.</span><span class="fu">toFixed</span>(<span class="dv">4</span>)<span class="op">,</span></span>
+<span id="cb32-873"><a href="#cb32-873" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">smaErr</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb32-874"><a href="#cb32-874" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">emaErr</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)<span class="op">,</span></span>
+<span id="cb32-875"><a href="#cb32-875" aria-hidden="true" tabindex="-1"></a>      row<span class="op">.</span><span class="at">kalmanErr</span><span class="op">.</span><span class="fu">toExponential</span>(<span class="dv">3</span>)</span>
+<span id="cb32-876"><a href="#cb32-876" aria-hidden="true" tabindex="-1"></a>    ])</span>
+<span id="cb32-877"><a href="#cb32-877" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb32-878"><a href="#cb32-878" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-879"><a href="#cb32-879" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> VM<span class="op">.</span><span class="at">ui</span><span class="op">.</span><span class="fu">renderTable</span>({</span>
+<span id="cb32-880"><a href="#cb32-880" aria-hidden="true" tabindex="-1"></a>    html<span class="op">,</span></span>
+<span id="cb32-881"><a href="#cb32-881" aria-hidden="true" tabindex="-1"></a>    <span class="dt">headers</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"x"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`f(x)`</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`z_i`</span><span class="op">,</span> <span class="st">"SMA"</span><span class="op">,</span> <span class="st">"EMA"</span><span class="op">,</span> <span class="st">"Kalman"</span><span class="op">,</span> <span class="fu">tex</span><span class="vs">`K_i`</span><span class="op">,</span> <span class="st">"|SMA err|"</span><span class="op">,</span> <span class="st">"|EMA err|"</span><span class="op">,</span> <span class="st">"|Kalman err|"</span>]<span class="op">,</span></span>
+<span id="cb32-882"><a href="#cb32-882" aria-hidden="true" tabindex="-1"></a>    <span class="dt">csvHeaders</span><span class="op">:</span> [<span class="st">"i"</span><span class="op">,</span> <span class="st">"x"</span><span class="op">,</span> <span class="st">"true f(x)"</span><span class="op">,</span> <span class="st">"noisy z_i"</span><span class="op">,</span> <span class="st">"SMA"</span><span class="op">,</span> <span class="st">"EMA"</span><span class="op">,</span> <span class="st">"Kalman"</span><span class="op">,</span> <span class="st">"Kalman gain K_i"</span><span class="op">,</span> <span class="st">"SMA abs error"</span><span class="op">,</span> <span class="st">"EMA abs error"</span><span class="op">,</span> <span class="st">"Kalman abs error"</span>]<span class="op">,</span></span>
+<span id="cb32-883"><a href="#cb32-883" aria-hidden="true" tabindex="-1"></a>    <span class="dt">filename</span><span class="op">:</span> <span class="st">"1d-recursive-filters-samples.csv"</span><span class="op">,</span></span>
+<span id="cb32-884"><a href="#cb32-884" aria-hidden="true" tabindex="-1"></a>    <span class="dt">rows</span><span class="op">:</span> formattedRows</span>
+<span id="cb32-885"><a href="#cb32-885" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb32-886"><a href="#cb32-886" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div id="ojs-cell-33" data-nodetype="declaration">
+
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>

@@ -706,6 +706,24 @@ viewof stepControl = {
 
 </div>
 
+Both methods find a root of $f(x)=0$ without a derivative, by interpolating the most recent iterates and taking the point where the interpolant crosses the $x$-axis as the next iterate. Write $y_k = f(x_k)$.
+
+The **secant method** uses the line through the last two points $(x_{n-1}, y_{n-1})$ and $(x_n, y_n)$, replacing Newton's tangent line with a secant:
+
+$$
+x_{n+1}=x_n-y_n\,\frac{x_n-x_{n-1}}{y_n-y_{n-1}}.
+$$
+
+**Inverse quadratic interpolation** (IQI) uses the last three points, and fits $x$ as a quadratic function of $y$, a sideways parabola $x=q(y)$, rather than $y$ as a function of $x$. The next iterate is $x_{n+1}=q(0)$:
+
+$$
+x_{n+1}=\frac{x_{n-2}\,y_{n-1}\,y_n}{(y_{n-2}-y_{n-1})(y_{n-2}-y_n)}+\frac{x_{n-1}\,y_{n-2}\,y_n}{(y_{n-1}-y_{n-2})(y_{n-1}-y_n)}+\frac{x_n\,y_{n-2}\,y_{n-1}}{(y_n-y_{n-2})(y_n-y_{n-1})}.
+$$
+
+Because a sideways parabola crosses the $x$-axis exactly once, there is no need to solve a quadratic equation. (Read the same way, the secant line is $x$ as a linear function of $y$, evaluated at $y=0$.)
+
+Near a simple root the secant method converges with order $\varphi=(1+\sqrt5)/2\approx 1.62$ and IQI with order about $1.84$, both between bisection's linear rate and Newton's quadratic one. The slope of the log-log plot in "Convergence plots" estimates this order. Each method breaks down when two of the interpolated $f$-values coincide.
+
 :::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
@@ -876,23 +894,5 @@ iterationTable = {
 ```
 
 ::::
-
-Both methods find a root of $f(x)=0$ without a derivative, by interpolating the most recent iterates and taking the point where the interpolant crosses the $x$-axis as the next iterate. Write $y_k = f(x_k)$.
-
-The **secant method** uses the line through the last two points $(x_{n-1}, y_{n-1})$ and $(x_n, y_n)$, replacing Newton's tangent line with a secant:
-
-$$
-x_{n+1}=x_n-y_n\,\frac{x_n-x_{n-1}}{y_n-y_{n-1}}.
-$$
-
-**Inverse quadratic interpolation** (IQI) uses the last three points, and fits $x$ as a quadratic function of $y$, a sideways parabola $x=q(y)$, rather than $y$ as a function of $x$. The next iterate is $x_{n+1}=q(0)$:
-
-$$
-x_{n+1}=\frac{x_{n-2}\,y_{n-1}\,y_n}{(y_{n-2}-y_{n-1})(y_{n-2}-y_n)}+\frac{x_{n-1}\,y_{n-2}\,y_n}{(y_{n-1}-y_{n-2})(y_{n-1}-y_n)}+\frac{x_n\,y_{n-2}\,y_{n-1}}{(y_n-y_{n-2})(y_n-y_{n-1})}.
-$$
-
-Because a sideways parabola crosses the $x$-axis exactly once, there is no need to solve a quadratic equation. (Read the same way, the secant line is $x$ as a linear function of $y$, evaluated at $y=0$.)
-
-Near a simple root the secant method converges with order $\varphi=(1+\sqrt5)/2\approx 1.62$ and IQI with order about $1.84$, both between bisection's linear rate and Newton's quadratic one. The slope of the log-log plot in "Convergence plots" estimates this order. Each method breaks down when two of the interpolated $f$-values coincide.
 
 :::::::::

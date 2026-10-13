@@ -353,6 +353,8 @@ viewof outlierSeverity = {
 
 </div>
 
+Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes $\sum_i (y_i - \hat y_i)^2$; L1 minimizes $\sum_i |y_i - \hat y_i|$. Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier's residual — that's why it chases outliers. L1's penalty grows only linearly with distance, so an outlier costs the fit proportionally and never dominates the way it does for L2, which is why L1 is called a **robust** estimator. The tradeoff is computational: L2 has a closed-form solution, while L1 has none and must be solved iteratively — this page uses **iteratively reweighted least squares (IRLS)**, which is why L1's fit takes more iterations and more time than L2's, as the Fit comparison table shows.
+
 :::: {.callout-note collapse="true" title="Fit comparison"}
 
 ```{ojs}
@@ -391,9 +393,5 @@ L1's fit took **${result.l1.iterations}** reweighting iterations to converge at 
 ```
 
 ::::
-
-
-
-Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes $\sum_i (y_i - \hat y_i)^2$; L1 minimizes $\sum_i |y_i - \hat y_i|$. Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier's residual — that's why it chases outliers. L1's penalty grows only linearly with distance, so an outlier costs the fit proportionally and never dominates the way it does for L2, which is why L1 is called a **robust** estimator. The tradeoff is computational: L2 has a closed-form solution, while L1 has none and must be solved iteratively — this page uses **iteratively reweighted least squares (IRLS)**, which is why L1's fit takes more iterations and more time than L2's, as shown in the table above.
 
 :::::::::

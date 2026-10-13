@@ -493,6 +493,18 @@ viewof noiseLevel = {
 
 </div>
 
+A degree-$d$ least-squares fit chooses coefficients $\beta_0,\dots,\beta_d$ minimizing the sum of squared residuals over the $n$ data points:
+
+$$
+\hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
+$$
+
+A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider to push 6 points off a line and compare how degree 1–5 fits respond; click "Regenerate points" for a new line and noise pattern.
+
+The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — its training error stays at zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degrees 1 and 2 move far less with the noise, at the cost of never capturing real curvature either.
+
+Training error alone can't reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a **held-out validation or test set** — why train/validation/test splits and cross-validation are standard practice.
+
 :::: {.callout-note collapse="true" title="Model comparison"}
 
 ```{ojs}
@@ -559,17 +571,5 @@ errorPlot = {
 ```
 
 ::::
-
-A degree-$d$ least-squares fit chooses coefficients $\beta_0,\dots,\beta_d$ minimizing the sum of squared residuals over the $n$ data points:
-
-$$
-\hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
-$$
-
-A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider to push 6 points off a line and compare how degree 1–5 fits respond; click "Regenerate points" for a new line and noise pattern.
-
-The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — its training error stays at zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degrees 1 and 2 move far less with the noise, at the cost of never capturing real curvature either.
-
-Training error alone can't reveal this, since more parameters only ever lower it. Diagnosing overfitting requires a **held-out validation or test set** — why train/validation/test splits and cross-validation are standard practice.
 
 :::::::::

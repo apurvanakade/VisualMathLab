@@ -560,6 +560,25 @@ viewof tolExponent = {
 
 </div>
 
+## How it works
+
+The [explicit methods](../explicit-ode-methods/index.qmd) take every step with the same size $h$. An **adaptive** method instead picks a new $h$ at each step: small where the solution is changing quickly, large where it is nearly straight.
+
+To decide, it needs an estimate of the error a step makes. **RKF45** (Runge–Kutta–Fehlberg) gets one cheaply: from the same six slope evaluations it forms two approximations of $y(t + h)$, one of 4th order and one of 5th order. Their difference
+
+$$
+E = \bigl|\, y_{\text{5th}} - y_{\text{4th}} \,\bigr|
+$$
+
+is the error estimate for that step. It is then compared with the tolerance $\varepsilon$ set by the slider:
+
+- **Accept** if $E \le \varepsilon$: advance to $t + h$ using the 5th-order value.
+- **Reject** if $E > \varepsilon$: stay at $t$ and retry with a smaller $h$.
+
+Either way the next step size is $h \cdot 0.9\,(\varepsilon / E)^{1/5}$, so a step well inside tolerance grows $h$ and a step outside it shrinks $h$. The factor is capped between $0.1$ and $5$ so a single step can't change $h$ too drastically.
+
+A larger $\varepsilon$ means fewer, bigger steps and a rougher curve; a smaller $\varepsilon$ means more steps and a curve that hugs the reference solution.
+
 :::: {.callout-note collapse="true" title="Step table"}
 
 ```{ojs}
@@ -595,24 +614,5 @@ iterationTable = {
 ```
 
 ::::
-
-## How it works
-
-The [explicit methods](../explicit-ode-methods/index.qmd) take every step with the same size $h$. An **adaptive** method instead picks a new $h$ at each step: small where the solution is changing quickly, large where it is nearly straight.
-
-To decide, it needs an estimate of the error a step makes. **RKF45** (Runge–Kutta–Fehlberg) gets one cheaply: from the same six slope evaluations it forms two approximations of $y(t + h)$, one of 4th order and one of 5th order. Their difference
-
-$$
-E = \bigl|\, y_{\text{5th}} - y_{\text{4th}} \,\bigr|
-$$
-
-is the error estimate for that step. It is then compared with the tolerance $\varepsilon$ set by the slider:
-
-- **Accept** if $E \le \varepsilon$: advance to $t + h$ using the 5th-order value.
-- **Reject** if $E > \varepsilon$: stay at $t$ and retry with a smaller $h$.
-
-Either way the next step size is $h \cdot 0.9\,(\varepsilon / E)^{1/5}$, so a step well inside tolerance grows $h$ and a step outside it shrinks $h$. The factor is capped between $0.1$ and $5$ so a single step can't change $h$ too drastically.
-
-A larger $\varepsilon$ means fewer, bigger steps and a rougher curve; a smaller $\varepsilon$ means more steps and a curve that hugs the reference solution.
 
 :::::::::

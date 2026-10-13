@@ -568,6 +568,29 @@ viewof tolExponent = {
 
 </div>
 
+## How it works
+
+[Numerical integration](../numerical-integration/index.qmd) lays a fixed grid over $[a,b]$ and uses the same panel width everywhere. An **adaptive** method instead subdivides only where it has to: narrow panels where $f$ wiggles or turns sharply, wide ones where $f$ is nearly a parabola already.
+
+To decide, it needs an estimate of the error a panel makes. Simpson's rule on $[p,q]$ with midpoint $m = (p+q)/2$ is
+
+$$
+S[p,q] = \frac{q-p}{6}\Bigl(f(p) + 4f(m) + f(q)\Bigr),
+$$
+
+and the same panel split in half gives a second, finer estimate $S[p,m] + S[m,q]$. Since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of $16$, so the difference between the two is almost all error:
+
+$$
+E = \frac{\bigl|\, S[p,m] + S[m,q] - S[p,q] \,\bigr|}{15}.
+$$
+
+It is then compared with the tolerance $\varepsilon$ set by the slider:
+
+- **Accept** if $E \le \varepsilon$: keep $[p,q]$ as a panel of the final partition, using the finer estimate.
+- **Refine** if $E > \varepsilon$: bisect at $m$ and recurse on each half with $\varepsilon/2$, so the total error stays bounded by the original tolerance.
+
+A larger $\varepsilon$ means fewer, wider panels and a coarser partition; a smaller $\varepsilon$ means more panels, clustered exactly where $f$ is hardest to approximate.
+
 :::: {.callout-note collapse="true" title="Partition table"}
 
 ```{ojs}
@@ -605,28 +628,5 @@ iterationTable = {
 ```
 
 ::::
-
-## How it works
-
-[Numerical integration](../numerical-integration/index.qmd) lays a fixed grid over $[a,b]$ and uses the same panel width everywhere. An **adaptive** method instead subdivides only where it has to: narrow panels where $f$ wiggles or turns sharply, wide ones where $f$ is nearly a parabola already.
-
-To decide, it needs an estimate of the error a panel makes. Simpson's rule on $[p,q]$ with midpoint $m = (p+q)/2$ is
-
-$$
-S[p,q] = \frac{q-p}{6}\Bigl(f(p) + 4f(m) + f(q)\Bigr),
-$$
-
-and the same panel split in half gives a second, finer estimate $S[p,m] + S[m,q]$. Since Simpson's error scales like $h^4$, halving $h$ shrinks it by a factor of $16$, so the difference between the two is almost all error:
-
-$$
-E = \frac{\bigl|\, S[p,m] + S[m,q] - S[p,q] \,\bigr|}{15}.
-$$
-
-It is then compared with the tolerance $\varepsilon$ set by the slider:
-
-- **Accept** if $E \le \varepsilon$: keep $[p,q]$ as a panel of the final partition, using the finer estimate.
-- **Refine** if $E > \varepsilon$: bisect at $m$ and recurse on each half with $\varepsilon/2$, so the total error stays bounded by the original tolerance.
-
-A larger $\varepsilon$ means fewer, wider panels and a coarser partition; a smaller $\varepsilon$ means more panels, clustered exactly where $f$ is hardest to approximate.
 
 :::::::::

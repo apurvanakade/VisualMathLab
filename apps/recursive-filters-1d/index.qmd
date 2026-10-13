@@ -661,6 +661,78 @@ viewof R = {
 
 </div>
 
+Each of these filters updates a running estimate from only the previous estimate and the newest measurement $z_i$ — no stored history of the stream — which is what makes them run in **O(1) memory and O(1) compute per sample**. The **simple moving average** and **exponential moving average** (a.k.a. a first-order low-pass filter) both trade responsiveness for smoothness through a hand-picked constant ($k$ or $\alpha$) that never changes:
+
+$$
+\text{SMA: } \hat x_i = \frac{1}{k}\sum_{j=i-k+1}^{i} z_j,
+\qquad
+\text{EMA: } \hat x_i = \alpha\, \hat x_{i-1} + (1-\alpha)\, z_i.
+$$
+
+The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples), and $R$, the assumed sensor-noise variance (how noisy each measurement is).
+
+:::::: {.vm-flow}
+
+::::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Start]{.vm-flow-label}
+
+Set $\hat x_0 \leftarrow z_0$
+
+Set $P_0 \leftarrow R$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-to}
+::: {.vm-flow-phase-label}
+Predict
+:::
+
+::: {.vm-flow-box}
+[Grow variance]{.vm-flow-label}
+
+Set $\bar P_i \leftarrow P_{i-1} + Q$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase}
+::: {.vm-flow-phase-label}
+Update
+:::
+
+::: {.vm-flow-box .vm-flow-in}
+[Measure]{.vm-flow-label}
+
+$z_i$: the newest noisy measurement
+:::
+
+::: {.vm-flow-box}
+[Compute Gain]{.vm-flow-label}
+
+Set $K_i \leftarrow \bar P_i \big/ \bigl(\bar P_i + R\bigr)$
+:::
+
+::: {.vm-flow-box .vm-flow-out}
+[Update estimate]{.vm-flow-label}
+
+Set ${\hat x_i \leftarrow (1 - K_i)\, \hat x_{i-1} + K_i\, z_i}$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-from}
+::: {.vm-flow-box}
+[Update variance]{.vm-flow-label}
+
+Set $P_i \leftarrow (1 - K_i)\, \bar P_i$
+:::
+
+::: {.vm-flow-loop-label}
+next measurement
+:::
+:::::
+
+::::::
+
 :::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
@@ -816,78 +888,6 @@ sampleTable = {
 ```
 
 ::::
-
-Each of these filters updates a running estimate from only the previous estimate and the newest measurement $z_i$ — no stored history of the stream — which is what makes them run in **O(1) memory and O(1) compute per sample**. The **simple moving average** and **exponential moving average** (a.k.a. a first-order low-pass filter) both trade responsiveness for smoothness through a hand-picked constant ($k$ or $\alpha$) that never changes:
-
-$$
-\text{SMA: } \hat x_i = \frac{1}{k}\sum_{j=i-k+1}^{i} z_j,
-\qquad
-\text{EMA: } \hat x_i = \alpha\, \hat x_{i-1} + (1-\alpha)\, z_i.
-$$
-
-The **Kalman filter** instead maintains a running estimate of its own uncertainty $P_i$ and derives its gain from it at every step, given only two beliefs about the noise: $Q$, the assumed process-noise variance (how much the true value is expected to drift between samples), and $R$, the assumed sensor-noise variance (how noisy each measurement is).
-
-:::::: {.vm-flow}
-
-::::: {.vm-flow-step}
-::: {.vm-flow-box}
-[Start]{.vm-flow-label}
-
-Set $\hat x_0 \leftarrow z_0$
-
-Set $P_0 \leftarrow R$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-to}
-::: {.vm-flow-phase-label}
-Predict
-:::
-
-::: {.vm-flow-box}
-[Grow variance]{.vm-flow-label}
-
-Set $\bar P_i \leftarrow P_{i-1} + Q$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase}
-::: {.vm-flow-phase-label}
-Update
-:::
-
-::: {.vm-flow-box .vm-flow-in}
-[Measure]{.vm-flow-label}
-
-$z_i$: the newest noisy measurement
-:::
-
-::: {.vm-flow-box}
-[Compute Gain]{.vm-flow-label}
-
-Set $K_i \leftarrow \bar P_i \big/ \bigl(\bar P_i + R\bigr)$
-:::
-
-::: {.vm-flow-box .vm-flow-out}
-[Update estimate]{.vm-flow-label}
-
-Set ${\hat x_i \leftarrow (1 - K_i)\, \hat x_{i-1} + K_i\, z_i}$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-from}
-::: {.vm-flow-box}
-[Update variance]{.vm-flow-label}
-
-Set $P_i \leftarrow (1 - K_i)\, \bar P_i$
-:::
-
-::: {.vm-flow-loop-label}
-next measurement
-:::
-:::::
-
-::::::
 
 ## References
 

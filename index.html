@@ -50,31 +50,31 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-39c5bf676fe5f74c3e2352cc4d0198db.css" rel="stylesheet" class="quarto-color-scheme-extra" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-d71b394cfec3f5d196965bb32079d76c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
-<link href="site_libs/bootstrap/bootstrap-dark-ea04064fa629b1c0b203013179750073.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
-<link href="site_libs/bootstrap/bootstrap-d71b394cfec3f5d196965bb32079d76c.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-bbf1b6af7908be287788036a3bd1716b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-dark-ec971fa103426dbc384cff6b54064981.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<link href="site_libs/bootstrap/bootstrap-bbf1b6af7908be287788036a3bd1716b.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme-extra" id="quarto-bootstrap" data-mode="light">
 <meta name="referrer" content="same-origin">
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="site_libs/quarto-contrib/mathviz-0.2.0/mathviz.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-0.2.0/mathviz.css" rel="stylesheet">
-<script src="site_libs/quarto-contrib/mathviz-sidebar-rail-0.2.0/sidebar-rail.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-sidebar-rail-0.2.0/sidebar-rail.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-0.2.1/mathviz.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-0.2.1/mathviz.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-sidebar-rail-0.2.1/sidebar-rail.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-sidebar-rail-0.2.1/sidebar-rail.css" rel="stylesheet">
 <meta name="mathviz:sidebar-pin-key" content="vml-sidebar-pinned">
-<script src="site_libs/quarto-contrib/mathviz-mobile-warning-0.2.0/mobile-warning.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-mobile-warning-0.2.0/mobile-warning.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-mobile-warning-0.2.1/mobile-warning.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-mobile-warning-0.2.1/mobile-warning.css" rel="stylesheet">
 <meta name="mathviz:mobile-warning-key" content="vml-mobile-warning-dismissed">
-<script src="site_libs/quarto-contrib/mathviz-embed-0.2.0/embed.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-embed-0.2.0/embed.css" rel="stylesheet">
-<script src="site_libs/quarto-contrib/mathviz-chrome-site-0.2.0/site.js"></script>
-<script src="site_libs/quarto-contrib/mathviz-share-0.2.0/share.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-share-0.2.0/share.css" rel="stylesheet">
-<meta name="mathviz:share-embed-docs" content="embed.html">
+<script src="site_libs/quarto-contrib/mathviz-embed-0.2.1/embed.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-embed-0.2.1/embed.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-chrome-site-0.2.1/site.js"></script>
+<script src="site_libs/quarto-contrib/mathviz-share-0.2.1/share.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-share-0.2.1/share.css" rel="stylesheet">
 <meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
-<script src="site_libs/quarto-contrib/mathviz-report-bug-0.2.0/report-bug.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-report-bug-0.2.0/report-bug.css" rel="stylesheet">
+<meta name="mathviz:share-embed-docs" content="embed.html">
+<script src="site_libs/quarto-contrib/mathviz-report-bug-0.2.1/report-bug.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-report-bug-0.2.1/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
-<link href="site_libs/quarto-contrib/mathviz-fonts-0.2.0/fonts.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/mathviz-fonts-0.2.1/fonts.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -624,11 +624,20 @@ Authors: Apurva Nakade
    page-local to the compiled index.html. */
 #title-block-header { display: none; }
 
-/* Hero: centered title, kicker and call-to-action around the looping SVG
-   illustration below. Homepage-only, so it lives here. */
+/* Hero: title, kicker, intro and call-to-action in a left-aligned
+   column, with the looping SVG illustration beside it on the right.
+   Below 768px the two stack, the illustration under the text.
+   Homepage-only, so it lives here. */
 .vm-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem;
+  align-items: center;
   margin: 1rem 0 2.5rem;
-  text-align: center;
+}
+
+.vm-hero-text {
+  text-align: left;
 }
 
 .vm-hero-title {
@@ -644,14 +653,26 @@ Authors: Apurva Nakade
   font-size: 1.1rem;
 }
 
+.vm-hero-intro {
+  margin: 1rem 0 1.25rem;
+}
+
 .hero-visual {
-  max-width: 460px;
-  margin: 1.25rem auto;
+  pointer-events: none;
 }
 
 .hero-visual-plot {
+  display: block;
   width: 100%;
-  height: 260px;
+  height: auto;
+  aspect-ratio: 460 / 260;
+}
+
+@media (max-width: 767.98px) {
+  .vm-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
 }
 
 .vm-hero-cta {
@@ -669,6 +690,23 @@ Authors: Apurva Nakade
   background: var(--vm-accent-hover);
   color: var(--vm-bg);
   text-decoration: none;
+}
+
+.vm-hero-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.vm-hero-cta-secondary {
+  background: transparent;
+  color: var(--vm-accent);
+  box-shadow: inset 0 0 0 1px var(--vm-accent);
+}
+
+.vm-hero-cta-secondary:hover {
+  background: var(--vm-surface-hover);
+  color: var(--vm-accent);
 }
 
 /* "Random app": one app in an <iframe>, framed the way embed.qmd
@@ -724,44 +762,39 @@ Authors: Apurva Nakade
   font-weight: 600;
 }
 
-/* Rotation between the hero's three illustration scenes. Each scene's own
-   internal animations keep their independent 12s duration/keyframes
-   unchanged; because 36s / 12s = 3 exactly, every scene's internal loop
-   is always back at its own phase 0 the instant the wrapper reveals it,
-   so no rescaling of any scene's internal percentages is needed. */
+/* Rotation between the hero's six illustration scenes. Every scene's
+   internal animations run on one --hero-cycle, and the rotation shows each
+   scene for exactly one cycle, starting at a whole multiple of it (the
+   --slot delay), so a scene's internal loop is always back at its own
+   phase 0 the instant the rotation reveals it. Change the pace here. */
+.hero-visual {
+  --hero-cycle: 8s;
+}
+
 .hero-scene {
   opacity: 0;
-  animation-duration: 36s;
+  animation-name: hero-scene;
+  animation-duration: calc(6 * var(--hero-cycle));
+  animation-delay: calc(var(--slot) * var(--hero-cycle));
   animation-timing-function: linear;
   animation-iteration-count: infinite;
 }
 
-.hero-scene-newton { animation-name: hero-scene-newton; }
-.hero-scene-kalman { animation-name: hero-scene-kalman; }
-.hero-scene-sperner { animation-name: hero-scene-sperner; }
+.hero-scene-newton { --slot: 0; }
+.hero-scene-spiro { --slot: 1; }
+.hero-scene-kalman { --slot: 2; }
+.hero-scene-integral { --slot: 3; }
+.hero-scene-sperner { --slot: 4; }
+.hero-scene-fixed { --slot: 5; }
 
-@keyframes hero-scene-newton {
-  0%, 32% { opacity: 1; }
-  33% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-@keyframes hero-scene-kalman {
-  0%, 33% { opacity: 0; }
-  34%, 65% { opacity: 1; }
-  66% { opacity: 0; }
-  100% { opacity: 0; }
-}
-
-@keyframes hero-scene-sperner {
-  0%, 66% { opacity: 0; }
-  67%, 99% { opacity: 1; }
-  100% { opacity: 0; }
+@keyframes hero-scene {
+  0%, 16.4% { opacity: 1; }
+  16.67%, 100% { opacity: 0; }
 }
 
 /* Newton's-method loop: exactly one stage is visible at a time (point0,
    then each tangent+point group), crossfading into the next on a shared
-   12s cycle so they stay in phase forever without any JS driving them.
+   --hero-cycle so they stay in phase forever without any JS driving them.
    Within each group, the tangent/guide lines "draw" in via a moving
    stroke-dashoffset and the new point pops in with a small scale
    overshoot, layered on top of the parent group's opacity crossfade.
@@ -772,7 +805,7 @@ Authors: Apurva Nakade
 .hero-newton-group2,
 .hero-newton-group3 {
   opacity: 0;
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
@@ -783,7 +816,7 @@ Authors: Apurva Nakade
 .hero-newton-group3 { animation-name: hero-newton-group3; }
 
 .hero-newton-draw1, .hero-newton-draw2, .hero-newton-draw3 {
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: ease-out;
   animation-iteration-count: infinite;
 }
@@ -791,7 +824,7 @@ Authors: Apurva Nakade
 .hero-newton-pop1, .hero-newton-pop2, .hero-newton-pop3 {
   transform-box: fill-box;
   transform-origin: center;
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
   animation-iteration-count: infinite;
 }
@@ -864,10 +897,10 @@ Authors: Apurva Nakade
 /* Noisy-to-smooth filter loop: the scattered measurements fade in first,
    then the filtered estimate draws itself across left to right via a
    moving stroke-dashoffset, holds, then everything fades out together.
-   Same 12s internal duration as the Newton scene, for the same reason. */
+   Same --hero-cycle as the Newton scene, for the same reason. */
 .hero-kalman-dots, .hero-kalman-smooth {
   opacity: 0;
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
@@ -893,16 +926,16 @@ Authors: Apurva Nakade
 /* Sperner's-lemma loop: the triangle assembles itself piece by piece
    (outer edges, corner colors, inner subdivision, midpoint colors, then
    the trichromatic triangle highlight), holds the complete picture, then
-   fades out together. Same 12s internal duration as the other scenes. */
+   fades out together. Same --hero-cycle as the other scenes. */
 .hero-sperner-outer, .hero-sperner-corners, .hero-sperner-inner, .hero-sperner-mid-dots, .hero-sperner-highlight {
   opacity: 0;
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
 
 .hero-sperner-draw-outer, .hero-sperner-draw-inner {
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: ease-out;
   animation-iteration-count: infinite;
 }
@@ -910,7 +943,7 @@ Authors: Apurva Nakade
 .hero-sperner-pop-outer, .hero-sperner-pop-inner {
   transform-box: fill-box;
   transform-origin: center;
-  animation-duration: 12s;
+  animation-duration: var(--hero-cycle);
   animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
   animation-iteration-count: infinite;
 }
@@ -984,22 +1017,147 @@ Authors: Apurva Nakade
   40% { transform: scale(1.15); }
   44%, 100% { transform: scale(1); }
 }
+/* Spirograph loop: the outer hypotrochoid draws itself (a moving
+   stroke-dashoffset over a pathLength of 1), the inner epitrochoid
+   follows, both hold, then fade out together. */
+.hero-spiro-a, .hero-spiro-b {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-duration: var(--hero-cycle);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-spiro-a { animation-name: hero-spiro-a; }
+.hero-spiro-b { animation-name: hero-spiro-b; }
+
+@keyframes hero-spiro-a {
+  0% { stroke-dashoffset: 1; opacity: 1; }
+  55% { stroke-dashoffset: 0; }
+  86% { opacity: 1; }
+  94%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes hero-spiro-b {
+  0%, 35% { stroke-dashoffset: 1; opacity: 1; }
+  75% { stroke-dashoffset: 0; }
+  86% { opacity: 1; }
+  94%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* Numerical-integration loop: midpoint-rule rectangles grow up from the
+   axis, 4 of them, then 8, then 16, each refinement replacing the last,
+   until the exact area fills in under the curve; then everything fades. */
+.hero-integral-rects, .hero-integral-area {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation-duration: var(--hero-cycle);
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+
+.hero-integral-n4 { animation-name: hero-integral-n4; }
+.hero-integral-n8 { animation-name: hero-integral-n8; }
+.hero-integral-n16 { animation-name: hero-integral-n16; }
+.hero-integral-area { animation-name: hero-integral-area; }
+
+@keyframes hero-integral-n4 {
+  0%, 4% { opacity: 1; transform: scaleY(0); }
+  14% { transform: scaleY(1); }
+  28% { opacity: 1; transform: scaleY(1); }
+  32%, 100% { opacity: 0; transform: scaleY(1); }
+}
+
+@keyframes hero-integral-n8 {
+  0%, 28% { opacity: 0; transform: scaleY(0); }
+  30% { opacity: 1; }
+  40% { transform: scaleY(1); }
+  52% { opacity: 1; transform: scaleY(1); }
+  56%, 100% { opacity: 0; transform: scaleY(1); }
+}
+
+@keyframes hero-integral-n16 {
+  0%, 52% { opacity: 0; transform: scaleY(0); }
+  54% { opacity: 1; }
+  64% { transform: scaleY(1); }
+  86% { opacity: 1; transform: scaleY(1); }
+  94%, 100% { opacity: 0; transform: scaleY(1); }
+}
+
+@keyframes hero-integral-area {
+  0%, 66% { opacity: 0; }
+  74%, 86% { opacity: 1; }
+  94%, 100% { opacity: 0; }
+}
+
+/* Fixed-point-iteration loop: from a starting guess on the axis, the
+   cobweb (up to the curve, across to y = x, repeat) draws itself in and
+   spirals onto the fixed point of cos x, which pops in once it lands. */
+.hero-fixed-web, .hero-fixed-start, .hero-fixed-point {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-duration: var(--hero-cycle);
+  animation-iteration-count: infinite;
+}
+
+.hero-fixed-web {
+  stroke-dasharray: 1;
+  animation-name: hero-fixed-web;
+  animation-timing-function: ease-out;
+}
+
+.hero-fixed-start { animation-name: hero-fixed-start; animation-timing-function: ease-in-out; }
+
+.hero-fixed-point {
+  opacity: 0;
+  animation-name: hero-fixed-point;
+  animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes hero-fixed-web {
+  0%, 8% { stroke-dashoffset: 1; opacity: 1; }
+  68% { stroke-dashoffset: 0; }
+  86% { opacity: 1; }
+  94%, 100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes hero-fixed-start {
+  0% { opacity: 0; transform: scale(0.3); }
+  6% { opacity: 1; transform: scale(1); }
+  86% { opacity: 1; }
+  94%, 100% { opacity: 0; }
+}
+
+@keyframes hero-fixed-point {
+  0%, 66% { opacity: 0; transform: scale(0.3); }
+  72% { opacity: 1; transform: scale(1.25); }
+  76%, 86% { opacity: 1; transform: scale(1); }
+  94%, 100% { opacity: 0; transform: scale(1); }
+}
 </style>
 <div class="vm-hero">
+<div class="vm-hero-text">
 <h1 class="vm-hero-title">
 Visual Math Lab
 </h1>
 <p class="vm-hero-kicker">
 A picture is worth a thousand equations.
 </p>
+<p class="vm-hero-intro">
+Here you’ll find root finders, ODE solvers, splines, filters and the odd spirograph, all running live in your browser. Change the inputs and watch what the method does. Apps come loaded with examples, including ones where things go wrong, because seeing a method fail teaches as much as seeing it work.
+</p>
+<div class="vm-hero-ctas">
+<p><a class="vm-hero-cta" href="#browse-topics">Browse by topic</a> <a class="vm-hero-cta vm-hero-cta-secondary" href="#gallery">Browse the gallery</a></p>
+</div>
+</div>
 <div class="hero-visual">
-<svg class="hero-visual-plot" viewbox="0 0 460 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Looping rotation of three animated illustrations: Newton's method converging on a root, a filter smoothing a noisy signal into a clean estimate, and Sperner's lemma coloring a triangulated triangle to reveal a trichromatic triangle.">
-<defs> <filter id="hero-newton-glow" x="-60%" y="-60%" width="220%" height="220%"> <fegaussianblur stddeviation="2.5" result="blur"></fegaussianblur> <femerge> <femergenode in="blur"></femergenode> <femergenode in="SourceGraphic"></femergenode> </femerge> </filter> <lineargradient id="hero-sperner-rainbow" x1="0%" y1="0%" x2="100%" y2="100%"> <stop offset="0%" stop-color="#ca8a04"></stop> <stop offset="50%" stop-color="#0d9488"></stop> <stop offset="100%" stop-color="#c026d3"></stop> </lineargradient> </defs> <!-- scene 1/3: Newton's method finding a root of f(x) = x^2 - 2, starting from x = 2.2 --> <g class="hero-scene hero-scene-newton"> <line x1="20" y1="172.8" x2="440" y2="172.8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"></line> <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="20.0,226.3 26.0,227.5 32.0,228.7 38.0,229.8 44.0,230.7 50.0,231.5 56.0,232.2 62.0,232.8 68.0,233.2 74.0,233.6 80.0,233.8 86.0,233.9 92.0,233.9 98.0,233.7 104.0,233.4 110.0,233.1 116.0,232.6 122.0,231.9 128.0,231.2 134.0,230.3 140.0,229.3 146.0,228.2 152.0,227.0 158.0,225.7 164.0,224.2 170.0,222.6 176.0,220.9 182.0,219.1 188.0,217.2 194.0,215.1 200.0,212.9 206.0,210.6 212.0,208.2 218.0,205.6 224.0,203.0 230.0,200.2 236.0,197.3 242.0,194.3 248.0,191.1 254.0,187.9 260.0,184.5 266.0,181.0 272.0,177.4 278.0,173.6 284.0,169.8 290.0,165.8 296.0,161.7 302.0,157.5 308.0,153.1 314.0,148.7 320.0,144.1 326.0,139.4 332.0,134.6 338.0,129.6 344.0,124.6 350.0,119.4 356.0,114.1 362.0,108.7 368.0,103.1 374.0,97.5 380.0,91.7 386.0,85.8 392.0,79.8 398.0,73.7 404.0,67.4 410.0,61.0 416.0,54.5 422.0,47.9 428.0,41.2 434.0,34.3 440.0,27.3"></polyline> <circle class="hero-newton-point0" cx="385.8" cy="86.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> <g class="hero-newton-group1"> <line class="hero-newton-draw1" x1="385.8" y1="86.0" x2="298.4" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)"></line> <line x1="298.4" y1="172.8" x2="298.4" y2="160.0" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4"></line> <circle class="hero-newton-pop1" cx="298.4" cy="160.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> </g> <g class="hero-newton-group2"> <line class="hero-newton-draw2" x1="298.4" y1="160.0" x2="280.2" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)"></line> <line x1="280.2" y1="172.8" x2="280.2" y2="172.2" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4"></line> <circle class="hero-newton-pop2" cx="280.2" cy="172.2" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> </g> <g class="hero-newton-group3"> <line class="hero-newton-draw3" x1="280.2" y1="172.2" x2="279.3" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)"></line> <circle class="hero-newton-pop3" cx="279.3" cy="172.8" r="7" fill="#16a34a" stroke="white" stroke-width="1.5" filter="url(#hero-newton-glow)"></circle> </g> </g> <!-- scene 2/3: a filter smoothing a noisy signal into a clean estimate --> <g class="hero-scene hero-scene-kalman"> <g class="hero-kalman-dots"> <circle cx="33.1" cy="77.7" r="4" fill="#94a3b8"></circle> <circle cx="59.4" cy="69.1" r="4" fill="#94a3b8"></circle> <circle cx="85.6" cy="42.6" r="4" fill="#94a3b8"></circle> <circle cx="111.9" cy="52.0" r="4" fill="#94a3b8"></circle> <circle cx="138.1" cy="60.0" r="4" fill="#94a3b8"></circle> <circle cx="164.4" cy="67.1" r="4" fill="#94a3b8"></circle> <circle cx="190.6" cy="99.9" r="4" fill="#94a3b8"></circle> <circle cx="216.9" cy="175.0" r="4" fill="#94a3b8"></circle> <circle cx="243.1" cy="215.3" r="4" fill="#94a3b8"></circle> <circle cx="269.4" cy="230.1" r="4" fill="#94a3b8"></circle> <circle cx="295.6" cy="225.9" r="4" fill="#94a3b8"></circle> <circle cx="321.9" cy="175.0" r="4" fill="#94a3b8"></circle> <circle cx="348.1" cy="162.6" r="4" fill="#94a3b8"></circle> <circle cx="374.4" cy="137.4" r="4" fill="#94a3b8"></circle> <circle cx="400.6" cy="96.6" r="4" fill="#94a3b8"></circle> <circle cx="426.9" cy="41.8" r="4" fill="#94a3b8"></circle> </g> <polyline class="hero-kalman-smooth" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="680" filter="url(#hero-newton-glow)" points="20.0,119.8 25.3,107.7 30.5,96.4 35.8,86.1 41.0,77.0 46.3,69.3 51.5,62.8 56.8,57.8 62.0,54.0 67.3,51.4 72.5,49.8 77.8,49.1 83.0,49.1 88.3,49.6 93.5,50.3 98.8,51.2 104.0,52.1 109.3,52.9 114.5,53.6 119.8,54.1 125.0,54.5 130.3,54.9 135.5,55.4 140.8,56.1 146.0,57.3 151.3,59.1 156.5,61.7 161.8,65.3 167.0,70.0 172.3,75.8 177.5,83.0 182.8,91.3 188.0,100.8 193.3,111.4 198.5,122.9 203.8,135.0 209.0,147.6 214.3,160.3 219.5,172.8 224.8,184.8 230.0,196.0 235.3,206.2 240.5,215.1 245.8,222.4 251.0,228.2 256.3,232.3 261.5,234.6 266.8,235.2 272.0,234.3 277.3,231.9 282.5,228.3 287.8,223.7 293.0,218.2 298.3,212.3 303.5,206.0 308.8,199.6 314.0,193.3 319.3,187.2 324.5,181.4 329.8,176.0 335.0,171.0 340.3,166.3 345.5,161.8 350.8,157.5 356.0,153.1 361.3,148.6 366.5,143.7 371.8,138.3 377.0,132.4 382.3,125.7 387.5,118.3 392.8,110.2 398.0,101.5 403.3,92.2 408.5,82.5 413.8,72.7 419.0,62.8 424.3,53.3 429.5,44.4 434.8,36.4 440.0,29.5"></polyline> </g> <!-- scene 3/3: Sperner's lemma — a triangulated triangle colored so one small triangle must show all three colors --> <g class="hero-scene hero-scene-sperner"> <g class="hero-sperner-outer"> <line class="hero-sperner-draw-outer" x1="230" y1="40" x2="140" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220"></line> <line class="hero-sperner-draw-outer" x1="230" y1="40" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220"></line> <line class="hero-sperner-draw-outer" x1="140" y1="210" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220"></line> </g> <g class="hero-sperner-corners"> <circle class="hero-sperner-pop-outer" cx="230" cy="40" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-outer" cx="140" cy="210" r="7" fill="#16a34a" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-outer" cx="320" cy="210" r="7" fill="#2563eb" stroke="white" stroke-width="1.5"></circle> </g> <g class="hero-sperner-inner"> <line class="hero-sperner-draw-inner" x1="185" y1="125" x2="275" y2="125" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110"></line> <line class="hero-sperner-draw-inner" x1="185" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110"></line> <line class="hero-sperner-draw-inner" x1="275" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110"></line> </g> <polygon class="hero-sperner-highlight" points="185,125 275,125 230,210" fill="url(#hero-sperner-rainbow)" fill-opacity="0.4" stroke="url(#hero-sperner-rainbow)" stroke-width="2" filter="url(#hero-newton-glow)"></polygon> <g class="hero-sperner-mid-dots"> <circle class="hero-sperner-pop-inner" cx="185" cy="125" r="6" fill="#ca8a04" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-inner" cx="275" cy="125" r="6" fill="#c026d3" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-inner" cx="230" cy="210" r="6" fill="#0d9488" stroke="white" stroke-width="1.5"></circle> </g> </g>
+<!-- Decorative backdrop: a looping rotation of Newton's method, a spirograph, a filter smoothing a noisy signal, the midpoint rule, Sperner's lemma and fixed-point iteration. -->
+<svg class="hero-visual-plot" viewbox="0 0 460 260" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+<defs> <filter id="hero-newton-glow" x="-60%" y="-60%" width="220%" height="220%"> <fegaussianblur stddeviation="2.5" result="blur"></fegaussianblur> <femerge> <femergenode in="blur"></femergenode> <femergenode in="SourceGraphic"></femergenode> </femerge> </filter> <lineargradient id="hero-sperner-rainbow" x1="0%" y1="0%" x2="100%" y2="100%"> <stop offset="0%" stop-color="#ca8a04"></stop> <stop offset="50%" stop-color="#0d9488"></stop> <stop offset="100%" stop-color="#c026d3"></stop> </lineargradient> </defs> <!-- scene 1/6: Newton's method finding a root of f(x) = x^2 - 2, starting from x = 2.2 --> <g class="hero-scene hero-scene-newton"> <line x1="20" y1="172.8" x2="440" y2="172.8" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"></line> <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="20.0,226.3 26.0,227.5 32.0,228.7 38.0,229.8 44.0,230.7 50.0,231.5 56.0,232.2 62.0,232.8 68.0,233.2 74.0,233.6 80.0,233.8 86.0,233.9 92.0,233.9 98.0,233.7 104.0,233.4 110.0,233.1 116.0,232.6 122.0,231.9 128.0,231.2 134.0,230.3 140.0,229.3 146.0,228.2 152.0,227.0 158.0,225.7 164.0,224.2 170.0,222.6 176.0,220.9 182.0,219.1 188.0,217.2 194.0,215.1 200.0,212.9 206.0,210.6 212.0,208.2 218.0,205.6 224.0,203.0 230.0,200.2 236.0,197.3 242.0,194.3 248.0,191.1 254.0,187.9 260.0,184.5 266.0,181.0 272.0,177.4 278.0,173.6 284.0,169.8 290.0,165.8 296.0,161.7 302.0,157.5 308.0,153.1 314.0,148.7 320.0,144.1 326.0,139.4 332.0,134.6 338.0,129.6 344.0,124.6 350.0,119.4 356.0,114.1 362.0,108.7 368.0,103.1 374.0,97.5 380.0,91.7 386.0,85.8 392.0,79.8 398.0,73.7 404.0,67.4 410.0,61.0 416.0,54.5 422.0,47.9 428.0,41.2 434.0,34.3 440.0,27.3"></polyline> <circle class="hero-newton-point0" cx="385.8" cy="86.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> <g class="hero-newton-group1"> <line class="hero-newton-draw1" x1="385.8" y1="86.0" x2="298.4" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)"></line> <line x1="298.4" y1="172.8" x2="298.4" y2="160.0" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4"></line> <circle class="hero-newton-pop1" cx="298.4" cy="160.0" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> </g> <g class="hero-newton-group2"> <line class="hero-newton-draw2" x1="298.4" y1="160.0" x2="280.2" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)"></line> <line x1="280.2" y1="172.8" x2="280.2" y2="172.2" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="3,4"></line> <circle class="hero-newton-pop2" cx="280.2" cy="172.2" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> </g> <g class="hero-newton-group3"> <line class="hero-newton-draw3" x1="280.2" y1="172.2" x2="279.3" y2="172.8" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-dasharray="160" filter="url(#hero-newton-glow)"></line> <circle class="hero-newton-pop3" cx="279.3" cy="172.8" r="7" fill="#16a34a" stroke="white" stroke-width="1.5" filter="url(#hero-newton-glow)"></circle> </g> </g> <!-- scene 2/6: two spirographs tracing themselves out --> <g class="hero-scene hero-scene-spiro"> <path class="hero-spiro-a" d="M338.0,130.0 L338.0,130.4 L337.9,130.8 L337.7,131.1 L337.5,131.5 L337.2,131.9 L336.8,132.2 L336.4,132.6 L335.9,133.0 L335.3,133.3 L334.7,133.7 L334.0,134.0 L333.3,134.3 L332.5,134.7 L331.6,135.0 L330.7,135.3 L329.7,135.6 L328.6,135.9 L327.5,136.1 L326.4,136.4 L325.1,136.7 L323.8,136.9 L322.5,137.1 L321.1,137.3 L319.6,137.5 L318.1,137.7 L316.6,137.9 L315.0,138.0 L313.3,138.2 L311.6,138.3 L309.8,138.4 L308.0,138.5 L306.2,138.5 L304.3,138.6 L302.3,138.6 L300.3,138.6 L298.3,138.6 L296.2,138.6 L294.1,138.6 L292.0,138.5 L289.8,138.4 L287.6,138.3 L285.3,138.2 L283.1,138.0 L280.8,137.9 L278.4,137.7 L276.1,137.5 L273.7,137.2 L271.3,137.0 L268.8,136.7 L266.4,136.4 L263.9,136.1 L261.4,135.8 L258.9,135.4 L256.4,135.0 L253.8,134.6 L251.3,134.2 L248.7,133.8 L246.2,133.3 L243.6,132.8 L241.0,132.3 L238.5,131.8 L235.9,131.3 L233.3,130.7 L230.7,130.2 L228.2,129.6 L225.6,129.0 L223.0,128.3 L220.5,127.7 L217.9,127.0 L215.4,126.4 L212.9,125.7 L210.4,125.0 L207.9,124.2 L205.4,123.5 L203.0,122.8 L200.6,122.0 L198.2,121.2 L195.8,120.4 L193.4,119.7 L191.1,118.8 L188.8,118.0 L186.5,117.2 L184.3,116.4 L182.1,115.5 L179.9,114.7 L177.8,113.8 L175.7,113.0 L173.6,112.1 L171.6,111.3 L169.6,110.4 L167.7,109.5 L165.8,108.6 L163.9,107.8 L162.1,106.9 L160.4,106.0 L158.6,105.1 L157.0,104.3 L155.3,103.4 L153.8,102.6 L152.3,101.7 L150.8,100.9 L149.4,100.0 L148.0,99.2 L146.7,98.4 L145.4,97.5 L144.2,96.7 L143.1,95.9 L142.0,95.2 L141.0,94.4 L140.0,93.6 L139.1,92.9 L138.2,92.2 L137.4,91.5 L136.7,90.8 L136.0,90.1 L135.4,89.4 L134.8,88.8 L134.3,88.2 L133.9,87.6 L133.5,87.0 L133.2,86.5 L132.9,86.0 L132.7,85.5 L132.6,85.0 L132.5,84.5 L132.5,84.1 L132.5,83.7 L132.6,83.3 L132.8,83.0 L133.0,82.7 L133.3,82.4 L133.6,82.1 L134.0,81.9 L134.4,81.7 L135.0,81.6 L135.5,81.4 L136.1,81.3 L136.8,81.3 L137.6,81.3 L138.3,81.3 L139.2,81.3 L140.1,81.4 L141.0,81.5 L142.0,81.6 L143.1,81.8 L144.1,82.0 L145.3,82.3 L146.5,82.6 L147.7,82.9 L149.0,83.2 L150.3,83.6 L151.7,84.1 L153.1,84.5 L154.6,85.0 L156.1,85.6 L157.6,86.2 L159.2,86.8 L160.8,87.4 L162.4,88.1 L164.1,88.8 L165.8,89.6 L167.6,90.4 L169.4,91.2 L171.2,92.1 L173.0,93.0 L174.9,93.9 L176.7,94.9 L178.7,95.9 L180.6,96.9 L182.6,98.0 L184.5,99.1 L186.5,100.2 L188.5,101.4 L190.6,102.6 L192.6,103.8 L194.7,105.1 L196.7,106.4 L198.8,107.7 L200.9,109.0 L203.0,110.4 L205.1,111.8 L207.2,113.2 L209.3,114.6 L211.4,116.1 L213.5,117.6 L215.7,119.1 L217.8,120.6 L219.9,122.2 L222.0,123.8 L224.1,125.4 L226.1,127.0 L228.2,128.6 L230.3,130.2 L232.4,131.9 L234.4,133.6 L236.4,135.2 L238.4,136.9 L240.4,138.6 L242.4,140.3 L244.4,142.1 L246.3,143.8 L248.2,145.5 L250.1,147.2 L252.0,149.0 L253.8,150.7 L255.6,152.5 L257.4,154.2 L259.2,155.9 L260.9,157.7 L262.6,159.4 L264.3,161.1 L266.0,162.8 L267.6,164.5 L269.1,166.2 L270.7,167.9 L272.2,169.6 L273.7,171.3 L275.1,172.9 L276.5,174.6 L277.8,176.2 L279.1,177.8 L280.4,179.4 L281.7,180.9 L282.8,182.5 L284.0,184.0 L285.1,185.5 L286.2,187.0 L287.2,188.4 L288.2,189.8 L289.1,191.2 L290.0,192.6 L290.9,193.9 L291.7,195.2 L292.4,196.5 L293.1,197.7 L293.8,198.9 L294.4,200.1 L295.0,201.2 L295.5,202.3 L296.0,203.3 L296.5,204.3 L296.9,205.3 L297.2,206.2 L297.5,207.1 L297.8,207.9 L298.0,208.7 L298.1,209.5 L298.3,210.2 L298.3,210.9 L298.4,211.5 L298.4,212.0 L298.3,212.6 L298.2,213.0 L298.1,213.4 L297.9,213.8 L297.6,214.1 L297.4,214.4 L297.1,214.6 L296.7,214.8 L296.3,214.9 L295.9,215.0 L295.4,215.0 L294.9,214.9 L294.4,214.8 L293.8,214.7 L293.2,214.5 L292.5,214.2 L291.8,213.9 L291.1,213.5 L290.4,213.1 L289.6,212.6 L288.8,212.1 L287.9,211.5 L287.0,210.9 L286.1,210.2 L285.2,209.4 L284.2,208.6 L283.3,207.8 L282.3,206.9 L281.2,205.9 L280.2,204.9 L279.1,203.9 L278.0,202.8 L276.9,201.6 L275.7,200.4 L274.6,199.1 L273.4,197.8 L272.2,196.5 L271.0,195.1 L269.8,193.6 L268.5,192.1 L267.3,190.6 L266.0,189.0 L264.8,187.4 L263.5,185.7 L262.2,184.0 L260.9,182.3 L259.6,180.5 L258.3,178.6 L257.0,176.8 L255.7,174.9 L254.4,172.9 L253.1,171.0 L251.8,168.9 L250.5,166.9 L249.2,164.8 L247.9,162.7 L246.6,160.6 L245.3,158.5 L244.0,156.3 L242.7,154.1 L241.4,151.9 L240.2,149.6 L238.9,147.3 L237.7,145.1 L236.4,142.7 L235.2,140.4 L234.0,138.1 L232.8,135.7 L231.7,133.4 L230.5,131.0 L229.3,128.6 L228.2,126.3 L227.1,123.9 L226.0,121.5 L225.0,119.1 L223.9,116.7 L222.9,114.3 L221.9,111.9 L220.9,109.5 L219.9,107.1 L219.0,104.7 L218.0,102.3 L217.1,100.0 L216.3,97.6 L215.4,95.3 L214.6,93.0 L213.8,90.7 L213.0,88.4 L212.3,86.1 L211.5,83.9 L210.8,81.6 L210.2,79.4 L209.5,77.2 L208.9,75.1 L208.3,73.0 L207.8,70.9 L207.2,68.8 L206.7,66.8 L206.3,64.8 L205.8,62.8 L205.4,60.9 L205.0,59.0 L204.6,57.1 L204.3,55.3 L204.0,53.5 L203.7,51.8 L203.4,50.1 L203.2,48.5 L203.0,46.9 L202.8,45.4 L202.7,43.9 L202.6,42.4 L202.5,41.0 L202.4,39.7 L202.3,38.4 L202.3,37.1 L202.3,35.9 L202.3,34.8 L202.4,33.7 L202.5,32.7 L202.6,31.8 L202.7,30.9 L202.8,30.0 L203.0,29.2 L203.2,28.5 L203.4,27.8 L203.6,27.2 L203.9,26.7 L204.1,26.2 L204.4,25.8 L204.7,25.5 L205.0,25.2 L205.4,24.9 L205.7,24.8 L206.1,24.7 L206.5,24.7 L206.8,24.7 L207.3,24.8 L207.7,24.9 L208.1,25.2 L208.5,25.5 L209.0,25.8 L209.5,26.2 L209.9,26.7 L210.4,27.2 L210.9,27.9 L211.4,28.5 L211.9,29.3 L212.4,30.1 L212.9,30.9 L213.4,31.8 L213.9,32.8 L214.4,33.9 L214.9,35.0 L215.5,36.1 L216.0,37.3 L216.5,38.6 L217.0,39.9 L217.5,41.3 L218.1,42.8 L218.6,44.3 L219.1,45.8 L219.6,47.4 L220.1,49.1 L220.6,50.8 L221.0,52.6 L221.5,54.4 L222.0,56.2 L222.4,58.1 L222.9,60.1 L223.3,62.1 L223.8,64.1 L224.2,66.2 L224.6,68.3 L225.0,70.4 L225.4,72.6 L225.8,74.9 L226.1,77.1 L226.5,79.4 L226.8,81.7 L227.1,84.1 L227.4,86.5 L227.7,88.9 L228.0,91.3 L228.2,93.8 L228.5,96.3 L228.7,98.8 L228.9,101.3 L229.1,103.9 L229.3,106.5 L229.4,109.0 L229.6,111.6 L229.7,114.2 L229.8,116.8 L229.9,119.5 L229.9,122.1 L230.0,124.7 L230.0,127.4 L230.0,130.0 L230.0,132.6 L230.0,135.3 L229.9,137.9 L229.9,140.5 L229.8,143.2 L229.7,145.8 L229.6,148.4 L229.4,151.0 L229.3,153.5 L229.1,156.1 L228.9,158.7 L228.7,161.2 L228.5,163.7 L228.2,166.2 L228.0,168.7 L227.7,171.1 L227.4,173.5 L227.1,175.9 L226.8,178.3 L226.5,180.6 L226.1,182.9 L225.8,185.1 L225.4,187.4 L225.0,189.6 L224.6,191.7 L224.2,193.8 L223.8,195.9 L223.3,197.9 L222.9,199.9 L222.4,201.9 L222.0,203.8 L221.5,205.6 L221.0,207.4 L220.6,209.2 L220.1,210.9 L219.6,212.6 L219.1,214.2 L218.6,215.7 L218.1,217.2 L217.5,218.7 L217.0,220.1 L216.5,221.4 L216.0,222.7 L215.5,223.9 L214.9,225.0 L214.4,226.1 L213.9,227.2 L213.4,228.2 L212.9,229.1 L212.4,229.9 L211.9,230.7 L211.4,231.5 L210.9,232.1 L210.4,232.8 L209.9,233.3 L209.5,233.8 L209.0,234.2 L208.5,234.5 L208.1,234.8 L207.7,235.1 L207.3,235.2 L206.8,235.3 L206.5,235.3 L206.1,235.3 L205.7,235.2 L205.4,235.1 L205.0,234.8 L204.7,234.5 L204.4,234.2 L204.1,233.8 L203.9,233.3 L203.6,232.8 L203.4,232.2 L203.2,231.5 L203.0,230.8 L202.8,230.0 L202.7,229.1 L202.6,228.2 L202.5,227.3 L202.4,226.3 L202.3,225.2 L202.3,224.1 L202.3,222.9 L202.3,221.6 L202.4,220.3 L202.5,219.0 L202.6,217.6 L202.7,216.1 L202.8,214.6 L203.0,213.1 L203.2,211.5 L203.4,209.9 L203.7,208.2 L204.0,206.5 L204.3,204.7 L204.6,202.9 L205.0,201.0 L205.4,199.1 L205.8,197.2 L206.3,195.2 L206.7,193.2 L207.2,191.2 L207.8,189.1 L208.3,187.0 L208.9,184.9 L209.5,182.8 L210.2,180.6 L210.8,178.4 L211.5,176.1 L212.3,173.9 L213.0,171.6 L213.8,169.3 L214.6,167.0 L215.4,164.7 L216.3,162.4 L217.1,160.0 L218.0,157.7 L219.0,155.3 L219.9,152.9 L220.9,150.5 L221.9,148.1 L222.9,145.7 L223.9,143.3 L225.0,140.9 L226.0,138.5 L227.1,136.1 L228.2,133.7 L229.3,131.4 L230.5,129.0 L231.7,126.6 L232.8,124.3 L234.0,121.9 L235.2,119.6 L236.4,117.3 L237.7,114.9 L238.9,112.7 L240.2,110.4 L241.4,108.1 L242.7,105.9 L244.0,103.7 L245.3,101.5 L246.6,99.4 L247.9,97.3 L249.2,95.2 L250.5,93.1 L251.8,91.1 L253.1,89.0 L254.4,87.1 L255.7,85.1 L257.0,83.2 L258.3,81.4 L259.6,79.5 L260.9,77.7 L262.2,76.0 L263.5,74.3 L264.8,72.6 L266.0,71.0 L267.3,69.4 L268.5,67.9 L269.8,66.4 L271.0,64.9 L272.2,63.5 L273.4,62.2 L274.6,60.9 L275.7,59.6 L276.9,58.4 L278.0,57.2 L279.1,56.1 L280.2,55.1 L281.2,54.1 L282.3,53.1 L283.3,52.2 L284.2,51.4 L285.2,50.6 L286.1,49.8 L287.0,49.1 L287.9,48.5 L288.8,47.9 L289.6,47.4 L290.4,46.9 L291.1,46.5 L291.8,46.1 L292.5,45.8 L293.2,45.5 L293.8,45.3 L294.4,45.2 L294.9,45.1 L295.4,45.0 L295.9,45.0 L296.3,45.1 L296.7,45.2 L297.1,45.4 L297.4,45.6 L297.6,45.9 L297.9,46.2 L298.1,46.6 L298.2,47.0 L298.3,47.4 L298.4,48.0 L298.4,48.5 L298.3,49.1 L298.3,49.8 L298.1,50.5 L298.0,51.3 L297.8,52.1 L297.5,52.9 L297.2,53.8 L296.9,54.7 L296.5,55.7 L296.0,56.7 L295.5,57.7 L295.0,58.8 L294.4,59.9 L293.8,61.1 L293.1,62.3 L292.4,63.5 L291.7,64.8 L290.9,66.1 L290.0,67.4 L289.1,68.8 L288.2,70.2 L287.2,71.6 L286.2,73.0 L285.1,74.5 L284.0,76.0 L282.8,77.5 L281.7,79.1 L280.4,80.6 L279.1,82.2 L277.8,83.8 L276.5,85.4 L275.1,87.1 L273.7,88.7 L272.2,90.4 L270.7,92.1 L269.1,93.8 L267.6,95.5 L266.0,97.2 L264.3,98.9 L262.6,100.6 L260.9,102.3 L259.2,104.1 L257.4,105.8 L255.6,107.5 L253.8,109.3 L252.0,111.0 L250.1,112.8 L248.2,114.5 L246.3,116.2 L244.4,117.9 L242.4,119.7 L240.4,121.4 L238.4,123.1 L236.4,124.8 L234.4,126.4 L232.4,128.1 L230.3,129.8 L228.2,131.4 L226.1,133.0 L224.1,134.6 L222.0,136.2 L219.9,137.8 L217.8,139.4 L215.7,140.9 L213.5,142.4 L211.4,143.9 L209.3,145.4 L207.2,146.8 L205.1,148.2 L203.0,149.6 L200.9,151.0 L198.8,152.3 L196.7,153.6 L194.7,154.9 L192.6,156.2 L190.6,157.4 L188.5,158.6 L186.5,159.8 L184.5,160.9 L182.6,162.0 L180.6,163.1 L178.7,164.1 L176.7,165.1 L174.9,166.1 L173.0,167.0 L171.2,167.9 L169.4,168.8 L167.6,169.6 L165.8,170.4 L164.1,171.2 L162.4,171.9 L160.8,172.6 L159.2,173.2 L157.6,173.8 L156.1,174.4 L154.6,175.0 L153.1,175.5 L151.7,175.9 L150.3,176.4 L149.0,176.8 L147.7,177.1 L146.5,177.4 L145.3,177.7 L144.1,178.0 L143.1,178.2 L142.0,178.4 L141.0,178.5 L140.1,178.6 L139.2,178.7 L138.3,178.7 L137.6,178.7 L136.8,178.7 L136.1,178.7 L135.5,178.6 L135.0,178.4 L134.4,178.3 L134.0,178.1 L133.6,177.9 L133.3,177.6 L133.0,177.3 L132.8,177.0 L132.6,176.7 L132.5,176.3 L132.5,175.9 L132.5,175.5 L132.6,175.0 L132.7,174.5 L132.9,174.0 L133.2,173.5 L133.5,173.0 L133.9,172.4 L134.3,171.8 L134.8,171.2 L135.4,170.6 L136.0,169.9 L136.7,169.2 L137.4,168.5 L138.2,167.8 L139.1,167.1 L140.0,166.4 L141.0,165.6 L142.0,164.8 L143.1,164.1 L144.2,163.3 L145.4,162.5 L146.7,161.6 L148.0,160.8 L149.4,160.0 L150.8,159.1 L152.3,158.3 L153.8,157.4 L155.3,156.6 L157.0,155.7 L158.6,154.9 L160.4,154.0 L162.1,153.1 L163.9,152.2 L165.8,151.4 L167.7,150.5 L169.6,149.6 L171.6,148.7 L173.6,147.9 L175.7,147.0 L177.8,146.2 L179.9,145.3 L182.1,144.5 L184.3,143.6 L186.5,142.8 L188.8,142.0 L191.1,141.2 L193.4,140.3 L195.8,139.6 L198.2,138.8 L200.6,138.0 L203.0,137.2 L205.4,136.5 L207.9,135.8 L210.4,135.0 L212.9,134.3 L215.4,133.6 L217.9,133.0 L220.5,132.3 L223.0,131.7 L225.6,131.0 L228.2,130.4 L230.7,129.8 L233.3,129.3 L235.9,128.7 L238.5,128.2 L241.0,127.7 L243.6,127.2 L246.2,126.7 L248.7,126.2 L251.3,125.8 L253.8,125.4 L256.4,125.0 L258.9,124.6 L261.4,124.2 L263.9,123.9 L266.4,123.6 L268.8,123.3 L271.3,123.0 L273.7,122.8 L276.1,122.5 L278.4,122.3 L280.8,122.1 L283.1,122.0 L285.3,121.8 L287.6,121.7 L289.8,121.6 L292.0,121.5 L294.1,121.4 L296.2,121.4 L298.3,121.4 L300.3,121.4 L302.3,121.4 L304.3,121.4 L306.2,121.5 L308.0,121.5 L309.8,121.6 L311.6,121.7 L313.3,121.8 L315.0,122.0 L316.6,122.1 L318.1,122.3 L319.6,122.5 L321.1,122.7 L322.5,122.9 L323.8,123.1 L325.1,123.3 L326.4,123.6 L327.5,123.9 L328.6,124.1 L329.7,124.4 L330.7,124.7 L331.6,125.0 L332.5,125.3 L333.3,125.7 L334.0,126.0 L334.7,126.3 L335.3,126.7 L335.9,127.0 L336.4,127.4 L336.8,127.8 L337.2,128.1 L337.5,128.5 L337.7,128.9 L337.9,129.2 L338.0,129.6 L338.0,130.0 Z" pathlength="1" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round"></path> <path class="hero-spiro-b" d="M256.4,130.0 L256.4,129.8 L256.4,129.6 L256.5,129.4 L256.5,129.3 L256.5,129.1 L256.6,128.9 L256.7,128.7 L256.8,128.6 L256.9,128.4 L257.0,128.2 L257.1,128.1 L257.2,127.9 L257.4,127.7 L257.5,127.6 L257.7,127.4 L257.9,127.3 L258.0,127.2 L258.2,127.0 L258.4,126.9 L258.6,126.8 L258.9,126.7 L259.1,126.6 L259.3,126.5 L259.6,126.4 L259.8,126.3 L260.1,126.3 L260.4,126.2 L260.7,126.1 L261.0,126.1 L261.3,126.1 L261.6,126.0 L261.9,126.0 L262.2,126.0 L262.5,126.0 L262.9,126.1 L263.2,126.1 L263.5,126.1 L263.9,126.2 L264.2,126.2 L264.6,126.3 L264.9,126.4 L265.3,126.5 L265.7,126.6 L266.0,126.7 L266.4,126.9 L266.8,127.0 L267.2,127.2 L267.5,127.3 L267.9,127.5 L268.3,127.7 L268.7,127.9 L269.0,128.1 L269.4,128.4 L269.8,128.6 L270.2,128.9 L270.6,129.2 L270.9,129.5 L271.3,129.8 L271.7,130.1 L272.0,130.4 L272.4,130.7 L272.8,131.1 L273.1,131.4 L273.5,131.8 L273.8,132.2 L274.1,132.6 L274.5,133.0 L274.8,133.5 L275.1,133.9 L275.4,134.3 L275.8,134.8 L276.1,135.3 L276.3,135.8 L276.6,136.3 L276.9,136.8 L277.2,137.3 L277.4,137.8 L277.7,138.3 L277.9,138.9 L278.1,139.4 L278.4,140.0 L278.6,140.6 L278.8,141.2 L279.0,141.8 L279.1,142.4 L279.3,143.0 L279.5,143.6 L279.6,144.2 L279.7,144.9 L279.8,145.5 L279.9,146.2 L280.0,146.8 L280.1,147.5 L280.2,148.2 L280.2,148.8 L280.2,149.5 L280.3,150.2 L280.3,150.9 L280.3,151.6 L280.2,152.3 L280.2,153.0 L280.2,153.7 L280.1,154.4 L280.0,155.1 L279.9,155.8 L279.8,156.5 L279.7,157.2 L279.5,157.9 L279.4,158.6 L279.2,159.3 L279.0,160.0 L278.8,160.8 L278.6,161.5 L278.4,162.2 L278.1,162.9 L277.9,163.6 L277.6,164.3 L277.3,165.0 L277.0,165.7 L276.7,166.4 L276.3,167.0 L276.0,167.7 L275.6,168.4 L275.2,169.1 L274.8,169.7 L274.4,170.4 L274.0,171.0 L273.5,171.7 L273.1,172.3 L272.6,172.9 L272.1,173.6 L271.7,174.2 L271.2,174.8 L270.6,175.4 L270.1,175.9 L269.6,176.5 L269.0,177.1 L268.4,177.6 L267.9,178.2 L267.3,178.7 L266.7,179.2 L266.1,179.7 L265.4,180.2 L264.8,180.7 L264.2,181.2 L263.5,181.6 L262.8,182.1 L262.2,182.5 L261.5,182.9 L260.8,183.3 L260.1,183.7 L259.4,184.1 L258.7,184.5 L258.0,184.8 L257.2,185.2 L256.5,185.5 L255.8,185.8 L255.0,186.1 L254.3,186.4 L253.5,186.6 L252.8,186.9 L252.0,187.1 L251.3,187.3 L250.5,187.5 L249.7,187.7 L249.0,187.9 L248.2,188.0 L247.4,188.2 L246.6,188.3 L245.9,188.4 L245.1,188.5 L244.3,188.5 L243.5,188.6 L242.8,188.7 L242.0,188.7 L241.2,188.7 L240.5,188.7 L239.7,188.7 L238.9,188.6 L238.2,188.6 L237.4,188.5 L236.6,188.4 L235.9,188.3 L235.2,188.2 L234.4,188.1 L233.7,188.0 L232.9,187.8 L232.2,187.7 L231.5,187.5 L230.8,187.3 L230.1,187.1 L229.4,186.9 L228.7,186.6 L228.0,186.4 L227.4,186.1 L226.7,185.8 L226.1,185.6 L225.4,185.3 L224.8,185.0 L224.2,184.6 L223.5,184.3 L222.9,184.0 L222.3,183.6 L221.8,183.3 L221.2,182.9 L220.6,182.5 L220.1,182.1 L219.6,181.7 L219.0,181.3 L218.5,180.9 L218.0,180.5 L217.5,180.1 L217.1,179.6 L216.6,179.2 L216.2,178.7 L215.7,178.3 L215.3,177.8 L214.9,177.4 L214.5,176.9 L214.1,176.4 L213.7,175.9 L213.4,175.5 L213.0,175.0 L212.7,174.5 L212.4,174.0 L212.1,173.5 L211.8,173.0 L211.5,172.5 L211.3,172.0 L211.0,171.5 L210.8,171.0 L210.6,170.5 L210.4,170.0 L210.2,169.5 L210.0,169.0 L209.8,168.5 L209.7,168.1 L209.6,167.6 L209.4,167.1 L209.3,166.6 L209.2,166.1 L209.1,165.6 L209.1,165.2 L209.0,164.7 L209.0,164.2 L208.9,163.8 L208.9,163.3 L208.9,162.9 L208.9,162.5 L208.9,162.0 L208.9,161.6 L208.9,161.2 L209.0,160.8 L209.0,160.4 L209.1,160.0 L209.1,159.6 L209.2,159.2 L209.3,158.8 L209.4,158.5 L209.5,158.1 L209.6,157.8 L209.7,157.4 L209.9,157.1 L210.0,156.8 L210.2,156.5 L210.3,156.2 L210.5,155.9 L210.6,155.6 L210.8,155.4 L211.0,155.1 L211.1,154.9 L211.3,154.6 L211.5,154.4 L211.7,154.2 L211.9,154.0 L212.1,153.8 L212.3,153.7 L212.5,153.5 L212.7,153.3 L212.9,153.2 L213.1,153.1 L213.3,153.0 L213.5,152.9 L213.7,152.8 L213.9,152.7 L214.2,152.6 L214.4,152.6 L214.6,152.5 L214.8,152.5 L215.0,152.5 L215.2,152.5 L215.4,152.5 L215.6,152.5 L215.7,152.5 L215.9,152.5 L216.1,152.6 L216.3,152.6 L216.5,152.7 L216.6,152.8 L216.8,152.9 L217.0,153.0 L217.1,153.1 L217.3,153.2 L217.4,153.3 L217.5,153.4 L217.6,153.6 L217.8,153.7 L217.9,153.9 L218.0,154.1 L218.1,154.3 L218.1,154.4 L218.2,154.6 L218.3,154.8 L218.3,155.0 L218.4,155.3 L218.4,155.5 L218.4,155.7 L218.5,155.9 L218.5,156.2 L218.5,156.4 L218.4,156.7 L218.4,156.9 L218.4,157.2 L218.3,157.4 L218.3,157.7 L218.2,158.0 L218.1,158.2 L218.0,158.5 L217.9,158.8 L217.8,159.0 L217.6,159.3 L217.5,159.6 L217.3,159.9 L217.2,160.1 L217.0,160.4 L216.8,160.7 L216.6,161.0 L216.4,161.2 L216.1,161.5 L215.9,161.8 L215.7,162.1 L215.4,162.3 L215.1,162.6 L214.8,162.8 L214.5,163.1 L214.2,163.4 L213.9,163.6 L213.5,163.8 L213.2,164.1 L212.8,164.3 L212.5,164.5 L212.1,164.7 L211.7,165.0 L211.3,165.2 L210.9,165.4 L210.4,165.5 L210.0,165.7 L209.6,165.9 L209.1,166.1 L208.6,166.2 L208.2,166.4 L207.7,166.5 L207.2,166.6 L206.7,166.7 L206.2,166.8 L205.7,166.9 L205.1,167.0 L204.6,167.1 L204.1,167.1 L203.5,167.2 L203.0,167.2 L202.4,167.2 L201.8,167.3 L201.3,167.3 L200.7,167.2 L200.1,167.2 L199.5,167.2 L198.9,167.1 L198.3,167.1 L197.7,167.0 L197.1,166.9 L196.5,166.8 L195.9,166.7 L195.3,166.5 L194.7,166.4 L194.1,166.2 L193.5,166.0 L192.9,165.8 L192.3,165.6 L191.6,165.4 L191.0,165.2 L190.4,164.9 L189.8,164.6 L189.2,164.4 L188.6,164.1 L188.0,163.8 L187.4,163.4 L186.8,163.1 L186.2,162.7 L185.6,162.4 L185.0,162.0 L184.4,161.6 L183.9,161.2 L183.3,160.8 L182.7,160.3 L182.2,159.9 L181.6,159.4 L181.1,158.9 L180.5,158.5 L180.0,157.9 L179.5,157.4 L179.0,156.9 L178.4,156.4 L178.0,155.8 L177.5,155.2 L177.0,154.7 L176.5,154.1 L176.1,153.5 L175.6,152.9 L175.2,152.2 L174.8,151.6 L174.3,150.9 L173.9,150.3 L173.6,149.6 L173.2,149.0 L172.8,148.3 L172.5,147.6 L172.1,146.9 L171.8,146.2 L171.5,145.5 L171.2,144.7 L170.9,144.0 L170.7,143.3 L170.4,142.5 L170.2,141.8 L169.9,141.0 L169.7,140.2 L169.5,139.5 L169.4,138.7 L169.2,137.9 L169.0,137.1 L168.9,136.4 L168.8,135.6 L168.7,134.8 L168.6,134.0 L168.5,133.2 L168.5,132.4 L168.4,131.6 L168.4,130.8 L168.4,130.0 L168.4,129.2 L168.4,128.4 L168.5,127.6 L168.5,126.8 L168.6,126.0 L168.7,125.2 L168.8,124.4 L168.9,123.6 L169.0,122.9 L169.2,122.1 L169.4,121.3 L169.5,120.5 L169.7,119.8 L169.9,119.0 L170.2,118.2 L170.4,117.5 L170.7,116.7 L170.9,116.0 L171.2,115.3 L171.5,114.5 L171.8,113.8 L172.1,113.1 L172.5,112.4 L172.8,111.7 L173.2,111.0 L173.6,110.4 L173.9,109.7 L174.3,109.1 L174.8,108.4 L175.2,107.8 L175.6,107.1 L176.1,106.5 L176.5,105.9 L177.0,105.3 L177.5,104.8 L178.0,104.2 L178.4,103.6 L179.0,103.1 L179.5,102.6 L180.0,102.1 L180.5,101.5 L181.1,101.1 L181.6,100.6 L182.2,100.1 L182.7,99.7 L183.3,99.2 L183.9,98.8 L184.4,98.4 L185.0,98.0 L185.6,97.6 L186.2,97.3 L186.8,96.9 L187.4,96.6 L188.0,96.2 L188.6,95.9 L189.2,95.6 L189.8,95.4 L190.4,95.1 L191.0,94.8 L191.6,94.6 L192.3,94.4 L192.9,94.2 L193.5,94.0 L194.1,93.8 L194.7,93.6 L195.3,93.5 L195.9,93.3 L196.5,93.2 L197.1,93.1 L197.7,93.0 L198.3,92.9 L198.9,92.9 L199.5,92.8 L200.1,92.8 L200.7,92.8 L201.3,92.7 L201.8,92.7 L202.4,92.8 L203.0,92.8 L203.5,92.8 L204.1,92.9 L204.6,92.9 L205.1,93.0 L205.7,93.1 L206.2,93.2 L206.7,93.3 L207.2,93.4 L207.7,93.5 L208.2,93.6 L208.6,93.8 L209.1,93.9 L209.6,94.1 L210.0,94.3 L210.4,94.5 L210.9,94.6 L211.3,94.8 L211.7,95.0 L212.1,95.3 L212.5,95.5 L212.8,95.7 L213.2,95.9 L213.5,96.2 L213.9,96.4 L214.2,96.6 L214.5,96.9 L214.8,97.2 L215.1,97.4 L215.4,97.7 L215.7,97.9 L215.9,98.2 L216.1,98.5 L216.4,98.8 L216.6,99.0 L216.8,99.3 L217.0,99.6 L217.2,99.9 L217.3,100.1 L217.5,100.4 L217.6,100.7 L217.8,101.0 L217.9,101.2 L218.0,101.5 L218.1,101.8 L218.2,102.0 L218.3,102.3 L218.3,102.6 L218.4,102.8 L218.4,103.1 L218.4,103.3 L218.5,103.6 L218.5,103.8 L218.5,104.1 L218.4,104.3 L218.4,104.5 L218.4,104.7 L218.3,105.0 L218.3,105.2 L218.2,105.4 L218.1,105.6 L218.1,105.7 L218.0,105.9 L217.9,106.1 L217.8,106.3 L217.6,106.4 L217.5,106.6 L217.4,106.7 L217.3,106.8 L217.1,106.9 L217.0,107.0 L216.8,107.1 L216.6,107.2 L216.5,107.3 L216.3,107.4 L216.1,107.4 L215.9,107.5 L215.7,107.5 L215.6,107.5 L215.4,107.5 L215.2,107.5 L215.0,107.5 L214.8,107.5 L214.6,107.5 L214.4,107.4 L214.2,107.4 L213.9,107.3 L213.7,107.2 L213.5,107.1 L213.3,107.0 L213.1,106.9 L212.9,106.8 L212.7,106.7 L212.5,106.5 L212.3,106.3 L212.1,106.2 L211.9,106.0 L211.7,105.8 L211.5,105.6 L211.3,105.4 L211.1,105.1 L211.0,104.9 L210.8,104.6 L210.6,104.4 L210.5,104.1 L210.3,103.8 L210.2,103.5 L210.0,103.2 L209.9,102.9 L209.7,102.6 L209.6,102.2 L209.5,101.9 L209.4,101.5 L209.3,101.2 L209.2,100.8 L209.1,100.4 L209.1,100.0 L209.0,99.6 L209.0,99.2 L208.9,98.8 L208.9,98.4 L208.9,98.0 L208.9,97.5 L208.9,97.1 L208.9,96.7 L208.9,96.2 L209.0,95.8 L209.0,95.3 L209.1,94.8 L209.1,94.4 L209.2,93.9 L209.3,93.4 L209.4,92.9 L209.6,92.4 L209.7,91.9 L209.8,91.5 L210.0,91.0 L210.2,90.5 L210.4,90.0 L210.6,89.5 L210.8,89.0 L211.0,88.5 L211.3,88.0 L211.5,87.5 L211.8,87.0 L212.1,86.5 L212.4,86.0 L212.7,85.5 L213.0,85.0 L213.4,84.5 L213.7,84.1 L214.1,83.6 L214.5,83.1 L214.9,82.6 L215.3,82.2 L215.7,81.7 L216.2,81.3 L216.6,80.8 L217.1,80.4 L217.5,79.9 L218.0,79.5 L218.5,79.1 L219.0,78.7 L219.6,78.3 L220.1,77.9 L220.6,77.5 L221.2,77.1 L221.8,76.7 L222.3,76.4 L222.9,76.0 L223.5,75.7 L224.2,75.4 L224.8,75.0 L225.4,74.7 L226.1,74.4 L226.7,74.2 L227.4,73.9 L228.0,73.6 L228.7,73.4 L229.4,73.1 L230.1,72.9 L230.8,72.7 L231.5,72.5 L232.2,72.3 L232.9,72.2 L233.7,72.0 L234.4,71.9 L235.2,71.8 L235.9,71.7 L236.6,71.6 L237.4,71.5 L238.2,71.4 L238.9,71.4 L239.7,71.3 L240.5,71.3 L241.2,71.3 L242.0,71.3 L242.8,71.3 L243.5,71.4 L244.3,71.5 L245.1,71.5 L245.9,71.6 L246.6,71.7 L247.4,71.8 L248.2,72.0 L249.0,72.1 L249.7,72.3 L250.5,72.5 L251.3,72.7 L252.0,72.9 L252.8,73.1 L253.5,73.4 L254.3,73.6 L255.0,73.9 L255.8,74.2 L256.5,74.5 L257.2,74.8 L258.0,75.2 L258.7,75.5 L259.4,75.9 L260.1,76.3 L260.8,76.7 L261.5,77.1 L262.2,77.5 L262.8,77.9 L263.5,78.4 L264.2,78.8 L264.8,79.3 L265.4,79.8 L266.1,80.3 L266.7,80.8 L267.3,81.3 L267.9,81.8 L268.4,82.4 L269.0,82.9 L269.6,83.5 L270.1,84.1 L270.6,84.6 L271.2,85.2 L271.7,85.8 L272.1,86.4 L272.6,87.1 L273.1,87.7 L273.5,88.3 L274.0,89.0 L274.4,89.6 L274.8,90.3 L275.2,90.9 L275.6,91.6 L276.0,92.3 L276.3,93.0 L276.7,93.6 L277.0,94.3 L277.3,95.0 L277.6,95.7 L277.9,96.4 L278.1,97.1 L278.4,97.8 L278.6,98.5 L278.8,99.2 L279.0,100.0 L279.2,100.7 L279.4,101.4 L279.5,102.1 L279.7,102.8 L279.8,103.5 L279.9,104.2 L280.0,104.9 L280.1,105.6 L280.2,106.3 L280.2,107.0 L280.2,107.7 L280.3,108.4 L280.3,109.1 L280.3,109.8 L280.2,110.5 L280.2,111.2 L280.2,111.8 L280.1,112.5 L280.0,113.2 L279.9,113.8 L279.8,114.5 L279.7,115.1 L279.6,115.8 L279.5,116.4 L279.3,117.0 L279.1,117.6 L279.0,118.2 L278.8,118.8 L278.6,119.4 L278.4,120.0 L278.1,120.6 L277.9,121.1 L277.7,121.7 L277.4,122.2 L277.2,122.7 L276.9,123.2 L276.6,123.7 L276.3,124.2 L276.1,124.7 L275.8,125.2 L275.4,125.7 L275.1,126.1 L274.8,126.5 L274.5,127.0 L274.1,127.4 L273.8,127.8 L273.5,128.2 L273.1,128.6 L272.8,128.9 L272.4,129.3 L272.0,129.6 L271.7,129.9 L271.3,130.2 L270.9,130.5 L270.6,130.8 L270.2,131.1 L269.8,131.4 L269.4,131.6 L269.0,131.9 L268.7,132.1 L268.3,132.3 L267.9,132.5 L267.5,132.7 L267.2,132.8 L266.8,133.0 L266.4,133.1 L266.0,133.3 L265.7,133.4 L265.3,133.5 L264.9,133.6 L264.6,133.7 L264.2,133.8 L263.9,133.8 L263.5,133.9 L263.2,133.9 L262.9,133.9 L262.5,134.0 L262.2,134.0 L261.9,134.0 L261.6,134.0 L261.3,133.9 L261.0,133.9 L260.7,133.9 L260.4,133.8 L260.1,133.7 L259.8,133.7 L259.6,133.6 L259.3,133.5 L259.1,133.4 L258.9,133.3 L258.6,133.2 L258.4,133.1 L258.2,133.0 L258.0,132.8 L257.9,132.7 L257.7,132.6 L257.5,132.4 L257.4,132.3 L257.2,132.1 L257.1,131.9 L257.0,131.8 L256.9,131.6 L256.8,131.4 L256.7,131.3 L256.6,131.1 L256.5,130.9 L256.5,130.7 L256.5,130.6 L256.4,130.4 L256.4,130.2 L256.4,130.0 Z" pathlength="1" fill="none" stroke="#c026d3" stroke-width="2" stroke-linejoin="round"></path> </g> <!-- scene 3/6: a filter smoothing a noisy signal into a clean estimate --> <g class="hero-scene hero-scene-kalman"> <g class="hero-kalman-dots"> <circle cx="33.1" cy="77.7" r="4" fill="#94a3b8"></circle> <circle cx="59.4" cy="69.1" r="4" fill="#94a3b8"></circle> <circle cx="85.6" cy="42.6" r="4" fill="#94a3b8"></circle> <circle cx="111.9" cy="52.0" r="4" fill="#94a3b8"></circle> <circle cx="138.1" cy="60.0" r="4" fill="#94a3b8"></circle> <circle cx="164.4" cy="67.1" r="4" fill="#94a3b8"></circle> <circle cx="190.6" cy="99.9" r="4" fill="#94a3b8"></circle> <circle cx="216.9" cy="175.0" r="4" fill="#94a3b8"></circle> <circle cx="243.1" cy="215.3" r="4" fill="#94a3b8"></circle> <circle cx="269.4" cy="230.1" r="4" fill="#94a3b8"></circle> <circle cx="295.6" cy="225.9" r="4" fill="#94a3b8"></circle> <circle cx="321.9" cy="175.0" r="4" fill="#94a3b8"></circle> <circle cx="348.1" cy="162.6" r="4" fill="#94a3b8"></circle> <circle cx="374.4" cy="137.4" r="4" fill="#94a3b8"></circle> <circle cx="400.6" cy="96.6" r="4" fill="#94a3b8"></circle> <circle cx="426.9" cy="41.8" r="4" fill="#94a3b8"></circle> </g> <polyline class="hero-kalman-smooth" fill="none" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="680" filter="url(#hero-newton-glow)" points="20.0,119.8 25.3,107.7 30.5,96.4 35.8,86.1 41.0,77.0 46.3,69.3 51.5,62.8 56.8,57.8 62.0,54.0 67.3,51.4 72.5,49.8 77.8,49.1 83.0,49.1 88.3,49.6 93.5,50.3 98.8,51.2 104.0,52.1 109.3,52.9 114.5,53.6 119.8,54.1 125.0,54.5 130.3,54.9 135.5,55.4 140.8,56.1 146.0,57.3 151.3,59.1 156.5,61.7 161.8,65.3 167.0,70.0 172.3,75.8 177.5,83.0 182.8,91.3 188.0,100.8 193.3,111.4 198.5,122.9 203.8,135.0 209.0,147.6 214.3,160.3 219.5,172.8 224.8,184.8 230.0,196.0 235.3,206.2 240.5,215.1 245.8,222.4 251.0,228.2 256.3,232.3 261.5,234.6 266.8,235.2 272.0,234.3 277.3,231.9 282.5,228.3 287.8,223.7 293.0,218.2 298.3,212.3 303.5,206.0 308.8,199.6 314.0,193.3 319.3,187.2 324.5,181.4 329.8,176.0 335.0,171.0 340.3,166.3 345.5,161.8 350.8,157.5 356.0,153.1 361.3,148.6 366.5,143.7 371.8,138.3 377.0,132.4 382.3,125.7 387.5,118.3 392.8,110.2 398.0,101.5 403.3,92.2 408.5,82.5 413.8,72.7 419.0,62.8 424.3,53.3 429.5,44.4 434.8,36.4 440.0,29.5"></polyline> </g> <!-- scene 4/6: midpoint rule with 4, 8, then 16 rectangles converging on the area under a curve --> <g class="hero-scene hero-scene-integral"> <path class="hero-integral-area" d="M50.0,225 L50.0,130.0 L53.0,127.1 L56.0,124.3 L59.0,121.5 L62.0,118.9 L65.0,116.4 L68.0,114.0 L71.0,111.7 L74.0,109.5 L77.0,107.5 L80.0,105.6 L83.0,103.8 L86.0,102.2 L89.0,100.8 L92.0,99.5 L95.0,98.3 L98.0,97.4 L101.0,96.6 L104.0,96.0 L107.0,95.5 L110.0,95.3 L113.0,95.2 L116.0,95.2 L119.0,95.5 L122.0,95.9 L125.0,96.5 L128.0,97.2 L131.0,98.1 L134.0,99.1 L137.0,100.3 L140.0,101.7 L143.0,103.2 L146.0,104.8 L149.0,106.5 L152.0,108.4 L155.0,110.4 L158.0,112.5 L161.0,114.6 L164.0,116.9 L167.0,119.2 L170.0,121.6 L173.0,124.1 L176.0,126.6 L179.0,129.1 L182.0,131.7 L185.0,134.2 L188.0,136.8 L191.0,139.4 L194.0,142.0 L197.0,144.5 L200.0,147.0 L203.0,149.4 L206.0,151.8 L209.0,154.2 L212.0,156.4 L215.0,158.6 L218.0,160.7 L221.0,162.7 L224.0,164.5 L227.0,166.3 L230.0,167.9 L233.0,169.4 L236.0,170.8 L239.0,172.0 L242.0,173.0 L245.0,174.0 L248.0,174.7 L251.0,175.3 L254.0,175.7 L257.0,176.0 L260.0,176.0 L263.0,176.0 L266.0,175.7 L269.0,175.3 L272.0,174.6 L275.0,173.9 L278.0,172.9 L281.0,171.8 L284.0,170.5 L287.0,169.1 L290.0,167.5 L293.0,165.8 L296.0,163.9 L299.0,161.8 L302.0,159.7 L305.0,157.4 L308.0,155.0 L311.0,152.5 L314.0,149.8 L317.0,147.1 L320.0,144.3 L323.0,141.4 L326.0,138.5 L329.0,135.5 L332.0,132.4 L335.0,129.3 L338.0,126.2 L341.0,123.0 L344.0,119.9 L347.0,116.7 L350.0,113.6 L353.0,110.5 L356.0,107.4 L359.0,104.4 L362.0,101.4 L365.0,98.5 L368.0,95.7 L371.0,92.9 L374.0,90.2 L377.0,87.7 L380.0,85.2 L383.0,82.9 L386.0,80.7 L389.0,78.6 L392.0,76.6 L395.0,74.8 L398.0,73.2 L401.0,71.7 L404.0,70.3 L407.0,69.2 L410.0,68.1 L410.0,225 Z" fill="#0d9488" fill-opacity="0.25"></path> <g class="hero-integral-rects hero-integral-n4" fill="#2563eb" fill-opacity="0.22" stroke="#2563eb" stroke-width="1.2"> <rect x="50.0" y="98.3" width="90.0" height="126.7"></rect> <rect x="140.0" y="134.2" width="90.0" height="90.8"></rect> <rect x="230.0" y="173.9" width="90.0" height="51.1"></rect> <rect x="320.0" y="98.5" width="90.0" height="126.5"></rect> </g> <g class="hero-integral-rects hero-integral-n8" fill="#2563eb" fill-opacity="0.22" stroke="#2563eb" stroke-width="1.2"> <rect x="50.0" y="110.6" width="45.0" height="114.4"></rect> <rect x="95.0" y="95.3" width="45.0" height="129.7"></rect> <rect x="140.0" y="115.7" width="45.0" height="109.3"></rect> <rect x="185.0" y="153.0" width="45.0" height="72.0"></rect> <rect x="230.0" y="175.5" width="45.0" height="49.5"></rect> <rect x="275.0" y="162.9" width="45.0" height="62.1"></rect> <rect x="320.0" y="121.5" width="45.0" height="103.5"></rect> <rect x="365.0" y="79.6" width="45.0" height="145.4"></rect> </g> <g class="hero-integral-rects hero-integral-n16" fill="#2563eb" fill-opacity="0.22" stroke="#2563eb" stroke-width="1.2"> <rect x="50.0" y="119.6" width="22.5" height="105.4"></rect> <rect x="72.5" y="103.4" width="22.5" height="121.6"></rect> <rect x="95.0" y="95.6" width="22.5" height="129.4"></rect> <rect x="117.5" y="97.4" width="22.5" height="127.6"></rect> <rect x="140.0" y="107.9" width="22.5" height="117.1"></rect> <rect x="162.5" y="124.7" width="22.5" height="100.3"></rect> <rect x="185.0" y="143.9" width="22.5" height="81.1"></rect> <rect x="207.5" y="161.2" width="22.5" height="63.8"></rect> <rect x="230.0" y="172.8" width="22.5" height="52.2"></rect> <rect x="252.5" y="175.9" width="22.5" height="49.1"></rect> <rect x="275.0" y="169.5" width="22.5" height="55.5"></rect> <rect x="297.5" y="154.4" width="22.5" height="70.6"></rect> <rect x="320.0" y="133.2" width="22.5" height="91.8"></rect> <rect x="342.5" y="109.7" width="22.5" height="115.3"></rect> <rect x="365.0" y="88.3" width="22.5" height="136.7"></rect> <rect x="387.5" y="72.8" width="22.5" height="152.2"></rect> </g> <line x1="40" y1="225" x2="420" y2="225" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"></line> <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="50.0,130.0 53.0,127.1 56.0,124.3 59.0,121.5 62.0,118.9 65.0,116.4 68.0,114.0 71.0,111.7 74.0,109.5 77.0,107.5 80.0,105.6 83.0,103.8 86.0,102.2 89.0,100.8 92.0,99.5 95.0,98.3 98.0,97.4 101.0,96.6 104.0,96.0 107.0,95.5 110.0,95.3 113.0,95.2 116.0,95.2 119.0,95.5 122.0,95.9 125.0,96.5 128.0,97.2 131.0,98.1 134.0,99.1 137.0,100.3 140.0,101.7 143.0,103.2 146.0,104.8 149.0,106.5 152.0,108.4 155.0,110.4 158.0,112.5 161.0,114.6 164.0,116.9 167.0,119.2 170.0,121.6 173.0,124.1 176.0,126.6 179.0,129.1 182.0,131.7 185.0,134.2 188.0,136.8 191.0,139.4 194.0,142.0 197.0,144.5 200.0,147.0 203.0,149.4 206.0,151.8 209.0,154.2 212.0,156.4 215.0,158.6 218.0,160.7 221.0,162.7 224.0,164.5 227.0,166.3 230.0,167.9 233.0,169.4 236.0,170.8 239.0,172.0 242.0,173.0 245.0,174.0 248.0,174.7 251.0,175.3 254.0,175.7 257.0,176.0 260.0,176.0 263.0,176.0 266.0,175.7 269.0,175.3 272.0,174.6 275.0,173.9 278.0,172.9 281.0,171.8 284.0,170.5 287.0,169.1 290.0,167.5 293.0,165.8 296.0,163.9 299.0,161.8 302.0,159.7 305.0,157.4 308.0,155.0 311.0,152.5 314.0,149.8 317.0,147.1 320.0,144.3 323.0,141.4 326.0,138.5 329.0,135.5 332.0,132.4 335.0,129.3 338.0,126.2 341.0,123.0 344.0,119.9 347.0,116.7 350.0,113.6 353.0,110.5 356.0,107.4 359.0,104.4 362.0,101.4 365.0,98.5 368.0,95.7 371.0,92.9 374.0,90.2 377.0,87.7 380.0,85.2 383.0,82.9 386.0,80.7 389.0,78.6 392.0,76.6 395.0,74.8 398.0,73.2 401.0,71.7 404.0,70.3 407.0,69.2 410.0,68.1"></polyline> </g> <!-- scene 5/6: Sperner's lemma — a triangulated triangle colored so one small triangle must show all three colors --> <g class="hero-scene hero-scene-sperner"> <g class="hero-sperner-outer"> <line class="hero-sperner-draw-outer" x1="230" y1="40" x2="140" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220"></line> <line class="hero-sperner-draw-outer" x1="230" y1="40" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220"></line> <line class="hero-sperner-draw-outer" x1="140" y1="210" x2="320" y2="210" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="220"></line> </g> <g class="hero-sperner-corners"> <circle class="hero-sperner-pop-outer" cx="230" cy="40" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-outer" cx="140" cy="210" r="7" fill="#16a34a" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-outer" cx="320" cy="210" r="7" fill="#2563eb" stroke="white" stroke-width="1.5"></circle> </g> <g class="hero-sperner-inner"> <line class="hero-sperner-draw-inner" x1="185" y1="125" x2="275" y2="125" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110"></line> <line class="hero-sperner-draw-inner" x1="185" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110"></line> <line class="hero-sperner-draw-inner" x1="275" y1="125" x2="230" y2="210" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-dasharray="110"></line> </g> <polygon class="hero-sperner-highlight" points="185,125 275,125 230,210" fill="url(#hero-sperner-rainbow)" fill-opacity="0.4" stroke="url(#hero-sperner-rainbow)" stroke-width="2" filter="url(#hero-newton-glow)"></polygon> <g class="hero-sperner-mid-dots"> <circle class="hero-sperner-pop-inner" cx="185" cy="125" r="6" fill="#ca8a04" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-inner" cx="275" cy="125" r="6" fill="#c026d3" stroke="white" stroke-width="1.5"></circle> <circle class="hero-sperner-pop-inner" cx="230" cy="210" r="6" fill="#0d9488" stroke="white" stroke-width="1.5"></circle> </g> </g> <!-- scene 6/6: fixed-point iteration x -> cos(x), a cobweb spiralling in on the fixed point where cos(x) = x --> <g class="hero-scene hero-scene-fixed"> <line x1="120" y1="245" x2="350.0" y2="245" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"></line> <line x1="120" y1="245" x2="350.0" y2="15.0" stroke="#94a3b8" stroke-width="2" stroke-dasharray="4,5" stroke-linecap="round"></line> <polyline fill="none" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="120.0,80.7 122.9,80.7 125.8,80.8 128.6,80.9 131.5,81.1 134.4,81.3 137.2,81.6 140.1,81.9 143.0,82.3 145.9,82.7 148.8,83.2 151.6,83.7 154.5,84.3 157.4,84.9 160.2,85.6 163.1,86.3 166.0,87.1 168.9,87.9 171.8,88.8 174.6,89.7 177.5,90.7 180.4,91.7 183.2,92.7 186.1,93.8 189.0,95.0 191.9,96.2 194.8,97.4 197.6,98.7 200.5,100.0 203.4,101.4 206.2,102.8 209.1,104.3 212.0,105.8 214.9,107.4 217.8,108.9 220.6,110.6 223.5,112.3 226.4,114.0 229.2,115.7 232.1,117.5 235.0,119.3 237.9,121.2 240.8,123.1 243.6,125.1 246.5,127.1 249.4,129.1 252.2,131.1 255.1,133.2 258.0,135.3 260.9,137.5 263.8,139.7 266.6,141.9 269.5,144.2 272.4,146.5 275.2,148.8 278.1,151.1 281.0,153.5 283.9,155.9 286.8,158.3 289.6,160.8 292.5,163.3 295.4,165.8 298.2,168.3 301.1,170.8 304.0,173.4 306.9,176.0 309.8,178.6 312.6,181.3 315.5,183.9 318.4,186.6 321.2,189.3 324.1,192.0 327.0,194.8 329.9,197.5 332.8,200.3 335.6,203.0 338.5,205.8 341.4,208.6 344.2,211.4 347.1,214.2 350.0,217.1"></polyline> <path class="hero-fixed-web" d="M144.6,245.0 L144.6,82.6 L282.4,82.6 L282.4,154.7 L210.3,154.7 L210.3,104.9 L260.1,104.9 L260.1,136.9 L228.1,136.9 L228.1,115.0 L250.0,115.0 L250.0,129.5 L235.5,129.5 L235.5,119.7 L245.3,119.7 L245.3,126.3 L238.7,126.3 L238.7,121.8 L243.2,121.8 L243.2,124.8 L240.2,124.8" pathlength="1" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" filter="url(#hero-newton-glow)"></path> <circle class="hero-fixed-start" cx="144.6" cy="245" r="6" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> <circle class="hero-fixed-point" cx="241.4" cy="123.6" r="7" fill="#dc2626" stroke="white" stroke-width="1.5"></circle> </g>
 </svg>
 </div>
-<p><a class="vm-hero-cta" href="#browse-topics">Start exploring ↓</a></p>
 </div>
-<p>Mathematics is full of ideas that come alive the moment you can see them move. Visual Math Lab makes them touchable. It is designed to accompany introductory courses in applied mathematics and numerical methods: explore on your own, use a page as a lecture demo, or hand one to your students as a lab. Everything here is open source, so feel free to fork, adapt, and extend.</p>
 <section id="random-app" class="level2">
 <h2 class="anchored" data-anchor-id="random-app">Random app</h2>
 <p id="vm-featured-description">
@@ -1010,76 +1168,79 @@ A picture is worth a thousand equations.
 </div>
 <script>
 // Picks the app the frame below shows and writes its description above it.
-// An explicit list, like the sidebar in _quarto.yml: the Latest listing
+// An explicit list, like the sidebar in _quarto.yml: the Gallery listing
 // further down is paginated by List.js after load, so its DOM isn't a
 // reliable place to read the full set from. Each entry mirrors the app's
 // own title: and description: front matter. Adding an app means adding it
-// here too.
+// here too; scripts/random-apps.test.js fails until you do.
 (function () {
   var apps = [
     {slug: "adaptive-integration",
      title: "Adaptive Integration",
-     description: "Refines a numerical integral by subdividing only the sub-intervals where the estimate is still inaccurate."},
+     description: "Refine a numerical integral only where the estimate is still inaccurate."},
     {slug: "adaptive-ode-methods",
      title: "Adaptive Methods for ODEs",
-     description: "Steps an ODE solver with an adaptive step size that shrinks or grows to hold the local error near a tolerance."},
+     description: "Solve an ODE with a step size that adapts to keep the error near a tolerance."},
     {slug: "barycentric-coordinates",
      title: "Barycentric Coordinates",
-     description: "Introduces barycentric coordinates on a triangle as the setting for Sperner's Lemma."},
+     description: "Explore barycentric coordinates on a triangle, the setting for Sperner's Lemma."},
     {slug: "bisection-method",
      title: "Bisection Method",
-     description: "Finds a root by repeatedly halving a bracketing interval where the function changes sign."},
+     description: "Find a root by repeatedly halving an interval where the function changes sign."},
     {slug: "butcher-tableau",
      title: "Butcher Tableau Explorer",
-     description: "Explores how a Runge-Kutta method's Butcher tableau determines its stages and order."},
+     description: "See how a Butcher tableau determines a Runge-Kutta method's stages and order."},
     {slug: "distribution-relationships",
      title: "Distribution Relationships",
-     description: "A clickable map of how the standard probability distributions turn into one another, with each distribution's density plotted from its own formula."},
+     description: "Explore how the standard probability distributions turn into one another."},
     {slug: "explicit-ode-methods",
      title: "Explicit Methods for ODEs",
-     description: "Compares explicit ODE solvers -- Euler, midpoint, and RK4 -- on the same initial value problem."},
+     description: "Compare Euler, midpoint and RK4 on the same initial value problem."},
     {slug: "fixed-point-iteration",
      title: "Fixed Point Iteration",
-     description: "Solves x = g(x) by repeatedly applying g, and shows when that iteration converges or diverges."},
+     description: "Solve x = g(x) by applying g over and over, and see when that converges."},
     {slug: "implicit-ode-methods",
      title: "Implicit Methods for ODEs",
-     description: "Compares implicit ODE solvers against explicit ones on a stiff initial value problem."},
+     description: "Compare implicit and explicit ODE solvers on a stiff problem."},
     {slug: "l1-vs-l2-regression",
      title: "L1 vs. L2 Regression",
-     description: "Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers."},
+     description: "Compare least-squares and least-absolute-deviations regression on data with outliers."},
     {slug: "newton-method",
      title: "Newton's Method",
-     description: "Finds roots by repeatedly following the tangent line to its x-intercept, converging quadratically near a simple root."},
+     description: "Find a root by following tangent lines down to the x-axis."},
     {slug: "numerical-integration",
      title: "Numerical Integration",
-     description: "Compares Riemann sums, the trapezoid rule, and Simpson's rule for approximating a definite integral."},
+     description: "Compare Riemann sums, the trapezoid rule and Simpson's rule."},
+    {slug: "particle-filter-tracking",
+     title: "Particle Filter Tracking",
+     description: "Track a moving object from noisy range-only readings using a particle filter."},
     {slug: "polynomial-fits",
      title: "Polynomial Fits",
-     description: "Fits polynomials of increasing degree to noisy data and shows the resulting overfitting."},
+     description: "Fit polynomials of increasing degree to noisy data and watch them overfit."},
     {slug: "polynomial-interpolation",
      title: "Polynomial Interpolation",
-     description: "Compares piecewise linear and natural cubic spline interpolation through a set of points."},
+     description: "Compare piecewise linear and cubic spline interpolation through a set of points."},
     {slug: "positive-predictive-value",
      title: "Positive Predictive Value",
-     description: "Shows how a test's positive predictive value depends on disease prevalence, not just its sensitivity and specificity."},
+     description: "If you test positive, what are the chances you have the condition?"},
     {slug: "recursive-filters-1d",
      title: "1D Recursive Filters",
-     description: "Compares a moving average, an exponential moving average, and a Kalman filter for smoothing a noisy 1D signal."},
+     description: "Smooth a noisy signal with a moving average, an exponential moving average and a Kalman filter."},
     {slug: "secant-method",
      title: "Secant Method",
-     description: "Approximates Newton's method without a derivative, using the secant line through the last two iterates."},
+     description: "Find a root like Newton's method, but without the derivative."},
     {slug: "sperners-lemma-combinatorial-proof",
      title: "Sperner's Lemma - Combinatorial Proof",
-     description: "Proves Sperner's Lemma with the 'doors' argument: a path that must exit through an odd number of bicolored edges."},
+     description: "Prove Sperner's Lemma by walking through doors."},
     {slug: "sperners-lemma-geometric-proof",
      title: "Sperner's Lemma - Geometric Proof",
-     description: "Proves Sperner's Lemma with a discrete degree argument that counts oriented RGB triangles."},
+     description: "Prove Sperner's Lemma by counting oriented triangles."},
     {slug: "sperners-lemma-statement",
      title: "Sperner's Lemma - Statement",
-     description: "States Sperner's Lemma on a triangulated triangle and lets you color vertices to test the condition interactively."},
+     description: "Color the vertices of a triangulated triangle and test Sperner's Lemma."},
     {slug: "spirographs",
      title: "Spirographs",
-     description: "Rolls one circle inside or outside another and traces the curve drawn by a pen fixed to the rolling circle."}
+     description: "Roll one circle around another and trace the curve a pen draws."}
   ]
   var frame = document.getElementById("vm-featured-frame")
   var description = document.getElementById("vm-featured-description")
@@ -1187,11 +1348,11 @@ Least-squares vs.&nbsp;robust regression, and polynomial fits at increasing degr
 Updating beliefs from new evidence, and smoothing noisy signals over time.</a></p>
 </div>
 </section>
-<section id="latest" class="level2">
-<h2 class="anchored" data-anchor-id="latest">Latest</h2>
+<section id="gallery" class="level2">
+<h2 class="anchored" data-anchor-id="gallery">Gallery</h2>
 <div id="listing-latest-listing" class="quarto-listing quarto-listing-container-grid">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNQYXJ0aWNsZSUyMEZpbHRlciUyQ01vbnRlJTIwQ2FybG8lMjBNZXRob2RzJTJDQmF5ZXNpYW4lMjBGaWx0ZXJpbmclMkNTdGF0ZSUyMEVzdGltYXRpb24=" data-listing-date-sort="1790899200000" data-listing-file-modified-sort="1791855742459" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="38" data-listing-word-count-sort="7539">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNQYXJ0aWNsZSUyMEZpbHRlciUyQ01vbnRlJTIwQ2FybG8lMjBNZXRob2RzJTJDQmF5ZXNpYW4lMjBGaWx0ZXJpbmclMkNTdGF0ZSUyMEVzdGltYXRpb24=" data-listing-date-sort="1790899200000" data-listing-file-modified-sort="1791913801199" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="38" data-listing-word-count-sort="7539">
 <a href="./apps/particle-filter-tracking/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1202,12 +1363,12 @@ Updating beliefs from new evidence, and smoothing noisy signals over time.</a></
 Particle Filter Tracking
 </h5>
 <div class="card-text listing-description delink">
-<p>Tracks a moving object from noisy range-only readings taken by several fixed sensors using a particle filter, showing how the weighted particle cloud follows the target, or…</p>
+<p>Track a moving object from noisy range-only readings using a particle filter.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="TWF0aCUyMEFydCUyQ0NvbXBsZXglMjBOdW1iZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcyUyQ1BvbGFyJTIwQ29vcmRpbmF0ZXMlMkNSb3VsZXR0ZXM=" data-listing-date-sort="1790121600000" data-listing-file-modified-sort="1791855742466" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5278">
+<div class="g-col-1" data-index="1" data-categories="TWF0aCUyMEFydCUyQ0NvbXBsZXglMjBOdW1iZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcyUyQ1BvbGFyJTIwQ29vcmRpbmF0ZXMlMkNSb3VsZXR0ZXM=" data-listing-date-sort="1790121600000" data-listing-file-modified-sort="1791913801204" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5278">
 <a href="./apps/spirographs/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1218,12 +1379,12 @@ Particle Filter Tracking
 Spirographs
 </h5>
 <div class="card-text listing-description delink">
-<p>Rolls one circle inside or outside another and traces the curve drawn by a pen fixed to the rolling circle.</p>
+<p>Roll one circle around another and trace the curve a pen draws.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1791855742455" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16309">
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1791913801196" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16309">
 <a href="./apps/distribution-relationships/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1234,12 +1395,12 @@ Spirographs
 Distribution Relationships
 </h5>
 <div class="card-text listing-description delink">
-<p>A clickable map of how the standard probability distributions turn into one another.</p>
+<p>Explore how the standard probability distributions turn into one another.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1791855742462" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4253">
+<div class="g-col-1" data-index="3" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1791913801201" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4253">
 <a href="./apps/recursive-filters-1d/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1250,12 +1411,12 @@ Distribution Relationships
 1D Recursive Filters
 </h5>
 <div class="card-text listing-description delink">
-<p>Compares a moving average, an exponential moving average, and a Kalman filter for smoothing a noisy 1D signal.</p>
+<p>Smooth a noisy signal with a moving average, an exponential moving average and a Kalman filter.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="4" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1791855742461" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5329">
+<div class="g-col-1" data-index="4" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1791913801200" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5329">
 <a href="./apps/positive-predictive-value/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1266,12 +1427,12 @@ Distribution Relationships
 Positive Predictive Value
 </h5>
 <div class="card-text listing-description delink">
-<p>Shows how a test’s positive predictive value depends on disease prevalence, not just its sensitivity and specificity.</p>
+<p>If you test positive, what are the chances you have the condition?</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="5" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1791855742458" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2313">
+<div class="g-col-1" data-index="5" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1791913801198" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2313">
 <a href="./apps/l1-vs-l2-regression/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1282,12 +1443,12 @@ Positive Predictive Value
 L1 vs.&nbsp;L2 Regression
 </h5>
 <div class="card-text listing-description delink">
-<p>Compares least-squares (L2) and least-absolute-deviations (L1) regression on data with outliers.</p>
+<p>Compare least-squares and least-absolute-deviations regression on data with outliers.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="6" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1791855742460" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3181">
+<div class="g-col-1" data-index="6" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1791913801199" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3181">
 <a href="./apps/polynomial-fits/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1298,12 +1459,12 @@ L1 vs.&nbsp;L2 Regression
 Polynomial Fits
 </h5>
 <div class="card-text listing-description delink">
-<p>Fits polynomials of increasing degree to noisy data and shows the resulting overfitting.</p>
+<p>Fit polynomials of increasing degree to noisy data and watch them overfit.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742453" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3380">
+<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801194" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3380">
 <a href="./apps/adaptive-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1314,12 +1475,12 @@ Polynomial Fits
 Adaptive Integration
 </h5>
 <div class="card-text listing-description delink">
-<p>Refines a numerical integral by subdividing only the sub-intervals where the estimate is still inaccurate.</p>
+<p>Refine a numerical integral only where the estimate is still inaccurate.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742454" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3479">
+<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801194" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3479">
 <a href="./apps/adaptive-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1330,12 +1491,12 @@ Adaptive Integration
 Adaptive Methods for ODEs
 </h5>
 <div class="card-text listing-description delink">
-<p>Steps an ODE solver with an adaptive step size that shrinks or grows to hold the local error near a tolerance.</p>
+<p>Solve an ODE with a step size that adapts to keep the error near a tolerance.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742455" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5392">
+<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801195" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5392">
 <a href="./apps/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1346,12 +1507,12 @@ Adaptive Methods for ODEs
 Butcher Tableau Explorer
 </h5>
 <div class="card-text listing-description delink">
-<p>Explores how a Runge-Kutta method’s Butcher tableau determines its stages and order.</p>
+<p>See how a Butcher tableau determines a Runge-Kutta method’s stages and order.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742457" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4011">
+<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801197" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4011">
 <a href="./apps/explicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1362,12 +1523,12 @@ Butcher Tableau Explorer
 Explicit Methods for ODEs
 </h5>
 <div class="card-text listing-description delink">
-<p>Compares explicit ODE solvers – Euler, midpoint, and RK4 – on the same initial value problem.</p>
+<p>Compare Euler, midpoint and RK4 on the same initial value problem.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742458" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3549">
+<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801198" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3549">
 <a href="./apps/implicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1378,12 +1539,12 @@ Explicit Methods for ODEs
 Implicit Methods for ODEs
 </h5>
 <div class="card-text listing-description delink">
-<p>Compares implicit ODE solvers against explicit ones on a stiff initial value problem.</p>
+<p>Compare implicit and explicit ODE solvers on a stiff problem.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742459" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5054">
+<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801198" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5054">
 <a href="./apps/numerical-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1394,12 +1555,12 @@ Implicit Methods for ODEs
 Numerical Integration
 </h5>
 <div class="card-text listing-description delink">
-<p>Compares Riemann sums, the trapezoid rule, and Simpson’s rule for approximating a definite integral.</p>
+<p>Compare Riemann sums, the trapezoid rule and Simpson’s rule.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aCUyQ0Jhc2lzJTIwRnVuY3Rpb25z" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791855742461" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="31" data-listing-word-count-sort="6187">
+<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aCUyQ0Jhc2lzJTIwRnVuY3Rpb25z" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1791913801200" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="31" data-listing-word-count-sort="6187">
 <a href="./apps/polynomial-interpolation/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1410,12 +1571,12 @@ Numerical Integration
 Polynomial Interpolation
 </h5>
 <div class="card-text listing-description delink">
-<p>Compares piecewise linear and natural cubic spline interpolation through a set of points.</p>
+<p>Compare piecewise linear and cubic spline interpolation through a set of points.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791855742454" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4020">
+<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791913801195" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4020">
 <a href="./apps/bisection-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1426,12 +1587,12 @@ Polynomial Interpolation
 Bisection Method
 </h5>
 <div class="card-text listing-description delink">
-<p>Finds a root by repeatedly halving a bracketing interval where the function changes sign.</p>
+<p>Find a root by repeatedly halving an interval where the function changes sign.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791855742458" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3028">
+<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791913801197" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3028">
 <a href="./apps/fixed-point-iteration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1442,12 +1603,12 @@ Bisection Method
 Fixed Point Iteration
 </h5>
 <div class="card-text listing-description delink">
-<p>Solves x = g(x) by repeatedly applying g, and shows when that iteration converges or diverges.</p>
+<p>Solve x = g(x) by applying g over and over, and see when that converges.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="16" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791855742458" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4134">
+<div class="g-col-1" data-index="16" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791913801198" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4134">
 <a href="./apps/newton-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1458,12 +1619,12 @@ Fixed Point Iteration
 Newton’s Method
 </h5>
 <div class="card-text listing-description delink">
-<p>Finds roots by repeatedly following the tangent line to its x-intercept, converging quadratically near a simple root.</p>
+<p>Find a root by following tangent lines down to the x-axis.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="17" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ0ludmVyc2UlMjBRdWFkcmF0aWMlMjBJbnRlcnBvbGF0aW9uJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791855742463" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5134">
+<div class="g-col-1" data-index="17" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ0ludmVyc2UlMjBRdWFkcmF0aWMlMjBJbnRlcnBvbGF0aW9uJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1791913801202" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5134">
 <a href="./apps/secant-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1474,12 +1635,12 @@ Newton’s Method
 Secant Method
 </h5>
 <div class="card-text listing-description delink">
-<p>Approximates Newton’s method without a derivative, using the secant line through the last two iterates, or inverse quadratic interpolation through the last three.</p>
+<p>Find a root like Newton’s method, but without the derivative.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1791855742465" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2660">
+<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1791913801203" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2660">
 <a href="./apps/sperners-lemma-geometric-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1490,12 +1651,12 @@ Secant Method
 Sperner’s Lemma - Geometric Proof
 </h5>
 <div class="card-text listing-description delink">
-<p>Proves Sperner’s Lemma with a discrete degree argument that counts oriented RGB triangles.</p>
+<p>Prove Sperner’s Lemma by counting oriented triangles.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1791855742464" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3729">
+<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1791913801202" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3729">
 <a href="./apps/sperners-lemma-combinatorial-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1506,12 +1667,12 @@ Sperner’s Lemma - Geometric Proof
 Sperner’s Lemma - Combinatorial Proof
 </h5>
 <div class="card-text listing-description delink">
-<p>Proves Sperner’s Lemma with the ‘doors’ argument: a path that must exit through an odd number of bicolored edges.</p>
+<p>Prove Sperner’s Lemma by walking through doors.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="20" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1791855742466" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1123">
+<div class="g-col-1" data-index="20" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1791913801204" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1123">
 <a href="./apps/sperners-lemma-statement/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1522,12 +1683,12 @@ Sperner’s Lemma - Combinatorial Proof
 Sperner’s Lemma - Statement
 </h5>
 <div class="card-text listing-description delink">
-<p>States Sperner’s Lemma on a triangulated triangle and lets you color vertices to test the condition interactively.</p>
+<p>Color the vertices of a triangulated triangle and test Sperner’s Lemma.</p>
 </div>
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="21" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1791855742454" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2539">
+<div class="g-col-1" data-index="21" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1791913801195" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2539">
 <a href="./apps/barycentric-coordinates/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1538,7 +1699,7 @@ Sperner’s Lemma - Statement
 Barycentric Coordinates
 </h5>
 <div class="card-text listing-description delink">
-<p>Introduces barycentric coordinates on a triangle as the setting for Sperner’s Lemma.</p>
+<p>Explore barycentric coordinates on a triangle, the setting for Sperner’s Lemma.</p>
 </div>
 </div>
 </div></a>

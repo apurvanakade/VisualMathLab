@@ -79,31 +79,26 @@ traceColors = new Map([
 // examples backs the "Try an example" dropdown. max is listed first: it
 // bounds the t slider, whose view is recreated when it changes.
 examples = [
-  // Special cases listed at the bottom of the page, one per (R, r, mode):
-  // a case that differs from another only in d (the ellipse, the limaçon)
-  // is a drag of the d slider away, so it is link-only. id is what their
-  // links there name (see exampleLinks).
+  // Classic named curves, one per (R, r, mode): a case that differs from
+  // another only in d (the ellipse, the limaçon) is a drag of the d slider
+  // away, so it is only in the menagerie at the bottom of the page.
   {
-    id: "line",
     title: "R = 2r: straight line (d = r) → ellipse",
     params: {max: "30", R: "2", r: "1", d: "1", mode: "inside"}
   },
   {
-    id: "astroid",
     title: "Hypocycloid: astroid (R = 4r, d = r)",
     params: {max: "30", R: "4", r: "1", d: "1", mode: "inside"}
   },
   {
-    id: "cardioid",
     title: "R = r outside: cardioid (d = r) → limaçon",
     params: {max: "30", R: "1", r: "1", d: "1", mode: "outside"}
   },
   {
-    id: "rose",
     title: "Rose (d = R − r)",
     params: {max: "30", R: "8", r: "3", d: "5", mode: "inside"}
   },
-  // Beyond the special cases: rational and irrational ratios. The first is
+  // Beyond the named curves: rational and irrational ratios. The first is
   // the page's default inputs, so the dropdown names it on load.
   {
     title: "Rational ratio: R/r = 8/5, d = r",
@@ -237,48 +232,6 @@ syncExampleFromFields = {
 ```
 
 </div>
-
-```{ojs}
-//| output: false
-// linkOnlyExamples: special cases linked from the bottom of the page that
-// aren't in the dropdown, to keep that list short.
-linkOnlyExamples = [
-  {id: "ellipse", params: {max: "30", R: "2", r: "1", d: "0.5", mode: "inside"}},
-  {id: "nephroid", params: {max: "30", R: "2", r: "1", d: "1", mode: "outside"}},
-  {id: "limacon-loop", params: {max: "30", R: "1", r: "1", d: "1.6", mode: "outside"}}
-]
-```
-
-```{ojs}
-//| output: false
-// exampleLinks wires the "Try it" links in the special cases at the bottom
-// of the page to their examples. Each href is the example's own URL, so opening it in a
-// new tab or copying it works; a plain click instead applies the example in
-// place, like the dropdown (no reload), and scrolls back up to the chart.
-exampleLinks = {
-  for (const link of document.querySelectorAll("a.spiro-example")) {
-    let example = null
-    for (const candidate of [...examples, ...linkOnlyExamples]) {
-      if (candidate.id === link.dataset.example) example = candidate
-    }
-    if (!example) continue
-    link.href = `${window.location.pathname}?${new URLSearchParams(example.params)}`
-    link.addEventListener("click", (e) => {
-      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
-      e.preventDefault()
-      // A link-only example isn't a dropdown option, so the dropdown goes
-      // back to its placeholder rather than naming a stale example.
-      if (examples.includes(example)) {
-        (viewof exampleSelect).value = example
-      } else {
-        (viewof exampleSelect).value = null
-      }
-      document.querySelector(".vm-app").scrollIntoView({behavior: "smooth"})
-      VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
-    })
-  }
-}
-```
 
 ```{ojs}
 //| output: false
@@ -694,8 +647,47 @@ with the upper sign for inside and the lower for outside throughout.
 
 <style>
 .spiro-equations td { vertical-align: middle; }
-#special-cases td { vertical-align: middle; }
-#special-cases td img { max-width: none; }
+.spiro-menagerie {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 0.75rem;
+}
+.spiro-menagerie a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  height: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  font-size: 0.85rem;
+  line-height: 1.3;
+  text-align: center;
+  text-decoration: none;
+}
+.spiro-menagerie a:hover,
+.spiro-menagerie a:focus-visible {
+  border-color: var(--vm-accent);
+  background: var(--vm-surface-hover);
+}
+.spiro-menagerie svg {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+.spiro-menagerie path {
+  fill: none;
+  stroke: var(--vm-color-fn);
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
 </style>
 
 ```{ojs}
@@ -788,14 +780,107 @@ equationsTable = {
 }
 ```
 
-## Special cases
+## A menagerie
 
-| Curve | Special case |
-|:----:|:-----------------------|
-| ![Straight line](line.svg){width=120} | **Straight line (Tusi couple).** Inside with $R = 2r$ and $d = r$, the pen runs back and forth along a diameter of the fixed circle: $x(t) = 2r\cos t$, $y(t) = 0$. [Try it](#){.spiro-example data-example="line"} |
-| ![Ellipse](ellipse.svg){width=120} | **Ellipse.** Inside with $R = 2r$ and $d \ne r$: $x(t) = (r + d)\cos t$, $y(t) = (r - d)\sin t$, with semi-axes $\lvert r + d \rvert$ and $\lvert r - d \rvert$. [Try it](#){.spiro-example data-example="ellipse"} |
-| ![Astroid, a hypocycloid](hypocycloid.svg){width=120} | **Hypocycloid.** Inside with $d = r$, the pen touches the fixed circle and leaves a cusp each time. $R = nr$ gives $n$ cusps: the deltoid for $n = 3$, the astroid (pictured) for $n = 4$. [Try it](#){.spiro-example data-example="astroid"} |
-| ![Nephroid, an epicycloid](epicycloid.svg){width=120} | **Epicycloid.** Outside with $d = r$, again one cusp per touch. $R = nr$ gives $n$ cusps: the cardioid for $n = 1$, the nephroid (pictured) for $n = 2$. [Try it](#){.spiro-example data-example="nephroid"} |
-| ![Cardioid](cardioid.svg){width=120} | **Cardioid.** Outside with $R = r$ and $d = r$, a heart with a single cusp at $(R, 0)$; about that cusp it is $\rho = 2r(1 - \cos\phi)$. [Try it](#){.spiro-example data-example="cardioid"} |
-| ![Limaçon with an inner loop](limacon.svg){width=120} | **Limaçon.** Outside with $R = r$: $z(t) = 2r\,e^{it} - d\,e^{2it}$. An inner loop when $d > r$ (pictured), a cusp at $d = r$, a dimple when $r/2 < d < r$, convex when $d \le r/2$. [Try it](#){.spiro-example data-example="limacon-loop"} |
-| ![Rose](rose.svg){width=120} | **Rose (rhodonea).** Inside with $d = R - r$: $z(t) = 2a\cos\big(\tfrac{m}{2}t\big)\,e^{i(1 - \frac{m}{2})t}$, so every petal passes through the origin. [Try it](#){.spiro-example data-example="rose"} |
+```{ojs}
+//| output: false
+// menagerie: the curves in the grid below, each loaded into the app by its
+// card. params are in the same order as an example's (max first: it bounds
+// the t slider). caption overrides the parameter caption for a curve
+// without a name whose radii aren't plain numbers.
+menagerie = [
+  {name: "Tusi couple", params: {max: "30", R: "2", r: "1", d: "1", mode: "inside"}},
+  {name: "Ellipse", params: {max: "30", R: "2", r: "1", d: "0.5", mode: "inside"}},
+  {name: "Deltoid", params: {max: "30", R: "3", r: "1", d: "1", mode: "inside"}},
+  {name: "Astroid", params: {max: "30", R: "4", r: "1", d: "1", mode: "inside"}},
+  {name: "Cardioid", params: {max: "30", R: "1", r: "1", d: "1", mode: "outside"}},
+  {name: "Nephroid", params: {max: "30", R: "2", r: "1", d: "1", mode: "outside"}},
+  {name: "Ranunculoid", params: {max: "30", R: "5", r: "1", d: "1", mode: "outside"}},
+  {name: "Limaçon", params: {max: "30", R: "1", r: "1", d: "1.6", mode: "outside"}},
+  {name: "Rose", params: {max: "30", R: "8", r: "3", d: "5", mode: "inside"}},
+  {params: {max: "30", R: "8", r: "5", d: "5", mode: "inside"}},
+  {params: {max: "30", R: "5", r: "3", d: "5", mode: "inside"}},
+  {params: {max: "30", R: "3", r: "2", d: "1.5", mode: "inside"}},
+  {params: {max: "30", R: "7", r: "4", d: "5", mode: "inside"}},
+  {params: {max: "30", R: "11", r: "4", d: "6", mode: "inside"}},
+  {params: {max: "30", R: "105", r: "36", d: "30", mode: "inside"}},
+  {params: {max: "30", R: "5", r: "2", d: "3", mode: "outside"}},
+  {params: {max: "30", R: "3", r: "1", d: "1.8", mode: "outside"}},
+  {caption: "R = √2, r = 1, d = 0.8, inside", params: {max: "40", R: "sqrt(2)", r: "1", d: "0.8", mode: "inside"}},
+  {caption: "R = φ, r = 1, d = 1.4, outside", params: {max: "30", R: "(1 + sqrt(5))/2", r: "1", d: "1.4", mode: "outside"}}
+]
+```
+
+```{ojs}
+// menagerieGrid: one card per curve, its whole path drawn until it closes
+// (Max turns if it never does). Each card's href is the curve's own URL, so
+// opening it in a new tab or copying it works; a plain click instead
+// applies it in place, like the dropdown (no reload), and scrolls back up
+// to the chart. The dropdown names it, if it is an example, by itself.
+menagerieGrid = {
+  const svgNS = "http://www.w3.org/2000/svg"
+  const list = document.createElement("ul")
+  list.className = "spiro-menagerie"
+
+  for (const entry of menagerie) {
+    const {params} = entry
+    const R = VM.expressions.makeNumber(window.math, params.R)
+    const r = VM.expressions.makeNumber(window.math, params.r)
+    const d = VM.expressions.makeNumber(window.math, params.d)
+    const geometry = curve(R, r, d, params.mode)
+
+    // Turns until the curve closes, as in the result cell.
+    let T = Number(params.max)
+    const fraction = rationalApprox(R / r)
+    if (d === 0) {
+      T = 1
+    } else if (fraction) {
+      T = fraction.q
+    }
+    const perTurn = 240 * (1 + Math.abs(geometry.k))
+    const count = Math.max(400, Math.min(6000, Math.ceil(perTurn * T)))
+
+    // SVG's y axis points down, so y is negated to match the chart.
+    let pathText = ""
+    let reach = 0
+    for (let i = 0; i <= count; i++) {
+      const [x, y] = geometry.pen(2 * Math.PI * T * i / count)
+      let command = "L"
+      if (i === 0) command = "M"
+      pathText += `${command}${x.toFixed(4)} ${(-y).toFixed(4)}`
+      reach = Math.max(reach, Math.abs(x), Math.abs(y))
+    }
+    const half = reach * 1.06
+
+    const svg = document.createElementNS(svgNS, "svg")
+    svg.setAttribute("viewBox", `${-half} ${-half} ${2 * half} ${2 * half}`)
+    svg.setAttribute("aria-hidden", "true")
+    const path = document.createElementNS(svgNS, "path")
+    path.setAttribute("d", pathText)
+    svg.append(path)
+
+    let parameters = `R = ${params.R}, r = ${params.r}, d = ${params.d}, ${params.mode}`
+    if (entry.caption) parameters = entry.caption
+    let caption = parameters
+    if (entry.name) caption = entry.name
+
+    const link = document.createElement("a")
+    link.href = `${window.location.pathname}?${new URLSearchParams(params)}`
+    link.title = parameters
+    const label = document.createElement("span")
+    label.textContent = caption
+    link.append(svg, label)
+    link.addEventListener("click", (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+      e.preventDefault()
+      document.querySelector(".vm-app").scrollIntoView({behavior: "smooth"})
+      VM.ui.applyExampleParams(exampleFieldSelectors, params, viewof plotTrigger)
+    })
+
+    const item = document.createElement("li")
+    item.append(link)
+    list.append(item)
+  }
+  return list
+}
+```

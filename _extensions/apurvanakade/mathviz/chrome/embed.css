@@ -126,3 +126,30 @@ html.vm-embed .vm-app-active .plotly-box-large {
   height: 100%;
   min-height: 300px;
 }
+
+/* A split page (chrome/split.css) in a frame: the app is the page, so it goes
+ * back into normal flow, with no pane chrome, no divider and no width held
+ * back for a pane that isn't there. split.js does nothing in embed mode, so
+ * the chart takes its height from the rules above, not the pane's. */
+html.vm-embed body:has(.vm-split) {
+  padding-right: 0;
+}
+
+html.vm-embed .vm-split {
+  padding: 0;
+}
+
+html.vm-embed .vm-split > .vm-app {
+  position: static;
+  width: auto;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  /* The pane centers an app with no Plotly chart in it; a frame is the app's
+   * own size, so it starts at the top like any other embed. */
+  justify-content: normal;
+}
+
+html.vm-embed .vm-split-handle {
+  display: none !important;
+}

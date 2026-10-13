@@ -19,7 +19,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
+::::::::: {.vm-split}
+
 <style>
+/* The three rate sliders share one grid row, and each carries a play
+   button and a number box of fixed width beside its track. At the site's
+   250px grid minimum, in the app pane beside the text, that left each track
+   54px. A 280px minimum wraps them two to a row there (one per row in a
+   narrower pane), which leaves each track about 140px. */
+.ojs-panel.ojs-grid.ppv-sliders {
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
 /* Page-local styles: the inline swatches in the explanation panels under
    each grid -- markup only this page emits, so it lives here rather than in
    a shared stylesheet (see CLAUDE.md's page-local CSS convention). Colors
@@ -443,7 +453,7 @@ function legendPanel(title, rows, note) {
 
 <div class="vm-app">
 
-<div class="ojs-panel ojs-grid">
+<div class="ojs-panel ojs-grid ppv-sliders">
 
 ```{ojs}
 viewof prevalence = {
@@ -812,3 +822,5 @@ Now suppose you ran a study today, found that most people who tested positive di
 - Eddy, D. M. (1982). Probabilistic Reasoning in Clinical Medicine: Problems and Opportunities. In D. Kahneman, P. Slovic, & A. Tversky (Eds.), *Judgment under Uncertainty: Heuristics and Biases* (pp. 249–267). Cambridge University Press. [https://doi.org/10.1017/CBO9780511809477.019](https://doi.org/10.1017/CBO9780511809477.019).
 - Hoffrage, U., & Gigerenzer, G. (1998). Using Natural Frequencies to Improve Diagnostic Inferences. *Academic Medicine*, 73(5), 538–540. [https://doi.org/10.1097/00001888-199805000-00024](https://doi.org/10.1097/00001888-199805000-00024).
 - Lee, C. I., Abraham, L., Miglioretti, D. L., Stout, N. K., Kerlikowske, K., Henderson, L. M., Tosteson, A. N. A., Bissell, M. C. S., Onega, T., Sprague, B. L., Sabatino, S. A., Lawson, M. B., Lowry, K. P., Buist, D. S. M., & Breast Cancer Surveillance Consortium (2023). National Performance Benchmarks for Screening Digital Breast Tomosynthesis: Update from the Breast Cancer Surveillance Consortium. *Radiology*, 307(4), e222499. [https://doi.org/10.1148/radiol.222499](https://doi.org/10.1148/radiol.222499). Source of this page's sensitivity (87.4%), specificity (92.2%) and prevalence (5.8 cancers detected plus 0.8 missed per 1,000 screens), plus the recall rate (8.3%) and the PPV after screening (6.9%) and after biopsy (32.2%), from 458,175 U.S. screening examinations, 2011–2018.
+
+:::::::::

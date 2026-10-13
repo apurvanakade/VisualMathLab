@@ -20,6 +20,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 -->
 
+::::::::: {.vm-split}
+
 Suppose you roll a circle of radius 1 around the inside of a circle of radius 2, and follow a single point on the smaller circle. What path does that point trace? Think of an answer before looking below. You might be surprised.
 
 ![](puzzle.svg){width=200 fig-align="center" fig-alt="A circle of radius 1 rolling inside a circle of radius 2, with one point on the small circle marked and an arrow showing the direction of rolling."}
@@ -79,6 +81,13 @@ traceColors = new Map([
 // examples backs the "Try an example" dropdown. max is listed first: it
 // bounds the t slider, whose view is recreated when it changes.
 examples = [
+  // The page's default inputs come first, so the dropdown names them on
+  // load: a curve that doesn't give away the puzzle at the top of the page
+  // (R = 2r, the first named curve below, is its answer).
+  {
+    title: "Rational ratio: R/r = 8/5, d = r",
+    params: {max: "30", R: "8", r: "5", d: "5", mode: "inside"}
+  },
   // Classic named curves, one per (R, r, mode): a case that differs from
   // another only in d (the ellipse, the limaçon) is a drag of the d slider
   // away, so it is only in the menagerie at the bottom of the page.
@@ -98,12 +107,7 @@ examples = [
     title: "Rose (d = R − r)",
     params: {max: "30", R: "8", r: "3", d: "5", mode: "inside"}
   },
-  // Beyond the named curves: rational and irrational ratios. The first is
-  // the page's default inputs, so the dropdown names it on load.
-  {
-    title: "Rational ratio: R/r = 8/5, d = r",
-    params: {max: "30", R: "8", r: "5", d: "5", mode: "inside"}
-  },
+  // Beyond the named curves: more rational ratios, and an irrational one.
   {
     title: "Rational ratio: five-point star (R/r = 5/3)",
     params: {max: "30", R: "5", r: "3", d: "5", mode: "inside"}
@@ -529,33 +533,14 @@ mainPlot = {
     }
     const config = VM.plotting.config()
 
-    // Same curve as the last draw: keep whatever range is on screen, so a
-    // reader's zoom survives moving d or t. uirevision alone can't do this
-    // here: scaleanchor writes its adjusted range back into the div's
-    // layout, so [-half, half] always looks like a new range to Plotly and
-    // would replace the zoom.
-    if (_plotDiv && _plotDiv.layout && _plotDiv.layout.uirevision === uirevision) {
-      layout.xaxis.range = _plotDiv.layout.xaxis.range.slice()
-      layout.yaxis.range = _plotDiv.layout.yaxis.range.slice()
-    }
-
+    // The shared Plotly patch keeps the reader's zoom on this locked-axis
+    // chart while the uirevision is unchanged, and VM.plotting.autoResize
+    // refits it after every resize without zooming out.
     if (!_plotDiv) {
       _plotDiv = document.createElement("div")
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, data, layout, config)
       VM.plotting.autoResize(_plotDiv)
-      // The first draw happens detached, at Plotly's 700x450 default, and
-      // scaleanchor widens the y-range to keep x and y at the same scale in
-      // that box; the resize to the real box then keeps the widened range.
-      // So once the div is on the page, resize it and redraw with the
-      // intended range, or the first slider move would visibly rescale.
-      const div = _plotDiv
-      const firstFit = new ResizeObserver(() => {
-        if (!div.isConnected || div.getClientRects().length === 0) return
-        firstFit.disconnect()
-        Plotly.Plots.resize(div).then(() => Plotly.react(div, data, layout, config))
-      })
-      firstFit.observe(div)
     } else {
       Plotly.react(_plotDiv, data, layout, config)
     }
@@ -646,7 +631,52 @@ $$
 with the upper sign for inside and the lower for outside throughout.
 
 <style>
+/* Three columns of display math need about 760px: more than a phone, and
+   more than the text column beside the app pane. Narrower than that, each
+   form's "This curve" cell moves under its general equation, each labelled
+   since the header row is visually hidden; narrower still (a phone), the form's name
+   gets a line of its own too. Whatever still doesn't fit scrolls sideways
+   inside the table rather than widening the page. The table is positioned
+   so KaTeX's visually hidden MathML copy, which is absolutely positioned,
+   is clipped by that scroll box too. */
+.spiro-equations-box { container-type: inline-size; }
+.spiro-equations {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
 .spiro-equations td { vertical-align: middle; }
+@container (max-width: 47.5rem) {
+  /* Hidden from sight only: the grid below has no columns to head, and the
+     data-label text stands in visually, but a screen reader still needs the
+     header to tie each cell to "Equation" or "This curve". */
+  .spiro-equations thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .spiro-equations tbody { display: block; }
+  .spiro-equations tr {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+  .spiro-equations th[scope="row"] { grid-row: span 2; }
+  .spiro-equations td:not(.spiro-current) { border-bottom: 0; }
+  .spiro-equations td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: var(--vm-label-size);
+    color: var(--vm-text-soft);
+  }
+}
+@container (max-width: 30rem) {
+  .spiro-equations tr { grid-template-columns: minmax(0, 1fr); }
+  .spiro-equations th[scope="row"] { grid-row: auto; border-bottom: 0; }
+}
 .spiro-menagerie {
   list-style: none;
   padding: 0;
@@ -769,14 +799,17 @@ equationsTable = {
   const rows = [["Cartesian", "cartesian"], ["Complex", "complex"], ["Polar", "polar"], ["Closes", "closes"]]
   const body = []
   for (const [label, key] of rows) {
-    let currentCell = html`<td></td>`
-    if (current[key]) currentCell = html`<td>${current[key]}</td>`
-    body.push(html`<tr><th scope="row">${label}</th><td>${general[key]}</td>${currentCell}</tr>`)
+    let currentCell = html`<td role="cell" class="spiro-current" data-label="This curve"></td>`
+    if (current[key]) currentCell = html`<td role="cell" class="spiro-current" data-label="This curve">${current[key]}</td>`
+    body.push(html`<tr role="row"><th role="rowheader" scope="row">${label}</th><td role="cell" data-label="Equation">${general[key]}</td>${currentCell}</tr>`)
   }
-  return html`<table class="table spiro-equations">
-    <thead><tr><th scope="col">Form</th><th scope="col">Equation</th><th scope="col">This curve</th></tr></thead>
-    <tbody>${body}</tbody>
-  </table>`
+  // Explicit roles because the narrow layout below restyles the table's
+  // elements as blocks and grids, which makes some browsers (Safari) stop
+  // exposing them as a table to screen readers.
+  return html`<div class="spiro-equations-box"><table role="table" class="table spiro-equations">
+    <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Form</th><th role="columnheader" scope="col">Equation</th><th role="columnheader" scope="col">This curve</th></tr></thead>
+    <tbody role="rowgroup">${body}</tbody>
+  </table></div>`
 }
 ```
 
@@ -884,3 +917,5 @@ menagerieGrid = {
   return list
 }
 ```
+
+:::::::::

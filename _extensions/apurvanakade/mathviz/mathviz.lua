@@ -28,6 +28,11 @@
 --     mobile-warning: my-site-key  # one-time "bigger screen" notice on a
 --                                  # phone; a string names its localStorage
 --                                  # key (true: "vm-mobile-warning-dismissed")
+--     split: my-site-split-width   # a page wrapped in .vm-split shows its
+--                                  # .vm-app as a fixed pane beside the text;
+--                                  # a string names the localStorage key the
+--                                  # divider's width is kept under
+--                                  # (true: "vm-split-width")
 --     embed: true                  # ?embed=1 shows a page's .vm-app alone,
 --                                  # for another site's <iframe>
 --     share:                       # "Share" button on every .vm-app; turns
@@ -49,7 +54,7 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "0.2.0"
+local VERSION    = "0.3.1"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
@@ -176,6 +181,9 @@ function Meta(meta)
   end
   if enabled(meta, "mobile-warning") then
     chrome("mobile-warning", { ["mobile-warning-key"] = stringValue("mobile-warning") })
+  end
+  if enabled(meta, "split") then
+    chrome("split", { ["split-width-key"] = stringValue("split") })
   end
   -- The Share dialog's snippet is an ?embed= URL, so share implies embed.
   if enabled(meta, "embed") or enabled(meta, "share") then

@@ -168,14 +168,21 @@
       handle.setAttribute("aria-valuenow", String(Math.round(app.getBoundingClientRect().width)))
     }
 
-    // The reader's width, or null for the stylesheet's default.
+    // The reader's width, or null for the stylesheet's default. It is what
+    // they asked for, not what fits: a window too narrow for it shows a
+    // clamped pane, and widening the window again brings their width back.
     var appWidth = null
+    function applyWidth() {
+      if (appWidth === null) return
+      var width = clampWidth(appWidth, window.innerWidth)
+      document.body.style.setProperty("--vm-split-app-w", width + "px")
+      updateAria()
+    }
     function setAppWidth(px) {
       var width = clampWidth(px, window.innerWidth)
       if (width === null) return
       appWidth = width
-      document.body.style.setProperty("--vm-split-app-w", width + "px")
-      updateAria()
+      applyWidth()
     }
     function resetAppWidth() {
       appWidth = null
@@ -185,8 +192,13 @@
       scheduleFit()
     }
 
+    // A stored width is a preference, kept as is however narrow the window
+    // it is read in; applyWidth fits it to the window.
     var stored = readStored(WIDTH_KEY)
-    if (stored !== null) setAppWidth(stored)
+    if (stored !== null && Number.isFinite(stored)) {
+      appWidth = stored
+      applyWidth()
+    }
 
     handle.addEventListener("pointerdown", function (e) {
       if (e.button !== 0) return
@@ -237,7 +249,7 @@
     window.addEventListener("scroll", function () { followFor(400) }, { passive: true })
     window.addEventListener("resize", function () {
       followNavbar()
-      if (appWidth !== null) setAppWidth(appWidth)
+      if (appWidth !== null) applyWidth()
       else updateAria()
       scheduleFit()
     })

@@ -22,6 +22,14 @@ Authors: Apurva Nakade
 ::::::::: {.vm-split}
 
 <style>
+/* The three rate sliders share one grid row, and each carries a play
+   button and a number box of fixed width beside its track. At the site's
+   250px grid minimum, in the app pane beside the text, that left each track
+   54px. A 280px minimum wraps them two to a row there (one per row in a
+   narrower pane), which leaves each track about 140px. */
+.ojs-panel.ojs-grid.ppv-sliders {
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+}
 /* Page-local styles: the inline swatches in the explanation panels under
    each grid -- markup only this page emits, so it lives here rather than in
    a shared stylesheet (see CLAUDE.md's page-local CSS convention). Colors
@@ -445,7 +453,7 @@ function legendPanel(title, rows, note) {
 
 <div class="vm-app">
 
-<div class="ojs-panel ojs-grid">
+<div class="ojs-panel ojs-grid ppv-sliders">
 
 ```{ojs}
 viewof prevalence = {

@@ -634,7 +634,7 @@ with the upper sign for inside and the lower for outside throughout.
 /* Three columns of display math need about 760px: more than a phone, and
    more than the text column beside the app pane. Narrower than that, each
    form's "This curve" cell moves under its general equation, each labelled
-   since the header row is hidden; narrower still (a phone), the form's name
+   since the header row is visually hidden; narrower still (a phone), the form's name
    gets a line of its own too. Whatever still doesn't fit scrolls sideways
    inside the table rather than widening the page. The table is positioned
    so KaTeX's visually hidden MathML copy, which is absolutely positioned,
@@ -648,7 +648,17 @@ with the upper sign for inside and the lower for outside throughout.
 }
 .spiro-equations td { vertical-align: middle; }
 @container (max-width: 47.5rem) {
-  .spiro-equations thead { display: none; }
+  /* Hidden from sight only: the grid below has no columns to head, and the
+     data-label text stands in visually, but a screen reader still needs the
+     header to tie each cell to "Equation" or "This curve". */
+  .spiro-equations thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .spiro-equations tbody { display: block; }
   .spiro-equations tr {
     display: grid;
@@ -789,13 +799,16 @@ equationsTable = {
   const rows = [["Cartesian", "cartesian"], ["Complex", "complex"], ["Polar", "polar"], ["Closes", "closes"]]
   const body = []
   for (const [label, key] of rows) {
-    let currentCell = html`<td class="spiro-current" data-label="This curve"></td>`
-    if (current[key]) currentCell = html`<td class="spiro-current" data-label="This curve">${current[key]}</td>`
-    body.push(html`<tr><th scope="row">${label}</th><td data-label="Equation">${general[key]}</td>${currentCell}</tr>`)
+    let currentCell = html`<td role="cell" class="spiro-current" data-label="This curve"></td>`
+    if (current[key]) currentCell = html`<td role="cell" class="spiro-current" data-label="This curve">${current[key]}</td>`
+    body.push(html`<tr role="row"><th role="rowheader" scope="row">${label}</th><td role="cell" data-label="Equation">${general[key]}</td>${currentCell}</tr>`)
   }
-  return html`<div class="spiro-equations-box"><table class="table spiro-equations">
-    <thead><tr><th scope="col">Form</th><th scope="col">Equation</th><th scope="col">This curve</th></tr></thead>
-    <tbody>${body}</tbody>
+  // Explicit roles because the narrow layout below restyles the table's
+  // elements as blocks and grids, which makes some browsers (Safari) stop
+  // exposing them as a table to screen readers.
+  return html`<div class="spiro-equations-box"><table role="table" class="table spiro-equations">
+    <thead role="rowgroup"><tr role="row"><th role="columnheader" scope="col">Form</th><th role="columnheader" scope="col">Equation</th><th role="columnheader" scope="col">This curve</th></tr></thead>
+    <tbody role="rowgroup">${body}</tbody>
   </table></div>`
 }
 ```

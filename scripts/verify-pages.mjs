@@ -516,6 +516,14 @@ async function checkPage(browser, base, relPath) {
   await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
   await waitForSettle(page, relPath)
 
+  // Answer the consent banner first, the way a returning reader already
+  // has. It is fixed to the bottom of the window, and on a split page so is
+  // the app pane: scrolling the page doesn't move the pane's controls out
+  // from under it, so a click on a slider's playback caret there landed on
+  // the banner instead. Clicking its real button keeps that path in the
+  // crawl; npm run verify:analytics tests the banner itself.
+  await page.locator('#vml-consent [data-consent-choice="denied"]').click({ timeout: 2000 }).catch(() => {})
+
   // Layout/content assertions run before the generic button-mashing below,
   // so they see each page's initial render rather than whatever state
   // clicking everything leaves behind.

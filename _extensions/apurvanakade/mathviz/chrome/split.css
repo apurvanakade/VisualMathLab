@@ -86,8 +86,11 @@ body:has(.vm-split) #title-block-header {
   }
 
   /* The charts take whatever height the pane has left below the controls,
-   * shared equally; split.js measures it into --vm-split-chart-h. */
-  .vm-split > .vm-app .plotly-box-large {
+   * shared equally; split.js measures it into --vm-split-chart-h. Not while
+   * a chart is fullscreen: this ties chart-block.css's fullscreen sizing on
+   * specificity and loads after it, so it would hold the fullscreen chart at
+   * the pane's height instead of the screen's. */
+  .vm-split > .vm-app:not(:has(:fullscreen)) .plotly-box-large {
     height: var(--vm-split-chart-h, calc(100vh - 20rem));
     min-height: 240px;
   }

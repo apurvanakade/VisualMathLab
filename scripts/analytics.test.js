@@ -154,6 +154,7 @@ test('privacy.qmd: lists every localStorage key the site writes', () => {
     ['cid_v4', /random identifier/i],
     ['quarto-color-scheme', /light or dark theme/],
     ['vml-sidebar-pinned', /pinned the navigation sidebar/],
+    ['vml-split-width', /how wide you dragged the app pane/i],
     ['vml-overlay-pos', /dragged the legend/],
     ['vm-playback', /speed and mode/],
     ['vml-mobile-warning-dismissed', /dismissed the one-time notice/],

@@ -177,46 +177,74 @@ function stopPreview(proc) {
 // Both are caught here by asserting the rendered outcome rather than the CSS
 // that is supposed to produce it, so this keeps working whatever the cause
 // (an Observable Inputs upgrade, a new wrapper, a refactor of mathviz's CSS).
-async function checkSliderControls(page, errors) {
-  const trackProblems = await page.evaluate(() => {
-    // Both thresholds are derived from a measurement of all 24 sliders on the
-    // site at this viewport, not picked by feel:
-    //   narrowest legitimate track: 147px, at 49% of its form
-    //     (apps/positive-predictive-value, three sliders sharing a panel grid row)
-    //   widest: 706px at 80% (the root-finding step sliders)
-    //   the regressions being guarded against measured 0px, and 35px in a
-    //     ~250px form -- i.e. 14% of it
-    // So each floor sits roughly a third below the narrowest real value and
-    // far above both failures. Re-measure rather than lower a threshold if a
-    // legitimately narrower control is ever added.
-    //
-    // The ratio matters as much as the pixel count: it is what catches a
-    // track squeezed by a label or readout that took the row, and unlike an
-    // absolute width it does not move when the viewport does.
-    const MIN_TRACK_PX = 100
-    const MIN_TRACK_RATIO = 0.35
-    const bad = []
-    for (const input of document.querySelectorAll('.ojs-panel input[type="range"], .ojs-chart-controls input[type="range"]')) {
-      const form = input.closest('form') || input
-      // Skip anything not actually laid out: a collapsed callout, or a panel
-      // hidden at this viewport. offsetParent is null for display:none
-      // subtrees, which is exactly those cases.
-      if (form.offsetParent === null) continue
-      if (form.getBoundingClientRect().width === 0) continue
-      const formWidth = form.getBoundingClientRect().width
-      const width = Math.round(input.getBoundingClientRect().width)
-      const ratio = width / formWidth
-      const label = (form.querySelector('label')?.textContent || '?').trim()
-      if (width < MIN_TRACK_PX) {
-        bad.push(`slider "${label}" track is ${width}px wide (expected >= ${MIN_TRACK_PX}px)`)
-      } else if (ratio < MIN_TRACK_RATIO) {
-        bad.push(`slider "${label}" track is only ${Math.round(ratio * 100)}% of its control ` +
-                 `(${width}px of ${Math.round(formWidth)}px, expected >= ${Math.round(MIN_TRACK_RATIO * 100)}%)`)
+// Runs in the page. Shared by the desktop pass (checkSliderControls) and the
+// phone pass (checkPhoneLayout), so both hold every track to one standard.
+function sliderTrackProblems() {
+  // Both thresholds are derived from a measurement of all 24 sliders on the
+  // site at the desktop pass's viewport, not picked by feel:
+  //   narrowest legitimate track: 147px, at 49% of its form
+  //     (apps/positive-predictive-value, three sliders sharing a panel grid row)
+  //   widest: 706px at 80% (the root-finding step sliders)
+  //   the regressions being guarded against measured 0px, and 35px in a
+  //     ~250px form -- i.e. 14% of it
+  // So each floor sits roughly a third below the narrowest real value and
+  // far above both failures. Re-measure rather than lower a threshold if a
+  // legitimately narrower control is ever added. At a phone's 390px the
+  // narrowest is 157px at 50% (the Sperner pages' subdivision slider, whose
+  // label takes a line of its own in a bar that narrow), inside both floors.
+  //
+  // The ratio matters as much as the pixel count: it is what catches a
+  // track squeezed by a label or readout that took the row, and unlike an
+  // absolute width it does not move when the viewport does.
+  const MIN_TRACK_PX = 100
+  const MIN_TRACK_RATIO = 0.35
+  const bad = []
+  for (const input of document.querySelectorAll('.ojs-panel input[type="range"], .ojs-chart-controls input[type="range"]')) {
+    const form = input.closest('form') || input
+    // Skip anything not actually laid out: a collapsed callout, or a panel
+    // hidden at this viewport. offsetParent is null for display:none
+    // subtrees, which is exactly those cases.
+    if (form.offsetParent === null) continue
+    if (form.getBoundingClientRect().width === 0) continue
+    const formWidth = form.getBoundingClientRect().width
+    const width = Math.round(input.getBoundingClientRect().width)
+    const ratio = width / formWidth
+    const label = (form.querySelector('label')?.textContent || '?').trim()
+    if (width < MIN_TRACK_PX) {
+      bad.push(`slider "${label}" track is ${width}px wide (expected >= ${MIN_TRACK_PX}px)`)
+    } else if (ratio < MIN_TRACK_RATIO) {
+      bad.push(`slider "${label}" track is only ${Math.round(ratio * 100)}% of its control ` +
+               `(${width}px of ${Math.round(formWidth)}px, expected >= ${Math.round(MIN_TRACK_RATIO * 100)}%)`)
+    }
+  }
+  return bad
+}
+
+// Runs in the page. A slider sits above the chart it drives (CLAUDE.md,
+// "Chart controls"), never under it: under a chart it is the first thing
+// pushed out of view, by the window's edge or by a split page's app pane,
+// which is fitted to the window. So inside each .ojs-chart-block every
+// visible slider must start above the block's Plotly chart.
+function slidersBelowChart() {
+  const bad = []
+  for (const block of document.querySelectorAll('.ojs-chart-block')) {
+    const chart = block.querySelector('.js-plotly-plot')
+    if (!chart || chart.offsetParent === null) continue
+    const chartTop = chart.getBoundingClientRect().top
+    for (const input of block.querySelectorAll('input[type="range"]')) {
+      if (input.offsetParent === null) continue
+      if (input.getBoundingClientRect().top >= chartTop) {
+        const label = (input.closest('form')?.querySelector('label')?.textContent || '?').trim()
+        bad.push(`slider "${label}" sits below the chart it drives`)
       }
     }
-    return bad
-  })
-  for (const problem of trackProblems) errors.push(`layout: ${problem}`)
+  }
+  return bad
+}
+
+async function checkSliderControls(page, errors) {
+  for (const problem of await page.evaluate(sliderTrackProblems)) errors.push(`layout: ${problem}`)
+  for (const problem of await page.evaluate(slidersBelowChart)) errors.push(`layout: ${problem}`)
 
   // Open each playback popover and assert it actually paints where it says
   // it does -- getBoundingClientRect alone would not notice, since a clipped
@@ -377,12 +405,16 @@ async function checkExampleDropdown(page, errors) {
   const state = () => select.evaluate(s => ({
     label: s.options[s.selectedIndex].textContent,
     custom: {disabled: s.options[0].disabled, hidden: s.options[0].hidden},
+    first: s.options[1] ? s.options[1].textContent : null,
     count: s.options.length
   }))
 
   const onLoad = await state()
   if (onLoad.label === 'Custom inputs') {
     errors.push('example dropdown: page opens on "Custom inputs" -- its default inputs match no example')
+  } else if (onLoad.label !== onLoad.first) {
+    errors.push(`example dropdown: page opens on "${onLoad.label}", not the first example "${onLoad.first}" -- ` +
+                'put the example matching the default inputs first')
   }
   if (!onLoad.custom.disabled || !onLoad.custom.hidden) {
     errors.push('example dropdown: "Custom inputs" option is pickable (not disabled and hidden)')
@@ -415,6 +447,24 @@ async function checkExampleDropdown(page, errors) {
   const afterUndo = await state()
   if (afterUndo.label !== picked) {
     errors.push(`example dropdown: undoing the edit reads "${afterUndo.label}", not "${picked}"`)
+  }
+}
+
+// The same page at a phone's width (390x844, an iPhone 14). The desktop pass
+// above runs at Playwright's default 1280x720, which never caught slider
+// tracks squeezed to 0-98px on a phone (fixed in mathviz v0.3.0) or a table
+// of equations that made the spirograph page scroll sideways.
+async function checkPhoneLayout(browser, base, relPath, errors) {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  page.on('pageerror', err => errors.push(`phone pageerror: ${err.message}`))
+  try {
+    await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
+    await waitForSettle(page, relPath)
+    for (const problem of await page.evaluate(sliderTrackProblems)) errors.push(`phone layout: ${problem}`)
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth)
+    if (scrollWidth > 390) errors.push(`phone layout: the page scrolls sideways (${scrollWidth}px wide in a 390px window)`)
+  } finally {
+    await page.close()
   }
 }
 
@@ -508,6 +558,7 @@ async function checkPage(browser, base, relPath) {
   await page.waitForTimeout(300)
   await page.close()
 
+  await checkPhoneLayout(browser, base, relPath, errors)
   if (relPath.startsWith('apps/')) await checkEmbedMode(browser, base, relPath, errors)
   return errors
 }

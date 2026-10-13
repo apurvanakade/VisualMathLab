@@ -1,0 +1,137 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* Split layout, shipped with split.js by `mathviz: {split: true}` (or a
+ * string: the localStorage key the divider's position is kept under).
+ *
+ * A page opts in by wrapping its content in ::: {.vm-split} around its
+ * <div class="vm-app">. From 992px up the app is a fixed pane on the right,
+ * flush under the navbar and down to the bottom of the window, and the
+ * prose scrolls in a column on the left; below that the page is one column
+ * again, app first (its source order). A page without .vm-split is
+ * untouched: every rule here is scoped to it. */
+
+/* Quarto puts <main> in its narrow body column; on a split page it spans the
+ * whole window and the split lays out inside it. Two alternatives that look
+ * simpler and aren't: .column-screen on the split makes Quarto copy a column
+ * class down onto the content (an image's width becomes 100%, a section a
+ * page grid), and page-layout: custom drops the previous/next page links. */
+body:has(.vm-split) #quarto-content > main.content {
+  grid-column: screen-start / screen-end;
+}
+
+.vm-split,
+body:has(.vm-split) #title-block-header {
+  padding: 0 1rem;
+}
+
+.vm-split > .vm-app {
+  margin-block: 1.5rem;
+}
+
+.vm-split-handle {
+  display: none;
+}
+
+@media (min-width: 992px) {
+  /* The pane's width is reserved out of the whole page, so the title, prose,
+   * page navigation and footer all lay out in what is left. split.js
+   * overrides the variable on <body> once the reader drags the divider. */
+  body:has(.vm-split) {
+    --vm-split-app-w: clamp(30rem, 56vw, 64rem);
+    padding-right: var(--vm-split-app-w);
+  }
+
+  /* Everything in the split except the app is the text column. The app is
+   * out of flow, so prose before and after it reads as one column. */
+  .vm-split > :not(.vm-app),
+  body:has(.vm-split) #title-block-header > * {
+    max-width: 36rem;
+    margin-inline: auto;
+  }
+
+  /* The sidebar rail sits over the left edge, so with it on, both the title
+   * and the text step in by the same amount -- the same amount, so a title
+   * and the paragraph under it start at one x. */
+  body:has(#vm-sidebar-rail) .vm-split,
+  body:has(#vm-sidebar-rail):has(.vm-split) #title-block-header {
+    padding-left: 4.5rem;
+  }
+
+  .vm-split > .vm-app {
+    position: fixed;
+    top: var(--vm-split-top, 64px);
+    right: 0;
+    bottom: 0;
+    width: var(--vm-split-app-w);
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 0.75rem 1.25rem 1rem;
+    margin: 0;
+    background: var(--vm-bg);
+    border-left: 1px solid var(--vm-border);
+  }
+
+  /* An app with no Plotly chart to stretch (a table, a fixed-size drawing)
+   * would otherwise sit at the top of a mostly empty pane. `safe` keeps one
+   * taller than the pane top-aligned, so its first rows can't be pushed
+   * above the scroll origin out of reach. */
+  .vm-split > .vm-app:not(:has(.plotly-box-large)) {
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
+  }
+
+  /* The charts take whatever height the pane has left below the controls,
+   * shared equally; split.js measures it into --vm-split-chart-h. */
+  .vm-split > .vm-app .plotly-box-large {
+    height: var(--vm-split-chart-h, calc(100vh - 20rem));
+    min-height: 240px;
+  }
+
+  /* The divider between text and app: drag it, or focus it and use the
+   * arrow keys; double-click or Home resets it. */
+  .vm-split-handle {
+    display: block;
+    position: fixed;
+    top: var(--vm-split-top, 64px);
+    bottom: 0;
+    right: var(--vm-split-app-w);
+    width: 10px;
+    transform: translateX(50%);
+    cursor: col-resize;
+    touch-action: none;
+    z-index: 10;
+  }
+
+  .vm-split-handle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 2.5rem;
+    transform: translate(-50%, -50%);
+    border-radius: 2px;
+    background: var(--vm-border);
+    transition: background-color 0.15s;
+  }
+
+  .vm-split-handle:hover::after,
+  .vm-split-handle:focus-visible::after,
+  .vm-split-handle.vm-split-handle-active::after {
+    background: var(--vm-accent);
+  }
+
+  .vm-split-handle:focus-visible {
+    outline: none;
+  }
+
+  body.vm-split-dragging {
+    cursor: col-resize;
+    user-select: none;
+  }
+}

@@ -21,6 +21,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dhruv Azad
 -->
 
+::::::::: {.vm-split}
+
 <style>
 /* The first panel row holds three formula-like fields -- x(t), y(t) and
    the sensor list -- ahead of the Plot button, where every other page has
@@ -45,9 +47,9 @@ Authors: Dhruv Azad
 
 Particle filtering is a sequential Monte Carlo method for estimating the hidden state of a system that changes over time, updating that estimate each time a new noisy measurement arrives. It represents its belief about the state as a cloud of weighted samples: at every step it moves each sample forward according to how the system evolves, reweights it by how well it explains the new measurement, and resamples when a few samples end up carrying most of the weight.
 
-In the app below, we use it to track the position of a jittery moving object (its <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight) using three <span class="vm-swatch vm-swatch-ink">sensors</span> at fixed positions, each of which reports only a *noisy distance to the object*. The <span class="vm-swatch vm-swatch-accent2">particles</span> are the filter's guesses (bigger dots carry more weight), and the <span class="vm-swatch vm-swatch-alt">estimate</span> is the weighted average of the particles.
+In the app, we use it to track the position of a jittery moving object (its <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight) using three <span class="vm-swatch vm-swatch-ink">sensors</span> at fixed positions, each of which reports only a *noisy distance to the object*. The <span class="vm-swatch vm-swatch-accent2">particles</span> are the filter's guesses (bigger dots carry more weight), and the <span class="vm-swatch vm-swatch-alt">estimate</span> is the weighted average of the particles.
 
-**In the example shown below, why do you think the particles are falling behind?** Press play to watch it happen.
+**In the example shown, why do you think the particles are falling behind?** Press play to watch it happen.
 
 ```{ojs}
 //| output: false
@@ -895,7 +897,11 @@ mainPlot = {
       yaxis: {title: "y", range: [data.yRange.lo, data.yRange.hi], zeroline: true, scaleanchor: "x", scaleratio: 1},
       annotations,
       hovermode: "closest",
-      uirevision: "static",
+      // The scene's ranges: a new run (a different scene) starts from its
+      // whole scene again, while the reader's zoom survives the step slider
+      // and play. The shared Plotly patch keeps that zoom, since scaleanchor
+      // would otherwise make every redraw look like a new range.
+      uirevision: `${data.xRange.lo},${data.xRange.hi},${data.yRange.lo},${data.yRange.hi}`,
       autosize: true
     }
     const config = VM.plotting.config()
@@ -905,26 +911,6 @@ mainPlot = {
       _plotDiv.className = "plotly-box-large"
       Plotly.newPlot(_plotDiv, traces, layout, config)
       VM.plotting.autoResize(_plotDiv)
-      // The first draw happens detached, at Plotly's 700x450 default, and
-      // scaleanchor widens the ranges to keep x and y at the same scale in
-      // that box; the resize to the real box then keeps the widened ranges.
-      // So once the div is on the page, resize it and redraw with the
-      // intended ranges, or the first step-slider move (or press of play)
-      // would visibly zoom in. Same fix as apps/spirographs/index.qmd. A
-      // fresh layout, since Plotly writes its adjusted ranges back into the
-      // one newPlot was given.
-      const div = _plotDiv
-      const firstFit = new ResizeObserver(() => {
-        if (!div.isConnected || div.getClientRects().length === 0) return
-        firstFit.disconnect()
-        const fittedLayout = {
-          ...layout,
-          xaxis: {...layout.xaxis, range: [data.xRange.lo, data.xRange.hi]},
-          yaxis: {...layout.yaxis, range: [data.yRange.lo, data.yRange.hi]}
-        }
-        Plotly.Plots.resize(div).then(() => Plotly.react(div, traces, fittedLayout, config))
-      })
-      firstFit.observe(div)
     } else {
       Plotly.react(_plotDiv, traces, layout, config)
     }
@@ -1193,3 +1179,5 @@ Here $s_k$ is sensor $k$'s location. The filter's four settings are the controls
 ## References
 
 Gordon, N. J., Salmond, D. J., and Smith, A. F. M. (1993). "Novel approach to nonlinear/non-Gaussian Bayesian state estimation." *IEE Proceedings F (Radar and Signal Processing)*, 140(2), 107–113. [doi:10.1049/ip-f-2.1993.0015](https://doi.org/10.1049/ip-f-2.1993.0015).
+
+:::::::::

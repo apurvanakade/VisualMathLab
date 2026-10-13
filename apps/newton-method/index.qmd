@@ -93,6 +93,7 @@ examples = [
   }
 ]
 ```
+:::::::: {.vm-split}
 
 <div class="vm-app">
 
@@ -103,7 +104,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^3 - 2*x + 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "x^2 - 2", placeholder: "Example: x^3 - x - 2, cos(x) - x"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -128,7 +129,7 @@ viewof plotTrigger = {
 ```{ojs}
 viewof x0 = {
   const params = new URLSearchParams(window.location.search)
-  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "0", placeholder: "Example: 1.5, pi/4"})
+  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1.5", placeholder: "Example: 1.5, pi/4"})
   x0Input.dataset.exampleField = "x0"
   return x0Input
 }
@@ -565,6 +566,12 @@ viewof stepControl = {
 
 </div>
 
+Newton's method finds roots of $f(x)=0$ by repeatedly linearizing: from $x_n$, it follows the tangent line at $(x_n, f(x_n))$ to its $x$-intercept,
+
+$$
+x_{n+1}=x_n-\frac{f(x_n)}{f'(x_n)}.
+$$
+
 :::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
@@ -700,8 +707,4 @@ iterationTable = {
 
 ::::
 
-Newton's method finds roots of $f(x)=0$ by repeatedly linearizing: from $x_n$, it follows the tangent line at $(x_n, f(x_n))$ to its $x$-intercept,
-
-$$
-x_{n+1}=x_n-\frac{f(x_n)}{f'(x_n)}.
-$$
+::::::::

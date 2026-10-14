@@ -788,6 +788,40 @@ Authors: Apurva Nakade
   link.textContent = app.title
   description.append(link, ": " + app.description)
 
+  // Keeps the frame on this page's theme. The frame is its own document,
+  // and Quarto reads the saved theme only when a page loads, so a toggle
+  // here left the app in the old theme until a reload. Same-origin, so
+  // flip the frame's own toggle whenever the two disagree. The comparison
+  // is what makes the observer safe on <body>, whose class list also
+  // changes when the sidebar opens.
+  //
+  // Quarto's toggle flips the theme saved in localStorage, not the page it
+  // runs on, and this page's toggle has already saved the new one -- so the
+  // frame's toggle alone would flip it straight back. Saving the frame's
+  // own (the other value) first makes its toggle save this page's again.
+  var SCHEME_KEY = "quarto-color-scheme"
+  var isDark = function (doc) {
+    return doc.body.classList.contains("quarto-dark")
+  }
+  var syncTheme = function () {
+    try {
+      var inner = frame.contentWindow
+      if (!inner || !inner.document.body || !inner.quartoToggleColorScheme) return
+      if (isDark(inner.document) === isDark(document)) return
+      var saved = localStorage.getItem(SCHEME_KEY)
+      if (saved === "alternate") {
+        localStorage.setItem(SCHEME_KEY, "default")
+      } else {
+        localStorage.setItem(SCHEME_KEY, "alternate")
+      }
+      inner.quartoToggleColorScheme()
+    } catch (e) {
+      // Cross-origin: leave the frame on the theme it loaded with.
+    }
+  }
+  new MutationObserver(syncTheme).observe(document.body, {attributes: true, attributeFilter: ["class"]})
+  frame.addEventListener("load", syncTheme)
+
   // Grows the frame past its 900px default if this app's controls panel
   // would otherwise leave the chart shorter than FIT_CHART_HEIGHT. Can't
   // just read the embedded page's scrollHeight and copy it over -- the

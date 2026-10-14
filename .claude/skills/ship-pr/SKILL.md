@@ -108,6 +108,9 @@ as the merge gate.
    A finding whose line isn't part of the diff can't be an inline comment
    (the API rejects the whole review); put it in `body` instead, as
    `` `path:line` -- comment ``. With no findings, post the verdict alone.
+   A body finding has no thread to reply to or resolve, so step 3 must still
+   fix or decline it and answer it with one PR comment
+   (`gh pr comment <N> --body ...`) covering every body finding.
 3. Go on to step 3 and triage these threads exactly like Copilot's. The agent
    read CLAUDE.md, so a finding that contradicts it is rarer than with Copilot,
    but it can still be wrong: check each one against the code.

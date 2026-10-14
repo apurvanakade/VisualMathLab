@@ -982,93 +982,6 @@ viewof stepControl = {
 
 </div>
 
-A particle filter represents its belief about the object's position as a cloud of weighted particles $x_i^{(p)}$, and repeats the same steps for every new set of readings:
-
-:::::: {.vm-flow}
-
-::::: {.vm-flow-step}
-::: {.vm-flow-box}
-[Start]{.vm-flow-label}
-
-$N$ particles around the starting position, each with weight $1/N$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-to}
-::: {.vm-flow-phase-label}
-Predict
-:::
-
-::: {.vm-flow-box}
-[Move particles (for each $p$)]{.vm-flow-label}
-
-Generate $\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \hat\sigma_{\text{process}}^2 I\bigr)$
-
-Set $x_i^{(p)} \leftarrow x_{i-1}^{(p)} + \varepsilon_i^{(p)}$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase}
-::: {.vm-flow-phase-label}
-Update
-:::
-
-::: {.vm-flow-box .vm-flow-in}
-[Measure]{.vm-flow-label}
-
-$z_{i,k}$: sensor $k$'s noisy distance to the object
-:::
-
-::: {.vm-flow-box}
-[Reweight (for each $p$)]{.vm-flow-label}
-
-Compute likelihood [$\ell_i^{(p)} \leftarrow \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \hat\sigma_{\text{sensor}}^2\bigr)$]{.vm-flow-nowrap}
-
-Set $w_i^{\prime(p)} \leftarrow w_{i-1}^{(p)}\, \ell_i^{(p)}$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase}
-::: {.vm-flow-box}
-[Normalize]{.vm-flow-label}
-
-Compute total weight $W_i \leftarrow \sum_p w_i^{\prime(p)}$
-
-Set $w_i^{(p)} \leftarrow w_i^{\prime(p)} / W_i$ for each $p$
-:::
-
-::: {.vm-flow-box .vm-flow-out}
-[Estimate]{.vm-flow-label}
-
-$\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$
-:::
-:::::
-
-::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-from}
-::: {.vm-flow-phase-label}
-Resample
-:::
-
-::: {.vm-flow-box}
-[Resample if degenerate]{.vm-flow-label}
-
-Compute $\mathrm{ESS}_i \leftarrow 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2$
-
-If $\mathrm{ESS}_i < \tau N$: draw $N$ new particles from the current ones, picking $x_i^{(p)}$ with probability $w_i^{(p)}$
-
-Then set every weight to $1/N$
-:::
-::: {.vm-flow-loop-label}
-back to Predict
-:::
-:::::
-
-::::::
-
-Here $s_k$ is sensor $k$'s location. The filter's four settings are the controls $\hat\sigma_{\text{process}}$ and $\hat\sigma_{\text{sensor}}$ (its guesses at the true noise levels $\sigma_{\text{process}}$ and $\sigma_{\text{sensor}}$, which it never sees), $\tau$ and $N$. $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
-
-**[Example 1](?xt=7%2Acos%28t%2F8%29&yt=3.5%2Asin%28t%2F4%29&sensors=%2810%2C%200%29%2C%20%28-5%2C%209%29%2C%20%28-5%2C%20-9%29&sigmaProcess=0.15&sigmaRange=0.6&max=100&N=150&threshold=0.5&sigmaFilter=0.6&processFilter=0.15): Why the particles fall behind.** The predict step is a random walk: the particles don't know which way the object is heading. The object moves between $0.6$ and $1.2$ along the figure eight each step, but with $\hat\sigma_{\text{process}} = 0.15$ the particles spread only about $0.15$, so they can't keep up. Raise $\hat\sigma_{\text{process}}$ to about $1$ and the cloud keeps pace. It is the same trade-off as the Kalman filter's $Q$ in [1D recursive filters](../recursive-filters-1d/index.qmd).
-
 :::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}
@@ -1175,6 +1088,93 @@ iterationTable = {
 ```
 
 ::::
+
+A particle filter represents its belief about the object's position as a cloud of weighted particles $x_i^{(p)}$, and repeats the same steps for every new set of readings:
+
+:::::: {.vm-flow}
+
+::::: {.vm-flow-step}
+::: {.vm-flow-box}
+[Start]{.vm-flow-label}
+
+$N$ particles around the starting position, each with weight $1/N$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-to}
+::: {.vm-flow-phase-label}
+Predict
+:::
+
+::: {.vm-flow-box}
+[Move particles (for each $p$)]{.vm-flow-label}
+
+Generate $\varepsilon_i^{(p)} \sim \mathcal N\bigl(0,\, \hat\sigma_{\text{process}}^2 I\bigr)$
+
+Set $x_i^{(p)} \leftarrow x_{i-1}^{(p)} + \varepsilon_i^{(p)}$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase}
+::: {.vm-flow-phase-label}
+Update
+:::
+
+::: {.vm-flow-box .vm-flow-in}
+[Measure]{.vm-flow-label}
+
+$z_{i,k}$: sensor $k$'s noisy distance to the object
+:::
+
+::: {.vm-flow-box}
+[Reweight (for each $p$)]{.vm-flow-label}
+
+Compute likelihood [$\ell_i^{(p)} \leftarrow \prod_k \mathcal N\bigl(z_{i,k};\, \lVert x_i^{(p)} - s_k \rVert,\, \hat\sigma_{\text{sensor}}^2\bigr)$]{.vm-flow-nowrap}
+
+Set $w_i^{\prime(p)} \leftarrow w_{i-1}^{(p)}\, \ell_i^{(p)}$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase}
+::: {.vm-flow-box}
+[Normalize]{.vm-flow-label}
+
+Compute total weight $W_i \leftarrow \sum_p w_i^{\prime(p)}$
+
+Set $w_i^{(p)} \leftarrow w_i^{\prime(p)} / W_i$ for each $p$
+:::
+
+::: {.vm-flow-box .vm-flow-out}
+[Estimate]{.vm-flow-label}
+
+$\hat x_i = \sum_p w_i^{(p)} x_i^{(p)}$
+:::
+:::::
+
+::::: {.vm-flow-step .vm-flow-phase .vm-flow-loop-from}
+::: {.vm-flow-phase-label}
+Resample
+:::
+
+::: {.vm-flow-box}
+[Resample if degenerate]{.vm-flow-label}
+
+Compute $\mathrm{ESS}_i \leftarrow 1 \big/ \sum_p \bigl(w_i^{(p)}\bigr)^2$
+
+If $\mathrm{ESS}_i < \tau N$: draw $N$ new particles from the current ones, picking $x_i^{(p)}$ with probability $w_i^{(p)}$
+
+Then set every weight to $1/N$
+:::
+::: {.vm-flow-loop-label}
+back to Predict
+:::
+:::::
+
+::::::
+
+Here $s_k$ is sensor $k$'s location. The filter's four settings are the controls $\hat\sigma_{\text{process}}$ and $\hat\sigma_{\text{sensor}}$ (its guesses at the true noise levels $\sigma_{\text{process}}$ and $\sigma_{\text{sensor}}$, which it never sees), $\tau$ and $N$. $\mathrm{ESS}_i$ is how many particles the weighted cloud is effectively worth.
+
+**[Example 1](?xt=7%2Acos%28t%2F8%29&yt=3.5%2Asin%28t%2F4%29&sensors=%2810%2C%200%29%2C%20%28-5%2C%209%29%2C%20%28-5%2C%20-9%29&sigmaProcess=0.15&sigmaRange=0.6&max=100&N=150&threshold=0.5&sigmaFilter=0.6&processFilter=0.15): Why the particles fall behind.** The predict step is a random walk: the particles don't know which way the object is heading. The object moves between $0.6$ and $1.2$ along the figure eight each step, but with $\hat\sigma_{\text{process}} = 0.15$ the particles spread only about $0.15$, so they can't keep up. Raise $\hat\sigma_{\text{process}}$ to about $1$ and the cloud keeps pace. It is the same trade-off as the Kalman filter's $Q$ in [1D recursive filters](../recursive-filters-1d/index.qmd).
 
 ## References
 

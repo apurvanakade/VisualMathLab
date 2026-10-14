@@ -1,6 +1,6 @@
 ---
 name: ship-pr
-description: Take a finished Visual Math Lab change all the way to the live site -- commit it on a branch, open a pull request into develop, triage Copilot's review, wait for pr-check.yml, merge, fast-forward main (which deploys), and clean up the worktree. Use when asked to commit, push, open a PR, ship, land, merge or release a change in this repository.
+description: Take a finished Visual Math Lab change all the way to the live site -- commit it on a branch, open a pull request into develop, triage Copilot's review (or a local maintainer agent's, when Copilot is out of credits), wait for pr-check.yml, merge, fast-forward main (which deploys), and clean up the worktree. Use when asked to commit, push, open a PR, ship, land, merge or release a change in this repository.
 argument-hint: "[PR number]  (default: open a PR for the current worktree's changes)"
 ---
 
@@ -73,6 +73,44 @@ every minute or two. Its first review is a gate for the merge: if it hasn't
 arrived after ~30 minutes, ask the user rather than merging without it.
 GitHub ignores a review request on a merged PR, so a missed review can't be
 had afterwards.
+
+### 2b. Copilot out of credits: a local maintainer review instead
+
+When Copilot's quota runs out it still posts a review, with no findings and
+this body: *"Copilot was unable to review this pull request because the user
+who requested the review has reached their quota limit."* Check for it:
+
+```sh
+gh pr view <N> --json reviews \
+  -q '.reviews[] | select(.author.login | startswith("copilot")) | .body' \
+  | grep -i "unable to review"
+```
+
+If it matches, Copilot's review isn't coming. Don't wait out the 30 minutes
+and don't ask the user: run a local review in its place, which then stands in
+as the merge gate.
+
+1. Spawn a fresh `general-purpose` agent (the Agent tool, not a fork, so it
+   starts without this session's context) with the prompt in
+   [maintainer-review.md](maintainer-review.md), filling in the PR number and
+   the PR's worktree path. Add nothing about the change: the point is a
+   reviewer who knows the codebase but not the reasoning behind this work, the
+   way a maintainer reading the PR cold would. Run it in the foreground; the
+   next step needs its answer.
+2. Post its findings on the PR as one review, so they become threads the same
+   as Copilot's would. Write the payload to the scratchpad and send it:
+
+   ```sh
+   gh api repos/apurvanakade/VisualMathLab/pulls/<N>/reviews --input review.json
+   ```
+
+   with `{"event": "COMMENT", "body": "Local maintainer review (Copilot out of credits).\n\n<VERDICT line>", "comments": [{"path": ..., "line": ..., "side": "RIGHT", "body": "**<severity>**: <comment>"}, ...]}`.
+   A finding whose line isn't part of the diff can't be an inline comment
+   (the API rejects the whole review); put it in `body` instead, as
+   `` `path:line` -- comment ``. With no findings, post the verdict alone.
+3. Go on to step 3 and triage these threads exactly like Copilot's. The agent
+   read CLAUDE.md, so a finding that contradicts it is rarer than with Copilot,
+   but it can still be wrong: check each one against the code.
 
 ## 3. Triage every comment
 
@@ -157,6 +195,7 @@ and stop if it lists a modified tracked file -- that is unmerged work.
 
 ## Report
 
-Say what shipped: the PR link, the review comments fixed or declined (with
-the reason), anything left open, and
+Say what shipped: the PR link, who reviewed it (Copilot or the local
+maintainer agent), the review comments fixed or declined (with the reason),
+anything left open, and
 that `main` was pushed.

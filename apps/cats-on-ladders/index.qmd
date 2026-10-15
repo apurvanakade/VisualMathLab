@@ -165,10 +165,20 @@ catDraw = {
   data.push(ladderTrace(theta))
   data.push(catMarker(cat))
 
-  // The axes stay on the quarter plane even with the full curve on, so no
-  // slider ever rescales them; the rest of the ellipse runs off the chart
-  // through the wall and below the floor, there to zoom out to.
-  return catPlot(data, catLayout)
+  // With the full curve on, zoom out to one fixed view, as Full astroid
+  // does in the envelope app: enough for the middle rung's whole circle
+  // (radius L/2). It doesn't depend on Cat's height, so no slider rescales
+  // the axes; longer ellipses run off the chart, there to zoom out to.
+  let layout = catLayout
+  if (catFull) {
+    layout = {
+      ...catLayout,
+      xaxis: {...catLayout.xaxis, range: [-1.15, 0.65]},
+      yaxis: {...catLayout.yaxis, range: [-0.65, 1.15]},
+      uirevision: "full"
+    }
+  }
+  return catPlot(data, layout)
 }
 ```
 

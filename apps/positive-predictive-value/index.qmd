@@ -586,6 +586,10 @@ viewof layout = {
 </div>
 
 ```{ojs}
+VM.ui.statRow(statTiles(tests))
+```
+
+```{ojs}
 drawGrid(people, {rounds: tests})
 ```
 
@@ -646,10 +650,30 @@ function legendNote(rounds) {
   }
   const last = splits[rounds]
   if (rounds === 1) {
-    return html`${last.positives} tested positive. Positive predictive value, the chance you have the condition given a positive test: <strong>${formatPct(ppvs[1])}</strong>. Negative predictive value: <strong>${formatPct(npvs[1])}</strong>.`
+    return html`${last.positives} tested positive.`
   }
   const previous = splits[rounds - 1]
-  return html`Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, so the effective prevalence going in was ${formatPct(ppvs[rounds - 1])}. Positive predictive value after ${ordinal[rounds]} positive tests: <strong>${formatPct(ppvs[rounds])}</strong>. Negative predictive value of test ${rounds}: <strong>${formatPct(npvs[rounds])}</strong>.`
+  return html`Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, and that share is the effective prevalence going into test ${rounds}.`
+}
+
+// statTiles: the stat row above the grid -- the effective prevalence the
+// latest test starts from, and that test's PPV and NPV. Before any test there is no
+// PPV or NPV yet, so those tiles show a dash rather than vanishing, which
+// would shift the grid every time the slider crosses 0.
+function statTiles(rounds) {
+  let effectivePrevalence = prevalence
+  let ppv = "—"
+  let npv = "—"
+  if (rounds >= 1) {
+    effectivePrevalence = ppvs[rounds - 1]
+    ppv = formatPct(ppvs[rounds])
+    npv = formatPct(npvs[rounds])
+  }
+  return [
+    {label: "Effective prevalence", value: formatPct(effectivePrevalence), title: "Share with the condition among the people given the latest test"},
+    {label: "PPV", value: ppv, title: "Positive predictive value: the chance you have the condition given a positive result"},
+    {label: "NPV", value: npv, title: "Negative predictive value: the chance you don't have the condition given a negative result"}
+  ]
 }
 ```
 

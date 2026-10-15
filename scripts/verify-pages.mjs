@@ -450,12 +450,28 @@ async function checkExampleDropdown(page, errors) {
   }
 }
 
+// The giscus comment frame (_includes/giscus.html) on every app page is
+// answered with an empty page instead of the live giscus.app: a page with no
+// discussion yet makes the real widget log 404s, and the crawl shouldn't hinge
+// on a third party anyway. Fulfilled, not aborted, since a failed request is
+// recorded as an error too. Returns the URLs it answered, so embed mode can
+// assert it never asked.
+async function stubGiscus(page) {
+  const hits = []
+  await page.route('https://giscus.app/**', route => {
+    hits.push(route.request().url())
+    route.fulfill({ status: 200, contentType: 'text/html', body: '' })
+  })
+  return hits
+}
+
 // The same page at a phone's width (390x844, an iPhone 14). The desktop pass
 // above runs at Playwright's default 1280x720, which never caught slider
 // tracks squeezed to 0-98px on a phone (fixed in mathviz v0.3.0) or a table
 // of equations that made the spirograph page scroll sideways.
 async function checkPhoneLayout(browser, base, relPath, errors) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  await stubGiscus(page)
   page.on('pageerror', err => errors.push(`phone pageerror: ${err.message}`))
   try {
     await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
@@ -470,6 +486,7 @@ async function checkPhoneLayout(browser, base, relPath, errors) {
 
 async function checkEmbedMode(browser, base, relPath, errors) {
   const page = await browser.newPage()
+  const giscusHits = await stubGiscus(page)
   page.on('pageerror', err => errors.push(`embed pageerror: ${err.message}`))
   page.on('console', msg => {
     if (msg.type() === 'error') errors.push(`embed console.error: ${msg.text()}`)
@@ -493,6 +510,13 @@ async function checkEmbedMode(browser, base, relPath, errors) {
       await waitForSettle(page, relPath)
       for (const problem of await page.evaluate(embedProblems, id)) errors.push(`embed=${id}: ${problem}`)
     }
+    // An embedded app shows no comments and contacts giscus.app not at all
+    // (privacy.qmd says so). The frame is lazy, so bring the page's end into
+    // view first, where the comment section would be.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await page.waitForTimeout(500)
+    if (await page.evaluate(() => document.querySelector('.vml-comments') !== null)) errors.push('embed: the giscus comment section is on the page')
+    if (giscusHits.length > 0) errors.push(`embed: requested ${giscusHits[0]}`)
   } finally {
     await page.close()
   }
@@ -500,6 +524,7 @@ async function checkEmbedMode(browser, base, relPath, errors) {
 
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
+  await stubGiscus(page)
   // Grants the Share dialog's Copy button its real navigator.clipboard.
   // writeText path instead of always hitting the textarea.select() fallback
   // -- harmless for every other page, which never calls the clipboard API.

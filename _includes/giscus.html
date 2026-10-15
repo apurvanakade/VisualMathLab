@@ -20,6 +20,12 @@ token GitHub sign-in returns with is moved into localStorage under
 `giscus-session` and stripped from the address, and the frame's resize,
 sign-out and bad-session messages are handled the same way.
 
+Because `origin` has no query string, GitHub sign-in would bring a reader
+back to the page's default inputs. So while signed out, the page's query
+string is kept in sessionStorage (`vml-giscus-return`) as the page is left,
+and a return with `?giscus=` to the same page reloads it with that query
+string. It stays in this tab, on this site, and goes when the tab closes.
+
 - Only pages with an app (`.vm-app`) get comments: not the homepage, topic
   listings, privacy or embed docs.
 - On a split page the thread goes at the end of the prose column (the end of
@@ -49,6 +55,7 @@ sign-out and bad-session messages are handled the same way.
   (function () {
     var GISCUS = "https://giscus.app";
     var SESSION_KEY = "giscus-session";
+    var RETURN_KEY = "vml-giscus-return";
 
     if (document.documentElement.classList.contains("vm-embed")) return;
     if (!document.querySelector(".vm-app")) return;
@@ -64,6 +71,16 @@ sign-out and bad-session messages are handled the same way.
       try {
         localStorage.setItem(SESSION_KEY, JSON.stringify(session));
       } catch (e) {}
+      // Back to the inputs the reader left with, if any (see above).
+      var saved = null;
+      try {
+        saved = JSON.parse(sessionStorage.getItem(RETURN_KEY));
+        sessionStorage.removeItem(RETURN_KEY);
+      } catch (e) {}
+      if (saved && saved.path === location.pathname && saved.search) {
+        location.replace(location.pathname + saved.search);
+        return;
+      }
       url.searchParams.delete("giscus");
       history.replaceState(history.state, document.title, url.toString());
     } else {
@@ -74,6 +91,15 @@ sign-out and bad-session messages are handled the same way.
         try { localStorage.removeItem(SESSION_KEY); } catch (e2) {}
       }
     }
+
+    // Signed out, a GitHub sign-in may be about to leave the page: remember
+    // its current inputs (the app keeps them in location.search).
+    window.addEventListener("pagehide", function () {
+      if (config.session) return;
+      try {
+        sessionStorage.setItem(RETURN_KEY, JSON.stringify({ path: location.pathname, search: location.search }));
+      } catch (e) {}
+    });
 
     function currentTheme() {
       if (document.body.classList.contains("quarto-dark")) return "dark";

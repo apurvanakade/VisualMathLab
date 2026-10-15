@@ -151,6 +151,7 @@ test('privacy.qmd: names the comment host, and giscus.html keeps the query strin
   // sends the full page address (the visitor's math input) as `origin`.
   const giscusHtml = fs.readFileSync(path.join(repoRoot, '_includes/giscus.html'), 'utf8')
   assert.ok(privacyQmd.includes('`giscus.app`'), 'privacy.qmd does not mention giscus.app')
+  assert.ok(privacyQmd.includes('`avatars.githubusercontent.com`'), 'privacy.qmd does not mention the GitHub avatar host')
   assert.doesNotMatch(siteIncludeTags, /giscus\.app\/client\.js/, 'client.js sends the query string to giscus.app')
   assert.match(giscusHtml, /var origin = location\.origin \+ location\.pathname;/)
   assert.match(giscusHtml, /loading", "lazy"/)
@@ -170,6 +171,7 @@ test('privacy.qmd: lists every localStorage key the site writes', () => {
     ['vm-playback', /speed and mode/],
     ['vml-mobile-warning-dismissed', /dismissed the one-time notice/],
     ['giscus-session', /giscus session/],
+    ['vml-giscus-return', /inputs on the page you are leaving/],
   ]
   for (const [key, re] of expected) {
     assert.match(privacyQmd, re, `privacy.qmd does not describe the ${key} entry`)

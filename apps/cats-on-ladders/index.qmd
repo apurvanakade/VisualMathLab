@@ -11,7 +11,6 @@ categories:
   - Envelopes
   - Parametric Curves
   - Roulettes
-toc: true
 ---
 
 <!--
@@ -166,17 +165,10 @@ catDraw = {
   data.push(ladderTrace(theta))
   data.push(catMarker(cat))
 
-  // With the full curve on, widen the axes just enough to fit it.
-  let layout = catLayout
-  if (catFull) {
-    layout = {
-      ...catLayout,
-      xaxis: {...catLayout.xaxis, range: [-1.15, Math.max(a, 0.06) + 0.08]},
-      yaxis: {...catLayout.yaxis, range: [-Math.max(b, 0.04) - 0.08, 1.15]},
-      uirevision: "full"
-    }
-  }
-  return catPlot(data, layout)
+  // The axes stay on the quarter plane even with the full curve on, so no
+  // slider ever rescales them; the rest of the ellipse runs off the chart
+  // through the wall and below the floor, there to zoom out to.
+  return catPlot(data, catLayout)
 }
 ```
 
@@ -271,7 +263,9 @@ Now it is easy to see that when the cat is sitting at the midpoint of the ladder
 tusiDefaultT = 0.5
 // The first app's default slide, a quarter of the way into the second
 // quadrant's fall: the two apps open with the ladder at the same angle.
-tusiDefaultRoll = catDefaultSlide / 4
+// Rounded to the Roll slider's 0.001 step, or the slider would report a
+// different value and an untouched page would get tusi_roll in its URL.
+tusiDefaultRoll = Math.round(catDefaultSlide / 4 * 1000) / 1000
 tusiView = 1.15
 tusiPlot = VM.plotting.persistentPlot({height: "520px"})
 tusiLayout = ({
@@ -363,7 +357,7 @@ tusiDraw = {
 <div class="ojs-chart-controls ojs-grid">
 
 ```{ojs}
-viewof tusiRoll = rollInput(tusiDefaultRoll)
+viewof tusiRoll = rollInput(clamp01(VM.ui.urlParam("tusi_roll", tusiDefaultRoll)))
 ```
 
 ```{ojs}
@@ -382,9 +376,7 @@ viewof tusiT = {
 
 ```{ojs}
 //| output: false
-// The roll is left out of the URL: while its play button runs it changes
-// every frame, and browsers throttle that many history updates.
-tusiUrlSync = VM.ui.syncUrlParams({tusi_t: [tusiT, tusiDefaultT]})
+tusiUrlSync = VM.ui.syncUrlParams({tusi_roll: [tusiRoll, tusiDefaultRoll], tusi_t: [tusiT, tusiDefaultT]})
 ```
 
 ::: {.callout-tip title="Exercise"}
@@ -526,7 +518,7 @@ Rolling circles explain the envelope as well. Add a third circle, of radius $L/4
 // circle, its diameter runs from K to the Tusi circle's centre, and its
 // tracing point (−L cos³ θ, L sin³ θ) lies on the ladder, where the ladder
 // touches the astroid.
-astroDefaultRoll = catDefaultSlide / 4
+astroDefaultRoll = tusiDefaultRoll
 astroPlot = VM.plotting.persistentPlot({height: "520px"})
 ```
 
@@ -598,7 +590,7 @@ viewof astroTraces = {
 <div class="ojs-chart-controls">
 
 ```{ojs}
-viewof astroRoll = rollInput(astroDefaultRoll)
+viewof astroRoll = rollInput(clamp01(VM.ui.urlParam("astro_roll", astroDefaultRoll)))
 ```
 
 </div>
@@ -611,7 +603,7 @@ viewof astroRoll = rollInput(astroDefaultRoll)
 //| output: false
 astroTrail = astroTraces.includes("Ladder trail")
 
-astroUrlSync = VM.ui.syncUrlParams({astro_trail: [astroTrail, true]})
+astroUrlSync = VM.ui.syncUrlParams({astro_roll: [astroRoll, astroDefaultRoll], astro_trail: [astroTrail, true]})
 ```
 
 ::: {.callout-tip title="Exercise"}

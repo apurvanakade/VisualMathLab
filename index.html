@@ -56,28 +56,28 @@ ul.task-list li input[type="checkbox"] {
 <meta name="referrer" content="same-origin">
 <script src="https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-<script src="site_libs/quarto-contrib/mathviz-0.4.1/mathviz.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-0.4.1/mathviz.css" rel="stylesheet">
-<script src="site_libs/quarto-contrib/mathviz-sidebar-rail-0.4.1/sidebar-rail.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-sidebar-rail-0.4.1/sidebar-rail.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-0.4.2/mathviz.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-0.4.2/mathviz.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-sidebar-rail-0.4.2/sidebar-rail.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-sidebar-rail-0.4.2/sidebar-rail.css" rel="stylesheet">
 <meta name="mathviz:sidebar-pin-key" content="vml-sidebar-pinned">
-<script src="site_libs/quarto-contrib/mathviz-mobile-warning-0.4.1/mobile-warning.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-mobile-warning-0.4.1/mobile-warning.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-mobile-warning-0.4.2/mobile-warning.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-mobile-warning-0.4.2/mobile-warning.css" rel="stylesheet">
 <meta name="mathviz:mobile-warning-key" content="vml-mobile-warning-dismissed">
-<script src="site_libs/quarto-contrib/mathviz-split-0.4.1/split.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-split-0.4.1/split.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-split-0.4.2/split.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-split-0.4.2/split.css" rel="stylesheet">
 <meta name="mathviz:split-width-key" content="vml-split-width">
-<script src="site_libs/quarto-contrib/mathviz-embed-0.4.1/embed.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-embed-0.4.1/embed.css" rel="stylesheet">
-<script src="site_libs/quarto-contrib/mathviz-chrome-site-0.4.1/site.js"></script>
-<script src="site_libs/quarto-contrib/mathviz-share-0.4.1/share.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-share-0.4.1/share.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-embed-0.4.2/embed.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-embed-0.4.2/embed.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-chrome-site-0.4.2/site.js"></script>
+<script src="site_libs/quarto-contrib/mathviz-share-0.4.2/share.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-share-0.4.2/share.css" rel="stylesheet">
 <meta name="mathviz:share-site-url" content="https://www.visualmathlab.com">
 <meta name="mathviz:share-embed-docs" content="embed.html">
-<script src="site_libs/quarto-contrib/mathviz-report-bug-0.4.1/report-bug.js"></script>
-<link href="site_libs/quarto-contrib/mathviz-report-bug-0.4.1/report-bug.css" rel="stylesheet">
+<script src="site_libs/quarto-contrib/mathviz-report-bug-0.4.2/report-bug.js"></script>
+<link href="site_libs/quarto-contrib/mathviz-report-bug-0.4.2/report-bug.css" rel="stylesheet">
 <meta name="mathviz:report-bug-repo" content="apurvanakade/VisualMathLab">
-<link href="site_libs/quarto-contrib/mathviz-fonts-0.4.1/fonts.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/mathviz-fonts-0.4.2/fonts.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -122,6 +122,34 @@ ul.task-list li input[type="checkbox"] {
 
     window['quarto-listings'] = window['quarto-listings'] || {};
     window['quarto-listings']['listing-latest-listing'] = new List('listing-latest-listing', options);
+
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  });
+
+  window.addEventListener('hashchange',() => {
+    if (window['quarto-listing-loaded']) {
+      window['quarto-listing-loaded']();
+    }
+  })
+  
+
+  window.document.addEventListener("DOMContentLoaded", function (_event) {
+    const listingTargetEl = window.document.querySelector('#listing-random-apps .list');
+    if (!listingTargetEl) {
+      // No listing discovered, do not attach.
+      return; 
+    }
+
+    const options = {
+      valueNames: ['listing-project','listing-execute','listing-filters','listing-mathviz','listing-format','listing-website','listing-engines','listing-language','listing-author','listing-title','listing-topic','listing-description','listing-date','listing-order','listing-image','listing-categories','listing-path','listing-outputHref','listing-date-modified','listing-filename','listing-file-modified','listing-reading-time','listing-word-count',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-date-modified-sort'] },{ data: ['listing-file-modified-sort'] },{ data: ['listing-reading-time-sort'] },{ data: ['listing-word-count-sort'] }],
+      
+      searchColumns: ["listing-project","listing-execute","listing-filters","listing-mathviz","listing-format","listing-website","listing-engines","listing-language","listing-author","listing-title","listing-topic","listing-description","listing-date","listing-order","listing-image","listing-categories","listing-path","listing-outputHref","listing-date-modified","listing-filename","listing-file-modified","listing-reading-time","listing-word-count"],
+    };
+
+    window['quarto-listings'] = window['quarto-listings'] || {};
+    window['quarto-listings']['listing-random-apps'] = new List('listing-random-apps', options);
 
     if (window['quarto-listing-loaded']) {
       window['quarto-listing-loaded']();
@@ -1169,85 +1197,23 @@ Here you’ll find root finders, ODE solvers, splines, filters and the odd spiro
 <iframe id="vm-featured-frame" class="vm-featured-frame" title="A Visual Math Lab app" loading="lazy">
 </iframe>
 </div>
+<div id="listing-random-apps" class="quarto-listing quarto-listing-container-custom">
+<script type="application/json" id="vm-random-apps">[{"slug":"barycentric-coordinates","title":"Barycentric Coordinates","description":"Explore barycentric coordinates on a triangle, the setting for Sperner's Lemma."},{"slug":"bisection-method","title":"Bisection Method","description":"Find a root by repeatedly halving an interval where the function changes sign."},{"slug":"explicit-ode-methods","title":"Explicit Methods for ODEs","description":"Compare Euler, midpoint and RK4 on the same initial value problem."},{"slug":"polynomial-fits","title":"Polynomial Fits","description":"Fit polynomials of increasing degree to noisy data and watch them overfit."},{"slug":"polynomial-interpolation","title":"Polynomial Interpolation","description":"Compare piecewise linear and cubic spline interpolation through a set of points."},{"slug":"positive-predictive-value","title":"Positive Predictive Value","description":"If you test positive, what are the chances you have the condition?"},{"slug":"recursive-filters-1d","title":"1D Recursive Filters","description":"Smooth a noisy signal with a moving average, an exponential moving average and a Kalman filter."},{"slug":"fixed-point-iteration","title":"Fixed Point Iteration","description":"Solve x = g(x) by applying g over and over, and see when that converges."},{"slug":"implicit-ode-methods","title":"Implicit Methods for ODEs","description":"Compare implicit and explicit ODE solvers on a stiff problem."},{"slug":"l1-vs-l2-regression","title":"L1 vs. L2 Regression","description":"Compare least-squares and least-absolute-deviations regression on data with outliers."},{"slug":"numerical-integration","title":"Numerical Integration","description":"Compare Riemann sums, the trapezoid rule and Simpson's rule."},{"slug":"sperners-lemma-statement","title":"Sperner's Lemma - Statement","description":"Color the vertices of a triangulated triangle and test Sperner's Lemma."},{"slug":"adaptive-integration","title":"Adaptive Integration","description":"Refine a numerical integral only where the estimate is still inaccurate."},{"slug":"adaptive-ode-methods","title":"Adaptive Methods for ODEs","description":"Solve an ODE with a step size that adapts to keep the error near a tolerance."},{"slug":"distribution-relationships","title":"Distribution Relationships","description":"Explore how the standard probability distributions turn into one another."},{"slug":"newton-method","title":"Newton's Method","description":"Find a root by following tangent lines down to the x-axis."},{"slug":"sperners-lemma-combinatorial-proof","title":"Sperner's Lemma - Combinatorial Proof","description":"Prove Sperner's Lemma by walking through doors."},{"slug":"butcher-tableau","title":"Butcher Tableau Explorer","description":"See how a Butcher tableau determines a Runge-Kutta method's stages and order."},{"slug":"particle-filter-tracking","title":"Particle Filter Tracking","description":"Track a moving object from noisy range-only readings using a particle filter."},{"slug":"secant-method","title":"Secant Method","description":"Find a root like Newton's method, but without the derivative."},{"slug":"sperners-lemma-geometric-proof","title":"Sperner's Lemma - Geometric Proof","description":"Prove Sperner's Lemma by counting oriented triangles."},{"slug":"spirographs","title":"Spirographs","description":"Roll one circle around another and trace the curve a pen draws."}]</script>
+<div class="listing-no-matching d-none">No matching items</div>
+</div>
 <script>
 // Picks the app the frame below shows and writes its description above it.
-// An explicit list, like the sidebar in _quarto.yml: the Gallery listing
-// further down is paginated by List.js after load, so its DOM isn't a
-// reliable place to read the full set from. Each entry mirrors the app's
-// own title: and description: front matter. Adding an app means adding it
-// here too; scripts/random-apps.test.js fails until you do.
+// The apps come from the random-apps listing just above (random-apps.ejs),
+// which Quarto fills with every apps/*/index.qmd at render time -- not from
+// the Gallery listing further down, which List.js paginates after load, so
+// its DOM doesn't hold the full set.
 (function () {
-  var apps = [
-    {slug: "adaptive-integration",
-     title: "Adaptive Integration",
-     description: "Refine a numerical integral only where the estimate is still inaccurate."},
-    {slug: "adaptive-ode-methods",
-     title: "Adaptive Methods for ODEs",
-     description: "Solve an ODE with a step size that adapts to keep the error near a tolerance."},
-    {slug: "barycentric-coordinates",
-     title: "Barycentric Coordinates",
-     description: "Explore barycentric coordinates on a triangle, the setting for Sperner's Lemma."},
-    {slug: "bisection-method",
-     title: "Bisection Method",
-     description: "Find a root by repeatedly halving an interval where the function changes sign."},
-    {slug: "butcher-tableau",
-     title: "Butcher Tableau Explorer",
-     description: "See how a Butcher tableau determines a Runge-Kutta method's stages and order."},
-    {slug: "distribution-relationships",
-     title: "Distribution Relationships",
-     description: "Explore how the standard probability distributions turn into one another."},
-    {slug: "explicit-ode-methods",
-     title: "Explicit Methods for ODEs",
-     description: "Compare Euler, midpoint and RK4 on the same initial value problem."},
-    {slug: "fixed-point-iteration",
-     title: "Fixed Point Iteration",
-     description: "Solve x = g(x) by applying g over and over, and see when that converges."},
-    {slug: "implicit-ode-methods",
-     title: "Implicit Methods for ODEs",
-     description: "Compare implicit and explicit ODE solvers on a stiff problem."},
-    {slug: "l1-vs-l2-regression",
-     title: "L1 vs. L2 Regression",
-     description: "Compare least-squares and least-absolute-deviations regression on data with outliers."},
-    {slug: "newton-method",
-     title: "Newton's Method",
-     description: "Find a root by following tangent lines down to the x-axis."},
-    {slug: "numerical-integration",
-     title: "Numerical Integration",
-     description: "Compare Riemann sums, the trapezoid rule and Simpson's rule."},
-    {slug: "particle-filter-tracking",
-     title: "Particle Filter Tracking",
-     description: "Track a moving object from noisy range-only readings using a particle filter."},
-    {slug: "polynomial-fits",
-     title: "Polynomial Fits",
-     description: "Fit polynomials of increasing degree to noisy data and watch them overfit."},
-    {slug: "polynomial-interpolation",
-     title: "Polynomial Interpolation",
-     description: "Compare piecewise linear and cubic spline interpolation through a set of points."},
-    {slug: "positive-predictive-value",
-     title: "Positive Predictive Value",
-     description: "If you test positive, what are the chances you have the condition?"},
-    {slug: "recursive-filters-1d",
-     title: "1D Recursive Filters",
-     description: "Smooth a noisy signal with a moving average, an exponential moving average and a Kalman filter."},
-    {slug: "secant-method",
-     title: "Secant Method",
-     description: "Find a root like Newton's method, but without the derivative."},
-    {slug: "sperners-lemma-combinatorial-proof",
-     title: "Sperner's Lemma - Combinatorial Proof",
-     description: "Prove Sperner's Lemma by walking through doors."},
-    {slug: "sperners-lemma-geometric-proof",
-     title: "Sperner's Lemma - Geometric Proof",
-     description: "Prove Sperner's Lemma by counting oriented triangles."},
-    {slug: "sperners-lemma-statement",
-     title: "Sperner's Lemma - Statement",
-     description: "Color the vertices of a triangulated triangle and test Sperner's Lemma."},
-    {slug: "spirographs",
-     title: "Spirographs",
-     description: "Roll one circle around another and trace the curve a pen draws."}
-  ]
+  var data = document.getElementById("vm-random-apps")
   var frame = document.getElementById("vm-featured-frame")
   var description = document.getElementById("vm-featured-description")
-  if (!frame || !description) return
+  if (!data || !frame || !description) return
+  var apps = JSON.parse(data.textContent)
+  if (apps.length === 0) return
 
   var app = apps[Math.floor(Math.random() * apps.length)]
   var href = "apps/" + app.slug + "/index.html"
@@ -1389,7 +1355,7 @@ Updating beliefs from new evidence, and smoothing noisy signals over time.</a></
 <h2 class="anchored" data-anchor-id="gallery">Gallery</h2>
 <div id="listing-latest-listing" class="quarto-listing quarto-listing-container-grid">
 <div class="list grid quarto-listing-cols-3">
-<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNQYXJ0aWNsZSUyMEZpbHRlciUyQ01vbnRlJTIwQ2FybG8lMjBNZXRob2RzJTJDQmF5ZXNpYW4lMjBGaWx0ZXJpbmclMkNTdGF0ZSUyMEVzdGltYXRpb24=" data-listing-date-sort="1790899200000" data-listing-file-modified-sort="1792034074524" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="37" data-listing-word-count-sort="7347">
+<div class="g-col-1" data-index="0" data-categories="UHJvYmFiaWxpdHklMkNQYXJ0aWNsZSUyMEZpbHRlciUyQ01vbnRlJTIwQ2FybG8lMjBNZXRob2RzJTJDQmF5ZXNpYW4lMjBGaWx0ZXJpbmclMkNTdGF0ZSUyMEVzdGltYXRpb24=" data-listing-date-sort="1790899200000" data-listing-file-modified-sort="1792078178390" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="37" data-listing-word-count-sort="7347">
 <a href="./apps/particle-filter-tracking/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1405,7 +1371,7 @@ Particle Filter Tracking
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="1" data-categories="TWF0aCUyMEFydCUyQ0NvbXBsZXglMjBOdW1iZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcyUyQ1BvbGFyJTIwQ29vcmRpbmF0ZXMlMkNSb3VsZXR0ZXM=" data-listing-date-sort="1790121600000" data-listing-file-modified-sort="1792034074529" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5437">
+<div class="g-col-1" data-index="1" data-categories="TWF0aCUyMEFydCUyQ0NvbXBsZXglMjBOdW1iZXJzJTJDUGFyYW1ldHJpYyUyMEN1cnZlcyUyQ1BvbGFyJTIwQ29vcmRpbmF0ZXMlMkNSb3VsZXR0ZXM=" data-listing-date-sort="1790121600000" data-listing-file-modified-sort="1792078178397" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5437">
 <a href="./apps/spirographs/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1421,7 +1387,7 @@ Spirographs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1792034074522" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16309">
+<div class="g-col-1" data-index="2" data-categories="UHJvYmFiaWxpdHklMkNEaXN0cmlidXRpb25zJTJDQ2VudHJhbCUyMExpbWl0JTIwVGhlb3JlbQ==" data-listing-date-sort="1787443200000" data-listing-file-modified-sort="1792078178387" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="82" data-listing-word-count-sort="16309">
 <a href="./apps/distribution-relationships/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1437,7 +1403,7 @@ Distribution Relationships
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="3" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1792034074526" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4254">
+<div class="g-col-1" data-index="3" data-categories="UHJvYmFiaWxpdHklMkNLYWxtYW4lMjBGaWx0ZXIlMkNNb3ZpbmclMjBBdmVyYWdlJTJDRXhwb25lbnRpYWwlMjBNb3ZpbmclMjBBdmVyYWdlJTJDUmVjdXJzaXZlJTIwRmlsdGVycw==" data-listing-date-sort="1786060800000" data-listing-file-modified-sort="1792078178393" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="22" data-listing-word-count-sort="4254">
 <a href="./apps/recursive-filters-1d/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1453,7 +1419,7 @@ Distribution Relationships
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="4" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1792034074525" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5495">
+<div class="g-col-1" data-index="4" data-categories="UHJvYmFiaWxpdHklMkNCYXllcyUyMFRoZW9yZW0lMkNDb25kaXRpb25hbCUyMFByb2JhYmlsaXR5JTJDTWVkaWNhbCUyMFRlc3Rpbmc=" data-listing-date-sort="1785542400000" data-listing-file-modified-sort="1792078178391" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5495">
 <a href="./apps/positive-predictive-value/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1469,7 +1435,7 @@ Positive Predictive Value
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="5" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1792034074523" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2314">
+<div class="g-col-1" data-index="5" data-categories="RGF0YSUyMFNjaWVuY2UlMkNSb2J1c3QlMjBSZWdyZXNzaW9uJTJDT3V0bGllcnMlMkNMMSUyMFJlZ3Jlc3Npb24lMkNMMiUyMFJlZ3Jlc3Npb24lMkNMaW5lYXIlMjBSZWdyZXNzaW9u" data-listing-date-sort="1784678400000" data-listing-file-modified-sort="1792078178389" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2314">
 <a href="./apps/l1-vs-l2-regression/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1485,7 +1451,7 @@ L1 vs.&nbsp;L2 Regression
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="6" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1792034074524" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3181">
+<div class="g-col-1" data-index="6" data-categories="RGF0YSUyMFNjaWVuY2UlMkNPdmVyZml0dGluZyUyQ1VuZGVyZml0dGluZyUyQ0JpYXMtVmFyaWFuY2UlMjBUcmFkZW9mZiUyQ1BvbHlub21pYWwlMjBSZWdyZXNzaW9uJTJDTW9kZWwlMjBDb21wbGV4aXR5" data-listing-date-sort="1784246400000" data-listing-file-modified-sort="1792078178390" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3181">
 <a href="./apps/polynomial-fits/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1501,7 +1467,7 @@ Polynomial Fits
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074520" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3381">
+<div class="g-col-1" data-index="7" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ0FkYXB0aXZlJTIwUXVhZHJhdHVyZSUyQ1NpbXBzb24ncyUyMFJ1bGUlMkNFcnJvciUyMEVzdGltYXRpb24=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178384" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="17" data-listing-word-count-sort="3381">
 <a href="./apps/adaptive-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1517,7 +1483,7 @@ Adaptive Integration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074520" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3480">
+<div class="g-col-1" data-index="8" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNBZGFwdGl2ZSUyMFN0ZXAlMjBTaXplJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178385" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3480">
 <a href="./apps/adaptive-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1533,7 +1499,7 @@ Adaptive Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074521" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5393">
+<div class="g-col-1" data-index="9" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNSdW5nZS1LdXR0YSUyME1ldGhvZHMlMkNCdXRjaGVyJTIwVGFibGVhdSUyQ1RheWxvciUyMFNlcmllcw==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178386" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="27" data-listing-word-count-sort="5393">
 <a href="./apps/butcher-tableau/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1549,7 +1515,7 @@ Butcher Tableau Explorer
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074523" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4012">
+<div class="g-col-1" data-index="10" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDUnVuZ2UtS3V0dGElMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178388" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4012">
 <a href="./apps/explicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1565,7 +1531,7 @@ Explicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074523" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3550">
+<div class="g-col-1" data-index="11" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEaWZmZXJlbnRpYWwlMjBFcXVhdGlvbnMlMkNFdWxlcidzJTIwTWV0aG9kJTJDSW1wbGljaXQlMjBNZXRob2RzJTJDSW5pdGlhbCUyMFZhbHVlJTIwUHJvYmxlbXM=" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178389" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3550">
 <a href="./apps/implicit-ode-methods/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1581,7 +1547,7 @@ Implicit Methods for ODEs
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074524" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5055">
+<div class="g-col-1" data-index="12" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlZ3JhdGlvbiUyQ1JpZW1hbm4lMjBTdW1zJTJDVHJhcGV6b2lkYWwlMjBSdWxlJTJDU2ltcHNvbidzJTIwUnVsZQ==" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178389" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5055">
 <a href="./apps/numerical-integration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1597,7 +1563,7 @@ Numerical Integration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aCUyQ0Jhc2lzJTIwRnVuY3Rpb25z" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792034074525" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="31" data-listing-word-count-sort="6187">
+<div class="g-col-1" data-index="13" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNJbnRlcnBvbGF0aW9uJTJDTGluZWFyJTIwSW50ZXJwb2xhdGlvbiUyQ0N1YmljJTIwU3BsaW5lcyUyQ0FyYyUyMExlbmd0aCUyQ0Jhc2lzJTIwRnVuY3Rpb25z" data-listing-date-sort="1783900800000" data-listing-file-modified-sort="1792078178391" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="31" data-listing-word-count-sort="6187">
 <a href="./apps/polynomial-interpolation/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1613,7 +1579,7 @@ Polynomial Interpolation
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792034074521" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4021">
+<div class="g-col-1" data-index="14" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNCcmFja2V0aW5nJTJDTm8lMjBEZXJpdmF0aXZlcyUyQ0d1YXJhbnRlZWQlMjBDb252ZXJnZW5jZSUyQ1Jvb3QlMjBGaW5kaW5n" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792078178385" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4021">
 <a href="./apps/bisection-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1629,7 +1595,7 @@ Bisection Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792034074523" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3029">
+<div class="g-col-1" data-index="15" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDRml4ZWQlMjBQb2ludHMlMkNMaW5lYXIlMjBDb252ZXJnZW5jZSUyQ1Nsb3clMjBDb252ZXJnZW5jZQ==" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792078178388" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3029">
 <a href="./apps/fixed-point-iteration/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1645,7 +1611,7 @@ Fixed Point Iteration
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="16" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792034074523" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4133">
+<div class="g-col-1" data-index="16" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNEZXJpdmF0aXZlcyUyQ0Zhc3QlMjBDb252ZXJnZW5jZSUyQ1F1YWRyYXRpYyUyMENvbnZlcmdlbmNlJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792078178389" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="21" data-listing-word-count-sort="4133">
 <a href="./apps/newton-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1661,7 +1627,7 @@ Newton’s Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="17" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ0ludmVyc2UlMjBRdWFkcmF0aWMlMjBJbnRlcnBvbGF0aW9uJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792034074527" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5135">
+<div class="g-col-1" data-index="17" data-categories="Q29tcHV0YXRpb25hbCUyME1hdGglMkNObyUyMERlcml2YXRpdmVzJTJDU3VwZXJsaW5lYXIlMjBDb252ZXJnZW5jZSUyQ0ludmVyc2UlMjBRdWFkcmF0aWMlMjBJbnRlcnBvbGF0aW9uJTJDUm9vdCUyMEZpbmRpbmc=" data-listing-date-sort="1782345600000" data-listing-file-modified-sort="1792078178394" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="26" data-listing-word-count-sort="5135">
 <a href="./apps/secant-method/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1677,7 +1643,7 @@ Secant Method
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1792034074528" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2660">
+<div class="g-col-1" data-index="18" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQ29sb3JpbmclMkNEZXRlcm1pbmFudCUyQ1ZvbHVtZQ==" data-listing-date-sort="1748131200000" data-listing-file-modified-sort="1792078178395" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2660">
 <a href="./apps/sperners-lemma-geometric-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1693,7 +1659,7 @@ Sperner’s Lemma - Geometric Proof
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1792034074527" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3698">
+<div class="g-col-1" data-index="19" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5nJTJDQ29tYmluYXRvcmlhbCUyMFByb29m" data-listing-date-sort="1747353600000" data-listing-file-modified-sort="1792078178395" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3698">
 <a href="./apps/sperners-lemma-combinatorial-proof/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1709,7 +1675,7 @@ Sperner’s Lemma - Combinatorial Proof
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="20" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1792034074528" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1122">
+<div class="g-col-1" data-index="20" data-categories="RGlzY3JldGUlMjBNYXRoJTJDQ29tYmluYXRvcmljcyUyQ1RyaWFuZ2xlcyUyQ0NvbG9yaW5n" data-listing-date-sort="1747180800000" data-listing-file-modified-sort="1792078178396" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1122">
 <a href="./apps/sperners-lemma-statement/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">
@@ -1725,7 +1691,7 @@ Sperner’s Lemma - Statement
 </div>
 </div></a>
 </div>
-<div class="g-col-1" data-index="21" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1792034074520" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2539">
+<div class="g-col-1" data-index="21" data-categories="RGlzY3JldGUlMjBNYXRoJTJDVHJpYW5nbGVzJTJDQmFyeWNlbnRyaWMlMjBDb29yZGluYXRlcw==" data-listing-date-sort="1746921600000" data-listing-file-modified-sort="1792078178385" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2539">
 <a href="./apps/barycentric-coordinates/index.html" class="quarto-grid-link">
 <div class="quarto-grid-item card h-100 card-left">
 <p class="card-img-top">

@@ -457,17 +457,27 @@ async function checkExampleDropdown(page, errors) {
 }
 
 // The giscus comment frame (_includes/giscus.html) on every app page is
-// answered with an empty page instead of the live giscus.app: a page with no
+// blocked rather than loaded from the live giscus.app: a page with no
 // discussion yet makes the real widget log 404s, and the crawl shouldn't hinge
-// on a third party anyway. Fulfilled, not aborted, since a failed request is
-// recorded as an error too. Returns the URLs it answered, so embed mode can
+// on a third party anyway. Blocked through CDP, not page.route: routing turns
+// off the HTTP cache for the whole page, so every page re-downloaded Plotly,
+// math.js and MathJax, and the slowest (particle-filter) was measured before
+// it settled. (The cross-origin frame's own document request may still go
+// out, but everything it loads is blocked, so the widget never runs.) Any
+// console error or failed request from giscus.app is ignored via isGiscus. Returns the giscus URLs the page asked for, so embed mode can
 // assert it never asked.
-async function stubGiscus(page) {
+function isGiscus(url) {
+  return typeof url === 'string' && url.startsWith('https://giscus.app/')
+}
+
+async function blockGiscus(page) {
   const hits = []
-  await page.route('https://giscus.app/**', route => {
-    hits.push(route.request().url())
-    route.fulfill({ status: 200, contentType: 'text/html', body: '' })
+  page.on('request', req => {
+    if (isGiscus(req.url())) hits.push(req.url())
   })
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Network.enable')
+  await cdp.send('Network.setBlockedURLs', { urls: ['https://giscus.app/*'] })
   return hits
 }
 
@@ -477,7 +487,7 @@ async function stubGiscus(page) {
 // of equations that made the spirograph page scroll sideways.
 async function checkPhoneLayout(browser, base, relPath, errors) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
-  await stubGiscus(page)
+  await blockGiscus(page)
   page.on('pageerror', err => errors.push(`phone pageerror: ${err.message}`))
   try {
     await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
@@ -492,7 +502,7 @@ async function checkPhoneLayout(browser, base, relPath, errors) {
 
 async function checkEmbedMode(browser, base, relPath, errors) {
   const page = await browser.newPage()
-  const giscusHits = await stubGiscus(page)
+  const giscusHits = await blockGiscus(page)
   page.on('pageerror', err => errors.push(`embed pageerror: ${err.message}`))
   page.on('console', msg => {
     if (msg.type() === 'error') errors.push(`embed console.error: ${msg.text()}`)
@@ -530,7 +540,7 @@ async function checkEmbedMode(browser, base, relPath, errors) {
 
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
-  await stubGiscus(page)
+  await blockGiscus(page)
   // Grants the Share dialog's Copy button its real navigator.clipboard.
   // writeText path instead of always hitting the textarea.select() fallback
   // -- harmless for every other page, which never calls the clipboard API.
@@ -538,9 +548,10 @@ async function checkPage(browser, base, relPath) {
   const errors = []
   page.on('pageerror', err => errors.push(`pageerror: ${err.message}`))
   page.on('console', msg => {
-    if (msg.type() === 'error') errors.push(`console.error: ${msg.text()}`)
+    if (msg.type() === 'error' && !isGiscus(msg.location().url)) errors.push(`console.error: ${msg.text()}`)
   })
   page.on('requestfailed', req => {
+    if (isGiscus(req.url())) return
     errors.push(`requestfailed: ${req.url()} -- ${req.failure()?.errorText ?? ''}`)
   })
 

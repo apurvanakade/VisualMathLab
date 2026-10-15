@@ -244,8 +244,8 @@ async function blockGiscus(page) {
 // One load per page: no console error, page error or failed request, while
 // every button is clicked and every slider moved. Layout (slider widths,
 // popovers, phone width) and mathviz's own chrome (share dialog, embed mode)
-// are deliberately not asserted here -- they are mathviz's to test, and
-// checking them in a busy CI browser made the crawl slow and flaky.
+// are deliberately not asserted anywhere: checking them in a busy CI browser
+// made the crawl slow and flaky. Look at a changed page, phone width included.
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
   await blockGiscus(page)

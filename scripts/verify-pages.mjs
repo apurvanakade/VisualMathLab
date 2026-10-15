@@ -383,6 +383,12 @@ function isSettled(isApp) {
     const app = document.querySelector('.vm-app')
     if (app && !app.querySelector('.plotly, svg')) return false
   }
+  // Untypeset math is raw TeX, which a nowrap span can stretch far past a
+  // phone's width (particle-filter's 789px reweight line), so a layout check
+  // run before MathJax finishes measures a page no reader sees.
+  for (const el of document.querySelectorAll('span.math')) {
+    if (!el.querySelector('mjx-container')) return false
+  }
   return true
 }
 
@@ -450,12 +456,38 @@ async function checkExampleDropdown(page, errors) {
   }
 }
 
+// The giscus comment frame (_includes/giscus.html) on every app page is
+// blocked rather than loaded from the live giscus.app: a page with no
+// discussion yet makes the real widget log 404s, and the crawl shouldn't hinge
+// on a third party anyway. Blocked through CDP, not page.route: routing turns
+// off the HTTP cache for the whole page, so every page re-downloaded Plotly,
+// math.js and MathJax, and the slowest (particle-filter) was measured before
+// it settled. (The cross-origin frame's own document request may still go
+// out, but everything it loads is blocked, so the widget never runs.) Any
+// console error or failed request from giscus.app is ignored via isGiscus. Returns the giscus URLs the page asked for, so embed mode can
+// assert it never asked.
+function isGiscus(url) {
+  return typeof url === 'string' && url.startsWith('https://giscus.app/')
+}
+
+async function blockGiscus(page) {
+  const hits = []
+  page.on('request', req => {
+    if (isGiscus(req.url())) hits.push(req.url())
+  })
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Network.enable')
+  await cdp.send('Network.setBlockedURLs', { urls: ['https://giscus.app/*'] })
+  return hits
+}
+
 // The same page at a phone's width (390x844, an iPhone 14). The desktop pass
 // above runs at Playwright's default 1280x720, which never caught slider
 // tracks squeezed to 0-98px on a phone (fixed in mathviz v0.3.0) or a table
 // of equations that made the spirograph page scroll sideways.
 async function checkPhoneLayout(browser, base, relPath, errors) {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } })
+  await blockGiscus(page)
   page.on('pageerror', err => errors.push(`phone pageerror: ${err.message}`))
   try {
     await page.goto(base + relPath, { waitUntil: 'networkidle', timeout: 30000 })
@@ -470,6 +502,7 @@ async function checkPhoneLayout(browser, base, relPath, errors) {
 
 async function checkEmbedMode(browser, base, relPath, errors) {
   const page = await browser.newPage()
+  const giscusHits = await blockGiscus(page)
   page.on('pageerror', err => errors.push(`embed pageerror: ${err.message}`))
   page.on('console', msg => {
     if (msg.type() === 'error') errors.push(`embed console.error: ${msg.text()}`)
@@ -493,6 +526,13 @@ async function checkEmbedMode(browser, base, relPath, errors) {
       await waitForSettle(page, relPath)
       for (const problem of await page.evaluate(embedProblems, id)) errors.push(`embed=${id}: ${problem}`)
     }
+    // An embedded app shows no comments and contacts giscus.app not at all
+    // (privacy.qmd says so). The frame is lazy, so bring the page's end into
+    // view first, where the comment section would be.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await page.waitForTimeout(500)
+    if (await page.evaluate(() => document.querySelector('.vml-comments') !== null)) errors.push('embed: the giscus comment section is on the page')
+    if (giscusHits.length > 0) errors.push(`embed: requested ${giscusHits[0]}`)
   } finally {
     await page.close()
   }
@@ -500,6 +540,7 @@ async function checkEmbedMode(browser, base, relPath, errors) {
 
 async function checkPage(browser, base, relPath) {
   const page = await browser.newPage()
+  await blockGiscus(page)
   // Grants the Share dialog's Copy button its real navigator.clipboard.
   // writeText path instead of always hitting the textarea.select() fallback
   // -- harmless for every other page, which never calls the clipboard API.
@@ -507,9 +548,10 @@ async function checkPage(browser, base, relPath) {
   const errors = []
   page.on('pageerror', err => errors.push(`pageerror: ${err.message}`))
   page.on('console', msg => {
-    if (msg.type() === 'error') errors.push(`console.error: ${msg.text()}`)
+    if (msg.type() === 'error' && !isGiscus(msg.location().url)) errors.push(`console.error: ${msg.text()}`)
   })
   page.on('requestfailed', req => {
+    if (isGiscus(req.url())) return
     errors.push(`requestfailed: ${req.url()} -- ${req.failure()?.errorText ?? ''}`)
   })
 

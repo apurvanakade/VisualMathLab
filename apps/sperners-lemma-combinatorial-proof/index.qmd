@@ -578,9 +578,13 @@ viewof boundaryRegenerate = {
 </div>
 
 ```{ojs}
+VM.ui.statRow([{label: "RG edges", value: boundaryEdges.boldCount}])
+```
+
+```{ojs}
 viewof boundaryPlot = Plot.plot(VM.plotting.plotOptions({
   width: 600,
-  height: 100,
+  height: 60,
   margin: 20,
   grid: false,
   x: { domain: [0, M], axis: null },
@@ -598,10 +602,7 @@ viewof boundaryPlot = Plot.plot(VM.plotting.plotOptions({
       x1: "x1", y1: 0.5, x2: "x2", y2: 0.5,
       stroke: chartColors.ink, strokeWidth: 4, strokeDasharray: "8,4"
     }),
-    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: d => VM.discreteMath.vertexColor(d.color), r: 6 }),
-    Plot.text([{ x: M / 2, y: 0.9, text: `Number of RG edges: ${boundaryEdges.boldCount}` }], {
-      x: "x", y: "y", text: "text", fontSize: 16
-    })
+    Plot.dot(boundaryEdges.points, { x: "x", y: 0.5, fill: d => VM.discreteMath.vertexColor(d.color), r: 6 })
   ]
 }))
 ```

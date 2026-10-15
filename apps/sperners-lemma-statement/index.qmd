@@ -74,6 +74,10 @@ viewof regenerate = {
 </div>
 
 ```{ojs}
+VM.ui.statRow([{label: "RGB triangles", value: numRGBTriangles}])
+```
+
+```{ojs}
 // A diagram, not a graph: no axes, and a height chosen so the unit-wide
 // equilateral triangle is drawn to scale (Plot stretches y to fill
 // whatever height it is given otherwise).
@@ -201,7 +205,8 @@ subTriangles = {
 ```
 
 ```{ojs}
-// print the number of RGB triangles as a html element
+//| output: false
+// Shown in the stat row above the diagram.
 numRGBTriangles = {
   let count = 0;
   for (const triangle of subTriangles) {
@@ -209,12 +214,11 @@ numRGBTriangles = {
   }
   return count;
 }
-html`<b>Number of RGB triangles: ${numRGBTriangles}</b>`
 ```
 
 
 ## Questions
 
-- What is the expected number of such triangles? What about the other colored triangles? Click **Regenerate colors** a few times at a fixed subdivision count and watch the count above — does it move around a lot, or does it seem to settle near a typical value?
+- What is the expected number of such triangles? What about the other colored triangles? Click **Regenerate colors** a few times at a fixed subdivision count and watch the count — does it move around a lot, or does it seem to settle near a typical value?
 
 - How to generate a truly random triangulation of a triangle? What is the space of all triangulations of a triangle? How to sample uniformly from this space? How does the number of RGB triangles vary with different triangulations?

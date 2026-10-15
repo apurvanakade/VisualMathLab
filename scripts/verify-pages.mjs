@@ -383,6 +383,12 @@ function isSettled(isApp) {
     const app = document.querySelector('.vm-app')
     if (app && !app.querySelector('.plotly, svg')) return false
   }
+  // Untypeset math is raw TeX, which a nowrap span can stretch far past a
+  // phone's width (particle-filter's 789px reweight line), so a layout check
+  // run before MathJax finishes measures a page no reader sees.
+  for (const el of document.querySelectorAll('span.math')) {
+    if (!el.querySelector('mjx-container')) return false
+  }
   return true
 }
 

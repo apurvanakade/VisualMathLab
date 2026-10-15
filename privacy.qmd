@@ -15,14 +15,16 @@ numbers that come out of them are computed locally and never sent anywhere.
 There is no backend, no account system, and no database.
 
 The only data that leaves your browser *about you* is anonymous usage
-analytics, and only if you agree to it. The one other thing a page fetches
-from outside this site is a few open-source libraries, described under
-[Third-party resources](#third-party-resources) below.
+analytics, and only if you agree to it. The other things a page fetches
+from outside this site are a few open-source libraries and, on pages with an
+app, the comment section, both described under
+[Third-party resources](#third-party-resources) and [Comments](#comments)
+below.
 
 When one of these apps is shown inside another website (an `<iframe>` with
 `embed` in its address -- see [Embedding an app](embed.qmd)), the page
-never asks about analytics and never measures anything, even if you allowed
-analytics on a direct visit here.
+never asks about analytics, never measures anything and shows no comments,
+even if you allowed analytics on a direct visit here.
 
 ## What is collected
 
@@ -78,6 +80,29 @@ again.
 Fonts are served from this site directly, not from Google Fonts, so no font
 request goes to Google.
 
+## Comments
+
+Every page with an app ends in a comment section run by
+[giscus](https://giscus.app), an open-source service that stores each page's
+comments as a discussion in this site's
+[GitHub repository](https://github.com/apurvanakade/VisualMathLab/discussions).
+It is loaded from `giscus.app` as an embedded frame once it comes near the
+part of the page you can see (on a short page, straight away), whether or not
+you allow analytics.
+
+Loading it shows `giscus.app` your IP address and the address of the page you
+are on, without the part after the `?` -- so, as with the libraries above,
+not what you typed into the app. giscus then fetches that page's comments
+from GitHub.
+
+Reading comments needs no account. To post or react, you sign in with GitHub
+through giscus, and what you post is public on GitHub under your GitHub
+account, subject to
+[GitHub's privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement)
+and [giscus's](https://github.com/giscus/giscus/blob/main/PRIVACY-POLICY.md).
+Signing in stores a giscus session token in this site's local storage (listed
+below); signing out from the comment section deletes it.
+
 ## Cookies and local storage
 
 **This site sets no cookies.** Not for analytics, not for remembering your
@@ -108,6 +133,11 @@ site stays as you left it from page to page:
   legend you actually move; nothing is stored for the ones you leave alone.
 - **The speed and mode you picked for the play button** that sweeps a slider.
 - **That you have dismissed the one-time notice** shown on small screens.
+
+One more is stored only if you sign in to comment:
+
+- **Your giscus session**, so you stay signed in to the comment section from
+  page to page. Signing out deletes it.
 
 All of it stays on your device. Clearing your browser's site data for this
 domain erases every one of these values, and you become an unrecognized

@@ -32,10 +32,13 @@ npm run verify   # = node scripts/verify-pages.mjs
 ```
 
 `scripts/verify-pages.mjs` spawns `quarto preview` itself (rather than a blocking `quarto render` followed by a plain static file server) and walks **every** page discovered from the source tree — every `index.qmd` under the project (no hardcoded page list — new pages are picked up automatically, per this repo's page-naming convention, see `CLAUDE.md`), four pages at a time as tabs of one Chromium (`--jobs N` to change that). For each page it:
-1. loads it, waits for network idle, then for every OJS cell to finish evaluating (no `.observablehq--running` left outside a function-declaration cell, whose inspector never flips; capped at 1.5s),
+1. loads it, waits for network idle, then for every OJS cell to finish evaluating (no `.observablehq--running` left outside a function-declaration cell, whose inspector never flips; capped at 15s),
 2. clicks every visible `<button>` (Plot/Regenerate/etc. — many `VM.*` calls only run inside click handlers, not on initial render), leaving fullscreen after each click if the button entered it — otherwise the fullscreened block covers every later button, and none of their handlers would run,
 3. nudges every `<input type=range>` to its midpoint,
-4. asserts zero `console.error`, zero uncaught page errors, zero failed requests.
+4. asserts zero `console.error`, zero uncaught page errors, zero failed requests,
+5. on an app page, asserts a `.vm-app` block exists and the "Try an example" dropdown (if any) opens on the first example.
+
+Each page is loaded once. Layout (slider widths, popovers, phone width) and mathviz's chrome (Share dialog, embed mode) are deliberately not asserted, here or in mathviz (which has no browser tests) — see CLAUDE.md's Conventions for why. Look at a changed page yourself, at a phone's width too.
 
 Prints `OK`/`FAIL` per page, in page order, with the time each page took; a `FAIL` includes the exact console error (which OJS cell, which line) — usually enough to find the bug directly, no further digging needed.
 
@@ -83,7 +86,7 @@ script fails to execute there, not in a stubbed sandbox.
 
 ## When to run which
 
-- A new mathviz release (the pre-render hook installed it, so `_extensions/apurvanakade/mathviz/` changed): it lands in every page's `<head>`, which is exactly what the full `npm run verify` crawl in the PR's `pr-check.yml` catches. Check a page that uses the changed function in `quarto preview`; don't run the crawl locally unless the user asks.
+- A new mathviz release (the pre-render hook installed it, so `_extensions/apurvanakade/mathviz/` changed): it lands in every page's `<head>`, so the full `npm run verify` crawl in the PR's `pr-check.yml` catches a runtime error from it — not a layout regression, which no test checks. Check a page that uses the changed function in `quarto preview`; don't run the crawl locally unless the user asks.
 - Editing a `.qmd` page only (new page, new OJS cells, no shared-utility changes): `npm run verify -- apps/<slug>/index.qmd` (that one page only) is what actually exercises it; `npm test` won't see it.
 - Editing `_includes/analytics.html` or `_includes/consent.html`: `npm test` first (fast, catches a dropped local patch or a re-broken gate expression), then `npm run verify:analytics` — the full `npm run verify` crawl doesn't exercise the consent flow at all, since it never accepts or declines the banner on any page.
 

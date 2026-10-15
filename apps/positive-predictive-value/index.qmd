@@ -650,7 +650,7 @@ function legendNote(rounds) {
   }
   const last = splits[rounds]
   if (rounds === 1) {
-    return html`${last.positives} tested positive.`
+    return html`${last.positives} tested positive. PPV is the chance you have the condition given a positive test; NPV, the negative predictive value, is the chance you don't given a negative one.`
   }
   const previous = splits[rounds - 1]
   return html`Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, and that share is the effective prevalence going into test ${rounds}.`
@@ -670,7 +670,7 @@ function statTiles(rounds) {
     npv = formatPct(npvs[rounds])
   }
   return [
-    {label: "Effective prevalence", value: formatPct(effectivePrevalence), title: "Share with the condition among the people given the latest test"},
+    {label: "Effective prevalence", value: formatPct(effectivePrevalence), title: "Share with the condition among the people given the latest test, or the whole population before any test"},
     {label: "PPV", value: ppv, title: "Positive predictive value: the chance you have the condition given a positive result"},
     {label: "NPV", value: npv, title: "Negative predictive value: the chance you don't have the condition given a negative result"}
   ]

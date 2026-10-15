@@ -250,9 +250,21 @@ async function main() {
       await page.click('[data-consent-choice="granted"]')
       await page.waitForTimeout(400)
       check('measured after Allow (sanity)', hits.length >= 1, true)
+      // An embedded app shows no comments and contacts giscus.app not at all
+      // (privacy.qmd says so). Any giscus request is recorded and refused.
+      const giscusHits = []
+      await page.route('https://giscus.app/**', (route) => {
+        giscusHits.push(route.request().url())
+        return route.abort()
+      })
       // ...then load an app framed-style: the stored yes must not measure.
       await page.goto(`${base}/apps/newton-method/?embed=1&f=x%5E3-2`, { waitUntil: 'networkidle' })
       await page.waitForTimeout(400)
+      // The comment frame is lazy, so bring the page's end into view first.
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+      await page.waitForTimeout(500)
+      check('no comment section', await page.evaluate(() => document.querySelector('.vml-comments') !== null), false)
+      check('no giscus.app request', giscusHits.length, 0)
       check('html.vm-embed set', await page.evaluate(() => document.documentElement.classList.contains('vm-embed')), true)
       check('banner hidden', await page.locator('#vml-consent').isVisible(), false)
       check('navbar hidden', await page.locator('#quarto-header').isVisible(), false)

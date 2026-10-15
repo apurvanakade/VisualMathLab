@@ -19,7 +19,7 @@ Dev-only tooling (`package.json`, Playwright, math.js) — nothing here ships to
 
 ## Tier 1: `npm test` — structural and pure-logic regressions
 
-`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically: `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM) `scripts/fonts.test.js` (the site's fonts/theme wiring) and `scripts/registration.test.js` (the generated `_sidebar.yml` is current, every app has what the homepage's Random app shows, and each topic listing filters on its own title).
+`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically: `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM), `scripts/fonts.test.js` (the site's fonts/theme wiring) and `scripts/registration.test.js` (the generated `_sidebar.yml` is current, every app has what the homepage's Random app shows, and each topic listing filters on its own title).
 
 ```bash
 npm test

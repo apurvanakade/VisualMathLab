@@ -19,7 +19,7 @@ Dev-only tooling (`package.json`, Playwright, math.js) — nothing here ships to
 
 ## Tier 1: `npm test` — structural and pure-logic regressions
 
-`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically: `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM) and `scripts/fonts.test.js` (the site's fonts/theme wiring).
+`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically: `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM), `scripts/fonts.test.js` (the site's fonts/theme wiring) and `scripts/registration.test.js` (the generated `_sidebar.yml` is current, every app has what the homepage's Random app shows, and each topic listing filters on its own title).
 
 ```bash
 npm test
@@ -39,7 +39,7 @@ npm run verify   # = node scripts/verify-pages.mjs
 
 Prints `OK`/`FAIL` per page, in page order, with the time each page took; a `FAIL` includes the exact console error (which OJS cell, which line) — usually enough to find the bug directly, no further digging needed.
 
-`npm run verify -- --changed` crawls only the pages whose folder differs from `develop` (`git diff --name-only develop` plus untracked files), which is the right scope for a session's work; it falls back to the full site, saying which file caused it, when the diff touches anything baked into every page (`_extensions/`, `_includes/`, `_quarto.yml`).
+`npm run verify -- --changed` crawls only the pages whose folder differs from `develop` (`git diff --name-only develop` plus untracked files), which is the right scope for a session's work; it falls back to the full site, saying which file caused it, when the diff touches anything baked into every page (`_extensions/`, `_includes/`, `_quarto.yml`, the generated `_sidebar.yml`, `apps/_metadata.yml`).
 
 Using `quarto preview` instead of `quarto render` means only files that actually changed since the last run get re-rendered (`quarto preview`'s file watcher does this on its own, based on mtimes) — `quarto render` unconditionally re-renders the whole site every single invocation, which is wasted work in the common edit-then-verify loop. The first run in a session (or after `docs/` is deleted) still pays a full-site render up front, same as `quarto render` would — `quarto preview` needs the whole project's metadata to build navigation/search regardless of how many pages actually changed.
 

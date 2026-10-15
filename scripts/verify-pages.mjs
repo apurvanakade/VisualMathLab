@@ -58,7 +58,9 @@ const skipDirs = new Set(['docs', 'node_modules', '.quarto', '.git', '_freeze'])
 // Anything under these paths lands in every rendered page (the extension's
 // <head> tags, the includes, the theme, the sidebar), so a change there
 // cannot be verified by loading only the pages whose source changed.
-const siteWidePaths = ['_extensions/', '_includes/', '_quarto.yml']
+// _sidebar.yml is the generated sidebar; apps/_metadata.yml is front matter
+// every app page inherits.
+const siteWidePaths = ['_extensions/', '_includes/', '_quarto.yml', '_sidebar.yml', 'apps/_metadata.yml']
 
 function findQmdPages(dir, base = '') {
   const pages = []
@@ -107,7 +109,8 @@ function findChangedPages() {
     }
     const folder = path.dirname(file)
     if (folder === '.') {
-      if (file === 'index.qmd') pages.add('index.html')
+      // random-apps.ejs is the template of a listing on the homepage.
+      if (file === 'index.qmd' || file === 'random-apps.ejs') pages.add('index.html')
       continue
     }
     if (path.basename(folder).startsWith('_')) continue

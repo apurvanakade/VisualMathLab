@@ -34,8 +34,9 @@ headless-browser pass over every rendered page.
    before you change a line. Keep the `<div class="vm-app">` wrapper around
    the controls panel and the chart: it marks what `?embed=1` shows on its
    own.
-2. Add `apps/<slug>/index.qmd` to its topic's `listing.contents` in
-   `topics/<topic>/index.qmd` and to the sidebar in `_quarto.yml`.
+2. Set its `topic:` (a topic page's exact `title:`) and `order:`. Those
+   place it in its topic's listing, the sidebar and the homepage; there is
+   no list to add it to.
 3. `quarto preview`, open the page, and iterate.
 
 `CLAUDE.md` is the long-form guide to the page conventions;

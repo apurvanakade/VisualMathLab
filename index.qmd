@@ -2,12 +2,16 @@
 title: "Visual Math Lab"
 subtitle: "Interactive, browser-based visualizations of numerical methods."
 listing:
-  contents: "/apps/*/index.qmd"
-  type: grid
-  sort: "date desc"
-  fields: [image, title, description]
-  image-height: "160px"
-  id: latest-listing
+  - id: latest-listing
+    contents: "/apps/*/index.qmd"
+    type: grid
+    sort: "date desc"
+    fields: [image, title, description]
+    image-height: "160px"
+  # Every app as JSON, for the Random app script below (random-apps.ejs).
+  - id: random-apps
+    contents: "/apps/*/index.qmd"
+    template: random-apps.ejs
 ---
 
 <!--
@@ -698,85 +702,22 @@ Authors: Apurva Nakade
 <iframe id="vm-featured-frame" class="vm-featured-frame" title="A Visual Math Lab app" loading="lazy"></iframe>
 </div>
 
+::: {#random-apps}
+:::
+
 <script>
 // Picks the app the frame below shows and writes its description above it.
-// An explicit list, like the sidebar in _quarto.yml: the Gallery listing
-// further down is paginated by List.js after load, so its DOM isn't a
-// reliable place to read the full set from. Each entry mirrors the app's
-// own title: and description: front matter. Adding an app means adding it
-// here too; scripts/random-apps.test.js fails until you do.
+// The apps come from the random-apps listing just above (random-apps.ejs),
+// which Quarto fills with every apps/*/index.qmd at render time -- not from
+// the Gallery listing further down, which List.js paginates after load, so
+// its DOM doesn't hold the full set.
 (function () {
-  var apps = [
-    {slug: "adaptive-integration",
-     title: "Adaptive Integration",
-     description: "Refine a numerical integral only where the estimate is still inaccurate."},
-    {slug: "adaptive-ode-methods",
-     title: "Adaptive Methods for ODEs",
-     description: "Solve an ODE with a step size that adapts to keep the error near a tolerance."},
-    {slug: "barycentric-coordinates",
-     title: "Barycentric Coordinates",
-     description: "Explore barycentric coordinates on a triangle, the setting for Sperner's Lemma."},
-    {slug: "bisection-method",
-     title: "Bisection Method",
-     description: "Find a root by repeatedly halving an interval where the function changes sign."},
-    {slug: "butcher-tableau",
-     title: "Butcher Tableau Explorer",
-     description: "See how a Butcher tableau determines a Runge-Kutta method's stages and order."},
-    {slug: "distribution-relationships",
-     title: "Distribution Relationships",
-     description: "Explore how the standard probability distributions turn into one another."},
-    {slug: "explicit-ode-methods",
-     title: "Explicit Methods for ODEs",
-     description: "Compare Euler, midpoint and RK4 on the same initial value problem."},
-    {slug: "fixed-point-iteration",
-     title: "Fixed Point Iteration",
-     description: "Solve x = g(x) by applying g over and over, and see when that converges."},
-    {slug: "implicit-ode-methods",
-     title: "Implicit Methods for ODEs",
-     description: "Compare implicit and explicit ODE solvers on a stiff problem."},
-    {slug: "l1-vs-l2-regression",
-     title: "L1 vs. L2 Regression",
-     description: "Compare least-squares and least-absolute-deviations regression on data with outliers."},
-    {slug: "newton-method",
-     title: "Newton's Method",
-     description: "Find a root by following tangent lines down to the x-axis."},
-    {slug: "numerical-integration",
-     title: "Numerical Integration",
-     description: "Compare Riemann sums, the trapezoid rule and Simpson's rule."},
-    {slug: "particle-filter-tracking",
-     title: "Particle Filter Tracking",
-     description: "Track a moving object from noisy range-only readings using a particle filter."},
-    {slug: "polynomial-fits",
-     title: "Polynomial Fits",
-     description: "Fit polynomials of increasing degree to noisy data and watch them overfit."},
-    {slug: "polynomial-interpolation",
-     title: "Polynomial Interpolation",
-     description: "Compare piecewise linear and cubic spline interpolation through a set of points."},
-    {slug: "positive-predictive-value",
-     title: "Positive Predictive Value",
-     description: "If you test positive, what are the chances you have the condition?"},
-    {slug: "recursive-filters-1d",
-     title: "1D Recursive Filters",
-     description: "Smooth a noisy signal with a moving average, an exponential moving average and a Kalman filter."},
-    {slug: "secant-method",
-     title: "Secant Method",
-     description: "Find a root like Newton's method, but without the derivative."},
-    {slug: "sperners-lemma-combinatorial-proof",
-     title: "Sperner's Lemma - Combinatorial Proof",
-     description: "Prove Sperner's Lemma by walking through doors."},
-    {slug: "sperners-lemma-geometric-proof",
-     title: "Sperner's Lemma - Geometric Proof",
-     description: "Prove Sperner's Lemma by counting oriented triangles."},
-    {slug: "sperners-lemma-statement",
-     title: "Sperner's Lemma - Statement",
-     description: "Color the vertices of a triangulated triangle and test Sperner's Lemma."},
-    {slug: "spirographs",
-     title: "Spirographs",
-     description: "Roll one circle around another and trace the curve a pen draws."}
-  ]
+  var data = document.getElementById("vm-random-apps")
   var frame = document.getElementById("vm-featured-frame")
   var description = document.getElementById("vm-featured-description")
-  if (!frame || !description) return
+  if (!data || !frame || !description) return
+  var apps = JSON.parse(data.textContent)
+  if (apps.length === 0) return
 
   var app = apps[Math.floor(Math.random() * apps.length)]
   var href = "apps/" + app.slug + "/index.html"

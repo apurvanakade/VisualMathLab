@@ -49,8 +49,8 @@ only whether it is one (the folder replaced wholesale by
 
 - Bugs: an OJS cell that will throw or loop, a reactive dependency that is
   wrong, a URL parameter written but never read (or the reverse), an example's
-  `params` key missing from `exampleFieldSelectors`, a registration forgotten
-  (topic `listing.contents`, `_quarto.yml` sidebar, the homepage's `var apps`).
+  `params` key missing from `exampleFieldSelectors`, a `topic:` that matches
+  no topic page's title, or a hand edit to the generated `_sidebar.yml`.
 - A CLAUDE.md convention broken, quoting the rule.
 - Prose, `privacy.qmd` or a doc that the change makes untrue.
 - Anything a reader of the live page would see go wrong (layout, dark theme,

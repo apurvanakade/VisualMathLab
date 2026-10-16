@@ -8,7 +8,7 @@
 // is registered by hand: an app's `topic:` and `order:` place it in its
 // topic page's listing (a glob filtered by topic), in the sidebar
 // (_sidebar.yml, written by scripts/build-sidebar.mjs) and in the
-// homepage's Random app (a listing rendered through random-apps.ejs). These
+// homepage's "Surprise me" button (a listing rendered through random-apps.ejs). These
 // check the pieces that front matter alone can't guarantee.
 
 import test from 'node:test'
@@ -42,7 +42,7 @@ test('the committed _sidebar.yml is what build-sidebar.mjs generates', () => {
     '_sidebar.yml is stale: run scripts/build-sidebar.mjs (any render does)')
 })
 
-test('every app has the title and description the Random app shows', () => {
+test('every app has the title and description its Gallery card shows', () => {
   for (const slug of slugs('apps')) {
     const source = read(`apps/${slug}/index.qmd`)
     assert.ok(frontMatterField(source, 'title'), `apps/${slug}: no title:`)
@@ -61,7 +61,7 @@ test('each topic page lists the apps whose topic: is its own title', () => {
   }
 })
 
-test('the homepage Random app reads the random-apps listing', () => {
+test('the homepage "Surprise me" button reads the random-apps listing', () => {
   const index = read('index.qmd')
   assert.match(index, /- id: random-apps\n\s+contents: "\/apps\/\*\/index\.qmd"\n\s+template: random-apps\.ejs/)
   assert.ok(index.includes('::: {#random-apps}'), 'index.qmd: no #random-apps div for the listing')

@@ -1,0 +1,69 @@
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+The homepage Gallery's category cloud (`categories: cloud`; included by
+index.qmd's front matter). Quarto puts the cloud in the right margin, which
+is too narrow on this layout and hidden on a phone, so this moves it into
+a wrapped row just above the cards. Quarto's own click handlers come with
+the moved elements; its "Categories" title, which clears the filter,
+becomes the row's "All". The selected item -- All when nothing is
+filtered -- is a filled pill, and All is always outlined, so the way back
+to every app is visible once a filter is on. Without JS the cloud stays
+in the margin.
+-->
+<style>
+.vm-category-cloud .quarto-listing-category {
+  gap: 0.3rem 0.4rem;
+  margin: 0 0 1.25rem;
+}
+.vm-category-cloud .category,
+.vm-category-cloud .quarto-listing-category-title {
+  color: var(--vm-accent);
+  padding: 0.05rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+.vm-category-cloud .category:hover,
+.vm-category-cloud .quarto-listing-category-title:hover {
+  color: var(--vm-accent-hover);
+  text-decoration: underline;
+}
+.vm-category-cloud .quarto-listing-category-title {
+  margin: 0;
+  font-size: 1em;
+  font-weight: 500;
+  border-color: var(--vm-accent);
+  cursor: pointer;
+}
+.vm-category-cloud .category.active,
+.vm-category-cloud .quarto-listing-category:not(:has(.category.active)) .quarto-listing-category-title {
+  background: var(--vm-accent);
+  border-color: var(--vm-accent);
+  color: var(--vm-bg);
+  text-decoration: none;
+}
+</style>
+<script>
+window.addEventListener("DOMContentLoaded", function () {
+  var margin = document.getElementById("quarto-margin-sidebar")
+  var cloud = margin && margin.querySelector(".quarto-listing-category")
+  // The grid listing the cloud filters (the homepage also has a hidden
+  // custom-template listing, which comes first).
+  var listing = document.querySelector(".quarto-listing-container-grid")
+  if (!cloud || !listing) return
+  var title = margin.querySelector(".quarto-listing-category-title")
+  if (title) {
+    title.textContent = "All"
+    cloud.insertBefore(title, cloud.firstChild)
+  }
+  var row = document.createElement("div")
+  row.className = "vm-category-cloud"
+  row.appendChild(cloud)
+  listing.parentNode.insertBefore(row, listing)
+  margin.hidden = true
+})
+</script>

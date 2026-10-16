@@ -6,12 +6,18 @@ listing:
     contents: "/apps/*/index.qmd"
     type: grid
     sort: "date desc"
-    fields: [image, title, description]
+    categories: cloud
+    fields: [image, title, categories, description]
     image-height: "160px"
-  # Every app as JSON, for the Random app script below (random-apps.ejs).
+  # Every app as JSON, for the "Surprise me" script below (random-apps.ejs).
   - id: random-apps
     contents: "/apps/*/index.qmd"
     template: random-apps.ejs
+# The Gallery's category cloud, moved above its cards.
+format:
+  html:
+    include-after-body:
+      - _includes/category-cloud.html
 ---
 
 <!--
@@ -112,28 +118,6 @@ Authors: Apurva Nakade
   color: var(--vm-accent);
 }
 
-/* "Random app": one app in an <iframe>, framed the way embed.qmd
-   tells another site to frame it. In embed mode the chart takes whatever
-   height the controls leave, so the frame's height is the whole app's;
-   900px is that page's recommendation, and gives every app on the site,
-   as of this writing, at least a ~420px chart with no inner scrolling.
-   The script below grows this past 900px, never shrinks it, if a future
-   app's controls panel would otherwise squeeze the chart smaller than
-   that -- see its comment for why that has to be measured rather than
-   just read off scrollHeight. */
-.vm-featured {
-  margin: 1.25rem 0 0;
-}
-
-.vm-featured-frame {
-  display: block;
-  width: 100%;
-  height: 900px;
-  border: 1px solid var(--vm-border);
-  border-radius: var(--vm-radius);
-  background: var(--vm-surface);
-}
-
 /* Browse-by-topic tiles. */
 .vm-topic-grid {
   display: grid;
@@ -142,8 +126,15 @@ Authors: Apurva Nakade
   margin: 1rem 0 2.5rem;
 }
 
+/* Pandoc wraps each tile in its own <p>: drop its margin and let the
+   tile fill the grid row, so every tile in a row is the same height. */
+.vm-topic-grid > p {
+  margin: 0;
+}
+
 .vm-topic-tile {
   display: block;
+  height: 100%;
   padding: 1rem 1.15rem;
   border: 1px solid var(--vm-border);
   border-radius: var(--vm-radius);
@@ -156,6 +147,12 @@ Authors: Apurva Nakade
 .vm-topic-tile:hover {
   background: var(--vm-surface-hover);
   border-color: var(--vm-accent);
+}
+
+/* The title is already a block, so the Markdown line break after it
+   would add an empty line. */
+.vm-topic-tile br {
+  display: none;
 }
 
 .vm-topic-tile strong {
@@ -538,16 +535,20 @@ Authors: Apurva Nakade
   76%, 86% { opacity: 1; transform: scale(1); }
   94%, 100% { opacity: 0; transform: scale(1); }
 }
+/* Room for the fixed navbar when a #category= link scrolls here. */
+#gallery {
+  scroll-margin-top: 4.5rem;
+}
 </style>
 
 ::: {.vm-hero}
 <div class="vm-hero-text">
 <h1 class="vm-hero-title">Visual Math Lab</h1>
-<p class="vm-hero-kicker">A picture is worth a thousand equations.</p>
-<p class="vm-hero-intro">Here you'll find root finders, ODE solvers, splines, filters and the odd spirograph, all running live in your browser. Change the inputs and watch what the method does. Apps come loaded with examples, including ones where things go wrong, because seeing a method fail teaches as much as seeing it work.</p>
+<p class="vm-hero-kicker">Math to tinker with, and sometimes just to look at.</p>
+<p class="vm-hero-intro">I'm building these to teach with. Each app takes one idea, a numerical method or a visual proof, and lets you change the inputs and watch what happens. Most come with a few examples, including ones where the method fails, since that's often where the idea becomes clear.</p>
 <div class="vm-hero-ctas">
-<a class="vm-hero-cta" href="#browse-topics">Browse by topic</a>
-<a class="vm-hero-cta vm-hero-cta-secondary" href="#gallery">Browse the gallery</a>
+<a id="vm-surprise" class="vm-hero-cta" href="#gallery">Surprise me</a>
+<a class="vm-hero-cta vm-hero-cta-secondary" href="#browse-topics">Browse by topic</a>
 </div>
 </div>
 <div class="hero-visual">
@@ -694,177 +695,71 @@ Authors: Apurva Nakade
 :::
 
 
-## Random app
-
-<p id="vm-featured-description"></p>
-
-<div class="vm-featured">
-<iframe id="vm-featured-frame" class="vm-featured-frame" title="A Visual Math Lab app" loading="lazy"></iframe>
-</div>
-
 ::: {#random-apps}
 :::
 
 <script>
-// Picks the app the frame below shows and writes its description above it.
-// The apps come from the random-apps listing just above (random-apps.ejs),
-// which Quarto fills with every apps/*/index.qmd at render time -- not from
-// the Gallery listing further down, which List.js paginates after load, so
-// its DOM doesn't hold the full set.
+// Points the hero's "Surprise me" button at a random app. The apps come
+// from the random-apps listing just above (random-apps.ejs), which Quarto
+// fills with every apps/*/index.qmd at render time -- not from the Gallery
+// listing below, which List.js paginates after load, so its DOM doesn't
+// hold the full set. Re-picked on pageshow, so coming back to this page
+// (including from the back/forward cache) gives a fresh surprise. Without
+// JS the button falls back to its #gallery href.
 (function () {
   var data = document.getElementById("vm-random-apps")
-  var frame = document.getElementById("vm-featured-frame")
-  var description = document.getElementById("vm-featured-description")
-  if (!data || !frame || !description) return
+  var button = document.getElementById("vm-surprise")
+  if (!data || !button) return
   var apps = JSON.parse(data.textContent)
   if (apps.length === 0) return
 
-  var app = apps[Math.floor(Math.random() * apps.length)]
-  var href = "apps/" + app.slug + "/index.html"
-  frame.src = href + "?embed=1"
-  frame.title = app.title
-
-  var link = document.createElement("a")
-  link.href = href
-  link.textContent = app.title
-  description.append(link, ": " + app.description)
-
-  // Keeps the frame on this page's theme. The frame is its own document,
-  // and Quarto reads the saved theme only when a page loads, so a toggle
-  // here left the app in the old theme until a reload. Same-origin, so
-  // flip the frame's own toggle whenever the two disagree. The comparison
-  // is what makes the observer safe on <body>, whose class list also
-  // changes when the sidebar opens.
-  //
-  // Quarto's toggle flips the theme saved in localStorage, not the page it
-  // runs on, and this page's toggle has already saved the new one -- so the
-  // frame's toggle alone would flip it straight back. Saving the frame's
-  // own (the other value) first makes its toggle save this page's again.
-  var SCHEME_KEY = "quarto-color-scheme"
-  var isDark = function (doc) {
-    return doc.body.classList.contains("quarto-dark")
+  var pick = function () {
+    var app = apps[Math.floor(Math.random() * apps.length)]
+    button.href = "apps/" + app.slug + "/index.html"
   }
-  var syncTheme = function () {
-    try {
-      var inner = frame.contentWindow
-      if (!inner || !inner.document.body || !inner.quartoToggleColorScheme) return
-      if (isDark(inner.document) === isDark(document)) return
-      var saved = localStorage.getItem(SCHEME_KEY)
-      if (saved === "alternate") {
-        localStorage.setItem(SCHEME_KEY, "default")
-      } else {
-        localStorage.setItem(SCHEME_KEY, "alternate")
-      }
-      inner.quartoToggleColorScheme()
-    } catch (e) {
-      // Cross-origin: leave the frame on the theme it loaded with.
-    }
-  }
-  new MutationObserver(syncTheme).observe(document.body, {attributes: true, attributeFilter: ["class"]})
-  frame.addEventListener("load", syncTheme)
-
-  // Grows the frame past its 900px default if this app's controls panel
-  // would otherwise leave the chart shorter than FIT_CHART_HEIGHT. Can't
-  // just read the embedded page's scrollHeight and copy it over -- the
-  // chart is a flex-grow item (see mathviz's chrome/embed.css) that
-  // always expands to fill whatever height the frame gives it, so it has
-  // no natural height of its own to measure; scrollHeight would just echo
-  // the frame's current height back. What does have a natural height is
-  // everything *else* in the app -- the panel, any always-live slider bar
-  // -- since those aren't flex-grow items. Sum those and add the chart
-  // height we actually want, and that total is what the frame needs to be
-  // for the chart to get that much room without inner scrolling.
-  //
-  // Same-origin (this page only ever embeds this site's own pages), so
-  // contentDocument is readable directly; wrapped in try/catch as a
-  // fail-soft in case that ever stops being true. A ResizeObserver rather
-  // than a one-shot measurement on "load", because OJS/Plotly finish
-  // rendering well after that event fires -- the observer re-measures as
-  // the panel settles into its final size. Grows only, never shrinks below
-  // the CSS default, so a short app doesn't visibly collapse the frame it
-  // started in.
-  var FIT_CHART_HEIGHT = 420
-  frame.addEventListener("load", function () {
-    try {
-      var doc = frame.contentDocument
-      var appRoot = doc.querySelector(".vm-app-active")
-      var chartBlock = appRoot ? appRoot.querySelector(".ojs-chart-block") : null
-      if (!appRoot || !chartBlock) return
-      // Only a Plotly chart is the flex-grow, no-natural-height case: the
-      // :has(.js-plotly-plot) rule in mathviz's chrome/embed.css is
-      // what gives .ojs-chart-block flex-grow: 1, so reading it back here
-      // (rather than re-deriving ".js-plotly-plot exists") is what keeps
-      // this in step with that CSS. A page whose chart is Observable
-      // Plot/inline SVG (.ojs-svg-block, e.g. the Sperner pages) never
-      // matches it, so its chart-block sizes to its own content like any
-      // other sibling -- no padding added on top. distribution-relationships
-      // is the case that first caught this: its actual visual is a plain
-      // .cell outside .ojs-chart-block entirely, and its .ojs-chart-block
-      // (a *secondary* chart, empty until a node is clicked) has no Plotly
-      // in it either -- padding it by FIT_CHART_HEIGHT regardless nearly
-      // doubled the frame for no reason.
-      var fit = function () {
-        var isFlexFilled = frame.contentWindow.getComputedStyle(chartBlock).flexGrow !== "0"
-        var siblingsHeight = 0
-        for (var i = 0; i < appRoot.children.length; i++) {
-          var child = appRoot.children[i]
-          if (child === chartBlock && isFlexFilled) continue
-          var style = frame.contentWindow.getComputedStyle(child)
-          if (style.display === "none") continue
-          var rect = child.getBoundingClientRect()
-          siblingsHeight += rect.height + parseFloat(style.marginTop) + parseFloat(style.marginBottom)
-        }
-        var required = Math.ceil(siblingsHeight + (isFlexFilled ? FIT_CHART_HEIGHT : 0))
-        if (required > frame.getBoundingClientRect().height) {
-          frame.style.height = required + "px"
-        }
-      }
-      // chartBlock is observed too, not just skipped in the sum above --
-      // .js-plotly-plot mounts asynchronously well after "load", and until
-      // it does, flexGrow reads "0" and chartBlock is sized like a normal
-      // sibling (harmless: it's empty, so it contributes ~0). Its own
-      // resize when Plotly finally mounts is what re-triggers fit() with
-      // isFlexFilled now true; nothing else on the page necessarily
-      // resizes again on its own.
-      var observer = new ResizeObserver(fit)
-      for (var i = 0; i < appRoot.children.length; i++) {
-        observer.observe(appRoot.children[i])
-      }
-    } catch (e) {
-      // Cross-origin, or the embedded page's markup doesn't match -- keep
-      // the 900px CSS default.
-    }
-  })
+  pick()
+  window.addEventListener("pageshow", pick)
 })()
 </script>
 
-## Browse by topic {#browse-topics}
-
-::: {.vm-topic-grid}
-[**Root Finding**\
-Newton, bisection, secant, and fixed-point iteration for solving $f(x) = 0$.](topics/root-finding/index.qmd){.vm-topic-tile}
-
-[**Piecewise Interpolation**\
-Numerical integration and interpolation by linear and cubic splines.](topics/piecewise-interpolation/index.qmd){.vm-topic-tile}
-
-[**Differential Equations**\
-Explicit, implicit, and adaptive solvers for ODEs, and the Butcher tableau behind them.](topics/differential-equations/index.qmd){.vm-topic-tile}
-
-[**Math Art**\
-Pictures drawn by mathematics: Sperner's lemma on colored triangulations, and spirograph curves.](topics/math-art/index.qmd){.vm-topic-tile}
-
-[**Model Fitting**\
-Least-squares vs. robust regression, and polynomial fits at increasing degree.](topics/model-fitting/index.qmd){.vm-topic-tile}
-
-[**Probability**\
-Updating beliefs from new evidence, and smoothing noisy signals over time.](topics/probability/index.qmd){.vm-topic-tile}
-:::
-
 ## Gallery {#gallery}
+
+<script>
+// A tag anywhere else on the site links here as index.html#category=<tag>
+// (_includes/category-links.html). Quarto filters the Gallery from the
+// hash; the hash names no element, so scroll to the Gallery ourselves.
+// (The cloud above the cards is _includes/category-cloud.html.)
+window.addEventListener("DOMContentLoaded", function () {
+  if (location.hash.indexOf("#category=") === 0) {
+    document.getElementById("gallery").scrollIntoView()
+  }
+})
+</script>
 
 ::: {#latest-listing}
 :::
 
-## Built with
+## Browse by topic {#browse-topics}
 
-[Quarto](https://quarto.org), [Observable JS](https://observablehq.com), [Plotly.js](https://plotly.com/javascript/), [math.js](https://mathjs.org), and [mathviz](https://github.com/apurvanakade/mathviz).
+::: {.vm-topic-grid}
+[**Math Art**\
+Spirographs, and a cat on a ladder.](topics/math-art/index.qmd){.vm-topic-tile}
+
+[**Sperner's Lemma**\
+Colored triangles, and two proofs.](topics/sperners-lemma/index.qmd){.vm-topic-tile}
+
+[**Probability**\
+Bayes' theorem, distributions and filters.](topics/probability/index.qmd){.vm-topic-tile}
+
+[**Root Finding**\
+Solving $f(x) = 0$.](topics/root-finding/index.qmd){.vm-topic-tile}
+
+[**Interpolation & Integration**\
+Splines and numerical integrals.](topics/interpolation-and-integration/index.qmd){.vm-topic-tile}
+
+[**Differential Equations**\
+Explicit, implicit and adaptive ODE solvers.](topics/differential-equations/index.qmd){.vm-topic-tile}
+
+[**Model Fitting**\
+Robust regression and overfitting.](topics/model-fitting/index.qmd){.vm-topic-tile}
+:::

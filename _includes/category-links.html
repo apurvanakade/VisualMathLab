@@ -1,0 +1,36 @@
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<!--
+Every tag outside the homepage opens the homepage Gallery filtered to it.
+Left to Quarto, a tag on a topic page's card filters that page, and a tag
+under a page's title links to whichever listing the reader came from
+(quarto.js checks document.referrer), so an app opened from its topic page
+sends its tags back there. A topic page has no category cloud, so nothing
+on it clears the filter, and reload and Back don't either: Quarto
+re-applies it from the #category= hash. Only the homepage has the cloud and
+its "All" (_includes/category-cloud.html), so tags go there. On the homepage
+itself a card's tag keeps filtering the Gallery in place.
+
+A click listener on the document in the capture phase runs before the
+tag's own inline onclick and before the title tag's link, and stops both.
+index.qmd scrolls to the Gallery when it opens with a #category= hash.
+-->
+<script>
+(function () {
+  if (document.getElementById("listing-latest-listing")) return
+
+  document.addEventListener("click", function (event) {
+    var tag = event.target.closest(".listing-category, .quarto-categories .quarto-category")
+    if (!tag) return
+    event.preventDefault()
+    event.stopPropagation()
+    var meta = document.querySelector('meta[name="quarto:offset"]')
+    var offset = meta ? meta.content : "/"
+    window.location.href = offset + "index.html#category=" + encodeURIComponent(tag.textContent.trim())
+  }, true)
+})()
+</script>

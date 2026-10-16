@@ -3,17 +3,17 @@ Copyright (c) 2026 Apurva Nakade. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Apurva Nakade
 
-The homepage's random-apps listing (index.qmd): every app as JSON, for the
-"Random app" script to pick from. A listing rather than a list in the
-script, so a new app is included with nothing to register. `<` is escaped
-so no title or description can close the <script> early. The output tag
+The homepage's random-apps listing (index.qmd): every app's slug as JSON,
+for the "Surprise me" button to pick from. A listing rather than a list in
+the script, so a new app is included with nothing to register. `<` is
+escaped so nothing in the JSON can close the <script> early. The output tag
 below is the equals one because Quarto's EJS writes that one raw and
 escapes the dash one, the reverse of standard EJS.
 */ %>
 <%
 const apps = []
 for (const item of items) {
-  apps.push({slug: item.path.split("/")[2], title: item.title, description: item.description})
+  apps.push({slug: item.path.split("/")[2]})
 }
 %>
 <script type="application/json" id="vm-random-apps"><%= JSON.stringify(apps).replace(/</g, "\\u003c") %></script>

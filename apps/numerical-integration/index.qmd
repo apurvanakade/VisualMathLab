@@ -142,27 +142,31 @@ initialMax = urlParams.get("max") ?? "40"
 examples = [
   {
     title: "Signed area cancellation",
-    params: {f: "x^3 - x", a: "-2", b: "2", max: "40", n: "6"}
+    params: {f: "x^3 - x", a: "-1", b: "2", max: "40", n: "6"}
   },
   {
     title: "Oscillatory integral",
-    params: {f: "sin(5*x)", a: "0", b: "2*pi", max: "80", n: "12"}
+    params: {f: "sin(5*x)", a: "0", b: "3", max: "80", n: "12"}
   },
   {
     title: "Nonsmooth corner",
-    params: {f: "abs(x)", a: "-2", b: "2", max: "50", n: "8"}
+    params: {f: "abs(x - 0.3)", a: "-1", b: "2", max: "50", n: "8"}
+  },
+  {
+    title: "Square-root singularity",
+    params: {f: "sqrt(x)", a: "0", b: "1", max: "50", n: "8"}
   },
   {
     title: "Rational peak",
-    params: {f: "1/(1 + x^2)", a: "-5", b: "5", max: "60", n: "10"}
+    params: {f: "1/(1 + x^2)", a: "0", b: "5", max: "60", n: "10"}
   },
   {
-    title: "Sine area on one half-period",
-    params: {f: "sin(x)", a: "0", b: "pi", max: "40", n: "6"}
+    title: "Sine area on a quarter-period",
+    params: {f: "sin(x)", a: "0", b: "pi/2", max: "40", n: "6"}
   },
   {
     title: "Simpson's rule needs even n",
-    params: {f: "sin(x)", a: "0", b: "pi", max: "35", n: "5"}
+    params: {f: "sin(x)", a: "0", b: "pi/2", max: "35", n: "5"}
   }
 ]
 ```
@@ -202,7 +206,7 @@ viewof plotTrigger = {
 ```{ojs}
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
-  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "-2", placeholder: "Example: 0, -pi"})
+  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "-1", placeholder: "Example: 0, -pi"})
   a0Input.dataset.exampleField = "a"
   return a0Input
 }
@@ -407,9 +411,36 @@ result = {
   const lo = Math.min(a, b)
   const hi = Math.max(a, b)
 
-  // Reference integral: composite Simpson's rule with a very fine even
-  // subinterval count, far finer than any n tested below.
-  const trueIntegral = VM.numerical.simpsonEstimate(f, lo, hi, 4000)
+  // Reference integral: adaptive Simpson's rule, which keeps halving only
+  // the subintervals whose estimate hasn't settled to near machine
+  // precision. A fixed fine grid isn't enough: next to a singularity like
+  // sqrt(x) at 0 it is still off by ~1e-7, which would put a false floor
+  // under every method's error. Recursion depth and the total number of
+  // evaluations are capped, so a pathological f can't hang the page.
+  const maxDepth = 40
+  const maxEvaluations = 100000
+  let evaluations = 0
+  const refine = (left, right, fLeft, fMid, fRight, whole, tolerance, depth) => {
+    const mid = (left + right) / 2
+    const fLeftMid = f((left + mid) / 2)
+    const fRightMid = f((mid + right) / 2)
+    evaluations += 2
+    const leftPart = (mid - left) / 6 * (fLeft + 4 * fLeftMid + fMid)
+    const rightPart = (right - mid) / 6 * (fMid + 4 * fRightMid + fRight)
+    const change = leftPart + rightPart - whole
+    // f is undefined somewhere here (1/x at 0): refining can't fix that.
+    if (!Number.isFinite(change)) return NaN
+    if (depth >= maxDepth || evaluations >= maxEvaluations || Math.abs(change) <= 15 * tolerance) {
+      return leftPart + rightPart + change / 15
+    }
+    return refine(left, mid, fLeft, fLeftMid, fMid, leftPart, tolerance / 2, depth + 1)
+      + refine(mid, right, fMid, fRightMid, fRight, rightPart, tolerance / 2, depth + 1)
+  }
+  const fLo = f(lo)
+  const fMidpoint = f((lo + hi) / 2)
+  const fHi = f(hi)
+  const coarse = (hi - lo) / 6 * (fLo + 4 * fMidpoint + fHi)
+  const trueIntegral = refine(lo, hi, fLo, fMidpoint, fHi, coarse, 1e-13 * Math.max(1, Math.abs(coarse)), 0)
 
   const rows = []
   let n = 1
@@ -773,113 +804,74 @@ iteratesPlot = {
 // a linear regression line for each. The slope of each line estimates the
 // order of convergence of that method (negated, since error shrinks as n
 // grows) — for the entire run, so it's just plotted once per run.
+//
+// Two things keep the fitted order honest:
+//   - an error at rounding level (below roundoffFloor) is not plotted. A
+//     method that is exact for f (Simpson's rule on a cubic) would otherwise
+//     scatter noise around 1e-15 and get a meaningless slope; its legend
+//     entry says "exact" instead.
+//   - the line is fitted to n ≥ maxN/2 only. For small n a method hasn't
+//     settled into its asymptotic rate yet, and those points skew the slope.
 convergencePlot = {
-  const leftPts = []
-  const midpointPts = []
-  const trapezoidalPts = []
-  const simpsonPts = []
-  for (const row of result.rows) {
-    if (Number.isFinite(row.leftError) && row.leftError > 0) {
-      leftPts.push({x: Math.log10(row.n), y: Math.log10(row.leftError)})
-    }
-    if (Number.isFinite(row.midpointError) && row.midpointError > 0) {
-      midpointPts.push({x: Math.log10(row.n), y: Math.log10(row.midpointError)})
-    }
-    if (Number.isFinite(row.trapezoidalError) && row.trapezoidalError > 0) {
-      trapezoidalPts.push({x: Math.log10(row.n), y: Math.log10(row.trapezoidalError)})
-    }
-    if (Number.isFinite(row.simpsonError) && row.simpsonError > 0) {
-      simpsonPts.push({x: Math.log10(row.n), y: Math.log10(row.simpsonError)})
-    }
-  }
+  const roundoffFloor = 1e-12 * Math.max(1, Math.abs(result.trueIntegral))
+  const tailStart = Math.log10(result.rows.length / 2)
 
-  const leftName = "Left error"
-  const midpointName = "Midpoint error"
-  const trapezoidalName = "Trapezoidal error"
-  const simpsonName = "Simpson's error"
+  const methodSpecs = [
+    {show: showLeftRiemann, errorKey: "leftError", name: "Left error", fitName: "left", color: "#8b5cf6", fitColor: "#a78bfa"},
+    {show: showMidpoint, errorKey: "midpointError", name: "Midpoint error", fitName: "midpoint", color: chartColors.warn, fitColor: "#fbbf24"},
+    {show: showTrapezoidal, errorKey: "trapezoidalError", name: "Trapezoidal error", fitName: "trapezoidal", color: chartColors.alt, fitColor: "#f87171"},
+    {show: showSimpson, errorKey: "simpsonError", name: "Simpson's error", fitName: "simpson", color: chartColors.ok, fitColor: "#4ade80"}
+  ]
+
   const marks = []
   const colorDomain = []
   const colorRange = []
+  // legendDomain/legendRange hold only the regression lines (and "exact"
+  // entries) — the legend shown below the chart displays just the fitted
+  // orders, not the raw point series, to keep it uncluttered.
+  const legendDomain = []
+  const legendRange = []
 
-  if (showLeftRiemann) {
-    marks.push(Plot.dot(leftPts, {x: "x", y: "y", fill: () => leftName, r: 4}))
-    colorDomain.push(leftName)
-    colorRange.push("#8b5cf6")
-  }
+  for (const spec of methodSpecs) {
+    if (!spec.show) continue
 
-  if (showMidpoint) {
-    marks.push(Plot.dot(midpointPts, {x: "x", y: "y", fill: () => midpointName, r: 4}))
-    colorDomain.push(midpointName)
-    colorRange.push(chartColors.warn)
-  }
+    const points = []
+    const tail = []
+    let finiteErrors = 0
+    for (const row of result.rows) {
+      const error = row[spec.errorKey]
+      if (!Number.isFinite(error)) continue
+      finiteErrors++
+      if (error <= roundoffFloor) continue
+      const point = {x: Math.log10(row.n), y: Math.log10(error)}
+      points.push(point)
+      if (point.x >= tailStart) tail.push(point)
+    }
 
-  if (showTrapezoidal) {
-    marks.push(Plot.dot(trapezoidalPts, {x: "x", y: "y", fill: () => trapezoidalName, r: 4}))
-    colorDomain.push(trapezoidalName)
-    colorRange.push(chartColors.alt)
-  }
+    marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
+    colorDomain.push(spec.name)
+    colorRange.push(spec.color)
 
-  if (showSimpson) {
-    marks.push(Plot.dot(simpsonPts, {x: "x", y: "y", fill: () => simpsonName, r: 4}))
-    colorDomain.push(simpsonName)
-    colorRange.push(chartColors.ok)
-  }
+    if (finiteErrors > 0 && points.length === 0) {
+      const exactName = `${spec.fitName}: exact (error at rounding level)`
+      colorDomain.push(exactName)
+      colorRange.push(spec.fitColor)
+      legendDomain.push(exactName)
+      legendRange.push(spec.fitColor)
+      continue
+    }
 
-  // legendDomain/legendRange hold only the regression lines — the legend
-  // shown below the chart displays just the fitted orders, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
-
-  const leftFit = showLeftRiemann ? VM.numerical.linearRegression(leftPts) : null
-  if (leftFit) {
-    const lineName = `left order ≈ ${(-leftFit.slope).toFixed(2)}`
+    const fit = VM.numerical.linearRegression(tail)
+    if (!fit) continue
+    const lineName = `${spec.fitName} order ≈ ${(-fit.slope).toFixed(2)}`
     marks.push(Plot.line(
-      [{x: leftFit.xlo, y: leftFit.slope * leftFit.xlo + leftFit.intercept}, {x: leftFit.xhi, y: leftFit.slope * leftFit.xhi + leftFit.intercept}],
+      [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
       {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
     ))
     colorDomain.push(lineName)
-    colorRange.push("#a78bfa")
+    colorRange.push(spec.fitColor)
     legendDomain.push(lineName)
-    legendRange.push("#a78bfa")
-  }
-
-  const midpointFit = showMidpoint ? VM.numerical.linearRegression(midpointPts) : null
-  if (midpointFit) {
-    const lineName = `midpoint order ≈ ${(-midpointFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: midpointFit.xlo, y: midpointFit.slope * midpointFit.xlo + midpointFit.intercept}, {x: midpointFit.xhi, y: midpointFit.slope * midpointFit.xhi + midpointFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#fbbf24")
-    legendDomain.push(lineName)
-    legendRange.push("#fbbf24")
-  }
-
-  const trapezoidalFit = showTrapezoidal ? VM.numerical.linearRegression(trapezoidalPts) : null
-  if (trapezoidalFit) {
-    const lineName = `trapezoidal order ≈ ${(-trapezoidalFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: trapezoidalFit.xlo, y: trapezoidalFit.slope * trapezoidalFit.xlo + trapezoidalFit.intercept}, {x: trapezoidalFit.xhi, y: trapezoidalFit.slope * trapezoidalFit.xhi + trapezoidalFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#f87171")
-    legendDomain.push(lineName)
-    legendRange.push("#f87171")
-  }
-
-  const simpsonFit = showSimpson ? VM.numerical.linearRegression(simpsonPts) : null
-  if (simpsonFit) {
-    const lineName = `simpson order ≈ ${(-simpsonFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: simpsonFit.xlo, y: simpsonFit.slope * simpsonFit.xlo + simpsonFit.intercept}, {x: simpsonFit.xhi, y: simpsonFit.slope * simpsonFit.xhi + simpsonFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#4ade80")
-    legendDomain.push(lineName)
-    legendRange.push("#4ade80")
+    legendRange.push(spec.fitColor)
   }
 
   const chart = Plot.plot({

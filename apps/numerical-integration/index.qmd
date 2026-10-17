@@ -436,9 +436,16 @@ result = {
     return refine(left, mid, fLeft, fLeftMid, fMid, leftPart, tolerance / 2, depth + 1)
       + refine(mid, right, fMid, fRightMid, fRight, rightPart, tolerance / 2, depth + 1)
   }
-  const fLo = f(lo)
+  // An integrable singularity at an endpoint (log(x), 1/sqrt(x) on [0, 1])
+  // makes f(lo) or f(hi) infinite. Count it as 0, the way the sums below
+  // skip a non-finite sample: the area it leaves out shrinks with the
+  // refinement, and is far below any rule's error at these n. A non-finite
+  // value in the interior (1/x across 0) still makes the reference NaN.
+  let fLo = f(lo)
+  if (!Number.isFinite(fLo)) fLo = 0
   const fMidpoint = f((lo + hi) / 2)
-  const fHi = f(hi)
+  let fHi = f(hi)
+  if (!Number.isFinite(fHi)) fHi = 0
   const coarse = (hi - lo) / 6 * (fLo + 4 * fMidpoint + fHi)
   const trueIntegral = refine(lo, hi, fLo, fMidpoint, fHi, coarse, 1e-13 * Math.max(1, Math.abs(coarse)), 0)
 
@@ -838,11 +845,18 @@ convergencePlot = {
     const points = []
     const tail = []
     let finiteErrors = 0
+    // The first n from which every error is at rounding level, or null if
+    // the last error is still above it.
+    let exactFromN = null
     for (const row of result.rows) {
       const error = row[spec.errorKey]
       if (!Number.isFinite(error)) continue
       finiteErrors++
-      if (error <= roundoffFloor) continue
+      if (error <= roundoffFloor) {
+        if (exactFromN === null) exactFromN = row.n
+        continue
+      }
+      exactFromN = null
       const point = {x: Math.log10(row.n), y: Math.log10(error)}
       points.push(point)
       if (point.x >= tailStart) tail.push(point)
@@ -862,7 +876,19 @@ convergencePlot = {
     }
 
     const fit = VM.numerical.linearRegression(tail)
-    if (!fit) continue
+    if (!fit) {
+      // Too few points left in the tail to fit, because the rule reached
+      // rounding level partway through the run (the trapezoidal rule on a
+      // periodic f does): say so rather than leaving the dots unlabelled.
+      if (exactFromN !== null) {
+        const exactName = `${spec.fitName}: exact from n = ${exactFromN}`
+        colorDomain.push(exactName)
+        colorRange.push(spec.fitColor)
+        legendDomain.push(exactName)
+        legendRange.push(spec.fitColor)
+      }
+      continue
+    }
     const lineName = `${spec.fitName} order ≈ ${(-fit.slope).toFixed(2)}`
     marks.push(Plot.line(
       [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],

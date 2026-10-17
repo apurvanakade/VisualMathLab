@@ -44,11 +44,12 @@ chartColors = VM.plotting.colors(vmTheme)
 ```{ojs}
 //| output: false
 // A ladder of length catL leans against a wall (x = 0) on the floor (y = 0),
-// in the second quadrant, so the cat moves right as it climbs, the same way
-// its slider does. The top is at (0, L sin θ) and the foot at (−L cos θ, 0).
-// A cat sitting a fraction t of the way up is at (−(1 − t) L cos θ, t L sin θ),
-// so as θ runs from 90° down to 0° the cat traces a quarter of the ellipse
-// x² / ((1 − t) L)² + y² / (t L)² = 1.
+// in the first quadrant, so the foot slides right as the ladder falls, the
+// same way its Slide slider moves. The top is at (0, L sin θ) and the foot at
+// (L cos θ, 0). A cat sitting a fraction t of the way down from the top is
+// at (t L cos θ, (1 − t) L sin θ), measured from the top so that it too moves
+// right as its slider does. As θ runs from 90° down to 0° the cat traces a
+// quarter of the ellipse x² / (t L)² + y² / ((1 − t) L)² = 1.
 catL = 1
 catDefaultT = 0.5
 catDefaultSlide = 0.35
@@ -60,7 +61,7 @@ function catAngle(s) {
 
 function catPosition(t, s) {
   const theta = catAngle(s)
-  return {x: -(1 - t) * catL * Math.cos(theta), y: t * catL * Math.sin(theta)}
+  return {x: t * catL * Math.cos(theta), y: (1 - t) * catL * Math.sin(theta)}
 }
 
 function clamp01(value) {
@@ -80,17 +81,17 @@ function scatter(props) {
 function wallAndFloor() {
   const shade = VM.plotting.alpha("muted", 0.18)
   return [
-    scatter({x: [0.06, 0, 0, 0.06, 0.06], y: [-0.04, -0.04, 1.15, 1.15, -0.04],
+    scatter({x: [-0.06, 0, 0, -0.06, -0.06], y: [-0.04, -0.04, 1.15, 1.15, -0.04],
       fill: "toself", fillcolor: shade, line: {width: 0}}),
-    scatter({x: [0.06, -1.15, -1.15, 0.06, 0.06], y: [-0.04, -0.04, 0, 0, -0.04],
+    scatter({x: [-0.06, 1.15, 1.15, -0.06, -0.06], y: [-0.04, -0.04, 0, 0, -0.04],
       fill: "toself", fillcolor: shade, line: {width: 0}}),
-    scatter({x: [0, 0, -1.15], y: [1.15, 0, 0], line: {color: chartColors.ink, width: 3}})
+    scatter({x: [0, 0, 1.15], y: [1.15, 0, 0], line: {color: chartColors.ink, width: 3}})
   ]
 }
 
 // The ladder at angle theta with the floor, from the wall to the floor.
 function ladderTrace(theta) {
-  return scatter({x: [0, -catL * Math.cos(theta)], y: [catL * Math.sin(theta), 0], mode: "lines+markers",
+  return scatter({x: [0, catL * Math.cos(theta)], y: [catL * Math.sin(theta), 0], mode: "lines+markers",
     line: {color: chartColors.alt, width: 5}, marker: {color: chartColors.alt, size: 9}})
 }
 
@@ -100,7 +101,7 @@ function catMarker(point) {
 }
 
 catLayout = ({
-  xaxis: {range: [-1.15, 0.12], zeroline: false, showgrid: false, title: "x", constrain: "domain"},
+  xaxis: {range: [-0.12, 1.15], zeroline: false, showgrid: false, title: "x", constrain: "domain"},
   yaxis: {range: [-0.08, 1.15], zeroline: false, showgrid: false, title: "y", scaleanchor: "x", constrain: "domain"},
   showlegend: false,
   hovermode: false,
@@ -142,9 +143,9 @@ catDraw = {
   restY.unshift(cat.y)
 
   // The whole ellipse the arc belongs to; the ladder only ever sweeps the
-  // quarter in the second quadrant.
-  const a = (1 - catT) * catL
-  const b = catT * catL
+  // quarter in the first quadrant.
+  const a = catT * catL
+  const b = (1 - catT) * catL
   const ellipseX = [], ellipseY = []
   for (let k = 0; k <= 400; k++) {
     const phi = 2 * Math.PI * k / 400
@@ -167,13 +168,13 @@ catDraw = {
 
   // With the full curve on, zoom out to one fixed view, as Full astroid
   // does in the envelope app: enough for the middle rung's whole circle
-  // (radius L/2). It doesn't depend on Cat's height, so no slider rescales
+  // (radius L/2). It doesn't depend on where the cat sits, so no slider rescales
   // the axes; longer ellipses run off the chart, there to zoom out to.
   let layout = catLayout
   if (catFull) {
     layout = {
       ...catLayout,
-      xaxis: {...catLayout.xaxis, range: [-1.15, 0.65]},
+      xaxis: {...catLayout.xaxis, range: [-0.65, 1.15]},
       yaxis: {...catLayout.yaxis, range: [-0.65, 1.15]},
       uirevision: "full"
     }
@@ -208,7 +209,7 @@ viewof catSlide = {
 
 ```{ojs}
 viewof catT = {
-  const slider = Inputs.range([0, 1], {step: 0.01, value: clamp01(VM.ui.urlParam("cat_t", catDefaultT)), label: "Cat's height"})
+  const slider = Inputs.range([0, 1], {step: 0.01, value: clamp01(VM.ui.urlParam("cat_t", catDefaultT)), label: "Cat's distance from top"})
   slider.classList.add("ojs-fill")
   return slider
 }
@@ -221,8 +222,8 @@ viewof catT = {
 ```{ojs}
 catStats = {
   const p = catPosition(catT, catSlide)
-  const a = (1 - catT) * catL
-  const b = catT * catL
+  const a = catT * catL
+  const b = (1 - catT) * catL
   let shape = "ellipse"
   if (catT === 0 || catT === 1) {
     shape = "line segment"
@@ -267,11 +268,11 @@ Now it is easy to see that when the cat is sitting at the midpoint of the ladder
 ```{ojs}
 //| output: false
 // The Tusi couple: a circle of radius L/2 rolls inside one of radius L. When
-// its centre is at (L/2)(−cos θ, sin θ), its points (−L cos θ, 0) and
+// its centre is at (L/2)(cos θ, sin θ), its points (L cos θ, 0) and
 // (0, L sin θ) lie on the axes, and stay there as it rolls, so the diameter
 // joining them is the ladder, now free to slide through all four quadrants.
 tusiDefaultT = 0.5
-// The first app's default slide, a quarter of the way into the second
+// The first app's default slide, a quarter of the way into the first
 // quadrant's fall: the two apps open with the ladder at the same angle.
 // Rounded to the Roll slider's 0.001 step, or the slider would report a
 // different value and an untouched page would get tusi_roll in its URL.
@@ -296,8 +297,8 @@ function tusiCircle(cx, cy, r, n = 200) {
 
 // The ladder's angle θ with the floor after a roll r (0 to 1, one full turn).
 // Roll 0 stands the ladder upright, as Slide 0 does, and θ decreases as the
-// roll grows, so the ladder falls the same way as in the first app and the
-// small circle rolls counterclockwise.
+// roll grows, so the ladder falls the same way as in the first app, its foot
+// moving right as the slider does, and the small circle rolls clockwise.
 function rollAngle(r) {
   return Math.PI / 2 - 2 * Math.PI * r
 }
@@ -317,14 +318,14 @@ function tusiFrame(theta) {
   const c = Math.cos(theta)
   const s = Math.sin(theta)
   const big = tusiCircle(0, 0, catL)
-  const small = tusiCircle(-catL * c / 2, catL * s / 2, catL / 2)
+  const small = tusiCircle(catL * c / 2, catL * s / 2, catL / 2)
   return [
     scatter({x: [-catL, catL, null, 0, 0], y: [0, 0, null, -catL, catL],
       line: {color: chartColors.muted, width: 1.5, dash: "dash"}}),
     scatter({x: big.xs, y: big.ys, line: {color: chartColors.ink, width: 2.5}}),
     scatter({x: small.xs, y: small.ys, fill: "toself", fillcolor: VM.plotting.alpha("alt", 0.1),
       line: {color: chartColors.alt, width: 2}}),
-    scatter({x: [-catL * c], y: [catL * s], mode: "markers", marker: {color: chartColors.ink, size: 7}})
+    scatter({x: [catL * c], y: [catL * s], mode: "markers", marker: {color: chartColors.ink, size: 7}})
   ]
 }
 ```
@@ -336,15 +337,15 @@ function tusiFrame(theta) {
 ```{ojs}
 tusiDraw = {
   const theta = rollAngle(tusiRoll)
-  const cat = {x: -(1 - tusiT) * catL * Math.cos(theta), y: tusiT * catL * Math.sin(theta)}
+  const cat = {x: tusiT * catL * Math.cos(theta), y: (1 - tusiT) * catL * Math.sin(theta)}
 
   // The cat's whole path, solid up to where it is now.
   const pastX = [], pastY = [], fullX = [], fullY = []
   for (let k = 0; k <= 400; k++) {
     const r = k / 400
     const phi = rollAngle(r)
-    const x = -(1 - tusiT) * catL * Math.cos(phi)
-    const y = tusiT * catL * Math.sin(phi)
+    const x = tusiT * catL * Math.cos(phi)
+    const y = (1 - tusiT) * catL * Math.sin(phi)
     fullX.push(x)
     fullY.push(y)
     if (r <= tusiRoll) {
@@ -372,7 +373,7 @@ viewof tusiRoll = rollInput(clamp01(VM.ui.urlParam("tusi_roll", tusiDefaultRoll)
 
 ```{ojs}
 viewof tusiT = {
-  const slider = Inputs.range([0, 1], {step: 0.01, value: clamp01(VM.ui.urlParam("tusi_t", tusiDefaultT)), label: "Cat's height"})
+  const slider = Inputs.range([0, 1], {step: 0.01, value: clamp01(VM.ui.urlParam("tusi_t", tusiDefaultT)), label: "Cat's distance from top"})
   slider.classList.add("ojs-fill")
   return slider
 }
@@ -400,7 +401,7 @@ What does this have to do with [hypocycloids](../spirographs/index.html?R=4&r=1&
 ```{ojs}
 //| output: false
 // The envelope of the sliding ladder is the astroid x^(2/3) + y^(2/3) = L^(2/3),
-// here its second-quadrant arc (−L cos³ θ, L sin³ θ). The ladder at angle θ
+// here its first-quadrant arc (L cos³ θ, L sin³ θ). The ladder at angle θ
 // touches it at the point a fraction sin² θ of the way up the ladder.
 // How many earlier positions of the ladder are drawn over the whole slide.
 envCount = 60
@@ -410,7 +411,7 @@ envPlot = VM.plotting.persistentPlot({height: "520px"})
 
 function envTouch(s) {
   const theta = catAngle(s)
-  return {x: -catL * Math.cos(theta) ** 3, y: catL * Math.sin(theta) ** 3}
+  return {x: catL * Math.cos(theta) ** 3, y: catL * Math.sin(theta) ** 3}
 }
 ```
 
@@ -428,7 +429,7 @@ envDraw = {
     const s = k / (envCount - 1)
     if (s > envSlide) break
     const theta = catAngle(s)
-    ghostX.push(0, -catL * Math.cos(theta), null)
+    ghostX.push(0, catL * Math.cos(theta), null)
     ghostY.push(catL * Math.sin(theta), 0, null)
   }
 
@@ -524,9 +525,9 @@ Rolling circles explain the envelope as well. Add a third circle, of radius $L/4
 ```{ojs}
 //| output: false
 // A circle of radius L/4 rolling inside the big circle traces the astroid. It
-// touches the big circle at the same point K = L(−cos θ, sin θ) as the Tusi
+// touches the big circle at the same point K = L(cos θ, sin θ) as the Tusi
 // circle, its diameter runs from K to the Tusi circle's centre, and its
-// tracing point (−L cos³ θ, L sin³ θ) lies on the ladder, where the ladder
+// tracing point (L cos³ θ, L sin³ θ) lies on the ladder, where the ladder
 // touches the astroid.
 astroDefaultRoll = tusiDefaultRoll
 astroPlot = VM.plotting.persistentPlot({height: "520px"})
@@ -541,9 +542,9 @@ astroDraw = {
   const theta = rollAngle(astroRoll)
   const c = Math.cos(theta)
   const s = Math.sin(theta)
-  const quarter = {x: -3 * catL * c / 4, y: 3 * catL * s / 4}
+  const quarter = {x: 3 * catL * c / 4, y: 3 * catL * s / 4}
   const tiny = tusiCircle(quarter.x, quarter.y, catL / 4)
-  const trace = {x: -catL * c ** 3, y: catL * s ** 3}
+  const trace = {x: catL * c ** 3, y: catL * s ** 3}
 
   // Earlier positions of the ladder, one break (null) between each.
   const ghostX = [], ghostY = []
@@ -552,7 +553,7 @@ astroDraw = {
       const r = k / (4 * envCount)
       if (r > astroRoll) break
       const phi = rollAngle(r)
-      ghostX.push(0, -catL * Math.cos(phi), null)
+      ghostX.push(0, catL * Math.cos(phi), null)
       ghostY.push(catL * Math.sin(phi), 0, null)
     }
   }
@@ -562,7 +563,7 @@ astroDraw = {
   for (let k = 0; k <= 800; k++) {
     const r = k / 800
     const phi = rollAngle(r)
-    const x = -catL * Math.cos(phi) ** 3
+    const x = catL * Math.cos(phi) ** 3
     const y = catL * Math.sin(phi) ** 3
     allX.push(x)
     allY.push(y)

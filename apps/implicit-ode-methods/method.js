@@ -11,34 +11,41 @@
 
 // examples backs the "Try an example" dropdown near the top controls.
 //
+// Each params object lists "max" before "n" — nControl's range depends
+// reactively on maxN, so its view gets recreated when max changes;
+// VM.ui.applyExampleParams applies params in this order with a yield
+// between each, so the freshly-recreated slider is what "n" ends up
+// applied to.
+//
 // Each max is large enough for both methods to reach order 1 in the
 // convergence plot, which fits n ≥ max/2 (method.test.js checks it). A
 // stiff equation needs n well past λ²b/2 for that, so the stiff example
-// runs on a short interval.
+// runs on a short interval, opening at n = 3, where explicit Euler's step
+// factor 1 − 15h is −1.5 and it blows up while implicit Euler decays.
 export const examples = [
   {
     title: "Fast attraction to cos(t)",
-    params: {max: "80", f: "-5 * (y - cos(t)) - sin(t)", y0: "0", b: "2"}
+    params: {max: "80", f: "-5 * (y - cos(t)) - sin(t)", y0: "0", b: "2", n: "4"}
   },
   {
     title: "Strong damping with forcing",
-    params: {max: "40", f: "-4 * y + 4 * sin(t)", y0: "0", b: "3"}
+    params: {max: "40", f: "-4 * y + 4 * sin(t)", y0: "0", b: "3", n: "4"}
   },
   {
     title: "Stiff-looking decay",
-    params: {max: "160", f: "-15 * y", y0: "1", b: "0.5"}
+    params: {max: "160", f: "-15 * y", y0: "1", b: "0.5", n: "3"}
   },
   {
     title: "Damped sinusoidal forcing",
-    params: {max: "40", f: "sin(t) - 2 * y", y0: "0", b: "3"}
+    params: {max: "40", f: "sin(t) - 2 * y", y0: "0", b: "3", n: "4"}
   },
   {
     title: "Logistic growth",
-    params: {max: "40", f: "y * (1 - y)", y0: "0.1", b: "8"}
+    params: {max: "40", f: "y * (1 - y)", y0: "0.1", b: "8", n: "4"}
   },
   {
     title: "Nonlinear Riccati-type equation",
-    params: {max: "80", f: "y^2 - t", y0: "0", b: "2"}
+    params: {max: "80", f: "y^2 - t", y0: "0", b: "2", n: "4"}
   }
 ]
 

@@ -30,6 +30,11 @@ VM = window.VM
 // page is already URL-shareable, max was the one exception.
 urlParams = new URLSearchParams(window.location.search)
 
+initialN = {
+  const raw = Number.parseInt(urlParams.get("n"), 10)
+  return Number.isFinite(raw) ? Math.max(1, raw) : 4
+}
+
 initialMax = urlParams.get("max") ?? "80"
 ```
 
@@ -146,7 +151,8 @@ exampleFieldSelectors = ({
   f: '[data-example-field="f"]',
   y0: '[data-example-field="y0"]',
   b: '[data-example-field="b"]',
-  max: '[data-example-field="max"]'
+  max: '[data-example-field="max"]',
+  n: '[data-example-field="n"]'
 })
 ```
 
@@ -251,6 +257,7 @@ committed = {
 // clicked).
 urlSyncControls = {
   const params = new URLSearchParams(window.location.search)
+  params.set("n", String(nControl))
   params.set("max", maxNInput)
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
   return true
@@ -419,8 +426,9 @@ viewof methods = {
 
 ```{ojs}
 viewof nControl = {
-  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(4, maxN), label: "n (subintervals)"})
+  const nSlider = Inputs.range([1, maxN], {step: 1, value: Math.min(initialN, maxN), label: "n (subintervals)"})
   nSlider.classList.add("ojs-fill")
+  nSlider.dataset.exampleField = "n"
   return nSlider
 }
 ```

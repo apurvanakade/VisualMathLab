@@ -83,14 +83,10 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// TODO: presets for the "Try an example" dropdown. Every key in `params` must
-// appear in exampleFieldSelectors below, and a field another field's bounds
-// depend on (a "max" before its slider) must come first.
-examples = [
-  {title: "cos(x), from 1", params: {max: "20", g: "cos(x)", x0: "1"}},
-  {title: "sqrt(2 + x), from 0", params: {max: "20", g: "sqrt(2 + x)", x0: "0"}},
-  {title: "Diverges: 3*x*(1 - x) from 0.4", params: {max: "20", g: "3*x*(1 - x)", x0: "0.4"}}
-]
+// TODO: the examples, the method and the convergence fit live in method.js,
+// so method.test.js can run every example and check what the convergence
+// plot reports under `npm test`. Import whatever the cells below use.
+import {examples, iterate, convergenceFit} from "./method.js"
 ```
 
 <!-- The app itself: what another site gets with ?embed=1 (see embed.qmd and
@@ -258,30 +254,15 @@ showIterates = traces.includes("Iterates")
 
 ```{ojs}
 //| output: false
-// TODO: the method. Returns {rows, ...}: `rows` is the full iteration history,
-// one object per step, plus whatever the plots need (the parsed function).
-// Plain imperative code -- a while loop with explicit early returns -- reads
-// best for this site's audience. Invalid input returns empty rows and
-// `parsed: false`; the chart shows an empty-state message for that.
+// TODO: run the method (iterate, from method.js) on the committed inputs.
+// Returns {rows, ...}: `rows` is the full iteration history, one object per
+// step, plus whatever the plots need (the parsed function). Invalid input
+// returns empty rows and `parsed: false`; the chart shows an empty-state
+// message for that.
 result = {
   const g = VM.expressions.makeFunction(window.math, committed.gText)
   if (!g) return {rows: [], g: x => NaN, parsed: false}
-  if (!Number.isFinite(committed.x0)) return {rows: [], g, parsed: true}
-
-  const rows = []
-  let x = committed.x0
-  let i = 0
-  while (i < maxIterations) {
-    const gx = g(x)
-    if (!Number.isFinite(gx)) {
-      rows.push({i, x, gx: NaN, error: NaN})
-      return {rows, g, parsed: true}
-    }
-    rows.push({i, x, gx, error: Math.abs(gx - x)})
-    x = gx
-    i++
-  }
-  return {rows, g, parsed: true}
+  return {rows: iterate(g, committed.x0, maxIterations), g, parsed: true}
 }
 ```
 
@@ -440,13 +421,9 @@ iteratesPlot = {
 
 ```{ojs}
 // TODO: error against n on a log scale, with the least-squares slope as the
-// observed convergence rate.
+// observed convergence rate (convergenceFit, from method.js).
 convergencePlot = {
-  const points = []
-  for (const r of result.rows) if (Number.isFinite(r.error) && r.error > 0) points.push({n: r.i, error: r.error})
-  const fitInput = []
-  for (const p of points) fitInput.push({x: p.n, y: Math.log10(p.error)})
-  const fit = VM.numerical.linearRegression(fitInput)
+  const {points, fit} = convergenceFit(result.rows)
   const marks = [Plot.line(points, {x: "n", y: "error", stroke: chartColors.alt}), Plot.dot(points, {x: "n", y: "error", fill: chartColors.alt})]
   if (fit) {
     marks.push(Plot.line([{n: fit.xlo, error: 10 ** (fit.slope * fit.xlo + fit.intercept)}, {n: fit.xhi, error: 10 ** (fit.slope * fit.xhi + fit.intercept)}],

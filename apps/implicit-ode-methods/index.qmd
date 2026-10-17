@@ -30,7 +30,7 @@ VM = window.VM
 // page is already URL-shareable, max was the one exception.
 urlParams = new URLSearchParams(window.location.search)
 
-initialMax = urlParams.get("max") ?? "20"
+initialMax = urlParams.get("max") ?? "80"
 ```
 
 ```{ojs}
@@ -59,37 +59,10 @@ methodColors = new Map([
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-//
-// Params list only f/y0/b -- this page's n slider doesn't depend on a
-// separate "max" field being applied through this dropdown (max isn't set
-// by any example), so there's no cross-field ordering to worry about here.
-examples = [
-  {
-    title: "Fast attraction to cos(t)",
-    params: {max: "20", f: "-5 * (y - cos(t)) - sin(t)", y0: "0", b: "2"}
-  },
-  {
-    title: "Strong damping with forcing",
-    params: {max: "20", f: "-4 * y + 4 * sin(t)", y0: "0", b: "3"}
-  },
-  {
-    title: "Stiff-looking decay",
-    params: {max: "20", f: "-15 * y", y0: "1", b: "1"}
-  },
-  {
-    title: "Damped sinusoidal forcing",
-    params: {max: "20", f: "sin(t) - 2 * y", y0: "0", b: "4"}
-  },
-  {
-    title: "Logistic growth",
-    params: {max: "20", f: "y * (1 - y)", y0: "0.1", b: "8"}
-  },
-  {
-    title: "Nonlinear Riccati-type equation",
-    params: {max: "20", f: "y^2 - t", y0: "0", b: "2"}
-  }
-]
+// The page's examples, method and convergence fit live in method.js, so
+// method.test.js can run every example and check what the convergence plot
+// reports under npm test.
+import {examples, methodErrors, implicitEulerSolve, endpointErrors, convergenceFit} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -286,55 +259,6 @@ urlSyncControls = {
 
 ```{ojs}
 //| output: false
-// partialY(f, t, y) numerically estimates ∂f/∂y(t, y) via a central
-// difference, used by the Newton solve inside implicitEulerSolve.
-partialY = (f, t, y) => {
-  const eps = 1e-6 * Math.max(1, Math.abs(y))
-  return (f(t, y + eps) - f(t, y - eps)) / (2 * eps)
-}
-```
-
-```{ojs}
-//| output: false
-// implicitEulerSolve(f, t0, y0, tEnd, n) advances y' = f(t, y), y(t0) = y0
-// with n steps of implicit (backward) Euler: y_{i+1} = y_i + h f(t_{i+1}, y_{i+1}).
-// Each step solves this root-finding problem for y_{i+1} with a few
-// iterations of Newton's method, starting from the explicit Euler step as
-// the initial guess. Returns the full trajectory {ts, ys}.
-implicitEulerSolve = (f, t0, y0, tEnd, n) => {
-  const h = (tEnd - t0) / n
-  const ts = [t0]
-  const ys = [y0]
-  let t = t0, y = y0
-  for (let i = 0; i < n; i++) {
-    const tNext = t0 + (i + 1) * h
-
-    // Newton's method for g(z) = z - y - h f(tNext, z) = 0.
-    let z = y + h * f(t, y)   // explicit Euler step as the initial guess
-    for (let k = 0; k < 8; k++) {
-      const g = z - y - h * f(tNext, z)
-      const dg = 1 - h * partialY(f, tNext, z)
-      // A near-zero denominator (h * ∂f/∂y ≈ 1) makes the correction g/dg
-      // blow up — bail out and keep the current z rather than let a tiny,
-      // noisy dg (from the numerical derivative) amplify into a huge,
-      // wrong jump. 1e-8 is well above that noise floor.
-      if (Math.abs(dg) < 1e-8) break
-      const step = g / dg
-      if (!Number.isFinite(step) || Math.abs(step) > 1e6 * Math.max(1, Math.abs(z))) break
-      z = z - step
-    }
-
-    y = z
-    t = tNext
-    ts.push(t)
-    ys.push(y)
-  }
-  return {ts, ys}
-}
-```
-
-```{ojs}
-//| output: false
 // result: for the current committed function/initial condition/endpoint,
 // builds the endpoint-value history used by the convergence plots and
 // table.
@@ -357,24 +281,7 @@ result = {
   const b = committed.bEnd
   if (!Number.isFinite(y0) || !Number.isFinite(b) || b === t0) return {rows: [], f, trueValue: NaN}
 
-  // Reference value: RK4 with a very fine step count, far finer than any n
-  // tested below.
-  const refSteps = 2000
-  const trueValue = VM.numerical.rk4Solve(f, t0, y0, b, refSteps).ys[refSteps]
-
-  const rows = []
-  let n = 1
-  while (n <= maxN) {
-    const eulerValue = VM.numerical.eulerSolve(f, t0, y0, b, n).ys[n]
-    const implicitEulerValue = implicitEulerSolve(f, t0, y0, b, n).ys[n]
-
-    const eulerError = Math.abs(eulerValue - trueValue)
-    const implicitEulerError = Math.abs(implicitEulerValue - trueValue)
-
-    rows.push({n, eulerValue, implicitEulerValue, trueValue, eulerError, implicitEulerError})
-    n++
-  }
-
+  const {rows, trueValue} = endpointErrors(f, y0, b, maxN)
   return {rows, f, trueValue}
 }
 ```
@@ -581,56 +488,50 @@ iteratesPlot = {
 // linear regression line for each. The slope of each line estimates the
 // order of convergence of that method (negated, since error shrinks as n
 // grows) — for the entire run, so it's just plotted once per run.
+//
+// The fit itself (which points count, and when a method is reported
+// exact) is convergenceFit in method.js.
 convergencePlot = {
-
-  const eulerPts = []
-  const implicitEulerPts = []
-  for (const row of result.rows) {
-    if (Number.isFinite(row.eulerError) && row.eulerError > 0) {
-      eulerPts.push({x: Math.log10(row.n), y: Math.log10(row.eulerError)})
-    }
-    if (Number.isFinite(row.implicitEulerError) && row.implicitEulerError > 0) {
-      implicitEulerPts.push({x: Math.log10(row.n), y: Math.log10(row.implicitEulerError)})
-    }
-  }
-
-  const eulerName = "Euler error"
-  const implicitEulerName = "Implicit Euler error"
-  const marks = [
-    Plot.dot(eulerPts, {x: "x", y: "y", fill: () => eulerName, r: 4}),
-    Plot.dot(implicitEulerPts, {x: "x", y: "y", fill: () => implicitEulerName, r: 4})
+  const methodSpecs = [
+    {name: "Euler error", color: chartColors.alt, fitColor: "#f87171"},
+    {name: "Implicit Euler error", color: chartColors.ok, fitColor: "#4ade80"}
   ]
-  const colorDomain = [eulerName, implicitEulerName]
-  const colorRange = [chartColors.alt, chartColors.ok]
-  // legendDomain/legendRange hold only the regression lines — the legend
-  // shown below the chart displays just the fitted orders, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
 
-  const eulerFit = VM.numerical.linearRegression(eulerPts)
-  if (eulerFit) {
-    const lineName = `Euler order ≈ ${(-eulerFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: eulerFit.xlo, y: eulerFit.slope * eulerFit.xlo + eulerFit.intercept}, {x: eulerFit.xhi, y: eulerFit.slope * eulerFit.xhi + eulerFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#f87171")
-    legendDomain.push(lineName)
-    legendRange.push("#f87171")
-  }
+  const marks = []
+  const colorDomain = []
+  const colorRange = []
+  // legendDomain/legendRange hold only the regression lines (and "exact"
+  // entries) — the legend shown below the chart displays just the fitted
+  // orders, not the raw point series, to keep it uncluttered.
+  const legendDomain = []
+  const legendRange = []
 
-  const implicitEulerFit = VM.numerical.linearRegression(implicitEulerPts)
-  if (implicitEulerFit) {
-    const lineName = `Implicit Euler order ≈ ${(-implicitEulerFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: implicitEulerFit.xlo, y: implicitEulerFit.slope * implicitEulerFit.xlo + implicitEulerFit.intercept}, {x: implicitEulerFit.xhi, y: implicitEulerFit.slope * implicitEulerFit.xhi + implicitEulerFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#4ade80")
-    legendDomain.push(lineName)
-    legendRange.push("#4ade80")
+  for (let i = 0; i < methodSpecs.length; i++) {
+    const spec = methodSpecs[i]
+    const method = methodErrors[i]
+    const {points, fit, order, exact, exactFromN} = convergenceFit(result.rows, result.trueValue, method.errorKey)
+
+    marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
+    colorDomain.push(spec.name)
+    colorRange.push(spec.color)
+
+    let legendName = null
+    if (exact) {
+      legendName = `${method.name}: exact (error at rounding level)`
+    } else if (fit) {
+      legendName = `${method.name} order ≈ ${order.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
+        {x: "x", y: "y", stroke: () => legendName, strokeDasharray: "6,4"}
+      ))
+    } else if (exactFromN !== null) {
+      legendName = `${method.name}: exact from n = ${exactFromN}`
+    }
+    if (legendName === null) continue
+    colorDomain.push(legendName)
+    colorRange.push(spec.fitColor)
+    legendDomain.push(legendName)
+    legendRange.push(spec.fitColor)
   }
 
   const chart = Plot.plot({

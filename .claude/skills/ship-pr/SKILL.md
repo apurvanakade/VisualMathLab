@@ -127,7 +127,7 @@ Copilot doesn't know CLAUDE.md. For each unresolved thread:
 - **Valid**: fix it. If it points at `_extensions/apurvanakade/mathviz/**`,
   it belongs in apurvanakade/mathviz: tell the user rather than editing the
   installed copy.
-- **Contradicts a convention** (e.g. "use `.map()`", "remove the `text/plain`
+- **Contradicts a convention** (e.g. "move the examples back into the `.qmd`", "remove the `text/plain`
   script type", "use `:first-child`", "add `toc: false`"): decline it.
 - **Wrong or already handled**: decline it.
 

@@ -39,7 +39,7 @@ VM = window.VM
 //   n=10
 //   max=40
 //   show=original,linear,cubic
-//   k=3                   (the cardinal function drawn bold there)
+//   k=3                   (the cardinal function drawn bold in the basis chart)
 urlParams = new URLSearchParams(window.location.search)
 
 initialFText = urlParams.get("f") ?? "sin(x)"
@@ -359,6 +359,8 @@ urlSyncControls = {
   )
 
   params.set("k", String(kControl))
+  // basis= used to toggle the basis chart's own legend; drop it from old links.
+  params.delete("basis")
 
   history.replaceState(null, "", `${window.location.pathname}?${params}`)
 }
@@ -808,7 +810,7 @@ where $\varphi_k$ is the interpolant of the data $(0,\dots,0,1,0,\dots,0)$ and d
 ```{ojs}
 // No legend of its own: the main chart's legend decides which families are
 // drawn (hat functions with the linear interpolant, spline cardinal
-// functions with the cubic spline), like the convergence plots.
+// functions with the cubic spline).
 basisPlot(setup, basis, Math.min(kControl, setup.n), showLinear, showCubic)
 ```
 

@@ -105,47 +105,18 @@ initialMethods = {
 
 initialN = {
   const raw = Number.parseInt(urlParams.get("n"), 10)
-  return Number.isFinite(raw) ? Math.max(1, raw) : 6
+  return Number.isFinite(raw) ? Math.max(1, raw) : 3
 }
 
-initialMax = urlParams.get("max") ?? "80"
+initialMax = urlParams.get("max") ?? "160"
 ```
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-//
-// Each params object lists "max" before "n" — nControl's range depends
-// reactively on maxN, so its view gets recreated when max changes;
-// VM.ui.applyExampleParams applies params in this order with a yield
-// between each, so the freshly-recreated slider is what "n" ends up
-// applied to.
-examples = [
-  {
-    title: "Stiff-looking decay",
-    params: {f: "-15*y", y0: "1", b: "1", max: "80", n: "6"}
-  },
-  {
-    title: "Fast attraction to cos(t)",
-    params: {f: "-10*(y - cos(t)) - sin(t)", y0: "0", b: "3", max: "80", n: "12"}
-  },
-  {
-    title: "Oscillatory forcing with growth",
-    params: {f: "y + sin(5*t)", y0: "0", b: "3", max: "80", n: "10"}
-  },
-  {
-    title: "Logistic growth",
-    params: {f: "y*(1 - y)", y0: "0.1", b: "8", max: "60", n: "8"}
-  },
-  {
-    title: "Nonlinear Riccati-type equation",
-    params: {f: "y^2 - t", y0: "0", b: "2", max: "50", n: "8"}
-  },
-  {
-    title: "Textbook nonlinear forcing",
-    params: {f: "y - t^2 + 1", y0: "0.5", b: "2", max: "20", n: "4"}
-  }
-]
+// The page's examples, method and convergence fit live in method.js, so
+// method.test.js can run every example and check what the convergence plot
+// reports under npm test.
+import {examples, methodErrors, improvedEulerSolve, endpointErrors, convergenceFit} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -192,7 +163,7 @@ viewof y0 = {
 ```{ojs}
 viewof bEnd = {
   const params = new URLSearchParams(window.location.search)
-  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "1", placeholder: "Example: 2, pi"})
+  const bEndInput = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "0.5", placeholder: "Example: 2, pi"})
   bEndInput.dataset.exampleField = "b"
   return bEndInput
 }
@@ -356,31 +327,6 @@ committed = {
 
 ```{ojs}
 //| output: false
-// improvedEulerSolve(f, t0, y0, tEnd, n) advances y' = f(t, y), y(t0) = y0
-// with n steps of the improved Euler / explicit trapezoidal method: Euler's
-// method as a predictor, then averages the slope at both endpoints of the
-// step. Returns the full trajectory {ts, ys}.
-improvedEulerSolve = (f, t0, y0, tEnd, n) => {
-  const h = (tEnd - t0) / n
-  const ts = [t0]
-  const ys = [y0]
-  let t = t0, y = y0
-  for (let i = 0; i < n; i++) {
-    const k1 = f(t, y)
-    const predictor = y + h * k1
-    const tNext = t0 + (i + 1) * h
-    const k2 = f(tNext, predictor)
-    y = y + (h / 2) * (k1 + k2)
-    t = tNext
-    ts.push(t)
-    ys.push(y)
-  }
-  return {ts, ys}
-}
-```
-
-```{ojs}
-//| output: false
 // result: for the current committed function/initial condition/endpoint,
 // builds the endpoint-value history used by the convergence plots and
 // table.
@@ -403,26 +349,7 @@ result = {
   const b = committed.bEnd
   if (!Number.isFinite(y0) || !Number.isFinite(b) || b === t0) return {rows: [], f, trueValue: NaN}
 
-  // Reference value: RK4 with a very fine step count, far finer than any n
-  // tested below.
-  const refSteps = 2000
-  const trueValue = VM.numerical.rk4Solve(f, t0, y0, b, refSteps).ys[refSteps]
-
-  const rows = []
-  let n = 1
-  while (n <= maxN) {
-    const eulerValue = VM.numerical.eulerSolve(f, t0, y0, b, n).ys[n]
-    const improvedEulerValue = improvedEulerSolve(f, t0, y0, b, n).ys[n]
-    const rk4Value = VM.numerical.rk4Solve(f, t0, y0, b, n).ys[n]
-
-    const eulerError = Math.abs(eulerValue - trueValue)
-    const improvedEulerError = Math.abs(improvedEulerValue - trueValue)
-    const rk4Error = Math.abs(rk4Value - trueValue)
-
-    rows.push({n, eulerValue, improvedEulerValue, rk4Value, trueValue, eulerError, improvedEulerError, rk4Error})
-    n++
-  }
-
+  const {rows, trueValue} = endpointErrors(f, y0, b, maxN)
   return {rows, f, trueValue}
 }
 ```
@@ -658,75 +585,51 @@ iteratesPlot = {
 // a linear regression line for each. The slope of each line estimates the
 // order of convergence of that method (negated, since error shrinks as n
 // grows) — for the entire run, so it's just plotted once per run.
+//
+// The fit itself (which points count, and when a method is reported
+// exact) is convergenceFit in method.js.
 convergencePlot = {
-
-  const eulerPts = []
-  const improvedEulerPts = []
-  const rk4Pts = []
-  for (const row of result.rows) {
-    if (Number.isFinite(row.eulerError) && row.eulerError > 0) {
-      eulerPts.push({x: Math.log10(row.n), y: Math.log10(row.eulerError)})
-    }
-    if (Number.isFinite(row.improvedEulerError) && row.improvedEulerError > 0) {
-      improvedEulerPts.push({x: Math.log10(row.n), y: Math.log10(row.improvedEulerError)})
-    }
-    if (Number.isFinite(row.rk4Error) && row.rk4Error > 0) {
-      rk4Pts.push({x: Math.log10(row.n), y: Math.log10(row.rk4Error)})
-    }
-  }
-
-  const eulerName = "Euler error"
-  const improvedEulerName = "Improved Euler error"
-  const rk4Name = "RK4 error"
-  const marks = [
-    Plot.dot(eulerPts, {x: "x", y: "y", fill: () => eulerName, r: 4}),
-    Plot.dot(improvedEulerPts, {x: "x", y: "y", fill: () => improvedEulerName, r: 4}),
-    Plot.dot(rk4Pts, {x: "x", y: "y", fill: () => rk4Name, r: 4})
+  const methodSpecs = [
+    {name: "Euler error", color: chartColors.alt, fitColor: "#f87171"},
+    {name: "Improved Euler error", color: chartColors.warn, fitColor: "#fbbf24"},
+    {name: "RK4 error", color: chartColors.ok, fitColor: "#4ade80"}
   ]
-  const colorDomain = [eulerName, improvedEulerName, rk4Name]
-  const colorRange = [chartColors.alt, chartColors.warn, chartColors.ok]
-  // legendDomain/legendRange hold only the regression lines — the legend
-  // shown below the chart displays just the fitted orders, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
 
-  const eulerFit = VM.numerical.linearRegression(eulerPts)
-  if (eulerFit) {
-    const lineName = `Euler order ≈ ${(-eulerFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: eulerFit.xlo, y: eulerFit.slope * eulerFit.xlo + eulerFit.intercept}, {x: eulerFit.xhi, y: eulerFit.slope * eulerFit.xhi + eulerFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#f87171")
-    legendDomain.push(lineName)
-    legendRange.push("#f87171")
-  }
+  const marks = []
+  const colorDomain = []
+  const colorRange = []
+  // legendDomain/legendRange hold only the regression lines (and "exact"
+  // entries) — the legend shown below the chart displays just the fitted
+  // orders, not the raw point series, to keep it uncluttered.
+  const legendDomain = []
+  const legendRange = []
 
-  const improvedEulerFit = VM.numerical.linearRegression(improvedEulerPts)
-  if (improvedEulerFit) {
-    const lineName = `Improved Euler order ≈ ${(-improvedEulerFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: improvedEulerFit.xlo, y: improvedEulerFit.slope * improvedEulerFit.xlo + improvedEulerFit.intercept}, {x: improvedEulerFit.xhi, y: improvedEulerFit.slope * improvedEulerFit.xhi + improvedEulerFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#fbbf24")
-    legendDomain.push(lineName)
-    legendRange.push("#fbbf24")
-  }
+  for (let i = 0; i < methodSpecs.length; i++) {
+    const spec = methodSpecs[i]
+    const method = methodErrors[i]
+    const {points, fit, order, exact, exactFromN} = convergenceFit(result.rows, result.trueValue, method.errorKey)
 
-  const rk4Fit = VM.numerical.linearRegression(rk4Pts)
-  if (rk4Fit) {
-    const lineName = `RK4 order ≈ ${(-rk4Fit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: rk4Fit.xlo, y: rk4Fit.slope * rk4Fit.xlo + rk4Fit.intercept}, {x: rk4Fit.xhi, y: rk4Fit.slope * rk4Fit.xhi + rk4Fit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#4ade80")
-    legendDomain.push(lineName)
-    legendRange.push("#4ade80")
+    marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
+    colorDomain.push(spec.name)
+    colorRange.push(spec.color)
+
+    let legendName = null
+    if (exact) {
+      legendName = `${method.name}: exact (error at rounding level)`
+    } else if (fit) {
+      legendName = `${method.name} order ≈ ${order.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
+        {x: "x", y: "y", stroke: () => legendName, strokeDasharray: "6,4"}
+      ))
+    } else if (exactFromN !== null) {
+      legendName = `${method.name}: exact from n = ${exactFromN}`
+    }
+    if (legendName === null) continue
+    colorDomain.push(legendName)
+    colorRange.push(spec.fitColor)
+    legendDomain.push(legendName)
+    legendRange.push(spec.fitColor)
   }
 
   const chart = Plot.plot({

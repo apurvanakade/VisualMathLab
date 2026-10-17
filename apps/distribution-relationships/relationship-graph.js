@@ -24,8 +24,7 @@
   //
   // Colocated with apps/distribution-relationships/index.qmd rather than
   // promoted into js/**, and flat (VM.relationshipGraph, not
-  // VM.<category>.<fn>) for the same reason cubic-spline.js is: exactly one
-  // page uses it. d3 is loaded by that page's own include-in-header for the
+  // VM.<category>.<fn>) because exactly one page uses it. d3 is loaded by that page's own include-in-header for the
   // same reason -- it is the only page on the site that needs it.
   //
   // No color is named anywhere in this file. Everything visual is a class

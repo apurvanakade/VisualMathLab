@@ -66,25 +66,10 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-examples = [
-  {
-    title: "Choosing one root among many",
-    params: {max: "20", f: "(x - 1)*(x - 2)*(x - 3)", a: "0.3", b: "3.4"}
-  },
-  {
-    title: "Same function, different bracket",
-    params: {max: "20", f: "(x - 1)*(x - 2)*(x - 3)", a: "2.4", b: "3.5"}
-  },
-  {
-    title: "Standard guaranteed convergence",
-    params: {max: "20", f: "x^3 - x - 2", a: "1", b: "2"}
-  },
-  {
-    title: "Sign change without a valid root",
-    params: {max: "20", f: "1/x", a: "-1", b: "1"}
-  }
-]
+// The page's examples, method and convergence fit live in method.js, so
+// method.test.js can run every example and check what the convergence plot
+// reports under npm test.
+import {examples, bisect, convergenceFit} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -295,48 +280,7 @@ result = {
 
   if (!f) return {rows: [], f: fallback}
 
-  let a = committed.a0
-  let b = committed.b0
-
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {rows: [], f}
-  if (a > b) { const temp = a; a = b; b = temp }   // ensure a < b
-
-  const fa = f(a)
-  const fb = f(b)
-
-  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {rows: [], f}
-
-  // Bisection requires a sign change across [a, b].
-  // If an endpoint is already a root, return it immediately.
-  if (fa === 0) return {rows: [{n: 0, a, b, m: a, fa, fb, fm: fa, width: b - a}], f}
-  if (fb === 0) return {rows: [{n: 0, a, b, m: b, fa, fb, fm: fb, width: b - a}], f}
-  if (fa * fb > 0) return {rows: [], f}   // no sign change — can't bracket a root
-
-  const rows = []
-  let curA = a, curB = b, curFa = fa, curFb = fb
-  let n = 0
-  while (n < maxIterations) {
-    const m  = 0.5 * (curA + curB)   // midpoint of the current bracket
-    const fm = f(m)
-  rows.push({n, a: curA, b: curB, m, fa: curFa, fb: curFb, fm, width: curB - curA})
-  
-  if (!Number.isFinite(fm)) return {rows, f}
-  
-  // If the midpoint is exactly a root, stop.
-  // Otherwise the code would keep iterating even though the root was found.
-  if (fm === 0) return {rows, f}
-  
-  // Keep the half that still contains a sign change.
-  if (curFa * fm < 0) {
-    curB = m
-    curFb = fm
-  } else {
-    curA = m
-    curFa = fm
-  }
-  n++
-  }
-  return {rows, f}
+  return {rows: bisect(f, committed.a0, committed.b0, maxIterations), f}
 }
 ```
 
@@ -589,18 +533,7 @@ iteratesPlot = {
 // regression line, for the entire run — it doesn't depend on the current
 // step, so it's just plotted once per run.
 convergencePlot = {
-  const finiteLogRows = []
-  const exactZeroRows = []
-
-  for (const r of result.rows) {
-    if (!Number.isFinite(r.fm)) continue
-
-    if (r.fm === 0) {
-      exactZeroRows.push(r)
-    } else {
-      finiteLogRows.push({n: r.n, y: Math.log10(Math.abs(r.fm))})
-    }
-  }
+  const {points: finiteLogRows, exactZeroRows, fit} = convergenceFit(result.rows)
 
   // log10(0) is -Infinity, so exact roots cannot be plotted literally.
   // Instead, place exact-zero residuals one decade below the smallest
@@ -639,10 +572,6 @@ convergencePlot = {
   // point series, to keep it uncluttered.
   const legendDomain = [], legendRange = []
 
-  const regressionPoints = []
-  for (const row of finiteLogRows) regressionPoints.push({x: row.n, y: row.y})
-
-  const fit = VM.numerical.linearRegression(regressionPoints)
   if (fit) {
     const lineName = `slope ≈ ${fit.slope.toFixed(2)}`
     marks.push(Plot.line(

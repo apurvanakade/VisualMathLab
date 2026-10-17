@@ -62,37 +62,10 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-examples = [
-  {
-    title: "Classic convergent iteration",
-    params: {max: "20", g: "cos(x)", x0: "1"}
-  },
-  {
-    title: "Converges to the positive fixed point",
-    params: {max: "20", g: "sqrt(x + 2)", x0: "1"}
-  },
-  {
-    title: "Chaotic wandering",
-    params: {max: "20", g: "2*cos(x)", x0: "1"}
-  },
-  {
-    title: "Repelling fixed point",
-    params: {max: "20", g: "2*x", x0: "0.1"}
-  },
-  {
-    title: "Divergent oscillation",
-    params: {max: "20", g: "1 - 2*x", x0: "0.2"}
-  },
-  {
-    title: "Neutral two-cycle",
-    params: {max: "20", g: "1 - x", x0: "0.2"}
-  },
-  {
-    title: "Very slow convergence",
-    params: {max: "20", g: "x - x^3", x0: "0.2"}
-  }
-]
+// The page's examples, method and convergence fit live in method.js, so
+// method.test.js can run every example and check what the convergence plot
+// reports under npm test.
+import {examples, iterate, convergenceFit} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -285,29 +258,7 @@ result = {
 
   if (!g) return {rows: [], g: fallback}
 
-  const rows  = []
-  const initialGuess = committed.x0
-
-  if (!Number.isFinite(initialGuess)) return {rows: [], g}
-
-  let x = initialGuess
-  let i = 0
-  while (i < maxIterations) {
-    const gx = g(x)
-
-    // Stop if g(x) blows up — the iteration has diverged.
-    if (!Number.isFinite(gx)) {
-      rows.push({i, x, gx, error: NaN})
-      return {rows, g}
-    }
-
-    const error = Math.abs(gx - x)
-    rows.push({i, x, gx, error})
-
-    x = gx
-    i++
-  }
-  return {rows, g}
+  return {rows: iterate(g, committed.x0, maxIterations), g}
 }
 ```
 
@@ -508,12 +459,7 @@ iteratesPlot = {
 // regression line, for the entire run — it doesn't depend on the current
 // step, so it's just plotted once per run.
 convergencePlot = {
-  const logRows = []
-  for (const r of result.rows) {
-    if (Number.isFinite(r.error) && r.error > 0) {
-      logRows.push({n: r.i, y: Math.log10(r.error)})
-    }
-  }
+  const {points: logRows, fit} = convergenceFit(result.rows)
 
   const pointsName = "log₁₀|xₙ − g(xₙ)|"
   const marks = [Plot.dot(logRows, {x: "n", y: "y", fill: () => pointsName, r: 4})]
@@ -523,9 +469,6 @@ convergencePlot = {
   // point series, to keep it uncluttered.
   const legendDomain = [], legendRange = []
 
-  const regressionPoints = []
-  for (const row of logRows) regressionPoints.push({x: row.n, y: row.y})
-  const fit = VM.numerical.linearRegression(regressionPoints)
   if (fit) {
     const lineName = `slope ≈ ${fit.slope.toFixed(2)}`
     marks.push(Plot.line(

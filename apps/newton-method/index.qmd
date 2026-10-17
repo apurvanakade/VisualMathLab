@@ -62,33 +62,10 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-examples = [
-  {
-    title: "Fast quadratic convergence",
-    params: {max: "20", f: "x^2 - 2", x0: "1.5"}
-  },
-  {
-    title: "A two-cycle failure",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0"}
-  },
-  {
-    title: "Looks unstable, then converges",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.95"}
-  },
-  {
-    title: "Slow convergence at a multiple root",
-    params: {max: "20", f: "x^3", x0: "0.2"}
-  },
-  {
-    title: "Nearly flat tangent",
-    params: {max: "20", f: "x^3 - 2*x + 2", x0: "0.83"}
-  },
-  {
-    title: "Large jumps from shallow slopes",
-    params: {max: "20", f: "atan(x)", x0: "1.4"}
-  }
-]
+// The page's examples, method and convergence fit live in method.js, so
+// method.test.js can run every example and check what the convergence plot
+// reports under npm test.
+import {examples, newton, convergenceFit} from "./method.js"
 ```
 :::::::: {.vm-split}
 
@@ -289,37 +266,7 @@ result = {
 
   if (!f || !df) return {rows: [], f: fallback, df: fallback, parsed: false}
 
-  const rows  = []
-  const initialGuess = committed.x0
-
-  if (!Number.isFinite(initialGuess)) return {rows: [], f, df, parsed: true}
-
-  let x = initialGuess
-  let i = 0
-  while (i < maxIterations) {
-    const fx  = f(x)
-    const dfx = df(x)
-
-    // Stop if f or f' blows up — the method has diverged.
-    if (!Number.isFinite(fx) || !Number.isFinite(dfx)) {
-      rows.push({i, x, fx, dfx, xNext: NaN, error: NaN})
-      return {rows, f, df, parsed: true}
-    }
-
-    // Stop if the tangent is nearly flat — dividing by dfx would be unstable.
-    if (Math.abs(dfx) < 1e-14) {
-      rows.push({i, x, fx, dfx, xNext: NaN, error: NaN})
-      return {rows, f, df, parsed: true}
-    }
-
-    const xNext = x - fx / dfx        // Newton update: x-intercept of the tangent
-    const error = Math.abs(xNext - x)
-    rows.push({i, x, fx, dfx, xNext, error})
-
-    x = xNext
-    i++
-  }
-  return {rows, f, df, parsed: true}
+  return {rows: newton(f, df, committed.x0, maxIterations), f, df, parsed: true}
 }
 ```
 
@@ -605,14 +552,7 @@ iteratesPlot = {
 // its slope estimates the order of convergence p directly (≈2 for a simple
 // root, ≈1 for a multiple root, as in the default x² example).
 convergencePlot = {
-  const logRows = []
-  for (let k = 0; k < result.rows.length - 1; k++) {
-    const en  = result.rows[k].error
-    const en1 = result.rows[k + 1].error
-    if (Number.isFinite(en) && en > 0 && Number.isFinite(en1) && en1 > 0) {
-      logRows.push({x: Math.log10(en), y: Math.log10(en1)})
-    }
-  }
+  const {points: logRows, fit} = convergenceFit(result.rows)
 
   const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
   const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]
@@ -622,7 +562,6 @@ convergencePlot = {
   // point series, to keep it uncluttered.
   const legendDomain = [], legendRange = []
 
-  const fit = VM.numerical.linearRegression(logRows)
   if (fit) {
     const lineName = `order ≈ ${fit.slope.toFixed(2)}`
     marks.push(Plot.line(

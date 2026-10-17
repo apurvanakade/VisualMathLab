@@ -19,7 +19,7 @@ Dev-only tooling (`package.json`, Playwright, math.js) — nothing here ships to
 
 ## Tier 1: `npm test` — structural and pure-logic regressions
 
-`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically: `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM), `scripts/fonts.test.js` (the site's fonts/theme wiring) and `scripts/registration.test.js` (the generated `_sidebar.yml` is current, every app has the title and description its Gallery card shows, each topic listing filters on its own title, and the homepage's "Surprise me" button reads the random-apps listing).
+`node --test` (Node's built-in test runner, zero extra dependencies) discovers every `*.test.js` file automatically: `scripts/analytics.test.js` (structural invariants on `analytics.html`/`consent.html`/`_quarto.yml`/`privacy.qmd`, plus the snippet's client-side logic against a stubbed DOM), `scripts/fonts.test.js` (the site's fonts/theme wiring), `scripts/registration.test.js` (the generated `_sidebar.yml` is current, every app has the title and description its Gallery card shows, each topic listing filters on its own title, and the homepage's "Surprise me" button reads the random-apps listing), `scripts/methods.test.js` (every page that reports a convergence order has a `method.js` and `method.test.js`, and its examples set only fields the page lists) and each `apps/<slug>/method.test.js` (every example's convergence order, run through the page's own `method.js` and the installed mathviz).
 
 ```bash
 npm test

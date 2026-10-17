@@ -9,11 +9,6 @@ categories:
   - Computational Math
   - Interpolation
   - Parametric Curves
-format:
-  html:
-    include-in-header:
-      - text: |
-          <script src="cubic-spline.js"></script>
 ---
 
 <!--
@@ -24,7 +19,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded on every page by the mathviz extension, plus this page's own cubic-spline.js (loaded via the include-in-header above). This page uses VM.cubicSpline, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams.
 VM = window.VM
 ```
 
@@ -108,31 +103,10 @@ initialInterpolants = {
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-//
-// Each params object lists "max" before "n" — nControl's range depends
-// reactively on maxN, so its view gets recreated when max changes;
-// VM.ui.applyExampleParams applies params in this order with a yield
-// between each, so the freshly-recreated slider is what "n" ends up
-// applied to.
-examples = [
-  {
-    title: "Sine on one full period",
-    params: {f: "sin(x)", a: "0", b: "2*pi", max: "40", n: "10"}
-  },
-  {
-    title: "Rational peak",
-    params: {f: "1/(1+x^2)", a: "-5", b: "5", max: "40", n: "5"}
-  },
-  {
-    title: "Nonsmooth corner",
-    params: {f: "abs(x)", a: "-2", b: "2", max: "30", n: "4"}
-  },
-  {
-    title: "Cubic polynomial",
-    params: {f: "x^3-x", a: "-2", b: "2", max: "30", n: "4"}
-  }
-]
+// The page's examples, method and convergence fit live in method.js, so
+// method.test.js can run every example and check what the convergence plot
+// reports under npm test.
+import {examples, interpolantErrors, cubicSpline, arcLengthErrors, convergenceFit} from "./method.js"
 ```
 
 ::::::::: {.vm-split}
@@ -369,11 +343,9 @@ urlSyncControls = {
 ```{ojs}
 //| output: false
 // result: for the current committed function/endpoints, builds the arc-length
-// history used by the convergence plots and tables.
-//   rows — array of { n, linearLength, cubicLength, trueArcLength, linearError, cubicError },
-//     one entry per subinterval count n = 1..maxN
+// history used by the convergence plots and tables (see arcLengthErrors in
+// method.js for the shape of rows).
 //   f — parsed function, reused for curve sampling in setup
-//   trueArcLength — reference arc length of f itself, shared by every row
 result = {
   const math = window.math
 
@@ -386,76 +358,7 @@ result = {
   const b = committed.b0
   if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {rows: [], f, trueArcLength: NaN}
 
-  const lo = Math.min(a, b)
-  const hi = Math.max(a, b)
-
-  // Reference arc length of f: chord-length sum over a very fine uniform
-  // grid, far finer than any interpolant tested below.
-  const refCount = 4000
-  let trueArcLength = 0
-  let xPrev = lo
-  let yPrev = f(xPrev)
-  for (let k = 1; k <= refCount; k++) {
-    const x = lo + (hi - lo) * k / refCount
-    const y = f(x)
-    if (Number.isFinite(yPrev) && Number.isFinite(y)) {
-      const dx = x - xPrev
-      const dy = y - yPrev
-      trueArcLength += Math.sqrt(dx * dx + dy * dy)
-    }
-    xPrev = x
-    yPrev = y
-  }
-
-  const rows = []
-  let n = 1
-  while (n <= maxN) {
-    // n+1 equally spaced interpolation nodes over [lo, hi]
-    const nodesX = []
-    const nodesY = []
-    for (let k = 0; k <= n; k++) {
-      const x = lo + (hi - lo) * k / n
-      nodesX.push(x)
-      nodesY.push(f(x))
-    }
-
-    // Linear interpolant arc length: exact sum of segment lengths.
-    let linearLength = 0
-    for (let k = 0; k < n; k++) {
-      const dx = nodesX[k + 1] - nodesX[k]
-      const dy = nodesY[k + 1] - nodesY[k]
-      if (Number.isFinite(dy)) linearLength += Math.sqrt(dx * dx + dy * dy)
-    }
-
-    // Cubic spline arc length: approximated by sampling the spline densely
-    // and summing chord lengths along the sampled curve.
-    const spline = VM.cubicSpline(nodesX, nodesY)
-    let cubicLength = NaN
-    if (spline) {
-      const sampleCount = n * 20
-      let sxPrev = nodesX[0]
-      let syPrev = spline(sxPrev)
-      cubicLength = 0
-      for (let k = 1; k <= sampleCount; k++) {
-        const x = lo + (hi - lo) * k / sampleCount
-        const y = spline(x)
-        if (Number.isFinite(syPrev) && Number.isFinite(y)) {
-          const dx = x - sxPrev
-          const dy = y - syPrev
-          cubicLength += Math.sqrt(dx * dx + dy * dy)
-        }
-        sxPrev = x
-        syPrev = y
-      }
-    }
-
-    const linearError = Math.abs(linearLength - trueArcLength)
-    const cubicError = Number.isFinite(cubicLength) ? Math.abs(cubicLength - trueArcLength) : NaN
-
-    rows.push({n, linearLength, cubicLength, trueArcLength, linearError, cubicError})
-    n++
-  }
-
+  const {rows, trueArcLength} = arcLengthErrors(f, Math.min(a, b), Math.max(a, b), maxN)
   return {rows, f, trueArcLength}
 }
 ```
@@ -492,7 +395,7 @@ setup = {
   const linearY = nodesY.slice()
 
   // Cubic spline: dense samples for a smooth curve.
-  const spline = VM.cubicSpline(nodesX, nodesY)
+  const spline = cubicSpline(nodesX, nodesY)
   const cubicX = []
   const cubicY = []
   if (spline) {
@@ -652,7 +555,7 @@ basis = {
     // Spline: the natural cubic spline through the k-th unit vector.
     const unit = new Array(n + 1).fill(0)
     unit[k] = 1
-    const phi = VM.cubicSpline(setup.nodesX, unit)
+    const phi = cubicSpline(setup.nodesX, unit)
     const cardX = []
     const cardY = []
     for (let i = 0; i <= sampleCount; i++) {
@@ -896,72 +799,50 @@ iteratesPlot = {
 // order of convergence of that interpolant's arc length (negated, since
 // error shrinks as n grows) — for the entire run, so it's just plotted once
 // per run.
+//
+// The fit itself (which points count, and when an interpolant is reported
+// exact) is convergenceFit in method.js.
 convergencePlot = {
-  const regression = points => {
-    if (points.length < 2) return null
-    const pointCount = points.length
-    let sx = 0, sy = 0, sxy = 0, sxx = 0
-    for (const p of points) {
-      sx += p.x
-      sy += p.y
-      sxy += p.x * p.y
-      sxx += p.x * p.x
-    }
-    const denom = pointCount * sxx - sx * sx
-    if (denom === 0) return null
-    const slope = (pointCount * sxy - sx * sy) / denom
-    const intercept = (sy - slope * sx) / pointCount
-    return {slope, intercept, xlo: points[0].x, xhi: points[pointCount - 1].x}
-  }
-
-  const linearPts = []
-  const cubicPts = []
-  for (const row of result.rows) {
-    if (Number.isFinite(row.linearError) && row.linearError > 0) {
-      linearPts.push({x: Math.log10(row.n), y: Math.log10(row.linearError)})
-    }
-    if (Number.isFinite(row.cubicError) && row.cubicError > 0) {
-      cubicPts.push({x: Math.log10(row.n), y: Math.log10(row.cubicError)})
-    }
-  }
-
-  const linearName = "Linear interpolant error"
-  const cubicName = "Cubic spline error"
-  const marks = [
-    Plot.dot(linearPts, {x: "x", y: "y", fill: () => linearName, r: 4}),
-    Plot.dot(cubicPts, {x: "x", y: "y", fill: () => cubicName, r: 4})
+  const specs = [
+    {name: "Linear interpolant error", color: chartColors.alt, fitColor: "#f87171"},
+    {name: "Cubic spline error", color: chartColors.ok, fitColor: "#4ade80"}
   ]
-  const colorDomain = [linearName, cubicName]
-  const colorRange = [chartColors.alt, chartColors.ok]
-  // legendDomain/legendRange hold only the regression lines — the legend
-  // shown below the chart displays just the fitted orders, not the raw
-  // point series, to keep it uncluttered.
-  const legendDomain = [], legendRange = []
 
-  const linearFit = regression(linearPts)
-  if (linearFit) {
-    const lineName = `linear order ≈ ${(-linearFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: linearFit.xlo, y: linearFit.slope * linearFit.xlo + linearFit.intercept}, {x: linearFit.xhi, y: linearFit.slope * linearFit.xhi + linearFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#f87171")
-    legendDomain.push(lineName)
-    legendRange.push("#f87171")
-  }
+  const marks = []
+  const colorDomain = []
+  const colorRange = []
+  // legendDomain/legendRange hold only the regression lines (and "exact"
+  // entries) — the legend shown below the chart displays just the fitted
+  // orders, not the raw point series, to keep it uncluttered.
+  const legendDomain = []
+  const legendRange = []
 
-  const cubicFit = regression(cubicPts)
-  if (cubicFit) {
-    const lineName = `cubic order ≈ ${(-cubicFit.slope).toFixed(2)}`
-    marks.push(Plot.line(
-      [{x: cubicFit.xlo, y: cubicFit.slope * cubicFit.xlo + cubicFit.intercept}, {x: cubicFit.xhi, y: cubicFit.slope * cubicFit.xhi + cubicFit.intercept}],
-      {x: "x", y: "y", stroke: () => lineName, strokeDasharray: "6,4"}
-    ))
-    colorDomain.push(lineName)
-    colorRange.push("#4ade80")
-    legendDomain.push(lineName)
-    legendRange.push("#4ade80")
+  for (let i = 0; i < specs.length; i++) {
+    const spec = specs[i]
+    const interpolant = interpolantErrors[i]
+    const {points, fit, order, exact, exactFromN} = convergenceFit(result.rows, result.trueArcLength, interpolant.errorKey)
+
+    marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
+    colorDomain.push(spec.name)
+    colorRange.push(spec.color)
+
+    let legendName = null
+    if (exact) {
+      legendName = `${interpolant.name}: exact (error at rounding level)`
+    } else if (fit) {
+      legendName = `${interpolant.name} order ≈ ${order.toFixed(2)}`
+      marks.push(Plot.line(
+        [{x: fit.xlo, y: fit.slope * fit.xlo + fit.intercept}, {x: fit.xhi, y: fit.slope * fit.xhi + fit.intercept}],
+        {x: "x", y: "y", stroke: () => legendName, strokeDasharray: "6,4"}
+      ))
+    } else if (exactFromN !== null) {
+      legendName = `${interpolant.name}: exact from n = ${exactFromN}`
+    }
+    if (legendName === null) continue
+    colorDomain.push(legendName)
+    colorRange.push(spec.fitColor)
+    legendDomain.push(legendName)
+    legendRange.push(spec.fitColor)
   }
 
   const chart = Plot.plot({

@@ -25,6 +25,8 @@
 --     sidebar-rail: my-site-pin    # off-canvas sidebar behind a slim rail; a
 --                                  # string names the pin's localStorage key
 --                                  # (true: "vm-sidebar-pinned")
+--     sidebar-search: true         # a search box atop Quarto's sidebar that
+--                                  # narrows the menu to matching titles
 --     mobile-warning: my-site-key  # one-time "bigger screen" notice on a
 --                                  # phone; a string names its localStorage
 --                                  # key (true: "vm-mobile-warning-dismissed")
@@ -54,7 +56,7 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "0.6.0"
+local VERSION    = "0.7.0"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
@@ -178,6 +180,9 @@ function Meta(meta)
 
   if enabled(meta, "sidebar-rail") then
     chrome("sidebar-rail", { ["sidebar-pin-key"] = stringValue("sidebar-rail") })
+  end
+  if enabled(meta, "sidebar-search") then
+    chrome("sidebar-search")
   end
   if enabled(meta, "mobile-warning") then
     chrome("mobile-warning", { ["mobile-warning-key"] = stringValue("mobile-warning") })

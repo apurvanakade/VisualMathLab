@@ -59,12 +59,23 @@ vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
 
 chartColors = VM.plotting.colors(vmTheme)
 
+// Each method has its own color, distinct from f(x)'s: the main chart draws
+// the interpolant and its points in it, and the convergence plots draw that
+// method's run in it.
+methodColors = ({secant: chartColors.alt, iqi: chartColors.accent2})
+
 traceColors = new Map([
   ["f(x)", chartColors.fn],
-  ["Interpolant", chartColors.alt],
-  ["Interpolation points", chartColors.alt],
+  ["Interpolant", methodColors[method]],
+  ["Interpolation points", methodColors[method]],
   ["x-intercepts", chartColors.ok]
 ])
+
+// Colors the legend's swatches; see viewof traces for why it isn't rebuilt.
+paintLegend = {
+  const swatches = (viewof traces).querySelectorAll(".ojs-legend-swatch")
+  traceOptions.forEach((label, k) => { swatches[k].style.background = traceColors.get(label) })
+}
 ```
 
 ```{ojs}
@@ -322,8 +333,8 @@ result = {
 comparison = {
   const f = VM.expressions.makeFunction(window.math, committed.fText)
   const runs = [
-    {label: "Secant", color: chartColors.fn, guesses: [committed.x0, committed.x1]},
-    {label: "Inverse quadratic", color: chartColors.alt, guesses: [committed.x0, committed.x1, committed.x2]}
+    {label: "Secant", color: methodColors.secant, guesses: [committed.x0, committed.x1]},
+    {label: "Inverse quadratic", color: methodColors.iqi, guesses: [committed.x0, committed.x1, committed.x2]}
   ]
   for (const run of runs) {
     let outcome = {rows: [], points: []}
@@ -439,6 +450,7 @@ mainPlot = {
     // Hover name only — the legend label stays "Interpolant" for both methods.
     let interpolantName = "Secant line"
     if (method === "iqi") interpolantName = "Inverse quadratic"
+    const methodColor = methodColors[method]
 
     if (showFCurve) {
       // The function curve
@@ -478,7 +490,7 @@ mainPlot = {
         data.push({
           x: curves[k].xs, y: curves[k].ys,
           type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip",
-          line: {color: "rgba(220, 38, 38, 0.18)", width: 1.5}
+          line: {color: VM.plotting.alpha(methodColor, 0.18), width: 1.5}
         })
       }
       if (curves.length > 0) {
@@ -486,12 +498,12 @@ mainPlot = {
         data.push({
           x: current.xs, y: current.ys,
           type: "scatter", mode: "lines", name: interpolantName, showlegend: false,
-          line: {color: chartColors.alt, width: 2.5}
+          line: {color: methodColor, width: 2.5}
         })
       }
     }
 
-    // Red markers at each (x_i, f(x_i)) interpolation point
+    // Markers at each (x_i, f(x_i)) interpolation point
     if (showSecantPoints && secantPoints.length > 0) {
       const xs = [], ys = [], labels = []
       for (const p of secantPoints) {
@@ -503,7 +515,7 @@ mainPlot = {
         x: xs, y: ys,
         type: "scatter", mode: "markers+text", name: "Interpolation points",
         text: labels, textposition: "top center", showlegend: false,
-        marker: {color: chartColors.alt, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}}
+        marker: {color: methodColor, size: 10, symbol: "circle", line: {color: chartColors.halo, width: 1}}
       })
     }
 
@@ -572,9 +584,12 @@ mainPlot(setup, showFCurve, showSecant, showSecantPoints, showIntercepts)
 ```
 
 ```{ojs}
+// Built once, without colors: rebuilding it whenever traceColors changes (a
+// method switch, a theme toggle) would reset whatever the reader toggled off.
+// paintLegend colors the swatches instead.
 viewof traces = {
   const items = []
-  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  for (const label of traceOptions) items.push({label, color: ""})
   return VM.ui.legendOverlay(items, {value: traceOptions})
 }
 ```

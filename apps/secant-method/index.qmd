@@ -69,10 +69,11 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// The page's examples, method and convergence fit live in method.js, so
+// The page's examples and method live in method.js (the fit is the
+// library's VM.numerical.orderFromSuccessiveErrors), so
 // method.test.js can run every example and check what the convergence plot
 // reports under npm test.
-import {examples, inverseInterpolant, runMethod, convergenceFit} from "./method.js"
+import {examples, inverseInterpolant, runMethod} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -670,7 +671,7 @@ convergencePlot = {
   const legendDomain = [], legendRange = []
 
   for (const run of comparison) {
-    const {points: logRows, fit} = convergenceFit(run.rows)
+    const {points: logRows, fit} = VM.numerical.orderFromSuccessiveErrors(run.rows, "error", "xNext")
 
     let name = run.label
     if (fit) {

@@ -62,10 +62,11 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// The page's examples, method and convergence fit live in method.js, so
+// The page's examples and method live in method.js (the fit is the
+// library's VM.numerical.orderFromSuccessiveErrors), so
 // method.test.js can run every example and check what the convergence plot
 // reports under npm test.
-import {examples, newton, convergenceFit} from "./method.js"
+import {examples, newton} from "./method.js"
 ```
 :::::::: {.vm-split}
 
@@ -552,7 +553,7 @@ iteratesPlot = {
 // its slope estimates the order of convergence p directly (≈2 for a simple
 // root, ≈1 for a multiple root, as in the default x² example).
 convergencePlot = {
-  const {points: logRows, fit} = convergenceFit(result.rows)
+  const {points: logRows, fit} = VM.numerical.orderFromSuccessiveErrors(result.rows, "error", "xNext")
 
   const pointsName = "log₁₀|eₙ₊₁| vs log₁₀|eₙ|"
   const marks = [Plot.dot(logRows, {x: "x", y: "y", fill: () => pointsName, r: 4})]

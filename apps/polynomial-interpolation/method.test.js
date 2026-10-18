@@ -48,7 +48,7 @@ for (const example of examples) {
     const { rows, trueArcLength } = arcLengthErrors(f, Math.min(a, b), Math.max(a, b), Number(p.max))
     for (const interpolant of interpolantErrors) {
       const want = expected[example.title][interpolant.name]
-      const { order } = VM.numerical.convergenceFit(rows, trueArcLength, interpolant.errorKey)
+      const { order } = VM.numerical.orderFromErrorsVsN(rows, trueArcLength, interpolant.errorKey)
       assert.ok(Math.abs(order - want) <= 0.15, `${interpolant.name}: expected order ≈ ${want}, got ${order}`)
     }
   })

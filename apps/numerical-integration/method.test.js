@@ -46,7 +46,7 @@ for (const example of examples) {
     const { rows, trueIntegral } = integrate(f, Math.min(a, b), Math.max(a, b), Number(p.max))
     for (const rule of rules) {
       const want = expected[example.title][rule.name]
-      const fit = VM.numerical.convergenceFit(rows, trueIntegral, rule.errorKey)
+      const fit = VM.numerical.orderFromErrorsVsN(rows, trueIntegral, rule.errorKey)
       if (want === "exact") {
         assert.ok(fit.exact, `${rule.name}: expected exact, got order ${fit.order}`)
       } else {

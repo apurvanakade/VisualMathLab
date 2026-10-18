@@ -115,39 +115,3 @@ export function runMethod(f, initialGuesses, maxIterations) {
   }
   return {rows, points}
 }
-
-// The convergence plot's data for one run: log₁₀|eₙ₊₁| against log₁₀|eₙ| for
-// successive errors, whose slope is the order of convergence p. Two things
-// keep that order honest:
-//   - an error at rounding level (below 1e-12·max(1, |xₙ₊₁|)) is dropped.
-//     Once the iterates stop changing, the errors sit at ~1e-16 and each
-//     pair (−16, −16) pulls the slope toward 1.
-//   - the line is fitted only to the trailing run of steps where the error
-//     shrinks. A run that diverges or wanders has no order to report, and
-//     the steps before the method settles skew the slope.
-// Returns {points, fit, order}:
-//   points — {x: log10 eₙ, y: log10 eₙ₊₁} for every pair above rounding level
-//   fit — VM.numerical.linearRegression over the trailing shrinking run, or null
-//   order — fit.slope, or NaN without a fit
-export function convergenceFit(rows) {
-  const VM = globalThis.VM
-  const points = []
-  // aboveFloor[k]: whether rows[k].error is a real, nonzero error.
-  const aboveFloor = []
-  for (const row of rows) {
-    const roundoffFloor = 1e-12 * Math.max(1, Math.abs(row.xNext))
-    aboveFloor.push(Number.isFinite(row.error) && row.error > roundoffFloor)
-  }
-  for (let k = 0; k < rows.length - 1; k++) {
-    if (aboveFloor[k] && aboveFloor[k + 1]) {
-      points.push({x: Math.log10(rows[k].error), y: Math.log10(rows[k + 1].error)})
-    }
-  }
-
-  let tailStart = points.length
-  while (tailStart > 0 && points[tailStart - 1].y < points[tailStart - 1].x) tailStart--
-  const fit = VM.numerical.linearRegression(points.slice(tailStart))
-  let order = NaN
-  if (fit) order = fit.slope
-  return {points, fit, order}
-}

@@ -134,7 +134,7 @@ initialMax = urlParams.get("max") ?? "40"
 //| output: false
 // The page's examples, method and convergence fit live in method.js, so
 // method.test.js can run every example and check its orders under npm test.
-import {examples, rules, integrate, convergenceFit} from "./method.js"
+import {examples, rules, integrate} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -685,7 +685,7 @@ iteratesPlot = {
 // grows) — for the entire run, so it's just plotted once per run.
 //
 // The fit itself (which points count, and when a rule is reported exact)
-// is convergenceFit in method.js.
+// is VM.numerical.convergenceFit.
 convergencePlot = {
   const methodSpecs = [
     {show: showLeftRiemann, name: "Left error", color: "#8b5cf6", fitColor: "#a78bfa"},
@@ -707,7 +707,7 @@ convergencePlot = {
     const spec = methodSpecs[i]
     if (!spec.show) continue
     const rule = rules[i]
-    const {points, fit, order, exact, exactFromN} = convergenceFit(result.rows, result.trueIntegral, rule.errorKey)
+    const {points, fit, order, exact, exactFromN} = VM.numerical.convergenceFit(result.rows, result.trueIntegral, rule.errorKey)
 
     marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
     colorDomain.push(spec.name)

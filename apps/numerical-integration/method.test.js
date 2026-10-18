@@ -10,7 +10,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
-import { examples, rules, integrate, convergenceFit } from './method.js'
+import { examples, rules, integrate } from './method.js'
 
 const VM = loadVM()
 
@@ -46,7 +46,7 @@ for (const example of examples) {
     const { rows, trueIntegral } = integrate(f, Math.min(a, b), Math.max(a, b), Number(p.max))
     for (const rule of rules) {
       const want = expected[example.title][rule.name]
-      const fit = convergenceFit(rows, trueIntegral, rule.errorKey)
+      const fit = VM.numerical.convergenceFit(rows, trueIntegral, rule.errorKey)
       if (want === "exact") {
         assert.ok(fit.exact, `${rule.name}: expected exact, got order ${fit.order}`)
       } else {

@@ -49,7 +49,7 @@ const convergencePages = []
 for (const dir of appDirs()) {
   // A page reports an order or slope, or fits one (the _template starter
   // draws its fitted line without a number).
-  if (/(order|slope) ≈|convergenceFit/.test(read(path.join(dir, 'index.qmd')))) convergencePages.push(dir)
+  if (/(order|slope) ≈|convergenceFit|VM\.numerical\.orderFrom/.test(read(path.join(dir, 'index.qmd')))) convergencePages.push(dir)
 }
 
 test('the pages that report a convergence order are found', () => {

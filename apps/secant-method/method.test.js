@@ -11,7 +11,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
-import { examples, runMethod, convergenceFit } from './method.js'
+import { examples, runMethod } from './method.js'
 
 const VM = loadVM()
 
@@ -45,7 +45,7 @@ for (const example of examples) {
     const runs = {secant: [x0, x1], iqi: [x0, x1, x2]}
     for (const method in runs) {
       const want = expected[example.title][method]
-      const order = convergenceFit(runMethod(f, runs[method], Number(p.max)).rows).order
+      const order = VM.numerical.orderFromSuccessiveErrors(runMethod(f, runs[method], Number(p.max)).rows, "error", "xNext").order
       if (want === null) {
         assert.ok(Number.isNaN(order), `${method}: expected no fit, got order ${order}`)
       } else {

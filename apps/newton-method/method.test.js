@@ -10,7 +10,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
-import { examples, newton, convergenceFit } from './method.js'
+import { examples, newton } from './method.js'
 
 const VM = loadVM()
 
@@ -38,7 +38,7 @@ function orderFor(params, maxIterations) {
   const df = VM.expressions.makeDerivative(globalThis.math, params.f)
   assert.ok(f && df, `could not parse f = ${params.f}`)
   const x0 = VM.expressions.makeNumber(globalThis.math, params.x0)
-  return convergenceFit(newton(f, df, x0, maxIterations)).order
+  return VM.numerical.orderFromSuccessiveErrors(newton(f, df, x0, maxIterations), "error", "xNext").order
 }
 
 for (const example of examples) {

@@ -26,7 +26,7 @@ for (const example of examples) {
     const { rows, trueValue } = endpointErrors(f, y0, b, Number(p.max))
     for (const method of methodErrors) {
       const want = expectedOrder[method.name]
-      const { order } = VM.numerical.convergenceFit(rows, trueValue, method.errorKey)
+      const { order } = VM.numerical.orderFromErrorsVsN(rows, trueValue, method.errorKey)
       assert.ok(Math.abs(order - want) <= 0.15, `${method.name}: expected order ≈ ${want}, got ${order}`)
     }
   })

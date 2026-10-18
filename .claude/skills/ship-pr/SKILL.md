@@ -90,7 +90,8 @@ If it matches, Copilot's review isn't coming. Don't wait out the 30 minutes
 and don't ask the user: run a local review in its place, which then stands in
 as the merge gate.
 
-1. Spawn a fresh `general-purpose` agent (the Agent tool, not a fork, so it
+1. Spawn a fresh `general-purpose` agent on Sonnet (the Agent tool with
+   `model: "sonnet"`, to save tokens; not a fork, so it
    starts without this session's context) with the prompt in
    [maintainer-review.md](maintainer-review.md), filling in the PR number and
    the PR's worktree path. Add nothing about the change: the point is a

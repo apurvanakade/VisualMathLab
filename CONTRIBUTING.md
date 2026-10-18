@@ -34,8 +34,12 @@ To maintain consistency and ensure everyone receives proper academic and legal c
 Please copy, paste, and update the template matching your file's language:
 
 ### 1. Quarto Documents (`.qmd`) and Markdown Files (`.md`)
-For Markdown and Quarto files, wrap the header in standard HTML comment tags at the very beginning of the document:
+For Markdown and Quarto files, wrap the header in standard HTML comment tags at the very beginning of the document. A file with YAML front matter is the exception: put the header right after the front matter's closing `---`, because a `.qmd` must start with `---` on line 1, or Quarto's listing scanner finds no title, description or categories and the page drops off its topic listing.
 ```markdown
+---
+title: "..."
+---
+
 <!--
 Copyright (c) [Year] [Your Name]. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.

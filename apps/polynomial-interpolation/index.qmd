@@ -103,10 +103,11 @@ initialInterpolants = {
 
 ```{ojs}
 //| output: false
-// The page's examples, method and convergence fit live in method.js, so
+// The page's examples and method live in method.js (the fit is the
+// library's VM.numerical.convergenceFit), so
 // method.test.js can run every example and check what the convergence plot
 // reports under npm test.
-import {examples, interpolantErrors, cubicSpline, arcLengthErrors, convergenceFit} from "./method.js"
+import {examples, interpolantErrors, cubicSpline, arcLengthErrors} from "./method.js"
 ```
 
 ::::::::: {.vm-split}
@@ -801,7 +802,7 @@ iteratesPlot = {
 // per run.
 //
 // The fit itself (which points count, and when an interpolant is reported
-// exact) is convergenceFit in method.js.
+// exact) is VM.numerical.convergenceFit.
 convergencePlot = {
   const specs = [
     {name: "Linear interpolant error", color: chartColors.alt, fitColor: "#f87171"},
@@ -820,7 +821,7 @@ convergencePlot = {
   for (let i = 0; i < specs.length; i++) {
     const spec = specs[i]
     const interpolant = interpolantErrors[i]
-    const {points, fit, order, exact, exactFromN} = convergenceFit(result.rows, result.trueArcLength, interpolant.errorKey)
+    const {points, fit, order, exact, exactFromN} = VM.numerical.convergenceFit(result.rows, result.trueArcLength, interpolant.errorKey)
 
     marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
     colorDomain.push(spec.name)

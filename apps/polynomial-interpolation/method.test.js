@@ -11,7 +11,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
-import { examples, interpolantErrors, cubicSpline, splineArcLength, arcLengthErrors, convergenceFit } from './method.js'
+import { examples, interpolantErrors, cubicSpline, splineArcLength, arcLengthErrors } from './method.js'
 
 const VM = loadVM()
 
@@ -48,7 +48,7 @@ for (const example of examples) {
     const { rows, trueArcLength } = arcLengthErrors(f, Math.min(a, b), Math.max(a, b), Number(p.max))
     for (const interpolant of interpolantErrors) {
       const want = expected[example.title][interpolant.name]
-      const { order } = convergenceFit(rows, trueArcLength, interpolant.errorKey)
+      const { order } = VM.numerical.convergenceFit(rows, trueArcLength, interpolant.errorKey)
       assert.ok(Math.abs(order - want) <= 0.15, `${interpolant.name}: expected order ≈ ${want}, got ${order}`)
     }
   })

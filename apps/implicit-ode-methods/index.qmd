@@ -64,10 +64,11 @@ methodColors = new Map([
 
 ```{ojs}
 //| output: false
-// The page's examples, method and convergence fit live in method.js, so
+// The page's examples and method live in method.js (the fit is the
+// library's VM.numerical.convergenceFit), so
 // method.test.js can run every example and check what the convergence plot
 // reports under npm test.
-import {examples, methodErrors, implicitEulerSolve, endpointErrors, convergenceFit} from "./method.js"
+import {examples, methodErrors, implicitEulerSolve, endpointErrors} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -498,7 +499,7 @@ iteratesPlot = {
 // grows) — for the entire run, so it's just plotted once per run.
 //
 // The fit itself (which points count, and when a method is reported
-// exact) is convergenceFit in method.js.
+// exact) is VM.numerical.convergenceFit.
 convergencePlot = {
   const methodSpecs = [
     {name: "Euler error", color: chartColors.alt, fitColor: "#f87171"},
@@ -517,7 +518,7 @@ convergencePlot = {
   for (let i = 0; i < methodSpecs.length; i++) {
     const spec = methodSpecs[i]
     const method = methodErrors[i]
-    const {points, fit, order, exact, exactFromN} = convergenceFit(result.rows, result.trueValue, method.errorKey)
+    const {points, fit, order, exact, exactFromN} = VM.numerical.convergenceFit(result.rows, result.trueValue, method.errorKey)
 
     marks.push(Plot.dot(points, {x: "x", y: "y", fill: () => spec.name, r: 4}))
     colorDomain.push(spec.name)

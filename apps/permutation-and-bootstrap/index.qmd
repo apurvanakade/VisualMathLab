@@ -1,0 +1,392 @@
+---
+title: "Permutation and Bootstrap Tests"
+topic: "Simulation-Based Inference"
+description: "Shuffle or resample two groups to see how far chance alone moves the difference between them."
+date: 2026-10-18
+order: 1
+categories:
+  - Probability
+  - Data Science
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.sampling.seededRandom, VM.expressions.makeNumber, VM.plotting.*, VM.ui.statRow, VM.ui.urlParam, VM.ui.syncUrlParams, VM.ui.applyExampleParams, VM.ui.syncExampleSelect.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+import {examples, parseData, resample, pValue, percentileInterval, stackLevels, statistics, statLabels, methodLabels} from "./method.js"
+```
+
+```{ojs}
+//| output: false
+// The defaults every URL key is compared against: syncUrlParams leaves a
+// key out of the address bar while it holds its default.
+defaults = ({...examples[0].params, resamples: "10000", seed: "1"})
+```
+
+```{ojs}
+//| output: false
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+```
+
+::::::::: {.vm-split}
+
+<div class="vm-app">
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof aText = {
+  const input = Inputs.text({label: "Group A", value: VM.ui.urlParam("a", defaults.a), placeholder: "Comma-separated values"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "a"
+  return input
+}
+```
+
+```{ojs}
+viewof bText = {
+  const input = Inputs.text({label: "Group B", value: VM.ui.urlParam("b", defaults.b), placeholder: "Comma-separated values"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "b"
+  return input
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof methodSelect = {
+  const select = Inputs.select([...methodLabels.keys()], {label: "Method", format: m => methodLabels.get(m), value: VM.ui.urlParam("method", defaults.method)})
+  select.dataset.exampleField = "method"
+  return select
+}
+```
+
+```{ojs}
+viewof statSelect = {
+  const select = Inputs.select([...statLabels.keys()], {label: "Statistic", format: s => statLabels.get(s), value: VM.ui.urlParam("stat", defaults.stat)})
+  select.dataset.exampleField = "stat"
+  return select
+}
+```
+
+```{ojs}
+viewof resamplesInput = Inputs.text({label: "Resamples N", value: VM.ui.urlParam("resamples", defaults.resamples), placeholder: "Example: 10000, 1e4"})
+```
+
+```{ojs}
+viewof seedInput = Inputs.text({label: "Seed", value: VM.ui.urlParam("seed", defaults.seed)})
+```
+
+```{ojs}
+viewof exampleSelect = {
+  const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+viewof plotTrigger = {
+  const button = Inputs.button("Resample", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+exampleFieldSelectors = ({a: '[data-example-field="a"]', b: '[data-example-field="b"]', stat: '[data-example-field="stat"]', method: '[data-example-field="method"]'})
+```
+
+```{ojs}
+//| output: false
+// A one-time native listener, not a cell reactive on exampleSelect: a
+// <select> fires both "input" and "change", and two overlapping applies race.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+//| output: false
+syncExampleFromFields = {
+  aText; bText; statSelect; methodSelect
+  VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+enterToPlot = {
+  for (const view of [viewof aText, viewof bText, viewof resamplesInput, viewof seedInput]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// The text fields take effect on Resample (read through their stable
+// views, so typing doesn't rerun this); the two selects are always-live.
+committed = {
+  plotTrigger
+  const aRaw = (viewof aText).value, bRaw = (viewof bText).value
+  const nRaw = (viewof resamplesInput).value, seedRaw = (viewof seedInput).value
+  const parsedN = VM.expressions.makeNumber(window.math, nRaw)
+  const N = Number.isFinite(parsedN) ? Math.min(100000, Math.max(10, Math.round(parsedN))) : 10000
+  const parsedSeed = VM.expressions.makeNumber(window.math, seedRaw)
+  const seed = Number.isFinite(parsedSeed) ? Math.round(parsedSeed) : 1
+  VM.ui.syncUrlParams({
+    a: [aRaw, defaults.a], b: [bRaw, defaults.b],
+    stat: [statSelect, defaults.stat], method: [methodSelect, defaults.method],
+    resamples: [nRaw, defaults.resamples], seed: [seedRaw, defaults.seed]
+  })
+  return {A: parseData(aRaw), B: parseData(bRaw), stat: statSelect, method: methodSelect, N, seed}
+}
+```
+
+```{ojs}
+//| output: false
+// result: all N resamples, their statistics, and the fixed ranges every
+// chart below uses, so moving the k slider never rescales an axis.
+result = {
+  const {A, B, stat, method, N, seed} = committed
+  if (!A || !B) return {ok: false, N}
+  const run = resample(A, B, {stat, method, N, rng: VM.sampling.seededRandom(seed)})
+  const pooled = [...A, ...B]
+  const shift = [0, 0]
+  if (method === "recentered") {
+    shift[0] = statistics[stat](A)
+    shift[1] = statistics[stat](B)
+  }
+  // What the top panel draws: each pooled value, re-centered by its own
+  // group's statistic in the re-centered test.
+  const shown = pooled.map((v, i) => v - shift[i < A.length ? 0 : 1])
+
+  let lo = Infinity, hi = -Infinity
+  for (const d of run.deltas) { if (d < lo) lo = d; if (d > hi) hi = d }
+  lo = Math.min(lo, run.obs, 0); hi = Math.max(hi, run.obs, 0)
+  const binCount = 60
+  const binWidth = (hi - lo) / binCount || 1
+  const finalCounts = new Array(binCount).fill(0)
+  for (const d of run.deltas) finalCounts[Math.min(binCount - 1, Math.floor((d - lo) / binWidth))]++
+
+  const xPad = (Math.max(...shown) - Math.min(...shown)) * 0.04 || 1
+  return {
+    ok: true, ...run, A, B, pooled, shown, shift, stat, method, N,
+    bins: {lo, binWidth, binCount, yMax: Math.max(...finalCounts) * 1.08},
+    dotRange: [Math.min(...shown) - xPad, Math.max(...shown) + xPad],
+    histRange: [lo - binWidth, hi + binWidth]
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// setup: the first k resamples. k = 0 shows the data themselves.
+setup = {
+  if (!result.ok) return {ok: false}
+  const k = Math.min(Number(stepControl), result.N)
+  const {nA, nB, obs, deltas, picks, bins, method} = result
+  const n = nA + nB
+
+  // Top panel: which value sits in which row, and its original group.
+  const dots = []
+  for (let i = 0; i < n; i++) {
+    const p = k === 0 ? i : picks[(k - 1) * n + i]
+    dots.push({value: result.shown[p], row: i < nA ? 1 : 0, from: p < nA ? "A" : "B"})
+  }
+  const rowStats = [0, 1].map(row => statistics[result.stat](dots.filter(d => d.row === row).map(d => d.value)))
+
+  const counts = new Array(bins.binCount).fill(0)
+  for (let i = 0; i < k; i++) counts[Math.min(bins.binCount - 1, Math.floor((deltas[i] - bins.lo) / bins.binWidth))]++
+
+  const summary = {k, obs, current: k > 0 ? deltas[k - 1] : null}
+  if (method === "interval") {
+    summary.interval = k >= 2 ? percentileInterval(deltas, k) : null
+  } else {
+    summary.p = k > 0 ? pValue(deltas, obs, k) : null
+    let count = 0
+    for (let i = 0; i < k; i++) if (deltas[i] >= obs - 1e-9) count++
+    summary.count = count
+  }
+  return {ok: true, dots, rowStats, counts, ...summary}
+}
+```
+
+```{ojs}
+//| output: false
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (setup) => {
+    const data = [], shapes = [], annotations = []
+    const layout = {
+      grid: {rows: 2, columns: 1, pattern: "independent", roworder: "top to bottom"},
+      margin: {l: 64, r: 16, t: 16, b: 48},
+      xaxis: {domain: [0, 1], anchor: "y", title: {text: result.method === "recentered" ? "value − own group's " + statLabels.get(result.stat ?? "median").toLowerCase() : "value", standoff: 4}},
+      yaxis: {domain: [0.56, 1], anchor: "x", range: [-0.35, 1.85], tickvals: [0, 1], ticktext: ["B", "A"], zeroline: false, showgrid: false, fixedrange: true},
+      xaxis2: {domain: [0, 1], anchor: "y2", title: {text: "Δ* = statistic(B*) − statistic(A*)", standoff: 4}},
+      yaxis2: {domain: [0, 0.38], anchor: "x2", title: {text: "count", standoff: 8}, rangemode: "tozero", nticks: 4},
+      hovermode: "closest", uirevision: "static", autosize: true, bargap: 0.05,
+      shapes, annotations
+    }
+
+    if (!setup.ok) {
+      layout.annotations = VM.plotting.emptyState("Couldn't read the data: give each group two or more numbers.")
+    } else {
+      const label = setup.k === 0 ? ["B", "A"] : ["B*", "A*"]
+      layout.yaxis.ticktext = label
+      layout.xaxis.range = result.dotRange
+      layout.xaxis2.range = result.histRange
+      layout.yaxis2.range = [0, result.bins.yMax]
+
+      // Dots stack upward within their row, one step per repeat of a
+      // value -- which is also how a bootstrap draw's duplicates show.
+      const binWidth = (result.dotRange[1] - result.dotRange[0]) / 60
+      const groups = {A: [], B: []}
+      for (const row of [1, 0]) {
+        const inRow = setup.dots.filter(d => d.row === row)
+        const levels = stackLevels(inRow.map(d => d.value), binWidth)
+        const step = Math.min(0.12, 0.75 / (Math.max(...levels) + 1))
+        inRow.forEach((d, i) => groups[d.from].push({x: d.value, y: row + 0.06 + levels[i] * step}))
+      }
+      for (const [from, color] of [["A", chartColors.fn], ["B", chartColors.alt]]) {
+        data.push({
+          x: groups[from].map(d => d.x), y: groups[from].map(d => d.y), xaxis: "x", yaxis: "y",
+          type: "scatter", mode: "markers", name: `from group ${from}`, showlegend: false,
+          marker: {color, size: 7, line: {color: chartColors.halo, width: 0.5}},
+          hovertemplate: `from group ${from}<br>%{x:.4g}<extra></extra>`
+        })
+      }
+      // Each row's statistic, as a short tick across the row.
+      for (const row of [0, 1]) {
+        shapes.push({type: "line", xref: "x", yref: "y", x0: setup.rowStats[row], x1: setup.rowStats[row], y0: row - 0.2, y1: row + 0.85, line: {color: chartColors.ink, width: 2}})
+      }
+
+      // Histogram of the first k Δ*, the tail (or the interval) in its own color.
+      const {lo, binWidth: w, binCount} = result.bins
+      const centers = Array.from({length: binCount}, (_, i) => lo + (i + 0.5) * w)
+      const colors = centers.map(c => {
+        if (result.method === "interval") {
+          return setup.interval && c >= setup.interval[0] && c <= setup.interval[1] ? chartColors.ok : VM.plotting.alpha("muted", 0.5)
+        }
+        return c + w / 2 > setup.obs ? chartColors.alt : VM.plotting.alpha("fn", 0.55)
+      })
+      data.push({
+        x: centers, y: setup.counts, width: w, type: "bar", xaxis: "x2", yaxis: "y2", name: "Δ*", showlegend: false,
+        marker: {color: colors}, hovertemplate: "Δ* ≈ %{x:.3g}<br>count %{y}<extra></extra>"
+      })
+      shapes.push({type: "line", xref: "x2", yref: "y2", x0: setup.obs, x1: setup.obs, y0: 0, y1: result.bins.yMax, line: {color: chartColors.ink, width: 2, dash: "dash"}})
+      annotations.push({xref: "x2", yref: "y2", x: setup.obs, y: result.bins.yMax, text: `Δ<sub>obs</sub> = ${setup.obs.toFixed(2)}`, showarrow: false, yanchor: "top", xanchor: "right", xshift: -4, font: {color: chartColors.ink}})
+      if (setup.current !== null) {
+        data.push({
+          x: [setup.current], y: [0], xaxis: "x2", yaxis: "y2", type: "scatter", mode: "markers", name: "this Δ*", showlegend: false,
+          marker: {color: chartColors.warn, size: 11, symbol: "triangle-up", line: {color: chartColors.halo, width: 1}},
+          hovertemplate: "this resample's Δ* = %{x:.4g}<extra></extra>", cliponaxis: false
+        })
+      }
+    }
+
+    const config = VM.plotting.config()
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
+initialK = VM.ui.urlParam("k", null)
+```
+
+```{ojs}
+//| output: false
+urlSyncControls = {
+  VM.ui.syncUrlParams({k: [stepControl, result.N]})
+  return true
+}
+```
+
+```{ojs}
+stats = {
+  if (!setup.ok) return VM.ui.statRow([{label: "Δ obs", value: "—"}])
+  const fmt = v => v === null ? "—" : Math.abs(v) < 1e-3 && v !== 0 ? v.toExponential(1) : v.toFixed(4)
+  const items = [{label: "Δ obs", value: setup.obs.toFixed(2)}, {label: "Resamples k", value: setup.k.toLocaleString()}]
+  if (result.method === "interval") {
+    const iv = setup.interval
+    items.push({label: "95% interval", value: iv ? `[${iv[0].toFixed(2)}, ${iv[1].toFixed(2)}]` : "—"})
+  } else {
+    items.push({label: "Δ* ≥ Δ obs", value: setup.count.toLocaleString()})
+    const report = setup.k > 0 && setup.count === 0 ? `< ${fmt(1 / (setup.k + 1))}` : fmt(setup.p)
+    items.push({label: "p̂ = (1 + count)/(k + 1)", value: report})
+  }
+  return VM.ui.statRow(items)
+}
+```
+
+<div class="ojs-chart-block">
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+viewof stepControl = {
+  const start = initialK === null ? result.N : Math.min(result.N, Math.max(0, Math.round(initialK)))
+  const slider = Inputs.range([0, result.N], {step: 1, value: start, label: "k"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+</div>
+
+```{ojs}
+mainPlot(setup)
+```
+
+</div>
+
+</div>
+
+:::::::::

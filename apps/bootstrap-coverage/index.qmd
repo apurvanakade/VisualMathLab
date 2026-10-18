@@ -1,0 +1,333 @@
+---
+title: "Bootstrap Coverage"
+topic: "Simulation-Based Inference"
+description: "Draw hundreds of samples, build a bootstrap interval from each, and count how often a 95% interval catches the truth."
+date: 2026-10-18
+order: 2
+categories:
+  - Probability
+  - Data Science
+  - Error Analysis
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.sampling.seededRandom, VM.expressions.makeNumber, VM.plotting.*, VM.ui.statRow, VM.ui.urlParam, VM.ui.syncUrlParams, VM.ui.applyExampleParams, VM.ui.syncExampleSelect.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+import {examples, coverageRun, populationLabels, statLabels} from "./method.js"
+```
+
+```{ojs}
+//| output: false
+defaults = ({...examples[0].params, intervals: "200", resamples: "1000", seed: "1"})
+```
+
+```{ojs}
+//| output: false
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+```
+
+::::::::: {.vm-split}
+
+<div class="vm-app">
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof popSelect = {
+  const select = Inputs.select([...populationLabels.keys()], {label: "Population", format: p => populationLabels.get(p), value: VM.ui.urlParam("pop", defaults.pop)})
+  select.dataset.exampleField = "pop"
+  return select
+}
+```
+
+```{ojs}
+viewof statSelect = {
+  const select = Inputs.select([...statLabels.keys()], {label: "Statistic", format: s => statLabels.get(s), value: VM.ui.urlParam("stat", defaults.stat)})
+  select.dataset.exampleField = "stat"
+  return select
+}
+```
+
+```{ojs}
+viewof nInput = {
+  const input = Inputs.text({label: "Sample size n", value: VM.ui.urlParam("n", defaults.n)})
+  input.dataset.exampleField = "n"
+  return input
+}
+```
+
+```{ojs}
+viewof intervalsInput = Inputs.text({label: "Intervals R", value: VM.ui.urlParam("intervals", defaults.intervals)})
+```
+
+```{ojs}
+viewof resamplesInput = Inputs.text({label: "Resamples per interval", value: VM.ui.urlParam("resamples", defaults.resamples)})
+```
+
+```{ojs}
+viewof seedInput = Inputs.text({label: "Seed", value: VM.ui.urlParam("seed", defaults.seed)})
+```
+
+```{ojs}
+viewof exampleSelect = {
+  const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+viewof plotTrigger = {
+  const button = Inputs.button("Draw samples", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+exampleFieldSelectors = ({pop: '[data-example-field="pop"]', stat: '[data-example-field="stat"]', n: '[data-example-field="n"]'})
+```
+
+```{ojs}
+//| output: false
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+//| output: false
+syncExampleFromFields = {
+  popSelect; statSelect; nInput
+  VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+enterToPlot = {
+  for (const view of [viewof nInput, viewof intervalsInput, viewof resamplesInput, viewof seedInput]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// The text fields take effect on "Draw samples"; the two selects are
+// always-live. Each count is clamped so one run stays under a few seconds.
+committed = {
+  plotTrigger
+  const read = (view, fallback, lo, hi) => {
+    const v = VM.expressions.makeNumber(window.math, view.value)
+    return Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v))) : fallback
+  }
+  const n = read(viewof nInput, 30, 2, 500)
+  const R = read(viewof intervalsInput, 200, 1, 2000)
+  const N = read(viewof resamplesInput, 1000, 50, 5000)
+  const seed = read(viewof seedInput, 1, -1e9, 1e9)
+  VM.ui.syncUrlParams({
+    pop: [popSelect, defaults.pop], stat: [statSelect, defaults.stat],
+    n: [(viewof nInput).value, defaults.n], intervals: [(viewof intervalsInput).value, defaults.intervals],
+    resamples: [(viewof resamplesInput).value, defaults.resamples], seed: [(viewof seedInput).value, defaults.seed]
+  })
+  return {pop: popSelect, stat: statSelect, n, R, N, seed}
+}
+```
+
+```{ojs}
+//| output: false
+// result: every interval of the run, and the fixed x range they all fit in.
+result = {
+  const {pop, stat, n, R, N, seed} = committed
+  const run = coverageRun({pop, stat, n, R, N, rng: VM.sampling.seededRandom(seed)})
+  if (!Number.isFinite(run.truth)) return {ok: false, R, message: `${populationLabels.get(pop)} has no finite ${statLabels.get(stat).toLowerCase()} to cover.`}
+  // The 1st and 99th percentiles of the endpoints, so one wild interval
+  // (a skewed population's) doesn't squeeze all the others; it runs off
+  // the edge instead.
+  const los = run.intervals.map(iv => iv.lo).sort((a, b) => a - b)
+  const his = run.intervals.map(iv => iv.hi).sort((a, b) => a - b)
+  const lo = Math.min(run.truth, los[Math.floor(0.01 * (los.length - 1))])
+  const hi = Math.max(run.truth, his[Math.ceil(0.99 * (his.length - 1))])
+  const pad = (hi - lo) * 0.04 || 0.1
+  return {ok: true, ...run, R, xRange: [lo - pad, hi + pad]}
+}
+```
+
+```{ojs}
+//| output: false
+setup = {
+  const k = Math.min(Number(stepControl), result.R)
+  if (!result.ok) return {ok: false, k}
+  const shown = result.intervals.slice(0, k)
+  const hits = shown.filter(iv => iv.hit).length
+  return {ok: true, k, shown, hits}
+}
+```
+
+```{ojs}
+//| output: false
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (setup) => {
+    const data = [], shapes = []
+    const layout = {
+      xaxis: {title: statLabels.get(committed.stat)},
+      yaxis: {title: "sample", range: [0, result.R + 1], zeroline: false},
+      hovermode: "closest", uirevision: "static", autosize: true, shapes
+    }
+
+    if (!setup.ok) {
+      layout.annotations = VM.plotting.emptyState(result.message)
+    } else {
+      layout.xaxis.range = result.xRange
+      // One trace for the hits and one for the misses, each interval a
+      // segment, separated by nulls.
+      const width = result.R > 400 ? 1 : result.R > 100 ? 2 : 4
+      for (const [hit, color, name] of [[true, chartColors.ok, "covers"], [false, chartColors.alt, "misses"]]) {
+        const xs = [], ys = []
+        setup.shown.forEach((iv, i) => {
+          if (iv.hit !== hit) return
+          xs.push(iv.lo, iv.hi, null)
+          ys.push(i + 1, i + 1, null)
+        })
+        data.push({x: xs, y: ys, type: "scatter", mode: "lines", name, showlegend: false, line: {color, width}, hoverinfo: "skip"})
+      }
+      data.push({
+        x: setup.shown.map(iv => iv.estimate), y: setup.shown.map((_, i) => i + 1),
+        customdata: setup.shown.map(iv => [iv.lo, iv.hi]),
+        type: "scatter", mode: "markers", name: "estimate", showlegend: false,
+        marker: {color: chartColors.ink, size: Math.max(2, width + 1)},
+        hovertemplate: "sample %{y}<br>estimate %{x:.4g}<br>interval [%{customdata[0]:.4g}, %{customdata[1]:.4g}]<extra></extra>"
+      })
+      shapes.push({type: "line", xref: "x", yref: "paper", x0: result.truth, x1: result.truth, y0: 0, y1: 1, line: {color: chartColors.ink, width: 2, dash: "dash"}})
+      layout.annotations = [{xref: "x", yref: "paper", x: result.truth, y: 1, yanchor: "bottom", showarrow: false, text: `true ${statLabels.get(committed.stat).toLowerCase()} = ${result.truth.toPrecision(4)}`, font: {color: chartColors.ink}}]
+    }
+
+    const config = VM.plotting.config()
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
+initialK = VM.ui.urlParam("k", null)
+```
+
+```{ojs}
+//| output: false
+urlSyncControls = {
+  VM.ui.syncUrlParams({k: [stepControl, result.R]})
+  return true
+}
+```
+
+```{ojs}
+stats = {
+  const items = [{label: "Intervals k", value: setup.k.toLocaleString()}]
+  if (setup.ok) {
+    items.push({label: "Cover the truth", value: setup.hits.toLocaleString()})
+    items.push({label: "Coverage", value: setup.k ? `${(100 * setup.hits / setup.k).toFixed(1)}%` : "—", title: "Nominal coverage is 95%."})
+  }
+  return VM.ui.statRow(items)
+}
+```
+
+<div class="ojs-chart-block">
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+viewof stepControl = {
+  const start = initialK === null ? result.R : Math.min(result.R, Math.max(0, Math.round(initialK)))
+  const slider = Inputs.range([0, result.R], {step: 1, value: start, label: "k"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+</div>
+
+```{ojs}
+mainPlot(setup)
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="Running coverage"}
+
+```{ojs}
+// Coverage of the first j intervals, against 95% and the band a correct
+// 95% procedure would stay inside about 95% of the time.
+runningCoveragePlot = {
+  if (!result.ok) return document.createElement("div")
+  const rows = []
+  let hits = 0
+  result.intervals.forEach((iv, i) => {
+    if (iv.hit) hits++
+    const j = i + 1
+    const half = 1.96 * Math.sqrt(0.95 * 0.05 / j)
+    rows.push({j, coverage: hits / j, lo: Math.max(0, 0.95 - half), hi: Math.min(1, 0.95 + half)})
+  })
+  return Plot.plot({
+    height: 260, marginLeft: 46,
+    x: {label: "intervals j"},
+    y: {label: "coverage", domain: [0, 1], percent: true},
+    marks: [
+      Plot.areaY(rows, {x: "j", y1: "lo", y2: "hi", fill: chartColors.muted, fillOpacity: 0.2}),
+      Plot.ruleY([0.95], {stroke: chartColors.muted, strokeDasharray: "4,3"}),
+      Plot.lineY(rows, {x: "j", y: "coverage", stroke: chartColors.fn, strokeWidth: 2}),
+      Plot.ruleX([setup.k], {stroke: chartColors.warn})
+    ]
+  })
+}
+```
+
+::::
+
+:::::::::

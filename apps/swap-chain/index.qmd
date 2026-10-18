@@ -1,0 +1,385 @@
+---
+title: "Swap Chain on 0/1 Matrices"
+topic: "Simulation-Based Inference"
+description: "Randomize a presence/absence matrix without changing its row or column sums, one checkerboard swap at a time."
+date: 2026-10-18
+order: 3
+categories:
+  - Probability
+  - Data Science
+  - Combinatorics
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.sampling.seededRandom, VM.mcmc.autocorrelation, VM.expressions.makeNumber, VM.plotting.*, VM.ui.statRow, VM.ui.urlParam, VM.ui.syncUrlParams, VM.ui.applyExampleParams, VM.ui.syncExampleSelect.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+import {examples, moveLabels, parseMatrix, runChain, stateAt, rowSums, colSums} from "./method.js"
+```
+
+```{ojs}
+//| output: false
+defaults = ({...examples[0].params, attempts: "2000", burnin: "500", seed: "1"})
+```
+
+```{ojs}
+//| output: false
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+```
+
+::::::::: {.vm-split}
+
+<div class="vm-app">
+
+<div class="ojs-panel">
+
+<div class="ojs-row">
+
+```{ojs}
+viewof matrixText = {
+  const input = Inputs.text({label: "Matrix (rows of 0s and 1s)", value: VM.ui.urlParam("matrix", defaults.matrix), placeholder: "Example: 1100 0110 0011"})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "matrix"
+  return input
+}
+```
+
+```{ojs}
+viewof plotTrigger = {
+  const button = Inputs.button("Run chain", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof moveSelect = {
+  const select = Inputs.select([...moveLabels.keys()], {label: "Move", format: m => moveLabels.get(m), value: VM.ui.urlParam("move", defaults.move)})
+  select.dataset.exampleField = "move"
+  return select
+}
+```
+
+```{ojs}
+viewof attemptsInput = Inputs.text({label: "Attempts K", value: VM.ui.urlParam("attempts", defaults.attempts), placeholder: "Example: 2000, 1e4"})
+```
+
+```{ojs}
+viewof burninInput = Inputs.text({label: "Burn-in", value: VM.ui.urlParam("burnin", defaults.burnin)})
+```
+
+```{ojs}
+viewof seedInput = Inputs.text({label: "Seed", value: VM.ui.urlParam("seed", defaults.seed)})
+```
+
+```{ojs}
+viewof exampleSelect = {
+  const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+exampleFieldSelectors = ({matrix: '[data-example-field="matrix"]', move: '[data-example-field="move"]'})
+```
+
+```{ojs}
+//| output: false
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, viewof plotTrigger)
+  })
+}
+```
+
+```{ojs}
+//| output: false
+syncExampleFromFields = {
+  matrixText; moveSelect
+  VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+enterToPlot = {
+  for (const view of [viewof matrixText, viewof attemptsInput, viewof seedInput]) {
+    const input = view.querySelector("input")
+    if (!input) continue
+    input.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return
+      e.preventDefault()
+      viewof plotTrigger.querySelector("button").click()
+    })
+  }
+}
+```
+
+```{ojs}
+//| output: false
+// The matrix, attempts and seed take effect on "Run chain"; the move is
+// always-live. Burn-in only changes the summary, so it is always-live too.
+committed = {
+  plotTrigger
+  const matrixRaw = (viewof matrixText).value
+  const attemptsRaw = (viewof attemptsInput).value, seedRaw = (viewof seedInput).value
+  const K = VM.expressions.makeNumber(window.math, attemptsRaw)
+  const seed = VM.expressions.makeNumber(window.math, seedRaw)
+  VM.ui.syncUrlParams({
+    matrix: [matrixRaw, defaults.matrix], move: [moveSelect, defaults.move],
+    attempts: [attemptsRaw, defaults.attempts], seed: [seedRaw, defaults.seed]
+  })
+  return {
+    start: parseMatrix(matrixRaw), move: moveSelect,
+    K: Number.isFinite(K) ? Math.min(20000, Math.max(10, Math.round(K))) : 2000,
+    seed: Number.isFinite(seed) ? Math.round(seed) : 1
+  }
+}
+```
+
+```{ojs}
+//| output: false
+burnin = {
+  const v = VM.expressions.makeNumber(window.math, burninInput)
+  VM.ui.syncUrlParams({burnin: [burninInput, defaults.burnin]})
+  return Number.isFinite(v) ? Math.max(0, Math.round(v)) : 500
+}
+```
+
+```{ojs}
+//| output: false
+result = {
+  const {start, move, K, seed} = committed
+  if (!start) return {ok: false, K}
+  const run = runChain(start, {K, move, rng: VM.sampling.seededRandom(seed)})
+  let lo = Infinity, hi = -Infinity
+  for (const c of run.counts) { if (c < lo) lo = c; if (c > hi) hi = c }
+  const pad = Math.max(5, (hi - lo) * 0.08)
+  return {ok: true, ...run, K, move, startRows: rowSums(start), startCols: colSums(start), countRange: [lo - pad, hi + pad]}
+}
+```
+
+```{ojs}
+//| output: false
+setup = {
+  const k = Math.min(Number(stepControl), result.K)
+  if (!result.ok) return {ok: false, k}
+  const m = stateAt(result, k)
+  const after = Array.from(result.counts.subarray(Math.min(burnin, result.K) + 1))
+  const obs = result.counts[0]
+  let accepted = 0
+  for (let t = 0; t < k; t++) accepted += result.flipped[t]
+  const summary = {k, m, obs, now: result.counts[k], accepted, rows: rowSums(m), cols: colSums(m)}
+  if (after.length > 0) {
+    summary.mean = after.reduce((a, b) => a + b, 0) / after.length
+    summary.p = (1 + after.filter(c => c >= obs).length) / (after.length + 1)
+  }
+  if (k > 0) summary.pick = {cells: Array.from(result.picks.subarray(4 * (k - 1), 4 * k)), flipped: result.flipped[k - 1] === 1}
+  return {ok: true, ...summary}
+}
+```
+
+```{ojs}
+//| output: false
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return (setup) => {
+    const data = [], shapes = []
+    const layout = {
+      hovermode: "closest", uirevision: "static", autosize: true, shapes,
+      margin: {l: 64, r: 16, t: 16, b: 48},
+      xaxis: {domain: [0, 1], anchor: "y", showgrid: false, zeroline: false, showline: false, ticks: "", showticklabels: false, fixedrange: true},
+      yaxis: {domain: [0.4, 1], anchor: "x", showgrid: false, zeroline: false, showline: false, ticks: "", showticklabels: false, fixedrange: true, scaleanchor: "x", constrain: "domain"},
+      xaxis2: {domain: [0, 1], anchor: "y2", title: {text: "attempt", standoff: 4}},
+      yaxis2: {domain: [0, 0.3], anchor: "x2", title: {text: "checkerboards", standoff: 8}, nticks: 4}
+    }
+
+    if (!setup.ok) {
+      layout.annotations = VM.plotting.emptyState("Couldn't read the matrix: give 2–20 rows of 0s and 1s, all the same length.")
+    } else {
+      const {rows, cols} = result
+      const z = Array.from({length: rows}, (_, i) => Array.from(setup.m.cells.subarray(i * cols, (i + 1) * cols)))
+      data.push({
+        z, type: "heatmap", xaxis: "x", yaxis: "y", showscale: false, xgap: 2, ygap: 2, zmin: 0, zmax: 1,
+        colorscale: [[0, VM.plotting.alpha("muted", 0.15)], [1, chartColors.fn]],
+        hovertemplate: "row %{y}, column %{x}: %{z}<extra></extra>"
+      })
+      // Row sums to the right, column sums below; a sum the move changed is
+      // drawn in the alt color.
+      const sumColor = (now, start) => now === start ? chartColors.ink : chartColors.alt
+      data.push({
+        x: Array(rows).fill(cols + 0.1), y: [...Array(rows).keys()], text: setup.rows.map(String),
+        type: "scatter", mode: "text", xaxis: "x", yaxis: "y", showlegend: false, hoverinfo: "skip",
+        textfont: {color: setup.rows.map((s, i) => sumColor(s, result.startRows[i]))}, textposition: "middle right"
+      })
+      data.push({
+        x: [...Array(cols).keys()], y: Array(cols).fill(rows + 0.15), text: setup.cols.map(String),
+        type: "scatter", mode: "text", xaxis: "x", yaxis: "y", showlegend: false, hoverinfo: "skip",
+        textfont: {color: setup.cols.map((s, j) => sumColor(s, result.startCols[j]))}, textposition: "bottom center"
+      })
+      layout.xaxis.range = [-0.6, cols + 0.9]
+      layout.yaxis.range = [rows + 0.9, -0.6]
+
+      // The cells the last attempt looked at.
+      if (setup.pick) {
+        const [i, j, a, b] = setup.pick.cells
+        const line = {color: setup.pick.flipped ? chartColors.warn : chartColors.muted, width: 3, dash: setup.pick.flipped ? "solid" : "dot"}
+        if (j < 0) {
+          shapes.push({type: "rect", xref: "x", yref: "y", x0: -0.5, x1: cols - 0.5, y0: i - 0.5, y1: i + 0.5, line})
+        } else {
+          for (const r of [i, j]) for (const c of [a, b]) {
+            shapes.push({type: "rect", xref: "x", yref: "y", x0: c - 0.5, x1: c + 0.5, y0: r - 0.5, y1: r + 0.5, line})
+          }
+        }
+      }
+
+      // The count over the whole run (faint), up to k (solid), burn-in shaded.
+      const ts = [...Array(result.K + 1).keys()]
+      shapes.push({type: "rect", xref: "x2", yref: "y2", x0: 0, x1: Math.min(burnin, result.K), y0: result.countRange[0], y1: result.countRange[1], fillcolor: VM.plotting.alpha("muted", 0.12), line: {width: 0}, layer: "below"})
+      data.push({x: ts, y: Array.from(result.counts), xaxis: "x2", yaxis: "y2", type: "scatter", mode: "lines", showlegend: false, hoverinfo: "skip", line: {color: VM.plotting.alpha("muted", 0.35), width: 1}})
+      data.push({
+        x: ts.slice(0, setup.k + 1), y: Array.from(result.counts.subarray(0, setup.k + 1)), xaxis: "x2", yaxis: "y2",
+        type: "scatter", mode: "lines", name: "checkerboards", showlegend: false, line: {color: chartColors.fn, width: 1.5},
+        hovertemplate: "attempt %{x}<br>%{y} checkerboards<extra></extra>"
+      })
+      data.push({x: [setup.k], y: [setup.now], xaxis: "x2", yaxis: "y2", type: "scatter", mode: "markers", showlegend: false, hoverinfo: "skip", marker: {color: chartColors.warn, size: 9, line: {color: chartColors.halo, width: 1}}})
+      layout.xaxis2.range = [0, result.K]
+      layout.yaxis2.range = result.countRange
+    }
+
+    const config = VM.plotting.config()
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+```{ojs}
+//| output: false
+initialK = VM.ui.urlParam("k", 0)
+```
+
+```{ojs}
+//| output: false
+urlSyncControls = {
+  VM.ui.syncUrlParams({k: [stepControl, 0]})
+  return true
+}
+```
+
+```{ojs}
+stats = {
+  if (!setup.ok) return VM.ui.statRow([{label: "Checkerboards", value: "—"}])
+  const items = [
+    {label: "Checkerboards now", value: setup.now.toLocaleString()},
+    {label: "Observed", value: setup.obs.toLocaleString()},
+    {label: "Moves that changed it", value: setup.k ? `${setup.accepted} of ${setup.k}` : "—"},
+    {label: "Mean after burn-in", value: setup.mean === undefined ? "—" : setup.mean.toFixed(1)}
+  ]
+  if (result.move === "swap") items.push({label: "p̂ after burn-in", value: setup.p === undefined ? "—" : setup.p.toPrecision(2), title: "(1 + #{counts ≥ observed}) / (attempts + 1) over the attempts after burn-in. Successive states are correlated, so this is rougher than its count suggests."})
+  return VM.ui.statRow(items)
+}
+```
+
+<div class="ojs-chart-block">
+
+<div class="ojs-chart-controls">
+
+```{ojs}
+viewof stepControl = {
+  const slider = Inputs.range([0, result.K], {step: 1, value: Math.min(result.K, Math.max(0, Math.round(initialK))), label: "attempt"})
+  slider.classList.add("ojs-fill")
+  return slider
+}
+```
+
+</div>
+
+```{ojs}
+mainPlot(setup)
+```
+
+</div>
+
+</div>
+
+:::: {.callout-note collapse="false" title="After burn-in"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// The checkerboard counts after burn-in, with the observed count marked.
+histogramPlot = {
+  if (!result.ok) return document.createElement("div")
+  const after = Array.from(result.counts.subarray(Math.min(burnin, result.K) + 1), c => ({c}))
+  return Plot.plot({
+    width: 340, height: 260, marginLeft: 46,
+    x: {label: "checkerboards"},
+    y: {label: "attempts"},
+    marks: [
+      Plot.rectY(after, Plot.binX({y: "count"}, {x: "c", fill: chartColors.fn, fillOpacity: 0.6})),
+      Plot.ruleX([result.counts[0]], {stroke: chartColors.ink, strokeDasharray: "4,3"}),
+      Plot.ruleY([0])
+    ]
+  })
+}
+```
+
+```{ojs}
+// How correlated the count is with itself a given number of attempts later.
+autocorrelationPlot = {
+  if (!result.ok) return document.createElement("div")
+  const values = Array.from(result.counts.subarray(Math.min(burnin, result.K) + 1))
+  const acf = values.length > 2 ? VM.mcmc.autocorrelation(values, 200) : []
+  return Plot.plot({
+    width: 340, height: 260, marginLeft: 46,
+    x: {label: "lag (attempts)"},
+    y: {label: "autocorrelation", domain: [-0.2, 1]},
+    marks: [
+      Plot.ruleY([0]),
+      Plot.lineY(acf.map((r, lag) => ({lag, r})), {x: "lag", y: "r", stroke: chartColors.fn, strokeWidth: 2})
+    ]
+  })
+}
+```
+
+:::
+
+::::
+
+:::::::::

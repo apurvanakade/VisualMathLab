@@ -26,7 +26,7 @@ it from the diff, its description and the code around it.
    real problems on this site are a convention broken.
 2. `<worktree>/CONTRIBUTING.md` and `<worktree>/.claude/skills/verify/SKILL.md`.
 3. The maintainer's recorded preferences: every file in
-   `/Users/apurvanakade/.claude/projects/-Users-apurvanakade-Github-VisualMath/memory/`
+   `/Users/apurvanakade/.claude/projects/-Users-apurvanakade-Github-viz-VisualMath/memory/`
    whose name starts with `feedback-`. A memory marked SUPERSEDED no longer
    applies.
 4. `<worktree>/apps/newton-method/index.qmd`, the reference wiring for an app page.

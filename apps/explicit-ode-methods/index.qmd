@@ -540,6 +540,22 @@ $$
 
 More evaluations per step buys higher accuracy.
 
+## When f depends on t alone
+
+If $f(t, y) = g(t)$ has no $y$ in it, solving the ODE is integration: $y(b) = y_0 + \int_0^b g(t)\,dt$. Each method then becomes a quadrature rule from [Numerical Integration](../numerical-integration/index.qmd), applied on the grid $t_i$:
+
+| Method | Adds each step | Quadrature rule | Error |
+|:--|:--|:--|:--|
+| Euler | $h\,g(t_i)$ | Left Riemann sum | $O(h)$ |
+| Improved Euler | $\frac{h}{2}\big(g(t_i) + g(t_{i+1})\big)$ | Trapezoidal rule | $O(h^2)$ |
+| RK4 | $\frac{h}{6}\big(g(t_i) + 4g(t_i + \tfrac{h}{2}) + g(t_{i+1})\big)$ | Simpson's rule | $O(h^4)$ |
+
+: What each method does when $f(t, y) = g(t)$. {tbl-colwidths="[20,40,25,15]"}
+
+For RK4, $k_2 = k_3 = g(t_i + \tfrac{h}{2})$, so $n$ steps of RK4 are Simpson's rule on $2n$ subintervals.
+
+For example, the equation $y' = 4/(1 + t^2)$, $y(0) = 0$ ([try it](?f=4%2F(1%2Bt%5E2)&y0=0&b=1&max=160&n=4)) has $y(1) = \pi$, the same number as $\int_0^1 \frac{4}{1+t^2}\,dt$.
+
 :::: {.callout-note collapse="false" title="Convergence plots"}
 
 ::: {layout-ncol=2}

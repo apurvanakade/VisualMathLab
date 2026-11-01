@@ -73,19 +73,21 @@
   }
 }
 
-/* 66px matches #quarto-header's measured rendered height -- the sidebar's
+/* --vm-header-height is #quarto-header's rendered height less the
+ * breadcrumb bar inside it, measured by sidebar-rail.js (66px, the old
+ * fixed value, until it runs) -- the sidebar's
  * own box starts below the navbar rather than under it (padding-top alone
  * would still paint the sidebar's background/shadow over the navbar's
  * brand text, since both are position: fixed and the sidebar's z-index
  * has to be above the navbar's for the off-canvas panel to show at all). */
 #quarto-sidebar.sidebar-navigation {
   position: fixed !important;
-  top: 66px !important;
+  top: var(--vm-header-height, 66px) !important;
   left: 0 !important;
   bottom: 0 !important;
   width: min(280px, 85vw) !important;
   max-width: min(280px, 85vw) !important;
-  height: calc(100vh - 66px) !important;
+  height: calc(100vh - var(--vm-header-height, 66px)) !important;
   z-index: 1055;
   display: flex !important;
   flex-direction: column;
@@ -125,16 +127,16 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
  * can wrap on a narrow phone), so it's measured live by sidebar-rail.js
  * rather than guessed as a constant -- it sets --vm-secondary-nav-height
  * on <html>. Below 992px that bar sits between the navbar and where the
- * sidebar/rail's own top:66px would otherwise place them, so both need to
+ * sidebar/rail's own top would otherwise place them, so both need to
  * shift down by its height or they overlap it. */
 @media (max-width: 991.98px) {
   #quarto-sidebar.sidebar-navigation,
   #vm-sidebar-rail {
-    top: calc(66px + var(--vm-secondary-nav-height, 0px)) !important;
+    top: calc(var(--vm-header-height, 66px) + var(--vm-secondary-nav-height, 0px)) !important;
   }
 
   #quarto-sidebar.sidebar-navigation {
-    height: calc(100vh - 66px - var(--vm-secondary-nav-height, 0px)) !important;
+    height: calc(100vh - var(--vm-header-height, 66px) - var(--vm-secondary-nav-height, 0px)) !important;
   }
 }
 
@@ -150,7 +152,7 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
  * page's own text and swallowed clicks meant for it. */
 #vm-sidebar-rail {
   position: fixed;
-  top: 66px;
+  top: var(--vm-header-height, 66px);
   left: 0;
   width: 2.75rem;
   z-index: 1056;

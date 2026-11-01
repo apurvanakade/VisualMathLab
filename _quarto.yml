@@ -21,6 +21,9 @@ project:
     - "**/*.qmd"
   resources:
     - CNAME
+    # This site's own chrome (split layout, phone notice, vm-flow), loaded
+    # by _includes/chrome.html.
+    - _chrome/
 
 # The sidebar: one section per topic page, holding every app whose topic:
 # names it, both in order: order (which also drives page-navigation
@@ -57,11 +60,6 @@ mathviz:
   # A title search at the top of the sidebar. Full-text search stays in the
   # navbar: Quarto allows one per page, and the sidebar is off-canvas.
   sidebar-search: true
-  # The split layout for app-first pages (::: {.vm-split}), with the
-  # divider's width kept under this localStorage key -- privacy.qmd lists it.
-  split: vml-split-width
-  # The one-time "bigger screen" notice on a phone; privacy.qmd lists its key.
-  mobile-warning: vml-mobile-warning-dismissed
   # The Share button on every .vm-app (which turns on ?embed= mode too).
   # Links point at site-url (repeated from website: below -- the extension
   # can't read project config); embed.qmd is the page explaining it.
@@ -83,6 +81,10 @@ format:
       dark: [_extensions/apurvanakade/mathviz/theme/mathviz-dark.scss]
     toc: false
     html-math-method: mathjax
+    # The split layout, the phone notice and vm-flow: this site's own chrome
+    # in _chrome/. See its header comment.
+    include-in-header:
+      - _includes/chrome.html
     # Order matters: consent.html looks for the gated <script> that
     # analytics.html emits, so analytics.html has to be in the DOM first.
     include-after-body:

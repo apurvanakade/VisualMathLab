@@ -61,11 +61,11 @@ const defaultJobs = 4
 const skipDirs = new Set(['docs', 'node_modules', '.quarto', '.git', '_freeze'])
 
 // Anything under these paths lands in every rendered page (the extension's
-// <head> tags, the includes, the theme, the sidebar), so a change there
+// <head> tags, the includes and _chrome/, the theme, the sidebar), so a change there
 // cannot be verified by loading only the pages whose source changed.
 // _sidebar.yml is the generated sidebar; apps/_metadata.yml is front matter
 // every app page inherits.
-const siteWidePaths = ['_extensions/', '_includes/', '_quarto.yml', '_sidebar.yml', 'apps/_metadata.yml']
+const siteWidePaths = ['_extensions/', '_includes/', '_chrome/', '_quarto.yml', '_sidebar.yml', 'apps/_metadata.yml']
 
 function findQmdPages(dir, base = '') {
   const pages = []

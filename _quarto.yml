@@ -74,11 +74,11 @@ mathviz:
 format:
   html:
     # mathviz's optional Quarto theme, generated from its tokens.css so the
-    # Bootstrap chrome and the mathviz panels share one palette. A site-only
-    # override goes in a second file listed after each of these.
+    # Bootstrap chrome and the mathviz panels share one palette. site.scss,
+    # listed after each, holds this site's own token overrides.
     theme:
-      light: [_extensions/apurvanakade/mathviz/theme/mathviz-light.scss]
-      dark: [_extensions/apurvanakade/mathviz/theme/mathviz-dark.scss]
+      light: [_extensions/apurvanakade/mathviz/theme/mathviz-light.scss, site.scss]
+      dark: [_extensions/apurvanakade/mathviz/theme/mathviz-dark.scss, site.scss]
     toc: false
     html-math-method: mathjax
     # The split layout, the phone notice and vm-flow: this site's own chrome
@@ -97,7 +97,7 @@ format:
       # to it. See its header comment.
       - _includes/category-links.html
     # Sidebar columns collapse to 0 above 992px too (the sidebar rail's CSS,
-    # _mathviz/src/chrome/sidebar-rail.css), so the remaining body column can
+    # mathviz's chrome/sidebar-rail.css), so the remaining body column can
     # run wider than Quarto's ~750px default -- a 78vh chart needs the room.
     grid:
       body-width: 1000px

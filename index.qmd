@@ -13,7 +13,10 @@ listing:
   - id: random-apps
     contents: "/apps/*/index.qmd"
     template: random-apps.ejs
-# The Gallery's category cloud, moved above its cards.
+# The Gallery's category cloud, moved above its cards by mathviz and styled
+# by the include.
+mathviz:
+  category-cloud: true
 format:
   html:
     include-after-body:
@@ -728,7 +731,8 @@ Authors: Apurva Nakade
 // A tag anywhere else on the site links here as index.html#category=<tag>
 // (_includes/category-links.html). Quarto filters the Gallery from the
 // hash; the hash names no element, so scroll to the Gallery ourselves.
-// (The cloud above the cards is _includes/category-cloud.html.)
+// (mathviz's category-cloud chrome moves the cloud above the cards;
+// _includes/category-cloud.html styles it.)
 window.addEventListener("DOMContentLoaded", function () {
   if (location.hash.indexOf("#category=") === 0) {
     document.getElementById("gallery").scrollIntoView()

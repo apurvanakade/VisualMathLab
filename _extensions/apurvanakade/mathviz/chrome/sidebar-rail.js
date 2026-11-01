@@ -49,15 +49,34 @@
     // varies with breadcrumb depth/length and can wrap on a narrow phone,
     // so it's measured here rather than hardcoded, and exposed as a CSS
     // variable the top-offset media query in sidebar-rail.css reads.
+    // The navbar's own height is measured the same way: it depends on the
+    // theme's padding and font size and on the brand wrapping, and the
+    // sidebar and rail start just under it (--vm-header-height).
     var secondaryNav = document.querySelector(".quarto-secondary-nav")
-    function updateSecondaryNavHeight() {
+    var header = document.getElementById("quarto-header")
+    function updateNavHeights() {
+      var root = document.documentElement.style
       var h = secondaryNav ? secondaryNav.getBoundingClientRect().height : 0
-      document.documentElement.style.setProperty("--vm-secondary-nav-height", h + "px")
+      root.setProperty("--vm-secondary-nav-height", h + "px")
+      // The breadcrumb bar sits inside #quarto-header, and the CSS adds its
+      // height separately, so it is left out of the header's.
+      if (header) {
+        var inside = secondaryNav && header.contains(secondaryNav) ? h : 0
+        root.setProperty("--vm-header-height", header.getBoundingClientRect().height - inside + "px")
+      }
     }
-    if (secondaryNav) {
-      updateSecondaryNavHeight()
-      window.addEventListener("resize", updateSecondaryNavHeight)
+    updateNavHeights()
+    // A resize of either bar, not just of the window: the collapsed navbar
+    // menu opening and closing changes the header's height on its own.
+    if (window.ResizeObserver) {
+      var observer = new ResizeObserver(updateNavHeights)
+      if (header) observer.observe(header)
+      if (secondaryNav) observer.observe(secondaryNav)
+    } else {
+      window.addEventListener("resize", updateNavHeights)
     }
+    // Web fonts arriving late can change the navbar's height.
+    if (document.fonts) document.fonts.ready.then(updateNavHeights)
 
     var rail = document.createElement("div")
     rail.id = "vm-sidebar-rail"

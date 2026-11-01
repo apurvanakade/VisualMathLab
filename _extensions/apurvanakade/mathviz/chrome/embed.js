@@ -11,7 +11,7 @@
 // block, footer and page navigation on html.vm-embed, plus everything in the
 // content column that is not the page's tagged app (the <div class="vm-app">
 // each app page wraps its controls and chart in), and every mathviz chrome
-// script (sidebar rail, mobile warning, report-bug, share) skips itself.
+// script (sidebar rail, report-bug, share) skips itself.
 // This runs in <head> -- it is a plain, synchronous dependency script -- so
 // the class goes on <html> (<body> doesn't exist yet) and the chrome never
 // paints at all: no flash of navbar before the CSS applies.

@@ -24,10 +24,11 @@
  * an invisible 21px strip lying over the content column below 768px, where the
  * body's own left margin is narrower than the rail.
  *
- * Shipped, with sidebar-rail.css, only when a site sets
- * `mathviz: {sidebar-rail: true}` (or a string: the pin's localStorage key).
- * Loaded in <head>, so it waits for DOMContentLoaded; it does nothing on a
- * page with no Quarto sidebar navigation, or in embed mode (html.vm-embed).
+ * This site's own chrome, loaded with sidebar-rail.css by
+ * _includes/chrome.html (it was mathviz's `sidebar-rail` option until
+ * mathviz dropped it). Loaded in <head>, so it waits for DOMContentLoaded;
+ * it does nothing on a page with no Quarto sidebar navigation, or in embed
+ * mode (html.vm-embed).
  */
 (function () {
   function init() {
@@ -36,10 +37,8 @@
     var sidebar = document.getElementById("quarto-sidebar")
     if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) return
 
-    // The localStorage key the pin is kept under. A site names its own via
-    // `mathviz: {sidebar-rail: <key>}`, which the filter emits as this meta;
-    // two sites on one origin (say, two GitHub Pages project sites) would
-    // otherwise share one pin, and a site's privacy page may name the key.
+    // The localStorage key the pin is kept under, from this meta, which
+    // _includes/chrome.html sets; privacy.qmd names the key.
     var keyMeta = document.querySelector('meta[name="mathviz:sidebar-pin-key"]')
     var PIN_KEY = keyMeta ? keyMeta.getAttribute("content") : "vm-sidebar-pinned"
     var body = document.body

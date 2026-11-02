@@ -4,15 +4,14 @@
  * Authors: Apurva Nakade
  */
 
-/* The collapsible sidebar rail's stylesheet -- shipped, with
- * sidebar-rail.js, only when a site sets `mathviz: {sidebar-rail: ...}`.
- * Site chrome for a Quarto website or book with a `style: floating`
- * sidebar, not part of the ojs-* design system, which is why it is not in
- * mathviz.css. Consumes --vm-* tokens only, so it re-themes with them.
+/* The collapsible sidebar rail's stylesheet, loaded with sidebar-rail.js
+ * by _includes/chrome.html (it was mathviz's `sidebar-rail` option until
+ * mathviz dropped it). Site chrome for this site's `style: floating`
+ * sidebar and its `grid:` widths. Consumes --vm-* tokens only, so it
+ * re-themes with them.
  *
- * Loaded as an html dependency, i.e. after Bootstrap's and Quarto's own CSS
- * and before the site's css: files -- the same place in the cascade these
- * rules held when they lived in a site's styles.css. */
+ * include-in-header lands after Bootstrap's and Quarto's own CSS and after
+ * mathviz's, so these rules win the same cascade ties as before. */
 
 /* ── Page grid / collapsible sidebar ─────────────────────────────── */
 /* Quarto only makes #quarto-sidebar an off-canvas overlay below 992px
@@ -92,7 +91,8 @@
   display: flex !important;
   flex-direction: column;
   background: var(--vm-bg);
-  border-right: 1px solid var(--vm-border);
+  /* No border-right: the navbar above has none, and a hairline down the
+   * panel's edge stood out against it. The shadow alone separates it. */
   box-shadow: var(--vm-shadow);
   transform: translateX(-100%);
   transition: transform 0.22s ease;

@@ -9,8 +9,7 @@
 --   filters:
 --     - mathviz
 --
--- and tunes it, optionally, with a `mathviz:` block in _quarto.yml or a
--- page's front matter:
+-- and tunes it, optionally, with a `mathviz:` block in _quarto.yml:
 --
 --   mathviz:
 --     plotly: false            # don't load Plotly (pages draw with D3/canvas)
@@ -44,6 +43,22 @@
 --       repo: owner/name           #   filing a GitHub issue that links the
 --       branch: main               #   page's .qmd source (branch: main)
 --
+-- One page changes options with `mathviz-page:` in its front matter, never
+-- with `mathviz:` there. Quarto merges a page's front matter over the
+-- project's only for keys it knows; for any other key the page's value
+-- replaces the project's whole map, so a page that sets
+-- `mathviz: {category-cloud: true}` silently loses every option in
+-- _quarto.yml (its referrer meta, fonts, sidebar rail...). `mathviz-page:`
+-- is a separate key, so both reach the filter, which lays the page's keys
+-- over the project's one by one (a page key replaces the project's value
+-- for that key, a map such as share: included):
+--
+--   ---
+--   mathviz-page:
+--     category-cloud: true     # this page also gets the cloud
+--     plotly: false            # and no Plotly
+--   ---
+--
 -- The optional Quarto theme is not an option here: a site opts in by listing
 -- theme/mathviz-light.scss / mathviz-dark.scss under format.html.theme (see
 -- the header comment in either file). fonts: true is its natural companion,
@@ -51,37 +66,44 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "0.10.0"
+local VERSION    = "0.11.0"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
--- Reads mathviz.<key> from the metadata: false stays false, a string is
+-- The options in force on this page: the project's `mathviz:` map with the
+-- page's `mathviz-page:` keys laid over it (see the header for why a page
+-- can't use `mathviz:` itself). Either may be absent.
+local function mergedOptions(meta)
+  local opts = {}
+  for _, source in ipairs({ meta.mathviz, meta["mathviz-page"] }) do
+    if type(source) == "table" then
+      for key, value in pairs(source) do opts[key] = value end
+    end
+  end
+  return opts
+end
+
+-- Reads <key> from the options: false stays false, a string is
 -- stringified, anything absent yields `default`.
-local function option(meta, key, default)
-  local opts = meta.mathviz
-  if type(opts) ~= "table" then return default end
+local function option(opts, key, default)
   local value = opts[key]
   if value == nil then return default end
   if type(value) == "boolean" then return value end
   return pandoc.utils.stringify(value)
 end
 
--- Reads mathviz.<key>.<sub>, stringified, when mathviz.<key> is a map
+-- Reads <key>.<sub>, stringified, when <key> is a map
 -- (`share: {site-url: ...}`); nil otherwise.
-local function subOption(meta, key, sub)
-  local opts = meta.mathviz
-  if type(opts) ~= "table" then return nil end
+local function subOption(opts, key, sub)
   local value = opts[key]
   if value == nil or pandoc.utils.type(value) ~= "table" then return nil end
   if value[sub] == nil then return nil end
   return pandoc.utils.stringify(value[sub])
 end
 
--- Whether mathviz.<key> is set to anything but false: true, a string, or a
--- map of sub-options all switch a piece of chrome on.
-local function enabled(meta, key)
-  local opts = meta.mathviz
-  if type(opts) ~= "table" then return false end
+-- Whether <key> is set to anything but false: true, a string, or a map of
+-- sub-options all switch a piece of chrome on.
+local function enabled(opts, key)
   local value = opts[key]
   if value == nil or value == false then return false end
   return true
@@ -100,6 +122,7 @@ end
 
 function Meta(meta)
   if not quarto.doc.is_format("html:js") then return nil end
+  local opts = mergedOptions(meta)
 
   -- The vendor tags go in dependencies of their OWN, added before the bundle.
   -- Two things about Quarto's dependency handling force this: within one
@@ -118,13 +141,13 @@ function Meta(meta)
   local function headTag(name, html)
     quarto.doc.add_html_dependency({ name = name, version = VERSION, head = html })
   end
-  local referrer = option(meta, "referrer", nil)
+  local referrer = option(opts, "referrer", nil)
   if referrer then
     headTag("mathviz-referrer", '<meta name="referrer" content="' .. referrer .. '">')
   end
-  local mathjs = scriptTag(option(meta, "mathjs", true), MATHJS_URL)
+  local mathjs = scriptTag(option(opts, "mathjs", true), MATHJS_URL)
   if mathjs then headTag("mathviz-mathjs", mathjs) end
-  local plotly = scriptTag(option(meta, "plotly", true), PLOTLY_URL)
+  local plotly = scriptTag(option(opts, "plotly", true), PLOTLY_URL)
   if plotly then headTag("mathviz-plotly", plotly) end
 
   local dep = {
@@ -132,7 +155,7 @@ function Meta(meta)
     version = VERSION,
     scripts = { "dist/mathviz.js" }
   }
-  if option(meta, "css", true) ~= false then
+  if option(opts, "css", true) ~= false then
     dep.stylesheets = { "dist/mathviz.css" }
   end
   quarto.doc.add_html_dependency(dep)
@@ -171,46 +194,46 @@ function Meta(meta)
   -- A string value is the option's one setting (a storage key); `true` is
   -- a plain boolean and leaves the script's default.
   local function stringValue(key)
-    local value = option(meta, key, false)
+    local value = option(opts, key, false)
     if type(value) == "string" then return value end
     return nil
   end
 
-  if enabled(meta, "sidebar-rail") then
+  if enabled(opts, "sidebar-rail") then
     chrome("sidebar-rail", { ["sidebar-pin-key"] = stringValue("sidebar-rail") })
   end
-  if enabled(meta, "sidebar-search") then
+  if enabled(opts, "sidebar-search") then
     chrome("sidebar-search")
   end
-  if enabled(meta, "category-cloud") then
+  if enabled(opts, "category-cloud") then
     chrome("category-cloud", nil, true)
   end
   -- The Share dialog's snippet is an ?embed= URL, so share implies embed.
-  if enabled(meta, "embed") or enabled(meta, "share") then
+  if enabled(opts, "embed") or enabled(opts, "share") then
     chrome("embed")
   end
-  if enabled(meta, "share") or enabled(meta, "report-bug") then
+  if enabled(opts, "share") or enabled(opts, "report-bug") then
     quarto.doc.add_html_dependency({ name = "mathviz-chrome-site", version = VERSION, scripts = { "chrome/site.js" } })
   end
-  if enabled(meta, "share") then
+  if enabled(opts, "share") then
     chrome("share", {
-      ["share-site-url"] = subOption(meta, "share", "site-url"),
-      ["share-embed-docs"] = subOption(meta, "share", "embed-docs")
+      ["share-site-url"] = subOption(opts, "share", "site-url"),
+      ["share-embed-docs"] = subOption(opts, "share", "embed-docs")
     })
   end
-  if enabled(meta, "report-bug") then
-    local repo = subOption(meta, "report-bug", "repo")
+  if enabled(opts, "report-bug") then
+    local repo = subOption(opts, "report-bug", "repo")
     if repo == nil then
       quarto.log.warning("mathviz: report-bug needs report-bug.repo (owner/name); skipping it")
     else
       chrome("report-bug", {
         ["report-bug-repo"] = repo,
-        ["report-bug-branch"] = subOption(meta, "report-bug", "branch")
+        ["report-bug-branch"] = subOption(opts, "report-bug", "branch")
       })
     end
   end
 
-  if option(meta, "fonts", false) == true then
+  if option(opts, "fonts", false) == true then
     local resources = {}
     for _, name in ipairs(pandoc.system.list_directory(quarto.utils.resolve_path("fonts"))) do
       if name:match("%.woff2$") or name:match("^LICENSE") then

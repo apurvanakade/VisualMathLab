@@ -15,9 +15,9 @@
 // While a query is active every section on the way to a match is expanded;
 // clearing the query restores each section's open/closed state as it was
 // when the query started. Enter opens the first entry, in menu order, whose
-// own title matches. Escape clears a non-empty box and stops there, so the
-// sidebar rail's Escape-to-close waits for a second press. Nothing is
-// stored.
+// own title matches. Escape clears a non-empty box and stops there, so a
+// site's own Escape-to-close (say, for an off-canvas sidebar) waits for a
+// second press. Nothing is stored.
 (function attachSidebarSearch(globalThis) {
   // Lower case, no accents, no apostrophes (straight or curly, so
   // "sperners" finds "Sperner’s"), every other run of non-alphanumerics a

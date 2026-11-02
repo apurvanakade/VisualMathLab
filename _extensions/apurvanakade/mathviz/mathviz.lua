@@ -21,9 +21,6 @@
 -- and, each off by default, the site chrome a Quarto website or book built
 -- on mathviz pages can take instead of writing its own:
 --
---     sidebar-rail: my-site-pin    # off-canvas sidebar behind a slim rail; a
---                                  # string names the pin's localStorage key
---                                  # (true: "vm-sidebar-pinned")
 --     sidebar-search: true         # a search box atop Quarto's sidebar that
 --                                  # narrows the menu to matching titles
 --     category-cloud: true         # a listing's category cloud above its
@@ -48,7 +45,7 @@
 -- project's only for keys it knows; for any other key the page's value
 -- replaces the project's whole map, so a page that sets
 -- `mathviz: {category-cloud: true}` silently loses every option in
--- _quarto.yml (its referrer meta, fonts, sidebar rail...). `mathviz-page:`
+-- _quarto.yml (its referrer meta, fonts, sidebar search...). `mathviz-page:`
 -- is a separate key, so both reach the filter, which lays the page's keys
 -- over the project's one by one (a page key replaces the project's value
 -- for that key, a map such as share: included):
@@ -66,7 +63,7 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "0.11.0"
+local VERSION    = "0.12.0"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
@@ -191,17 +188,7 @@ function Meta(meta)
       end
     end
   end
-  -- A string value is the option's one setting (a storage key); `true` is
-  -- a plain boolean and leaves the script's default.
-  local function stringValue(key)
-    local value = option(opts, key, false)
-    if type(value) == "string" then return value end
-    return nil
-  end
 
-  if enabled(opts, "sidebar-rail") then
-    chrome("sidebar-rail", { ["sidebar-pin-key"] = stringValue("sidebar-rail") })
-  end
   if enabled(opts, "sidebar-search") then
     chrome("sidebar-search")
   end

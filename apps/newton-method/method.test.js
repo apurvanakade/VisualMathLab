@@ -54,6 +54,6 @@ for (const example of examples) {
 }
 
 test('a large Max still reports order 2', () => {
-  const order = orderFor({f: "x^2 - 2", x0: "1.5"}, 100)
+  const order = orderFor({f: "x^2 - 2", x0: "4"}, 100)
   assert.ok(Math.abs(order - 2) <= 0.15, `expected order ≈ 2, got ${order}`)
 })

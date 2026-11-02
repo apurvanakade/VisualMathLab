@@ -15,7 +15,7 @@
 export const examples = [
   {
     title: "Simple root: IQI takes fewer steps",
-    params: {max: "20", f: "x^3 - x - 2", x0: "1", x1: "2", x2: "1.5"}
+    params: {max: "10", f: "x^3 - x - 2", x0: "3", x1: "4", x2: "3.5"}
   },
   {
     title: "Secant wanders, IQI converges",

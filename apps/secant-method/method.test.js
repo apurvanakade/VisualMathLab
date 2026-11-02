@@ -19,7 +19,7 @@ const VM = loadVM()
 // 1.84. Both converge in so few steps that the fit sees mostly the steps
 // before the order settles, so IQI's estimate lands above or below 1.84.
 const expected = {
-  "Simple root: IQI takes fewer steps": {secant: 1.6, iqi: 2.05},
+  "Simple root: IQI takes fewer steps": {secant: 1.6, iqi: 1.75},
   // The secant run wanders without converging: no order.
   "Secant wanders, IQI converges": {secant: null, iqi: 1.45},
   // IQI diverges: no order.

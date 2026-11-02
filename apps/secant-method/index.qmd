@@ -32,7 +32,7 @@ VM = window.VM
 // page is already URL-shareable, max was the one exception.
 urlParams = new URLSearchParams(window.location.search)
 
-initialMax = urlParams.get("max") ?? "20"
+initialMax = urlParams.get("max") ?? "10"
 
 initialMethod = {
   if (urlParams.get("method") === "iqi") return "iqi"
@@ -121,7 +121,7 @@ viewof plotTrigger = {
 ```{ojs}
 viewof x0 = {
   const params = new URLSearchParams(window.location.search)
-  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "1", placeholder: "Example: 1, pi/4"})
+  const x0Input = Inputs.text({label: "Initial guess x₀", value: params.get("x0") ?? "3", placeholder: "Example: 1, pi/4"})
   x0Input.dataset.exampleField = "x0"
   return x0Input
 }
@@ -130,7 +130,7 @@ viewof x0 = {
 ```{ojs}
 viewof x1 = {
   const params = new URLSearchParams(window.location.search)
-  const x1Input = Inputs.text({label: "Initial guess x₁", value: params.get("x1") ?? "2", placeholder: "Example: 2, e"})
+  const x1Input = Inputs.text({label: "Initial guess x₁", value: params.get("x1") ?? "4", placeholder: "Example: 2, e"})
   x1Input.dataset.exampleField = "x1"
   return x1Input
 }
@@ -141,7 +141,7 @@ viewof x1 = {
 // enabled in secant mode too: the convergence plots run both methods.
 viewof x2 = {
   const params = new URLSearchParams(window.location.search)
-  const x2Input = Inputs.text({label: "Initial guess x₂", value: params.get("x2") ?? "1.5", placeholder: "Example: 1.5"})
+  const x2Input = Inputs.text({label: "Initial guess x₂", value: params.get("x2") ?? "3.5", placeholder: "Example: 1.5"})
   x2Input.dataset.exampleField = "x2"
   return x2Input
 }

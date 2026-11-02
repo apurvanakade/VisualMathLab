@@ -12,7 +12,7 @@
 export const examples = [
   {
     title: "Fast quadratic convergence",
-    params: {max: "20", f: "x^2 - 2", x0: "1.5"}
+    params: {max: "8", f: "x^2 - 2", x0: "4"}
   },
   {
     title: "A two-cycle failure",

@@ -595,21 +595,21 @@ viewof traces = {
 <div class="ojs-chart-controls ojs-grid">
 
 ```{ojs}
-viewof penDistance = {
-  const value = Math.min(dRange, dState.value)
-  const slider = Inputs.range([0, dRange], {step: 0.01, value, label: "Pen distance d"})
-  slider.dataset.exampleField = "d"
+viewof turns = {
+  let value = span.T
+  if (!sliderState.usedUrl && initialTurns !== null) value = Math.min(span.T, Math.max(0, initialTurns))
+  sliderState.usedUrl = true
+  const slider = Inputs.range([0, span.T], {step: 0.005, value, label: "Turns t/2π"})
   slider.classList.add("ojs-fill")
   return slider
 }
 ```
 
 ```{ojs}
-viewof turns = {
-  let value = span.T
-  if (!sliderState.usedUrl && initialTurns !== null) value = Math.min(span.T, Math.max(0, initialTurns))
-  sliderState.usedUrl = true
-  const slider = Inputs.range([0, span.T], {step: 0.005, value, label: "Turns t/2π"})
+viewof penDistance = {
+  const value = Math.min(dRange, dState.value)
+  const slider = Inputs.range([0, dRange], {step: 0.01, value, label: "Pen distance d"})
+  slider.dataset.exampleField = "d"
   slider.classList.add("ojs-fill")
   return slider
 }

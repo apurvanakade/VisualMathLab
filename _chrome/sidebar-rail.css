@@ -165,9 +165,12 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
 /* The buttons' own surface. Without it the two icons sit in open space with
  * nothing behind them, and the rail reads as an unfinished fragment rather
  * than a control that was cut off. Shaped as a tab hanging off the left
- * edge -- no left border, rounded on the right only -- so it looks attached
- * to the edge it is anchored to, and equally to the sidebar's own edge once
- * the sidebar is open and the rail has moved out to x:280. */
+ * edge -- rounded on the right only -- so it looks attached to the edge it
+ * is anchored to, and equally to the sidebar's own edge once the sidebar is
+ * open and the rail has moved out to x:280. Painted like the navbar and the
+ * sidebar panel (page background, no border, the shadow alone separating
+ * it): a --vm-surface fill and a --vm-border outline made it the one tinted,
+ * outlined box in otherwise borderless chrome. */
 .vm-rail-cluster {
   display: flex;
   flex-direction: column;
@@ -175,9 +178,7 @@ body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
   gap: 0.25rem;
   padding: 0.4rem 0.3rem;
   margin-top: 0.5rem;
-  background: var(--vm-surface);
-  border: 1px solid var(--vm-border);
-  border-left: none;
+  background: var(--vm-bg);
   border-radius: 0 var(--vm-radius) var(--vm-radius) 0;
   box-shadow: var(--vm-shadow);
 }
@@ -195,7 +196,7 @@ body.vm-sidebar-open #vm-sidebar-rail {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
+  border: none;
   border-radius: var(--vm-radius-sm);
   background: transparent;
   color: var(--vm-text-soft);
@@ -204,14 +205,12 @@ body.vm-sidebar-open #vm-sidebar-rail {
 
 #vm-sidebar-rail button:hover,
 body.vm-sidebar-open #vm-sidebar-rail button[data-vm-toggle] {
-  background: var(--vm-surface);
-  border-color: var(--vm-border);
+  background: var(--vm-surface-hover);
   color: var(--vm-text);
 }
 
 body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
   color: var(--vm-accent);
-  border-color: var(--vm-border);
 }
 
 @media (prefers-reduced-motion: reduce) {

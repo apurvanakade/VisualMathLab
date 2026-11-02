@@ -9,7 +9,7 @@
 // own sets it under mathviz-page:. A page-level mathviz: doesn't add to the
 // project's block, it replaces it (Quarto merges front matter key by key
 // only for keys it knows), so the page silently loses the referrer meta,
-// fonts, sidebar rail and everything else -- the homepage did, from
+// fonts, sidebar search and everything else -- the homepage did, from
 // mathviz v0.10.0's category cloud until this test. Nothing throws and the
 // page still renders, so no other check notices.
 

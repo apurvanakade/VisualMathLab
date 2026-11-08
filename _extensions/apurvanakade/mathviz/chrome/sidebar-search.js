@@ -159,6 +159,5 @@
     }
   }
 
-  const VM = globalThis.VM || (globalThis.VM = {})
-  VM.chrome = { ...VM.chrome, sidebarSearch: { normalize, matches } }
+  Object.assign((globalThis.VM ??= {}).chrome ??= {}, { sidebarSearch: { normalize, matches } })
 })(window)

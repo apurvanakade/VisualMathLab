@@ -654,6 +654,34 @@ viewof R = {
 
 </div>
 
+```{ojs}
+// How far each shown estimate is from the true signal over the whole run
+// (root-mean-square error, the running RMSE plot's last value), with the
+// raw measurements' own RMSE as the baseline a filter has to beat, and the
+// Kalman gain the filter has settled to by the last sample. Always a node,
+// never null, so Quarto never latches the cell as hidden.
+stats = {
+  const rows = result.rows
+  if (rows.length === 0) return VM.ui.statRow([])
+  const rmse = value => {
+    let sumSquares = 0
+    for (const row of rows) sumSquares += (row[value] - row.trueVal) ** 2
+    const r = Math.sqrt(sumSquares / rows.length)
+    return Number.isFinite(r) ? r.toPrecision(4) : "—"
+  }
+  const items = []
+  if (showNoisy) items.push({label: "Measurement RMSE", value: rmse("noisyVal"), title: "Root-mean-square error of the noisy measurements against the true signal"})
+  if (showSMA) items.push({label: "SMA RMSE", value: rmse("smaVal")})
+  if (showEMA) items.push({label: "EMA RMSE", value: rmse("emaVal")})
+  if (showKalman) {
+    items.push({label: "Kalman RMSE", value: rmse("kalmanVal")})
+    const gain = rows[rows.length - 1].kalmanGain
+    items.push({label: "Final Kalman gain", value: Number.isFinite(gain) ? gain.toPrecision(4) : "—", title: "The gain Kᵢ at the last sample"})
+  }
+  return VM.ui.statRow(items)
+}
+```
+
 </div>
 
 </div>

@@ -562,6 +562,25 @@ viewof tolExponent = {
 
 </div>
 
+```{ojs}
+// The adaptive rule's answer at the current tolerance, how far it is from
+// the reference integral, what the method itself estimated that error to
+// be, and how many panels it took. Always a node, never null, so Quarto
+// never latches the cell as hidden.
+stats = {
+  if (result.leaves.length === 0) return VM.ui.statRow([])
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  const exp = v => Number.isFinite(v) ? v.toExponential(3) : "—"
+  return VM.ui.statRow([
+    {label: "Adaptive estimate", value: fmt(result.totalEstimate)},
+    {label: "Reference integral", value: fmt(result.trueIntegral), title: "Composite Simpson's rule with 4000 panels"},
+    {label: "Actual error", value: exp(result.actualError)},
+    {label: "Estimated error", value: exp(result.totalErrorEstimate), title: "The sum of every panel's error estimate E"},
+    {label: "Panels", value: String(result.leaves.length)}
+  ])
+}
+```
+
 </div>
 
 </div>

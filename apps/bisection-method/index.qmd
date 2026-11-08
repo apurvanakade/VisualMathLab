@@ -489,6 +489,25 @@ viewof stepControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the current step: the bracket, its midpoint (the
+// method's root estimate) and f there. Always a node, never null, so Quarto
+// never latches the cell as hidden.
+stats = {
+  const row = setup.currentRow
+  if (!row) return VM.ui.statRow([])
+  const sub = VM.plotting.subscript(row.n)
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  return VM.ui.statRow([
+    {label: `a${sub}`, value: fmt(row.a)},
+    {label: `b${sub}`, value: fmt(row.b)},
+    {label: `Root estimate m${sub}`, value: fmt(row.m), title: `The midpoint (a${sub} + b${sub}) / 2`},
+    {label: `f(m${sub})`, value: Number.isFinite(row.fm) ? row.fm.toExponential(3) : "—"},
+    {label: `Width b${sub} − a${sub}`, value: row.width.toExponential(3)}
+  ])
+}
+```
+
 </div>
 
 </div>

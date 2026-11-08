@@ -976,6 +976,26 @@ viewof stepControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the current step: the estimate, how far it is from
+// the true position, and how degenerate the weights are. Always a node,
+// never null, so Quarto never latches the cell as hidden.
+stats = {
+  const row = result.rows[setup.step]
+  if (!result.parsed || !row) return VM.ui.statRow([])
+  const pair = (x, y) => `(${x.toFixed(2)}, ${y.toFixed(2)})`
+  let resampled = "no"
+  if (row.resampled) resampled = "yes"
+  return VM.ui.statRow([
+    {label: "Estimate", value: pair(row.estX, row.estY), title: "The particles' weighted mean"},
+    {label: "True position", value: pair(row.trueX, row.trueY)},
+    {label: "Error", value: row.error.toFixed(3), title: "Distance from the estimate to the true position"},
+    {label: "ESS / N", value: row.essFraction.toFixed(3), title: "Effective sample size over particle count"},
+    {label: "Resampled", value: resampled, title: "Whether this step's cloud was resampled before the next step"}
+  ])
+}
+```
+
 </div>
 
 </div>

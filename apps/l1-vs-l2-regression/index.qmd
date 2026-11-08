@@ -344,6 +344,24 @@ viewof outlierSeverity = {
 
 </div>
 
+```{ojs}
+// The fitted lines as equations, beside the line the points were drawn
+// from, so the drift the slider causes is a number as well as a picture.
+// Always a node, never null, so Quarto never latches the cell as hidden.
+stats = {
+  const line = (slope, intercept) => {
+    let sign = "+"
+    if (intercept < 0) sign = "−"
+    return `y = ${slope.toFixed(3)}x ${sign} ${Math.abs(intercept).toFixed(3)}`
+  }
+  return VM.ui.statRow([
+    {label: "L2 fit", value: line(result.l2.slope, result.l2.intercept)},
+    {label: "L1 fit", value: line(result.l1.slope, result.l1.intercept)},
+    {label: "Underlying line", value: line(basePoints.slope, basePoints.intercept), title: "The line the points were drawn from, before the outliers"}
+  ])
+}
+```
+
 </div>
 
 </div>

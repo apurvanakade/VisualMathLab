@@ -139,16 +139,22 @@ viewof baryPoints = VM.plotting.draggablePoints(baryPlot, {
   }, {...VM.plotting.config(), displayModeBar: false})
 }
 ```
-:::
-
 ```{ojs}
+// The blue point's barycentric coordinates and where the same weights put
+// the green point in the red triangle.
 {
   const [P, ...corners] = baryPoints
   const w = weightsOf(P)
   const image = fromWeights(w, corners)
-  return html`<p>i = <b>${w.i.toFixed(2)}</b>, j = <b>${w.j.toFixed(2)}</b>, k = <b>${w.k.toFixed(2)}</b>; the green point is (<b>${image.x.toFixed(2)}</b>, <b>${image.y.toFixed(2)}</b>)</p>`
+  return VM.ui.statRow([
+    {label: "i", value: w.i.toFixed(2)},
+    {label: "j", value: w.j.toFixed(2)},
+    {label: "k", value: w.k.toFixed(2)},
+    {label: "Green point", value: `(${image.x.toFixed(2)}, ${image.y.toFixed(2)})`, title: "iA + jB + kC"}
+  ])
 }
 ```
+:::
 
 </div>
 

@@ -28,16 +28,21 @@
 
   // Builds the absolute URL an <iframe src> should use: the given page,
   // carrying its current inputs when `keepInputs` is true, with `embed`
-  // set to the block's id (or "1" for the page's first/only app).
-  const embedSrc = ({ siteUrl, pathname, search, blockId, keepInputs }) => {
-    let path = pathname
-    if (path.endsWith("/index.html")) path = path.slice(0, -"index.html".length)
+  // set to the block's id, or to its 1-based position among the page's
+  // apps when it has none ("1" by default) -- embed.js reads both.
+  // A served path without its trailing index.html, the form a shared link
+  // should take.
+  const cleanPath = (pathname) => {
+    if (pathname.endsWith("/index.html")) return pathname.slice(0, -"index.html".length)
+    return pathname
+  }
 
+  const embedSrc = ({ siteUrl, pathname, search, blockId, blockIndex, keepInputs }) => {
     const params = new URLSearchParams(keepInputs ? search : "")
     params.delete("embed")
-    params.set("embed", blockId || "1")
+    params.set("embed", blockId || String((blockIndex ?? 0) + 1))
 
-    return `${siteUrl}${path}?${params.toString()}`
+    return `${siteUrl}${cleanPath(pathname)}?${params.toString()}`
   }
 
   // Builds the absolute URL of the page itself (the whole page, not the
@@ -45,9 +50,7 @@
   // always dropped -- a shared link should open the full page -- and a
   // link with no inputs left carries no bare trailing "?".
   const pageUrl = ({ siteUrl, pathname, search, keepInputs }) => {
-    let path = pathname
-    if (path.endsWith("/index.html")) path = path.slice(0, -"index.html".length)
-
+    const path = cleanPath(pathname)
     const params = new URLSearchParams(keepInputs ? search : "")
     params.delete("embed")
 
@@ -108,11 +111,14 @@
       const keepInputs = dialog.querySelector(".vm-share-keep-inputs").checked
       const height = dialog.querySelector(".vm-share-height").value || "900"
       const blockId = activeBlock.id || ""
+      // Position among every .vm-app on the page, as embed.js counts them.
+      const blockIndex = Array.prototype.indexOf.call(document.querySelectorAll(".vm-app"), activeBlock)
       const src = embedSrc({
         siteUrl: siteUrl(),
         pathname: sitePath(),
         search: location.search,
         blockId,
+        blockIndex: blockIndex < 0 ? 0 : blockIndex,
         keepInputs
       })
       return buildEmbedSnippet({ src, height, title: pageTitle() })

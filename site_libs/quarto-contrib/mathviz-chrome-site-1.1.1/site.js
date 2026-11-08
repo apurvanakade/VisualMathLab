@@ -41,6 +41,5 @@
     offset: meta("quarto:offset")
   })
 
-  const VM = globalThis.VM || (globalThis.VM = {})
-  VM.chrome = { ...VM.chrome, siteRelativePath, meta, currentSitePath }
+  Object.assign((globalThis.VM ??= {}).chrome ??= {}, { siteRelativePath, meta, currentSitePath })
 })(window)

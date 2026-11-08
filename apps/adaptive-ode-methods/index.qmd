@@ -552,6 +552,26 @@ viewof tolExponent = {
 
 </div>
 
+```{ojs}
+// The adaptive solver's answer at the endpoint b at the current tolerance,
+// the reference value, the error between them, and how many steps it
+// accepted and threw away getting there. Always a node, never null, so
+// Quarto never latches the cell as hidden.
+stats = {
+  if (result.steps.length === 0) return VM.ui.statRow([])
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  // The solver's last t, which falls short of b when it runs out of steps.
+  const reached = `y(${fmt(result.ts[result.ts.length - 1])})`
+  return VM.ui.statRow([
+    {label: `RK45 ${reached}`, value: fmt(result.finalValue)},
+    {label: `Reference y(${fmt(committed.bEnd)})`, value: fmt(result.trueValue), title: "RK4 with 2000 equal steps"},
+    {label: "Error", value: Number.isFinite(result.actualError) ? result.actualError.toExponential(3) : "—"},
+    {label: "Accepted steps", value: String(result.acceptedCount)},
+    {label: "Rejected steps", value: String(result.rejectedCount)}
+  ])
+}
+```
+
 </div>
 
 </div>

@@ -35,6 +35,11 @@
   // quoted in the body -- so a report captures exactly what was on screen
   // without the reporter re-typing it. Pure function of its inputs so it's
   // unit-testable without a real DOM/location.
+  // GitHub answers a new-issue URL much past 8 kB with an error page, and a
+  // select-all on a long page easily exceeds that once percent-encoded. A
+  // passage this long is plenty to locate the bug.
+  const MAX_QUOTE = 1500
+
   const buildReportBugUrl = ({ repo, branch, pageUrl, pageTitle, sourcePath, selectedText }) => {
     const title = selectedText
       ? `Bug: "${truncate(selectedText, 60)}"`
@@ -43,7 +48,8 @@
     let body = `**Page:** ${pageUrl}\n`
     if (sourcePath) body += `**Source:** https://github.com/${repo}/blob/${branch}/${sourcePath}\n`
     if (selectedText) {
-      body += `\n**Selected text/section:**\n\n> ${selectedText.replace(/\n/g, "\n> ")}\n`
+      const quote = truncate(selectedText, MAX_QUOTE)
+      body += `\n**Selected text/section:**\n\n> ${quote.replace(/\n/g, "\n> ")}\n`
     }
     body += `\n**What's wrong:**\n\n`
 
@@ -103,13 +109,24 @@
   // noise there.
   const embedded = document.documentElement?.classList?.contains("vm-embed")
 
+  const insideField = (selection) => {
+    const active = document.activeElement
+    if (active && active.matches && active.matches("input, textarea, select, [contenteditable]")) return true
+    let node = selection.anchorNode
+    if (node && node.nodeType !== 1) node = node.parentElement
+    return Boolean(node && node.closest && node.closest("input, textarea, dialog, [contenteditable]"))
+  }
+
   let debounceId = null
   if (!embedded) {
     document.addEventListener("selectionchange", () => {
       clearTimeout(debounceId)
       debounceId = setTimeout(() => {
         const selection = document.getSelection()
-        const selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : ""
+        let selectedText = selection && !selection.isCollapsed ? selection.toString().trim() : ""
+        // A selection inside a form field or a dialog (the Share dialog's
+        // snippet, a text input) is the reader copying, not reporting.
+        if (selectedText && insideField(selection)) selectedText = ""
         if (!selectedText) {
           removePopup()
           return

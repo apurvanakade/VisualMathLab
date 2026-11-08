@@ -606,6 +606,26 @@ viewof stepControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the current step: the newest iterate xₙ₊₁ (the root
+// estimate), f there, and the step from xₙ. Always a node, never null, so
+// Quarto never latches the cell as hidden.
+stats = {
+  const rows = setup.visibleRows
+  if (rows.length === 0) return VM.ui.statRow([])
+  const row = rows[rows.length - 1]
+  const n = VM.plotting.subscript(row.i)
+  const n1 = VM.plotting.subscript(row.i + 1)
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  const fNext = result.points[row.i + 1]?.fx
+  return VM.ui.statRow([
+    {label: `Root estimate x${n1}`, value: fmt(row.xNext)},
+    {label: `f(x${n1})`, value: Number.isFinite(fNext) ? fNext.toExponential(3) : "—"},
+    {label: `|x${n1} − x${n}|`, value: Number.isFinite(row.error) ? row.error.toExponential(3) : "—"}
+  ])
+}
+```
+
 </div>
 
 </div>

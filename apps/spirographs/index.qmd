@@ -617,6 +617,26 @@ viewof penDistance = {
 
 </div>
 
+```{ojs}
+// What the radii say about the curve: R/r as a fraction, when it closes
+// and its symmetry (see "Closes" in the equations table). Always a node,
+// never null, so Quarto never latches the cell as hidden.
+stats = {
+  if (!result.valid) return VM.ui.statRow([])
+  const {fraction, closeTurns, d} = result
+  let ratio = "irrational"
+  if (fraction) ratio = fraction.q === 1 ? String(fraction.p) : `${fraction.p}/${fraction.q}`
+  let closes = "never"
+  if (closeTurns !== null) closes = closeTurns === 1 ? "1 turn" : `${closeTurns} turns`
+  const items = [
+    {label: "R/r", value: ratio, title: "Rational when within 1e-9 of a fraction with denominator at most 1000"},
+    {label: "Closes after", value: closes}
+  ]
+  if (fraction && d !== 0) items.push({label: "Symmetry", value: `${fraction.p}-fold`})
+  return VM.ui.statRow(items)
+}
+```
+
 </div>
 
 </div>

@@ -484,6 +484,25 @@ viewof noiseLevel = {
 
 </div>
 
+```{ojs}
+// Each shown fit's total squared error over the data points at the current
+// noise level -- the number the Model comparison table and the error plot
+// below report for every degree. Always a node, never null, so Quarto never
+// latches the cell as hidden.
+stats = {
+  const shown = [showDegree1, showDegree2, showDegree3, showDegree4, showDegree5]
+  const items = []
+  for (let degree = 1; degree <= 5; degree++) {
+    if (!shown[degree - 1]) continue
+    const fit = result.fits[degree]
+    let value = "—"
+    if (fit) value = fit.totalSquaredError.toExponential(3)
+    items.push({label: `Degree ${degree} error`, value, title: "Total squared error over the data points"})
+  }
+  return VM.ui.statRow(items)
+}
+```
+
 </div>
 
 </div>

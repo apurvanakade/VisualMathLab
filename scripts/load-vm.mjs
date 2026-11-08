@@ -5,7 +5,7 @@
  */
 
 // Test-only helper: loads the installed mathviz release
-// (_extensions/apurvanakade/mathviz/dist/mathviz.js, the same file every page
+// (_extensions/apurvanakade/mathviz/dist/mathviz.min.js, the same file every page
 // gets in its <head>) into this process's global scope, with math.js as
 // window.math the way the CDN script provides it, and returns window.VM.
 // An app's method.test.js uses it so its method.js runs against the real
@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url'
 import * as mathjs from 'mathjs'
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const bundle = path.join(repoRoot, '_extensions/apurvanakade/mathviz/dist/mathviz.js')
+const bundle = path.join(repoRoot, '_extensions/apurvanakade/mathviz/dist/mathviz.min.js')
 
 export function loadVM() {
   if (globalThis.VM) return globalThis.VM

@@ -506,6 +506,28 @@ viewof nControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the chart at the current n: each shown method's value
+// at the endpoint b, against the reference solution's, with its error in
+// the tooltip. Always a node, never null, so Quarto never latches the cell
+// as hidden.
+stats = {
+  const row = result.rows[setup.n - 1]
+  if (!row) return VM.ui.statRow([])
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  const at = `y(${fmt(committed.bEnd)})`
+  const tile = (label, value, error) => ({
+    label: `${label} ${at}`, value: fmt(value),
+    title: Number.isFinite(error) ? `Error ${error.toExponential(3)}` : undefined
+  })
+  const items = [{label: `Reference ${at}`, value: fmt(row.trueValue)}]
+  if (showEuler) items.push(tile("Euler", row.eulerValue, row.eulerError))
+  if (showImprovedEuler) items.push(tile("Improved Euler", row.improvedEulerValue, row.improvedEulerError))
+  if (showRK4) items.push(tile("RK4", row.rk4Value, row.rk4Error))
+  return VM.ui.statRow(items)
+}
+```
+
 </div>
 
 </div>

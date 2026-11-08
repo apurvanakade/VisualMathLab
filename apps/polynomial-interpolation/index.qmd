@@ -683,6 +683,25 @@ viewof nControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the chart at the current n: f's arc length on [a, b]
+// and each shown interpolant's, with its error in the tooltip. Always a
+// node, never null, so Quarto never latches the cell as hidden.
+stats = {
+  const row = result.rows[setup.n - 1]
+  if (!row) return VM.ui.statRow([])
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  const tile = (label, value, error) => ({
+    label, value: fmt(value),
+    title: Number.isFinite(error) ? `Error ${error.toExponential(3)}` : undefined
+  })
+  const items = [{label: "Arc length of f", value: fmt(row.trueArcLength)}]
+  if (showLinear) items.push(tile("Linear arc length", row.linearLength, row.linearError))
+  if (showCubic) items.push(tile("Spline arc length", row.cubicLength, row.cubicError))
+  return VM.ui.statRow(items)
+}
+```
+
 </div>
 
 </div>

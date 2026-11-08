@@ -591,6 +591,27 @@ viewof nControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the chart at the current n: the reference integral
+// and each shown rule's approximation, its error in the tooltip. Always a
+// node, never null, so Quarto never latches the cell as hidden.
+stats = {
+  const row = result.rows[setup.n - 1]
+  if (!row) return VM.ui.statRow([])
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  const tile = (label, value, error, note) => ({
+    label, value: Number.isFinite(value) ? fmt(value) : note ?? "—",
+    title: Number.isFinite(error) ? `Error ${error.toExponential(3)}` : undefined
+  })
+  const items = [{label: "Reference integral", value: fmt(row.trueIntegral)}]
+  if (showLeftRiemann) items.push(tile("Left Riemann sum", row.leftArea, row.leftError))
+  if (showMidpoint) items.push(tile("Midpoint Riemann sum", row.midpointArea, row.midpointError))
+  if (showTrapezoidal) items.push(tile("Trapezoidal rule", row.trapezoidalArea, row.trapezoidalError))
+  if (showSimpson) items.push(tile("Simpson's rule", row.simpsonArea, row.simpsonError, "needs even n"))
+  return VM.ui.statRow(items)
+}
+```
+
 </div>
 
 </div>

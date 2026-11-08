@@ -17,7 +17,9 @@
 // paints at all: no flash of navbar before the CSS applies.
 //
 // embed=1 shows the page's first .vm-app. A page with several tagged blocks
-// gives each an id, and embed=<id> shows that one instead. Either way, once
+// gives each an id, and embed=<id> shows that one instead; a block without
+// an id is embed=<n>, its 1-based position among the page's .vm-app blocks
+// (what the Share dialog uses for one). Either way, once
 // the DOM exists the chosen block gets vm-app-active, and embed.css shows
 // only that block, what is inside it and its ancestors (Quarto wraps
 // everything under a ## heading in a <section>, so a block is not
@@ -36,10 +38,12 @@
   if (embed == null || embed === "") return
   document.documentElement.classList.add("vm-embed")
   document.addEventListener("DOMContentLoaded", function () {
-    var block = null
-    if (embed !== "1") block = document.getElementById(embed)
+    var block = document.getElementById(embed)
     if (block === null || !block.classList.contains("vm-app")) {
-      block = document.querySelector(".vm-app")
+      block = null
+      var blocks = document.querySelectorAll(".vm-app")
+      if (/^[1-9][0-9]*$/.test(embed)) block = blocks[Number(embed) - 1] || null
+      if (block === null) block = blocks[0] || null
     }
     if (block !== null) block.classList.add("vm-app-active")
   })

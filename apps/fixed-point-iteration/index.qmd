@@ -424,6 +424,25 @@ viewof stepControl = {
 
 </div>
 
+```{ojs}
+// The numbers behind the current step: the iterate xₙ, the next one g(xₙ)
+// (the newest estimate of the fixed point) and the step between them.
+// Always a node, never null, so Quarto never latches the cell as hidden.
+stats = {
+  const rows = setup.visibleRows
+  if (rows.length === 0) return VM.ui.statRow([])
+  const row = rows[rows.length - 1]
+  const n = VM.plotting.subscript(row.i)
+  const n1 = VM.plotting.subscript(row.i + 1)
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(10))) : "—"
+  return VM.ui.statRow([
+    {label: `x${n}`, value: fmt(row.x)},
+    {label: `x${n1} = g(x${n})`, value: fmt(row.gx)},
+    {label: `|x${n1} − x${n}|`, value: Number.isFinite(row.error) ? row.error.toExponential(3) : "—"}
+  ])
+}
+```
+
 </div>
 
 </div>

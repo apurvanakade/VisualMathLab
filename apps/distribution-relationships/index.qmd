@@ -26,6 +26,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Dhruv Azad
 -->
 
+::::::::: {.vm-split}
+
 <style>
 /* Page-local styles. Every selector here targets markup that exists only on
    this page -- the d3 relationship graph built by relationship-graph.js, its
@@ -56,6 +58,17 @@ Authors: Dhruv Azad
 
 .ojs-graph-container.is-dragging .ojs-relationship-graph {
   cursor: grabbing;
+}
+
+/* In the split layout's pane (from 992px up) the diagram is the whole app,
+   and at the pane's width its 1120 x 860 viewBox would come out taller than
+   the window on a short screen. Capping the height keeps all of it in view;
+   the viewBox's default xMidYMid meet centers the drawing in the box. The
+   6rem is the pane's padding plus the legend row above the diagram. */
+@media (min-width: 992px) {
+  .vm-split > .vm-app .ojs-relationship-graph {
+    max-height: calc(100vh - var(--vm-split-top, 64px) - 6rem);
+  }
 }
 
 /* ── Nodes ───────────────────────────────────────────────────────── */
@@ -281,20 +294,11 @@ Authors: Dhruv Azad
 
 /* ── Chart overlay ───────────────────────────────────────────────── */
 
-/* Both chart panels hide themselves when they have nothing in them: the
-   slider bar for a selection with no parameters (an edge without a demo,
-   nothing selected, Uniform), the legend for a single-series plot, which
-   needs no key. Declarative rather than the cells reaching out to style
+/* The slider bar hides itself when it has nothing in it: a selection with
+   no parameters (an edge without a demo, nothing selected, Uniform). Declarative rather than the cells reaching out to style
    their own container. display: none rather than a zero height, so the bar
    takes no flow space at all -- it sits above the chart, not over it. */
 .ojs-chart-controls:not(:has(input[type="range"])) {
-  display: none;
-}
-
-/* :not(:has(a row)) rather than :empty -- draggable-overlay.js appends its
-   drag grip to the legend panel, so a legend with no rows still has a
-   child and :empty never matches it. */
-.ojs-legend-overlay:not(:has(.ojs-legend-item)) {
   display: none;
 }
 
@@ -843,6 +847,8 @@ viewof selection = VM.relationshipGraph(graphNodes, graphEdges, {
 })
 ```
 
+</div>
+
 ```{ojs}
 //| output: false
 // activeConfig: the selected distribution's config, or null when an edge (or
@@ -1380,17 +1386,15 @@ legendLabel = (config, prm) => {
 // overlaid. Nothing is sampled or simulated: every curve is its closed-form
 // function, so a slider move animates the shape rather than resampling noise.
 //
-// Follows the site's chart shape (see index.qmd, apps/newton-method):
-// every trace sets showlegend: false because the floating legend above
-// replaces Plotly's own, a hidden trace is never pushed rather than pushed
-// with visible: false, and _plotDiv is kept in a closure so Plotly reuses one
-// DOM node across reactive updates -- which is what preserves zoom and pan
-// while a parameter slider moves.
+// Every trace sets showlegend: false because the static key under the chart
+// replaces Plotly's own legend, and _plotDiv is kept in a closure so Plotly
+// reuses one DOM node across reactive updates -- which is what preserves zoom
+// and pan while a parameter slider moves.
 renderChart = {
   const Plotly = window.Plotly
   let _plotDiv = null
 
-  return (spec, colors, visible) => {
+  return (spec, colors) => {
     // First series is what the relationship starts from, second what it
     // converges or reduces to.
     const palette = [colors.fn, colors.alt]
@@ -1399,11 +1403,6 @@ renderChart = {
     let hasBars = false
 
     for (let i = 0; i < spec.traces.length; i++) {
-      const label = spec.labels[i]
-      // A single-series plot has no legend to switch it off with, so it is
-      // always drawn; an overlay's series appear only while checked.
-      if (spec.labels.length > 1 && !visible.includes(label)) continue
-
       const t = spec.traces[i]
       const color = palette[i % palette.length]
       const token = tokens[i % tokens.length]
@@ -1439,7 +1438,6 @@ renderChart = {
       // one drawn second hides the first entirely.
       barmode: hasBars ? "group" : undefined,
       bargap: 0.15,
-      annotations: data.length > 0 ? [] : VM.plotting.emptyState("Every trace is hidden — switch one back on in the legend."),
       autosize: true
     }
     const config = VM.plotting.config()
@@ -1462,17 +1460,26 @@ renderChart = {
 
 ```{ojs}
 //| output: false
-// traceItems: the legend's rows -- one per series, in draw order, each
-// carrying the exact color the chart draws that series in so the swatches
-// double as a color key. Empty for a single-series plot: Plotly would not
-// show a legend for one trace either, and a one-row panel floating over the
-// chart is noise rather than a key.
-traceItems = {
+// keyItems: the key's rows -- one per series, in draw order, each drawn the
+// way the chart draws that series (a translucent bar, a solid or dashed
+// curve, in the same color), so the swatch is the series it names. Empty for
+// a single-series plot: one row would name what the title already does.
+//
+// A static key under the chart rather than VM.ui.legendOverlay: the chart sits
+// in the split layout's text column, under 600px wide, where mathviz hides a
+// floating legend (see CLAUDE.md's Split layout section).
+keyItems = {
   if (!plotSpec || plotSpec.labels.length < 2) return []
   const palette = [chartColors.fn, chartColors.alt]
   const items = []
   for (let i = 0; i < plotSpec.labels.length; i++) {
-    items.push({label: plotSpec.labels[i], color: palette[i % palette.length]})
+    const color = palette[i % palette.length]
+    const t = plotSpec.traces[i]
+    if (t.kind === "bars") {
+      items.push({label: plotSpec.labels[i], mark: "area", fill: color, fillOpacity: 0.55, stroke: color, strokeWidth: 1})
+    } else {
+      items.push({label: plotSpec.labels[i], mark: "line", stroke: color, strokeWidth: t.width ?? 2.5, strokeDasharray: t.dash ? "6,4" : undefined})
+    }
   }
   return items
 }
@@ -1486,20 +1493,14 @@ traceItems = {
 // axis to put it on, and an empty frame would imply there should be.
 chart = {
   if (!plotSpec) return html``
-  return renderChart(plotSpec, chartColors, traces)
+  return renderChart(plotSpec, chartColors)
 }
 ```
 
 ```{ojs}
-// The site's own legend rather than Plotly's built-in one (every trace below
-// sets showlegend: false). It sits on the chart, is draggable off whatever
-// part of the curve it covers, and toggles traces -- see js/ui/legend-overlay.js
-// and js/ui/draggable-overlay.js, both of which self-install.
-viewof traces = {
-  const labels = []
-  for (const item of traceItems) labels.push(item.label)
-  return VM.ui.legendOverlay(traceItems, {value: labels})
-}
+// The chart's key, under it. Inside .ojs-chart-block so it stays with the
+// chart in fullscreen.
+key = keyItems.length > 0 ? VM.ui.staticKey(keyItems) : html``
 ```
 
 <div class="ojs-chart-controls ojs-grid">
@@ -1553,8 +1554,6 @@ demoCaption = {
   return note
 }
 ```
-
-</div>
 
 ```{ojs}
 //| output: false
@@ -1610,3 +1609,5 @@ urlSync = {
 Cook, John D. "Diagram of distribution relationships." Blog post. [https://www.johndcook.com/blog/distribution_chart/](https://www.johndcook.com/blog/distribution_chart/)
 
 Leemis, Lawrence M., and Jacquelyn T. McQueston. "Univariate Distribution Relationships." *The American Statistician* 62(1), 2008, 45–53. [https://www.math.wm.edu/~leemis/2008amstat.pdf](https://www.math.wm.edu/~leemis/2008amstat.pdf)
+
+:::::::::

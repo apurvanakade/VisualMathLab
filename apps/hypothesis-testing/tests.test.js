@@ -12,7 +12,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadVM } from '../../scripts/load-vm.mjs'
-import { tests, testById, nullDistribution } from './tests.js'
+import { tests, testById, nullDistribution, plotWindow } from './tests.js'
 
 const VM = loadVM()
 
@@ -98,7 +98,7 @@ test("every example's p-value, critical values and decision match the prose", ()
   for (const t of tests) {
     const want = prose[t.id]
     assert.ok(want, `no prose expectation for ${t.id}`)
-    const dist = nullDistribution(t.kind, t.df(t.defaults))
+    const dist = nullDistribution(t, t.defaults)
     const r = VM.distributions.hypothesisTest(dist, exampleStatistic(t), {alternative: t.defaults.alt, alpha: 0.05})
     const half = 0.5 * 10 ** -decimals(want.p)
     assert.ok(Math.abs(r.pValue - want.p) <= half + 1e-12, `${t.id}: p = ${r.pValue}, prose says ${want.p}`)
@@ -107,6 +107,17 @@ test("every example's p-value, critical values and decision match the prose", ()
       assert.ok(Math.abs(r.critical[i] - c) <= 0.5 * 10 ** -decimals(c) + 1e-12, `${t.id}: critical ${r.critical[i]}, prose says ${c}`)
     })
     assert.equal(r.reject, want.reject, t.id)
+  }
+})
+
+test("every example's sizes and statistic fit the sliders and the chart", () => {
+  for (const t of tests) {
+    for (const sz of t.sizes) {
+      const v = t.defaults[sz.key]
+      assert.ok(v >= sz.min && v <= sz.max, `${t.id}: ${sz.key} = ${v} outside ${sz.min}–${sz.max}`)
+    }
+    const w = plotWindow(t)
+    assert.ok(t.defaults.stat >= w.lo && t.defaults.stat <= w.hi, `${t.id}: stat ${t.defaults.stat} outside [${w.lo}, ${w.hi}]`)
   }
 })
 

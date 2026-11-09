@@ -1,0 +1,1412 @@
+---
+title: "Hypothesis Tests"
+topic: "Probability"
+description: "Pick a z, t, χ² or F test and see its rejection region, critical values and p-value on the null distribution."
+date: 2026-11-08
+order: 5
+categories:
+  - Probability
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<style>
+/* Page-local styles: the test picker and the per-test detail cards exist
+   only on this page. Colors are --vm-* tokens, so all of it re-themes. */
+
+.ht-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.ht-family-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vm-text-soft);
+  margin-bottom: 0.35rem;
+}
+
+.ht-family-name span {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.ht-family-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem;
+}
+
+.ht-test-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--vm-border);
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  color: var(--vm-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 80ms ease, background-color 80ms ease;
+}
+
+.ht-test-card:hover {
+  background: var(--vm-surface-hover);
+  border-color: var(--vm-accent);
+}
+
+.ht-test-card:focus-visible {
+  outline: 2px solid var(--vm-accent);
+  outline-offset: 2px;
+}
+
+.ht-test-card[aria-pressed="true"] {
+  border-color: var(--vm-accent);
+  background: color-mix(in srgb, var(--vm-accent) 12%, var(--vm-surface));
+  box-shadow: inset 3px 0 0 var(--vm-accent);
+}
+
+.ht-test-card .ht-test-name {
+  color: var(--vm-text);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.ht-test-short {
+  font-size: 0.8rem;
+  color: var(--vm-text-soft);
+  line-height: 1.3;
+}
+
+/* ── Detail cards ─────────────────────────────────────────────── */
+
+.ht-detail {
+  display: none;
+  margin-top: 0.5rem;
+}
+
+.ht-detail.ht-shown {
+  display: block;
+}
+
+.ht-lede {
+  font-size: 1.05rem;
+  margin-bottom: 0.9rem;
+}
+
+.ht-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.ht-card {
+  padding: 0.6rem 0.85rem 0.3rem;
+  border: 1px solid var(--vm-border);
+  border-top: 3px solid var(--ht-card-color, var(--vm-accent));
+  border-radius: var(--vm-radius);
+  background: var(--vm-surface);
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.ht-card > p:first-child {
+  margin-bottom: 0.35rem;
+}
+
+.ht-card-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ht-card-color, var(--vm-accent));
+}
+
+.ht-hyp { --ht-card-color: var(--vm-color-fn); }
+.ht-assume { --ht-card-color: var(--vm-color-ok); }
+.ht-stat { --ht-card-color: var(--vm-color-accent2); }
+.ht-null { --ht-card-color: var(--vm-color-warn); }
+
+.ht-assume ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.ht-assume li {
+  position: relative;
+  padding-left: 1.3rem;
+  margin-bottom: 0.25rem;
+}
+
+.ht-assume li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+  color: var(--vm-color-ok);
+}
+
+.ht-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--vm-text-soft);
+  margin: 0.25rem 0 0.35rem;
+}
+
+.ht-rule table {
+  margin-bottom: 1rem;
+}
+
+.ht-rule tbody tr {
+  transition: background-color 120ms ease;
+}
+
+/* The row for the alternative chosen in the app. */
+.ht-rule tbody tr.ht-active {
+  background: color-mix(in srgb, var(--vm-accent) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--vm-accent);
+}
+
+.ht-load {
+  margin-top: 0.25rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--vm-accent);
+  border-radius: var(--vm-radius-sm);
+  background: var(--vm-accent);
+  color: var(--vm-on-accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.ht-load:hover {
+  background: var(--vm-accent-hover);
+}
+
+.ht-example-data table {
+  width: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The decision readout under the chart. */
+.vm-stat.ht-reject {
+  border-color: var(--vm-color-alt);
+  background: color-mix(in srgb, var(--vm-color-alt) 10%, var(--vm-surface));
+}
+
+.vm-stat.ht-keep {
+  border-color: var(--vm-color-ok);
+  background: color-mix(in srgb, var(--vm-color-ok) 10%, var(--vm-surface));
+}
+
+.ht-no-df {
+  font-size: var(--vm-label-size);
+  color: var(--vm-text-soft);
+  align-self: end;
+  line-height: 1.3;
+  padding-bottom: 0.3rem;
+}
+
+.vm-stat.ht-reject .vm-stat-value,
+.vm-stat.ht-keep .vm-stat-value {
+  white-space: normal;
+}
+
+.ojs-panel .ht-sizes form[class^="oi-"] {
+  width: 100% !important;
+  min-width: 0;
+}
+
+.ojs-panel .ht-sizes input[type="text"] {
+  width: 100% !important;
+}
+
+/* Every interesting region of a test is in a tail, and left tails are as
+   common as right ones; the top-right corner is over the far tail only
+   when the curve is a chi-squared or F hump, so start the legend there. */
+.ojs-chart-block .ojs-legend-overlay {
+  left: auto;
+  right: 0.75rem;
+}
+
+.ht-sizes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  gap: 0.4rem 0.6rem;
+  align-items: end;
+}
+</style>
+
+```{ojs}
+//| output: false
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+import {tests, families, testById, nullDistribution} from "./tests.js"
+```
+
+```{ojs}
+//| output: false
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+traceOptions = ["Null distribution", "Rejection region", "p-value area", "Observed statistic"]
+
+traceColors = new Map([
+  ["Null distribution", chartColors.fn],
+  ["Rejection region", chartColors.alt],
+  ["p-value area", chartColors.accent2],
+  ["Observed statistic", chartColors.ink]
+])
+```
+
+```{ojs}
+//| output: false
+// Each test remembers its own controls (alternative, sample sizes, observed
+// statistic) while the reader looks at another, and starts from its worked
+// example. A test named in the URL starts from the URL's values instead.
+memo = {
+  const store = {}
+  const params = new URLSearchParams(window.location.search)
+  const t = testById.get(params.get("test"))
+  if (t) {
+    const entry = {}
+    if (params.get("alt") in t.alternatives) entry.alt = params.get("alt")
+    for (const s of t.sizes) {
+      const v = Number(params.get(s.key))
+      if (Number.isInteger(v) && v >= s.min) entry[s.key] = v
+    }
+    const stat = Number(params.get("stat"))
+    if (params.has("stat") && Number.isFinite(stat)) entry.stat = stat
+    store[t.id] = entry
+  }
+  return store
+}
+```
+
+```{ojs}
+//| output: false
+remembered = (id, key) => memo[id]?.[key] ?? testById.get(id).defaults[key]
+
+remember = (id, key, value) => { (memo[id] ??= {})[key] = value }
+```
+
+::::::::: {.vm-split}
+
+<div class="vm-app">
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof testId = {
+  const params = new URLSearchParams(window.location.search)
+  const initial = testById.has(params.get("test")) ? params.get("test") : "t-one"
+  const select = Inputs.select(tests.map(t => t.id), {
+    label: "Test",
+    value: initial,
+    format: id => testById.get(id).name
+  })
+  select.classList.add("ojs-fill")
+  select.dataset.field = "test"
+  return select
+}
+```
+
+```{ojs}
+viewof alt = {
+  const t = testById.get(testId)
+  const keys = Object.keys(t.alternatives)
+  const select = Inputs.select(keys, {
+    label: "Alternative H₁",
+    value: remembered(testId, "alt"),
+    format: k => t.alternatives[k],
+    disabled: keys.length === 1
+  })
+  select.classList.add("ojs-fill")
+  select.dataset.field = "alt"
+  select.addEventListener("input", () => remember(testId, "alt", select.value))
+  return select
+}
+```
+
+```{ojs}
+// The sample sizes that set the degrees of freedom, one field per size the
+// chosen test has (none for a z-test). Its value is {key: integer}.
+viewof sizes = {
+  const t = testById.get(testId)
+  const box = document.createElement("div")
+  box.className = "ht-sizes"
+  if (t.sizes.length === 0) {
+    const note = document.createElement("div")
+    note.className = "ht-no-df"
+    note.textContent = "Standard normal: no degrees of freedom"
+    box.append(note)
+    box.value = {}
+    return box
+  }
+  const inputs = []
+  for (const s of t.sizes) {
+    const field = Inputs.text({label: s.label, value: String(remembered(testId, s.key))})
+    field.dataset.field = s.key
+    inputs.push([s, field])
+    box.append(field)
+  }
+  const read = () => {
+    const out = {}
+    for (const [s, field] of inputs) {
+      const v = Math.round(Number(field.value))
+      const ok = Number.isFinite(v) && v >= s.min && v <= 10000
+      field.querySelector("input").classList.toggle("vm-invalid", !ok)
+      out[s.key] = ok ? v : remembered(testId, s.key)
+      if (ok) remember(testId, s.key, v)
+    }
+    return out
+  }
+  box.value = read()
+  box.addEventListener("input", (e) => {
+    if (e.target === box) return
+    e.stopPropagation()
+    box.value = read()
+    box.dispatchEvent(new Event("input"))
+  })
+  return box
+}
+```
+
+</div>
+
+</div>
+
+```{ojs}
+//| output: false
+test = testById.get(testId)
+
+dfs = test.df(sizes)
+
+dist = nullDistribution(test.kind, dfs)
+
+// Keeps every control in the URL, so the address bar is a link to what's on
+// screen. Keys the current test doesn't use are dropped.
+urlSyncControls = {
+  const params = new URLSearchParams(window.location.search)
+  for (const k of ["test", "alt", "alpha", "stat", "n", "n1", "n2", "k", "r", "c"]) params.delete(k)
+  params.set("test", testId)
+  params.set("alt", alt)
+  params.set("alpha", String(alpha))
+  params.set("stat", String(stat))
+  for (const [k, v] of Object.entries(sizes)) params.set(k, String(v))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+showCurve = traces.includes("Null distribution")
+showRejection = traces.includes("Rejection region")
+showPValue = traces.includes("p-value area")
+showObserved = traces.includes("Observed statistic")
+```
+
+```{ojs}
+//| output: false
+decision = VM.distributions.hypothesisTest(dist, stat, {alternative: alt, alpha})
+
+fmt = (v, digits = 3) => {
+  if (!Number.isFinite(v)) return v > 0 ? "∞" : v < 0 ? "−∞" : "—"
+  return Number(v.toFixed(digits)).toString().replace("-", "−")
+}
+
+fmtP = p => p < 1e-4 ? "< 0.0001" : p.toFixed(4)
+
+dfLabel = dfs.length === 0 ? "" : `df = ${dfs.join(", ")}`
+```
+
+```{ojs}
+//| output: false
+// The null density over a fixed window (dist.lo, dist.hi), the shaded
+// rejection region and the hatched p-value area. The window and the y range
+// depend only on the test and its degrees of freedom, so moving alpha or
+// the observed statistic never rescales the axes.
+mainPlot = {
+  const Plotly = window.Plotly
+  let _plotDiv = null
+
+  return ({dist, decision, observed, test, dfLabel}, showCurve, showRejection, showPValue, showObserved) => {
+    const {lo, hi} = dist
+    const N = 600
+    // A density on [0, ∞) can be unbounded at 0; start just past it.
+    const start = lo === 0 ? (hi - lo) * 1e-4 : lo
+    const xs = Array.from({length: N}, (_, i) => start + (hi - start) * i / (N - 1))
+    const ys = xs.map(x => dist.pdf(x))
+    // The chi-squared density with df ≤ 2 (and F with d1 ≤ 2) is unbounded
+    // or tall at 0; size the y-axis from the rest of the curve.
+    let yAll = 0, yBody = 0
+    for (let i = 0; i < N; i++) {
+      if (!Number.isFinite(ys[i])) continue
+      yAll = Math.max(yAll, ys[i])
+      if (xs[i] >= lo + 0.03 * (hi - lo)) yBody = Math.max(yBody, ys[i])
+    }
+    let yMax = (yAll > 2 * yBody ? yBody : yAll) * 1.18
+
+    const band = ([a, b]) => {
+      const a1 = Math.max(a, start), b1 = Math.min(b, hi)
+      if (!(b1 > a1)) return null
+      const bx = [a1]
+      for (const x of xs) if (x > a1 && x < b1) bx.push(x)
+      bx.push(b1)
+      return {x: bx, y: bx.map(x => Math.min(dist.pdf(x), yMax * 2))}
+    }
+
+    const data = []
+    if (showRejection) {
+      for (const region of decision.rejectionRegion) {
+        const b = band(region)
+        if (!b) continue
+        data.push({
+          ...b, type: "scatter", mode: "lines", fill: "tozeroy", showlegend: false,
+          line: {width: 0}, fillcolor: VM.plotting.alpha("alt", 0.35), hoverinfo: "skip"
+        })
+      }
+    }
+    if (showPValue) {
+      for (const region of decision.pValueRegion) {
+        const b = band(region)
+        if (!b) continue
+        data.push({
+          ...b, type: "scatter", mode: "lines", fill: "tozeroy", showlegend: false,
+          line: {width: 0}, fillcolor: "rgba(0,0,0,0)",
+          fillpattern: {shape: "/", fgcolor: chartColors.accent2, size: 7, solidity: 0.35},
+          hoverinfo: "skip"
+        })
+      }
+    }
+    if (showCurve) {
+      data.push({
+        x: xs, y: ys, type: "scatter", mode: "lines", name: "Null density", showlegend: false,
+        line: {color: chartColors.fn, width: 2.5},
+        hovertemplate: `${test.symbol} = %{x:.3f}<br>density = %{y:.4f}<extra></extra>`
+      })
+    }
+
+    const shapes = []
+    const annotations = []
+    if (showRejection) {
+      for (const c of decision.critical) {
+        if (!(c >= lo && c <= hi)) continue
+        shapes.push({type: "line", x0: c, x1: c, y0: 0, y1: yMax, line: {color: chartColors.alt, width: 1.5, dash: "dash"}})
+        annotations.push({
+          x: c, y: yMax, yanchor: "bottom", showarrow: false,
+          text: `${fmt(c)}`, font: {color: chartColors.alt, size: 12}
+        })
+      }
+    }
+    if (showObserved) {
+      shapes.push({type: "line", x0: observed, x1: observed, y0: 0, y1: yMax * 0.78, line: {color: chartColors.ink, width: 2.5}})
+      annotations.push({
+        x: observed, y: yMax * 0.78, yanchor: "bottom", showarrow: false,
+        text: `<b>${test.symbol} = ${fmt(observed, 2)}</b>`, font: {color: chartColors.ink, size: 13},
+        bgcolor: chartColors.halo
+      })
+    }
+
+    const layout = {
+      xaxis: {title: dfLabel ? `${test.symbol}   (${dfLabel})` : test.symbol, range: [lo, hi], zeroline: false},
+      yaxis: {title: "density", range: [0, yMax * 1.08], fixedrange: false},
+      shapes, annotations,
+      hovermode: "closest",
+      uirevision: `${test.id}|${dfs.join(",")}`,
+      autosize: true
+    }
+    const config = VM.plotting.config()
+    if (!_plotDiv) {
+      _plotDiv = document.createElement("div")
+      _plotDiv.className = "plotly-box-large"
+      Plotly.newPlot(_plotDiv, data, layout, config)
+      VM.plotting.autoResize(_plotDiv)
+    } else {
+      Plotly.react(_plotDiv, data, layout, config)
+    }
+    return _plotDiv
+  }
+}
+```
+
+<div class="ojs-chart-block">
+
+```{ojs}
+mainPlot({dist, decision, observed: stat, test, dfLabel}, showCurve, showRejection, showPValue, showObserved)
+```
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+<div class="ojs-chart-controls ojs-grid">
+
+```{ojs}
+viewof alpha = {
+  const params = new URLSearchParams(window.location.search)
+  const initial = Number(params.get("alpha"))
+  const value = initial >= 0.001 && initial <= 0.2 ? initial : 0.05
+  const slider = Inputs.range([0.001, 0.2], {step: 0.001, value, label: "Significance level α"})
+  slider.dataset.field = "alpha"
+  return slider
+}
+```
+
+```{ojs}
+viewof stat = {
+  const value = Math.min(dist.hi, Math.max(dist.lo, remembered(testId, "stat")))
+  const slider = Inputs.range([dist.lo, dist.hi], {step: 0.01, value, label: `Observed statistic ${test.symbol}`})
+  slider.dataset.field = "stat"
+  slider.addEventListener("input", () => remember(testId, "stat", slider.value))
+  return slider
+}
+```
+
+</div>
+
+```{ojs}
+// The numbers behind the picture. Always a node, so Quarto never hides it.
+stats = {
+  const row = VM.ui.statRow([
+    {label: `Critical value${decision.critical.length > 1 ? "s" : ""}`, value: decision.critical.map(c => fmt(c)).join(", ")},
+    {label: `Observed ${test.symbol}`, value: fmt(stat, 2)},
+    {label: "p-value", value: fmtP(decision.pValue)},
+    {label: `Decision at α = ${alpha}`, value: decision.reject ? "Reject H₀" : "Fail to reject H₀"}
+  ])
+  const cells = row.querySelectorAll(".vm-stat")
+  cells[cells.length - 1].classList.add(decision.reject ? "ht-reject" : "ht-keep")
+  return row
+}
+```
+
+</div>
+
+</div>
+
+```{ojs}
+picker = {
+  const root = document.createElement("div")
+  root.className = "ht-picker"
+  for (const fam of families) {
+    const group = document.createElement("div")
+    const name = document.createElement("div")
+    name.className = "ht-family-name"
+    name.innerHTML = `${fam.name} <span>· ${fam.note}</span>`
+    const cards = document.createElement("div")
+    cards.className = "ht-family-cards"
+    for (const t of tests.filter(t => t.family === fam.id)) {
+      const card = document.createElement("button")
+      card.type = "button"
+      card.className = "ht-test-card"
+      card.setAttribute("aria-pressed", String(t.id === testId))
+      card.innerHTML = `<span class="ht-test-name">${t.name}</span><span class="ht-test-short">${t.short}</span>`
+      card.addEventListener("click", () => selectTest(t.id))
+      cards.append(card)
+    }
+    group.append(name, cards)
+    root.append(group)
+  }
+  return root
+}
+```
+
+```{ojs}
+//| output: false
+// Selecting a test from the picker sets the app's Test dropdown, which is
+// the one source of truth for which test is shown.
+selectTest = id => {
+  const view = viewof testId
+  if (view.value === id) return
+  view.value = id
+  view.dispatchEvent(new Event("input", {bubbles: true}))
+}
+```
+
+```{ojs}
+//| output: false
+// Shows the chosen test's details and highlights the row of its decision
+// rule that matches the chosen alternative.
+showDetails = {
+  for (const el of document.querySelectorAll(".ht-detail")) {
+    const active = el.dataset.test === testId
+    el.classList.toggle("ht-shown", active)
+    if (!active) continue
+    const keys = Object.keys(test.alternatives)
+    const rows = el.querySelectorAll(".ht-rule tbody tr")
+    rows.forEach((tr, i) => tr.classList.toggle("ht-active", keys[i] === alt))
+  }
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// "Show on the chart": resets a test to its worked example (and α to 0.05)
+// and selects it. Wired once, by a plain listener on each button.
+loadExampleButtons = {
+  const sleep = ms => new Promise(r => setTimeout(r, ms))
+  const setField = (key, value) => {
+    const el = document.querySelector(`.vm-app [data-field="${key}"]`)
+    if (!el) return
+    const input = el.querySelector("input, select")
+    if (key === "alt" || key === "test" || key === "alpha" || key === "stat") {
+      el.value = value
+      el.dispatchEvent(new Event("input", {bubbles: true}))
+    } else if (input) {
+      input.value = String(value)
+      input.dispatchEvent(new Event("input", {bubbles: true}))
+    }
+  }
+  for (const button of document.querySelectorAll(".ht-load")) {
+    button.addEventListener("click", async () => {
+      const t = testById.get(button.dataset.test)
+      memo[t.id] = {...t.defaults}
+      setField("alpha", 0.05)
+      if ((viewof testId).value !== t.id) {
+        selectTest(t.id)
+        return
+      }
+      setField("alt", t.defaults.alt)
+      for (const s of t.sizes) setField(s.key, t.defaults[s.key])
+      await sleep(120)
+      setField("stat", t.defaults.stat)
+      if (window.innerWidth < 992) document.querySelector(".vm-app")?.scrollIntoView({behavior: "smooth"})
+    })
+  }
+}
+```
+
+<!-- ───────────────────────── z-tests ───────────────────────── -->
+
+::::: {.ht-detail data-test="z-mean"}
+
+::: ht-lede
+**One-sample z-test.** Is the mean $\mu$ of a population equal to a claimed value $\mu_0$, when the population standard deviation $\sigma$ is *known*?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ \mu = \mu_0$
+
+$H_1:\ \mu \ne \mu_0$, or $\mu < \mu_0$, or $\mu > \mu_0$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- A simple random sample of size $n$
+- $\sigma$ is known
+- The population is normal, or $n$ is large (about 30 or more)
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$z = \frac{\bar x - \mu_0}{\sigma / \sqrt{n}}$$
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$z \sim N(0, 1)$, the standard normal.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $\mu \ne \mu_0$ | $\lvert z\rvert \ge z_{\alpha/2}$ | $2\,P(Z \ge \lvert z\rvert)$ |
+| $\mu < \mu_0$ | $z \le -z_{\alpha}$ | $P(Z \le z)$ |
+| $\mu > \mu_0$ | $z \ge z_{\alpha}$ | $P(Z \ge z)$ |
+:::
+
+::: {.callout-note title="In practice"}
+$\sigma$ is rarely known. When it isn't, estimate it by the sample standard deviation $s$ and use the one-sample t-test instead.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+A machine is set to fill bags with $\mu_0 = 500$ g, and its fill weights are known to have $\sigma = 4$ g. A sample of $n = 25$ bags averages $\bar x = 498.2$ g. Is the machine off target?
+
+$$z = \frac{498.2 - 500}{4/\sqrt{25}} = \frac{-1.8}{0.8} = -2.25$$
+
+Two-sided: $p = 2\,P(Z \ge 2.25) = 0.0244 < 0.05$, and $\lvert z\rvert \ge z_{0.025} = 1.960$. **Reject $H_0$**: the machine is off target.
+
+<button class="ht-load" data-test="z-mean">Show on the chart</button>
+:::
+
+:::::
+
+::::: {.ht-detail data-test="z-prop"}
+
+::: ht-lede
+**One-proportion z-test.** Is the proportion $p$ of a population with some property equal to a claimed value $p_0$?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ p = p_0$
+
+$H_1:\ p \ne p_0$, or $p < p_0$, or $p > p_0$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- A simple random sample of $n$ independent yes/no trials
+- Large enough: $np_0 \ge 10$ and $n(1 - p_0) \ge 10$ (some texts use 5)
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$z = \frac{\hat p - p_0}{\sqrt{p_0(1 - p_0)/n}}, \qquad \hat p = \frac{x}{n}$$
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$z \approx N(0, 1)$ (normal approximation to the binomial).
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $p \ne p_0$ | $\lvert z\rvert \ge z_{\alpha/2}$ | $2\,P(Z \ge \lvert z\rvert)$ |
+| $p < p_0$ | $z \le -z_{\alpha}$ | $P(Z \le z)$ |
+| $p > p_0$ | $z \ge z_{\alpha}$ | $P(Z \ge z)$ |
+:::
+
+::: {.callout-note title="Why p₀ in the denominator?"}
+The standard error is computed *assuming $H_0$ is true*, so it uses $p_0$, not $\hat p$. (A confidence interval for $p$ uses $\hat p$ instead.)
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+A coin is flipped $n = 100$ times and lands heads $x = 61$ times. Is it fair ($p_0 = 0.5$)?
+
+$$z = \frac{0.61 - 0.5}{\sqrt{0.5 \cdot 0.5 / 100}} = \frac{0.11}{0.05} = 2.20$$
+
+Two-sided: $p = 2\,P(Z \ge 2.20) = 0.0278 < 0.05$. **Reject $H_0$**: the coin looks biased.
+
+<button class="ht-load" data-test="z-prop">Show on the chart</button>
+:::
+
+:::::
+
+::::: {.ht-detail data-test="z-2prop"}
+
+::: ht-lede
+**Two-proportion z-test.** Do two populations have the same proportion, $p_1 = p_2$?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ p_1 = p_2$
+
+$H_1:\ p_1 \ne p_2$, or $p_1 < p_2$, or $p_1 > p_2$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- Two independent simple random samples
+- Large enough: at least 10 successes and 10 failures in each group, using the pooled $\hat p$
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$z = \frac{\hat p_1 - \hat p_2}{\sqrt{\hat p(1 - \hat p)\left(\frac{1}{n_1} + \frac{1}{n_2}\right)}}$$
+
+with the pooled proportion $\hat p = \dfrac{x_1 + x_2}{n_1 + n_2}$.
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$z \approx N(0, 1)$.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $p_1 \ne p_2$ | $\lvert z\rvert \ge z_{\alpha/2}$ | $2\,P(Z \ge \lvert z\rvert)$ |
+| $p_1 < p_2$ | $z \le -z_{\alpha}$ | $P(Z \le z)$ |
+| $p_1 > p_2$ | $z \ge z_{\alpha}$ | $P(Z \ge z)$ |
+:::
+
+::: {.callout-note title="Why pool?"}
+Under $H_0$ the two groups share one proportion, so the best estimate of it combines both samples.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+Ad A is shown to 400 people and 120 click ($\hat p_1 = 0.30$); ad B is shown to 400 and 90 click ($\hat p_2 = 0.225$). Does A get more clicks?
+
+Pooled $\hat p = 210/800 = 0.2625$, so
+
+$$z = \frac{0.30 - 0.225}{\sqrt{0.2625 \cdot 0.7375 \cdot \left(\frac{1}{400} + \frac{1}{400}\right)}} = \frac{0.075}{0.0311} = 2.41$$
+
+One-sided ($H_1: p_1 > p_2$): $p = P(Z \ge 2.41) = 0.0080$, and $z \ge z_{0.05} = 1.645$. **Reject $H_0$**: A's click rate is higher.
+
+<button class="ht-load" data-test="z-2prop">Show on the chart</button>
+:::
+
+:::::
+
+<!-- ───────────────────────── t-tests ───────────────────────── -->
+
+::::: {.ht-detail data-test="t-one"}
+
+::: ht-lede
+**One-sample t-test.** Is the mean $\mu$ of a population equal to a claimed value $\mu_0$, when $\sigma$ is *unknown*?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ \mu = \mu_0$
+
+$H_1:\ \mu \ne \mu_0$, or $\mu < \mu_0$, or $\mu > \mu_0$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- A simple random sample of size $n$
+- The population is roughly normal; for $n$ around 30 or more, mild skew is fine
+- No extreme outliers
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$t = \frac{\bar x - \mu_0}{s / \sqrt{n}}$$
+
+$s$ is the sample standard deviation.
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$t \sim t_{n-1}$, Student's t with $\nu = n - 1$ degrees of freedom.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $\mu \ne \mu_0$ | $\lvert t\rvert \ge t_{\alpha/2,\,n-1}$ | $2\,P(T \ge \lvert t\rvert)$ |
+| $\mu < \mu_0$ | $t \le -t_{\alpha,\,n-1}$ | $P(T \le t)$ |
+| $\mu > \mu_0$ | $t \ge t_{\alpha,\,n-1}$ | $P(T \ge t)$ |
+:::
+
+::: {.callout-note title="Why t and not z?"}
+Estimating $\sigma$ by $s$ adds uncertainty, so the t distribution has heavier tails than the normal. As $n$ grows, $s$ gets more accurate and $t_{n-1}$ approaches $N(0,1)$: change the sample size in the app and watch the critical value shrink toward $z_{\alpha}$.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+A survey claims students sleep $\mu_0 = 8$ hours a night. A sample of $n = 16$ students averages $\bar x = 7.4$ hours with $s = 1.2$. Do students sleep less than claimed?
+
+$$t = \frac{7.4 - 8}{1.2/\sqrt{16}} = \frac{-0.6}{0.3} = -2.00, \qquad \nu = 15$$
+
+One-sided ($H_1: \mu < 8$): $p = P(T_{15} \le -2.00) = 0.032 < 0.05$, and $t \le -t_{0.05,15} = -1.753$. **Reject $H_0$**.
+
+<button class="ht-load" data-test="t-one">Show on the chart</button>
+:::
+
+:::::
+
+::::: {.ht-detail data-test="t-paired"}
+
+::: ht-lede
+**Paired t-test.** Two measurements on the *same* subjects (before and after, left and right, twin A and twin B): is the mean difference $\mu_d$ zero?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ \mu_d = 0$
+
+$H_1:\ \mu_d \ne 0$, or $\mu_d < 0$, or $\mu_d > 0$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- The pairs are a random sample, independent of one another
+- The *differences* $d_i$ are roughly normal (the raw measurements needn't be)
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$t = \frac{\bar d}{s_d / \sqrt{n}}$$
+
+$d_i$ = difference in pair $i$; $\bar d$, $s_d$ their mean and standard deviation; $n$ = number of pairs.
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$t \sim t_{n-1}$.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $\mu_d \ne 0$ | $\lvert t\rvert \ge t_{\alpha/2,\,n-1}$ | $2\,P(T \ge \lvert t\rvert)$ |
+| $\mu_d < 0$ | $t \le -t_{\alpha,\,n-1}$ | $P(T \le t)$ |
+| $\mu_d > 0$ | $t \ge t_{\alpha,\,n-1}$ | $P(T \ge t)$ |
+:::
+
+::: {.callout-note title="It's a one-sample t-test in disguise"}
+Subtract within each pair and run a one-sample t-test on the differences with $\mu_0 = 0$. Pairing removes the subject-to-subject variation, which is why it is more powerful than treating the two columns as independent groups. Don't use the two-sample test on paired data.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+Eight patients' systolic blood pressure before and after a month on a new diet. Did it go down?
+
+::: ht-example-data
+| Patient | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| Before | 142 | 138 | 150 | 145 | 160 | 155 | 148 | 152 |
+| After | 138 | 140 | 141 | 143 | 155 | 154 | 151 | 145 |
+| $d$ = before − after | 4 | −2 | 9 | 2 | 5 | 1 | −3 | 7 |
+:::
+
+$\bar d = 2.875$, $s_d = 4.19$, so
+
+$$t = \frac{2.875}{4.19/\sqrt{8}} = 1.94, \qquad \nu = 7$$
+
+One-sided ($H_1: \mu_d > 0$): $p = 0.047 < 0.05$, just past $t_{0.05,7} = 1.895$. **Reject $H_0$ at $\alpha = 0.05$**, but not at $\alpha = 0.01$: slide $\alpha$ down and watch the decision flip.
+
+<button class="ht-load" data-test="t-paired">Show on the chart</button>
+:::
+
+:::::
+
+::::: {.ht-detail data-test="t-two"}
+
+::: ht-lede
+**Two-sample t-test (pooled).** Do two *independent* groups have the same mean, $\mu_1 = \mu_2$, assuming they have the same variance?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ \mu_1 = \mu_2$
+
+$H_1:\ \mu_1 \ne \mu_2$, or $\mu_1 < \mu_2$, or $\mu_1 > \mu_2$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- Two independent simple random samples
+- Each population roughly normal
+- **Equal variances** $\sigma_1^2 = \sigma_2^2$ (rule of thumb: the larger $s$ is less than twice the smaller)
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$t = \frac{\bar x_1 - \bar x_2}{s_p\sqrt{\frac{1}{n_1} + \frac{1}{n_2}}}$$
+
+with the pooled variance
+$$s_p^2 = \frac{(n_1 - 1)s_1^2 + (n_2 - 1)s_2^2}{n_1 + n_2 - 2}$$
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$t \sim t_{n_1 + n_2 - 2}$.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $\mu_1 \ne \mu_2$ | $\lvert t\rvert \ge t_{\alpha/2,\,\nu}$ | $2\,P(T \ge \lvert t\rvert)$ |
+| $\mu_1 < \mu_2$ | $t \le -t_{\alpha,\,\nu}$ | $P(T \le t)$ |
+| $\mu_1 > \mu_2$ | $t \ge t_{\alpha,\,\nu}$ | $P(T \ge t)$ |
+:::
+
+::: {.callout-note title="Unequal variances: Welch's t-test"}
+If the variances may differ, don't pool. **Welch's t-test** uses
+$$t = \frac{\bar x_1 - \bar x_2}{\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}}$$
+with a non-integer degrees of freedom from the Welch–Satterthwaite formula. Many statisticians recommend it as the default, and most software uses it unless told otherwise.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+Two teaching methods. Method 1: $n_1 = 12$ students, mean score $\bar x_1 = 78$, $s_1 = 8$. Method 2: $n_2 = 10$, $\bar x_2 = 71$, $s_2 = 9$. Do the methods differ?
+
+$$s_p^2 = \frac{11 \cdot 64 + 9 \cdot 81}{20} = 71.65, \quad s_p = 8.46$$
+
+$$t = \frac{78 - 71}{8.46\sqrt{\frac{1}{12} + \frac{1}{10}}} = 1.93, \qquad \nu = 20$$
+
+Two-sided: $p = 0.068 > 0.05$, and $\lvert t\rvert < t_{0.025,20} = 2.086$. **Fail to reject $H_0$**: a 7-point gap isn't convincing with samples this small. Try a one-sided alternative, or raise the sample sizes.
+
+<button class="ht-load" data-test="t-two">Show on the chart</button>
+:::
+
+:::::
+
+<!-- ───────────────────────── χ² tests ───────────────────────── -->
+
+::::: {.ht-detail data-test="chi2-gof"}
+
+::: ht-lede
+**χ² goodness-of-fit test.** Do the counts in $k$ categories match a claimed distribution $p_1, \dots, p_k$?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0$: the category probabilities are $p_1, \dots, p_k$
+
+$H_1$: at least one differs
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- A random sample of $n$ independent observations, each in exactly one category
+- Every **expected** count $E_i = np_i$ is at least 5
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$\chi^2 = \sum_{i=1}^{k} \frac{(O_i - E_i)^2}{E_i}$$
+
+$O_i$ observed, $E_i = np_i$ expected count.
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$\chi^2 \approx \chi^2_{k-1}$. (Subtract one more degree of freedom for each parameter estimated from the data.)
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| Counts don't fit | $\chi^2 \ge \chi^2_{\alpha,\,k-1}$ | $P(\chi^2_{k-1} \ge \chi^2)$ |
+:::
+
+::: {.callout-note title="Why only the right tail?"}
+Any departure from $H_0$, in any direction, makes $(O_i - E_i)^2$ bigger. So only large values of $\chi^2$ are evidence against $H_0$, and the test is always right-tailed.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+A die is rolled 120 times. Is it fair? Each face is expected $120/6 = 20$ times.
+
+::: ht-example-data
+| Face | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| Observed $O$ | 15 | 25 | 18 | 22 | 12 | 28 |
+| Expected $E$ | 20 | 20 | 20 | 20 | 20 | 20 |
+:::
+
+$$\chi^2 = \frac{25 + 25 + 4 + 4 + 64 + 64}{20} = 9.30, \qquad \nu = 5$$
+
+$p = 0.098 > 0.05$, and $\chi^2 < \chi^2_{0.05,5} = 11.07$. **Fail to reject $H_0$**: the spread is within what a fair die produces.
+
+<button class="ht-load" data-test="chi2-gof">Show on the chart</button>
+:::
+
+:::::
+
+::::: {.ht-detail data-test="chi2-ind"}
+
+::: ht-lede
+**χ² test of independence.** In an $r \times c$ table of counts, are the row variable and the column variable independent?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0$: the two variables are independent
+
+$H_1$: they are associated
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- A random sample, each subject counted in exactly one cell
+- Every **expected** count is at least 5
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$\chi^2 = \sum_{\text{cells}} \frac{(O_{ij} - E_{ij})^2}{E_{ij}}$$
+
+$$E_{ij} = \frac{(\text{row } i \text{ total})(\text{column } j \text{ total})}{n}$$
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$\chi^2 \approx \chi^2_{(r-1)(c-1)}$.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| Variables are related | $\chi^2 \ge \chi^2_{\alpha,\,(r-1)(c-1)}$ | $P(\chi^2_{\nu} \ge \chi^2)$ |
+:::
+
+::: {.callout-note title="Where the degrees of freedom come from"}
+Once the row and column totals are fixed, filling in $(r-1)(c-1)$ cells determines the rest of the table.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+120 people, by age group and preferred drink. Is preference related to age?
+
+::: ht-example-data
+| | Coffee | Tea | Neither | Total |
+|---|---|---|---|---|
+| Under 30 | 32 (25) | 13 (20) | 15 (15) | 60 |
+| 30 and over | 18 (25) | 27 (20) | 15 (15) | 60 |
+| Total | 50 | 40 | 30 | 120 |
+:::
+
+Expected counts in parentheses, e.g. $E_{11} = 60 \cdot 50 / 120 = 25$.
+
+$$\chi^2 = 2\left(\frac{7^2}{25} + \frac{7^2}{20} + 0\right) = 8.82, \qquad \nu = (2-1)(3-1) = 2$$
+
+$p = 0.012 < 0.05$, and $\chi^2 \ge \chi^2_{0.05,2} = 5.99$. **Reject $H_0$**: drink preference depends on age.
+
+<button class="ht-load" data-test="chi2-ind">Show on the chart</button>
+:::
+
+:::::
+
+::::: {.ht-detail data-test="chi2-var"}
+
+::: ht-lede
+**χ² test for one variance.** Is the variance $\sigma^2$ of a normal population equal to a claimed value $\sigma_0^2$?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ \sigma^2 = \sigma_0^2$
+
+$H_1:\ \sigma^2 \ne \sigma_0^2$, or $\sigma^2 < \sigma_0^2$, or $\sigma^2 > \sigma_0^2$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- A simple random sample of size $n$
+- The population is **normal** (this test is not robust to non-normality, even for large $n$)
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$\chi^2 = \frac{(n - 1)s^2}{\sigma_0^2}$$
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$\chi^2 \sim \chi^2_{n-1}$.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $\sigma^2 \ne \sigma_0^2$ | $\chi^2 \le \chi^2_{1-\alpha/2,\,n-1}$ or $\chi^2 \ge \chi^2_{\alpha/2,\,n-1}$ | $2\min\{P(X \le \chi^2), P(X \ge \chi^2)\}$ |
+| $\sigma^2 < \sigma_0^2$ | $\chi^2 \le \chi^2_{1-\alpha,\,n-1}$ | $P(X \le \chi^2)$ |
+| $\sigma^2 > \sigma_0^2$ | $\chi^2 \ge \chi^2_{\alpha,\,n-1}$ | $P(X \ge \chi^2)$ |
+:::
+
+::: {.callout-note title="A two-sided test on a lopsided distribution"}
+$\chi^2$ isn't symmetric, so the two critical values aren't mirror images: each tail gets area $\alpha/2$, and the two-sided p-value doubles the smaller tail. Pick the two-sided alternative in the app to see the uneven cut-offs.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+Bolts must have diameters with $\sigma_0 = 0.02$ mm. A sample of $n = 20$ bolts has $s = 0.026$ mm. Is the process too variable?
+
+$$\chi^2 = \frac{19 \cdot 0.026^2}{0.02^2} = 32.11, \qquad \nu = 19$$
+
+One-sided ($H_1: \sigma^2 > \sigma_0^2$): $p = 0.030 < 0.05$, and $\chi^2 \ge \chi^2_{0.05,19} = 30.14$. **Reject $H_0$**.
+
+<button class="ht-load" data-test="chi2-var">Show on the chart</button>
+:::
+
+:::::
+
+<!-- ───────────────────────── F-test ───────────────────────── -->
+
+::::: {.ht-detail data-test="f-var"}
+
+::: ht-lede
+**F-test for two variances.** Do two *independent* normal populations have the same variance, $\sigma_1^2 = \sigma_2^2$?
+:::
+
+:::: ht-cards
+
+::: {.ht-card .ht-hyp}
+[Hypotheses]{.ht-card-title}
+
+$H_0:\ \sigma_1^2 = \sigma_2^2$
+
+$H_1:\ \sigma_1^2 \ne \sigma_2^2$, or $\sigma_1^2 < \sigma_2^2$, or $\sigma_1^2 > \sigma_2^2$
+:::
+
+::: {.ht-card .ht-assume}
+[Assumptions]{.ht-card-title}
+
+- Two independent simple random samples
+- Both populations **normal** (like the χ² variance test, very sensitive to this)
+:::
+
+::: {.ht-card .ht-stat}
+[Test statistic]{.ht-card-title}
+
+$$F = \frac{s_1^2}{s_2^2}$$
+:::
+
+::: {.ht-card .ht-null}
+[Null distribution]{.ht-card-title}
+
+$F \sim F_{n_1 - 1,\, n_2 - 1}$: numerator degrees of freedom first.
+:::
+
+::::
+
+::: ht-section-title
+Decision rule
+:::
+
+::: ht-rule
+| $H_1$ | Reject $H_0$ when | p-value |
+|---|---|---|
+| $\sigma_1^2 \ne \sigma_2^2$ | $F \le F_{1-\alpha/2,\,\nu_1,\nu_2}$ or $F \ge F_{\alpha/2,\,\nu_1,\nu_2}$ | $2\min\{P(X \le F), P(X \ge F)\}$ |
+| $\sigma_1^2 < \sigma_2^2$ | $F \le F_{1-\alpha,\,\nu_1,\nu_2}$ | $P(X \le F)$ |
+| $\sigma_1^2 > \sigma_2^2$ | $F \ge F_{\alpha,\,\nu_1,\nu_2}$ | $P(X \ge F)$ |
+:::
+
+::: {.callout-note title="Lower critical values from a table"}
+F tables list only upper critical values. The lower one comes from swapping the degrees of freedom: $F_{1-\alpha,\,\nu_1,\nu_2} = 1 / F_{\alpha,\,\nu_2,\nu_1}$. Many texts instead put the larger variance on top, so only the upper tail is needed.
+
+The F distribution comes back in ANOVA, which compares the means of three or more groups by a ratio of variances.
+:::
+
+::: {.callout-tip title="Worked example" collapse="false"}
+Two machines cut rods. Machine 1: $n_1 = 13$, $s_1 = 5.2$. Machine 2: $n_2 = 16$, $s_2 = 3.4$. Do they differ in variability?
+
+$$F = \frac{5.2^2}{3.4^2} = \frac{27.04}{11.56} = 2.34, \qquad \nu_1 = 12,\ \nu_2 = 15$$
+
+Two-sided: $p = 0.122 > 0.05$, and $F$ lies between the critical values $0.315$ and $2.963$. **Fail to reject $H_0$**.
+
+<button class="ht-load" data-test="f-var">Show on the chart</button>
+:::
+
+:::::
+
+:::::::::

@@ -164,7 +164,7 @@
     // default width as well as a dragged one, and on window resize.
     handle.setAttribute("aria-valuemin", String(MIN_APP))
     function updateAria() {
-      handle.setAttribute("aria-valuemax", String(Math.max(MIN_APP, window.innerWidth - MIN_TEXT)))
+      handle.setAttribute("aria-valuemax", String(Math.max(MIN_APP, layoutWidth() - MIN_TEXT)))
       handle.setAttribute("aria-valuenow", String(Math.round(app.getBoundingClientRect().width)))
     }
 
@@ -172,14 +172,27 @@
     // they asked for, not what fits: a window too narrow for it shows a
     // clamped pane, and widening the window again brings their width back.
     var appWidth = null
+
+    // The window less split.css's gutters: past --vm-split-max the text and
+    // the pane are one centered block, and both the drag and the clamp work
+    // inside it. The gutter is read back off the pane, which sits that far
+    // from the right edge, rather than recomputed from the stylesheet.
+    function gutter() {
+      var right = app.getBoundingClientRect().right
+      return Math.max(0, document.documentElement.clientWidth - right)
+    }
+    function layoutWidth() {
+      return document.documentElement.clientWidth - 2 * gutter()
+    }
+
     function applyWidth() {
       if (appWidth === null) return
-      var width = clampWidth(appWidth, window.innerWidth)
+      var width = clampWidth(appWidth, layoutWidth())
       document.body.style.setProperty("--vm-split-app-w", width + "px")
       updateAria()
     }
     function setAppWidth(px) {
-      var width = clampWidth(px, window.innerWidth)
+      var width = clampWidth(px, layoutWidth())
       if (width === null) return
       appWidth = width
       applyWidth()
@@ -209,7 +222,7 @@
     })
     handle.addEventListener("pointermove", function (e) {
       if (!handle.hasPointerCapture(e.pointerId)) return
-      setAppWidth(window.innerWidth - e.clientX)
+      setAppWidth(app.getBoundingClientRect().right - e.clientX)
     })
     function endDrag(e) {
       if (!handle.hasPointerCapture(e.pointerId)) return

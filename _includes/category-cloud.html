@@ -6,41 +6,58 @@ Authors: Apurva Nakade
 
 <!--
 The homepage Gallery's category cloud (`categories: cloud`), styled. mathviz's
-category-cloud chrome (`mathviz: {category-cloud: true}` in index.qmd's front
-matter) moves the cloud out of the right margin, which is too narrow on this
-layout and hidden on a phone, into a row above the cards
+category-cloud chrome (`mathviz-page: {category-cloud: true}` in index.qmd's
+front matter) moves the cloud out of the right margin, which is too narrow on
+this layout and hidden on a phone, into a row above the cards
 (`.vm-category-cloud`), and adds an "All" entry (`.category--all`) that
-clears the filter. This file only styles it: the selected entry -- All when
-nothing is filtered, which mathviz marks `.active` -- is a filled pill, and
-All is always outlined, so the way back to every app is visible once a
-filter is on. Without JS the cloud stays in the margin.
+clears the filter. This file only styles it.
+
+Every entry is the same chip: one size, a quiet outline. Quarto sizes a
+cloud's words by how many pages carry them, but chips of five sizes read as
+noise, and the selected one -- a small word like "Data Science" -- was easy
+to miss. The selected entry (All while nothing is filtered, which mathviz
+marks `.active`) is the only filled chip, bold, with a check mark, so it
+reads as selected without comparing it to its neighbours. All gets no
+outline of its own: an always-outlined All read as a second selection.
+scroll-margin-top keeps the fixed navbar off the cloud when mathviz scrolls
+it back into view after a pick.
 -->
 <style>
+.vm-category-cloud {
+  scroll-margin-top: 4.5rem;
+}
 .vm-category-cloud .quarto-listing-category {
-  gap: 0.3rem 0.4rem;
+  gap: 0.4rem;
   margin: 0 0 1.25rem;
 }
 .vm-category-cloud .category {
-  color: var(--vm-accent);
-  padding: 0.05rem 0.55rem;
-  border: 1px solid transparent;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--vm-text);
+  padding: 0.15rem 0.7rem;
+  background: var(--vm-surface);
+  border: 1px solid var(--vm-border);
   border-radius: 999px;
+  cursor: pointer;
+}
+.vm-category-cloud .category .quarto-category-count {
+  font-size: inherit;
 }
 .vm-category-cloud .category:hover {
-  color: var(--vm-accent-hover);
-  text-decoration: underline;
+  border-color: var(--vm-accent);
+  color: var(--vm-accent);
 }
 .vm-category-cloud .category--all {
-  margin: 0;
-  font-size: 1em;
   font-weight: 500;
-  border-color: var(--vm-accent);
-  cursor: pointer;
 }
 .vm-category-cloud .category.active {
   background: var(--vm-accent);
   border-color: var(--vm-accent);
-  color: var(--vm-bg);
-  text-decoration: none;
+  color: var(--vm-on-accent);
+  font-weight: 600;
+}
+.vm-category-cloud .category.active::before {
+  content: "\2713\00a0";
 }
 </style>

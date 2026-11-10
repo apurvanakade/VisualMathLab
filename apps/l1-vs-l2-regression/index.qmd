@@ -366,7 +366,19 @@ stats = {
 
 </div>
 
-Drag the outlier severity slider (in either direction) to see the two fits diverge. L2 minimizes $\sum_i (y_i - \hat y_i)^2$; L1 minimizes $\sum_i |y_i - \hat y_i|$. Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier's residual — that's why it chases outliers. L1's penalty grows only linearly with distance, so an outlier costs the fit proportionally and never dominates the way it does for L2, which is why L1 is called a **robust** estimator. The tradeoff is computational: L2 has a closed-form solution, while L1 has none and must be solved iteratively — this page uses **iteratively reweighted least squares (IRLS)**, which is why L1's fit takes more iterations and more time than L2's, as the Fit comparison table shows.
+Both fits choose the line $\hat y = mx + b$ that makes the residuals ${y_i - \hat y_i}$ small, but they measure "small" differently:
+
+$$
+\text{L2:}\ \min_{m,\,b} \sum_i (y_i - \hat y_i)^2
+\qquad\qquad
+\text{L1:}\ \min_{m,\,b} \sum_i \lvert y_i - \hat y_i \rvert
+$$
+
+Drag the outlier severity slider, in either direction, to see the two fits diverge.
+
+Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier's residual. That is why it chases outliers. L1's penalty grows only linearly with distance, so an outlier costs the fit in proportion and never dominates it. This is why L1 is called a **robust** estimator.
+
+The tradeoff is computational. L2 has a closed-form solution; L1 has none and must be solved iteratively. This page uses **iteratively reweighted least squares (IRLS)**, which is why L1's fit takes more time than L2's, as the "Fit comparison" table shows.
 
 :::: {.callout-note collapse="true" title="Fit comparison"}
 
@@ -400,9 +412,9 @@ comparisonTable = {
 ```
 
 ```{ojs}
-md`The underlying (pre-outlier) line has slope **${basePoints.slope.toFixed(2)}** and intercept **${basePoints.intercept.toFixed(2)}** — compare each fit's slope/intercept above to that as you move the slider.
+md`The underlying (pre-outlier) line has slope ${basePoints.slope.toFixed(2)} and intercept ${basePoints.intercept.toFixed(2)}. Compare each fit's slope and intercept with these as you move the slider.
 
-L1's fit took **${result.l1.iterations}** reweighting iterations to converge at the current severity, which is why it's consistently slower than L2's single closed-form solve, even on a dataset this small.`
+L1's fit took ${result.l1.iterations} reweighting iterations to converge at the current severity. That is why it is consistently slower than L2's single closed-form solve, even on a dataset this small.`
 ```
 
 ::::

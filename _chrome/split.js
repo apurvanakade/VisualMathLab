@@ -14,8 +14,9 @@
  *   height would leave a gap where the navbar was. The edge is written to
  *   --vm-split-top every frame while the page scrolls -- only a custom
  *   property write, so it costs no layout of the page itself.
- * - Its charts fill the height the controls leave. Every .plotly-box-large
- *   in the pane gets an equal share, measured into --vm-split-chart-h once
+ * - Its charts fill the height the controls leave. Every row of
+ *   .plotly-box-large charts in the pane gets an equal share (charts side
+ *   by side are one row), measured into --vm-split-chart-h once
  *   things settle (each refit redraws Plotly). The controls' height differs
  *   by page and by width, and OJS fills them in after load.
  * - The divider between the text and the pane can be dragged, or moved with
@@ -55,19 +56,42 @@
   }
 
   /**
-   * The height each chart gets: what the pane's content box leaves after
-   * everything that isn't a chart, shared equally.
+   * The height each row of charts gets: what the pane's content box leaves
+   * after everything that isn't a chart, shared equally.
    *
    * @param {{paneHeight: number, contentHeight: number, chartsHeight: number, charts: number}} m
    *   `paneHeight` is the pane's inner height (clientHeight less padding),
    *   `contentHeight` the extent of its visible children, `chartsHeight` the
-   *   charts' current total.
+   *   charts' current total and `charts` the number of rows (chartRows).
    * @returns {number|null} Whole px, or null with no charts.
    */
   function chartHeight(m) {
     if (m.charts <= 0) return null
     var other = m.contentHeight - m.chartsHeight
     return Math.floor((m.paneHeight - other) / m.charts)
+  }
+
+  /**
+   * The charts' rows: charts whose tops are within a pixel of each other sit
+   * side by side and share one row. A stacked layout is one chart per row.
+   *
+   * @param {{top: number, height: number}[]} rects - The charts' rectangles.
+   * @returns {{rows: number, height: number}} How many rows, and their total
+   *   height (each row as tall as its tallest chart).
+   */
+  function chartRows(rects) {
+    var rows = []
+    for (var i = 0; i < rects.length; i++) {
+      var row = null
+      for (var j = 0; j < rows.length; j++) {
+        if (Math.abs(rows[j].top - rects[i].top) <= 1) row = rows[j]
+      }
+      if (row) row.height = Math.max(row.height, rects[i].height)
+      else rows.push({ top: rects[i].top, height: rects[i].height })
+    }
+    var height = 0
+    for (var k = 0; k < rows.length; k++) height += rows[k].height
+    return { rows: rows.length, height: height }
   }
 
   function readStored(key) {
@@ -107,8 +131,9 @@
       if (!wide.matches) return
       var charts = app.querySelectorAll(".plotly-box-large")
       if (charts.length === 0) return
-      var chartsHeight = 0
-      for (var i = 0; i < charts.length; i++) chartsHeight += charts[i].getBoundingClientRect().height
+      var rects = []
+      for (var i = 0; i < charts.length; i++) rects.push(charts[i].getBoundingClientRect())
+      var rows = chartRows(rects)
       var style = getComputedStyle(app)
       var paneHeight = app.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
       // The content's own extent, not scrollHeight: that never reports less
@@ -124,7 +149,7 @@
         bottom = Math.max(bottom, rect.bottom)
       }
       if (!Number.isFinite(top)) return
-      var height = chartHeight({ paneHeight: paneHeight, contentHeight: bottom - top, chartsHeight: chartsHeight, charts: charts.length })
+      var height = chartHeight({ paneHeight: paneHeight, contentHeight: bottom - top, chartsHeight: rows.height, charts: rows.rows })
       app.style.setProperty("--vm-split-chart-h", height + "px")
     }
 
@@ -257,7 +282,7 @@
   }
 
   var VM = globalThis.VM || (globalThis.VM = {})
-  VM.chrome = { ...VM.chrome, split: { clampWidth: clampWidth, chartHeight: chartHeight } }
+  VM.chrome = { ...VM.chrome, split: { clampWidth: clampWidth, chartHeight: chartHeight, chartRows: chartRows } }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init)
   else init()

@@ -66,7 +66,7 @@ test('no best fit without two distinct x values', () => {
 
 test('every example sets only page fields, in the order the page needs', () => {
   for (const {title, params} of L.examples) {
-    assert.deepEqual(Object.keys(params), ['pts', 'loss', 'rate', 'steps', 'm', 'c', 'k'], title)
+    assert.deepEqual(Object.keys(params), ['pts', 'loss', 'rate', 'steps', 'm', 'c'], title)
     assert.ok(L.LOSSES.includes(params.loss), title)
   }
 })

@@ -209,16 +209,17 @@ const FLAT = "-3,-2;-3,2;5,1;5,5"
 
 /**
  * The "Try an example" presets. Every key is a page field; pts comes first,
- * because the m and c sliders' bounds follow the points, and steps before k,
- * because it bounds the step slider. Each opens at step 0, for the play
- * button to run.
+ * because the m and c sliders' bounds follow the points. The step slider k
+ * is not an example field: scrubbing it is the app's main action, and
+ * would otherwise turn the dropdown to "Custom inputs". The page puts it
+ * back at step 0 when an example is applied.
  */
 export const examples = [
-  {title: "Noisy line: least squares", params: {pts: NOISY, loss: "l2", rate: "0.05", steps: "60", m: "-0.8", c: "5", k: "0"}},
-  {title: "Large step: zigzag", params: {pts: NOISY, loss: "l2", rate: "0.1", steps: "60", m: "-0.8", c: "5", k: "0"}},
-  {title: "Step too large: divergence", params: {pts: NOISY, loss: "l2", rate: "0.115", steps: "60", m: "1.4", c: "0.5", k: "0"}},
-  {title: "Far from x = 0: a narrow valley", params: {pts: FAR, loss: "l2", rate: "0.04", steps: "200", m: "2.5", c: "-3", k: "0"}},
-  {title: "An outlier, least squares", params: {pts: OUTLIER, loss: "l2", rate: "0.05", steps: "100", m: "-1", c: "5", k: "0"}},
-  {title: "An outlier, least absolute deviations", params: {pts: OUTLIER, loss: "l1", rate: "0.05", steps: "300", m: "-1", c: "5", k: "0"}},
-  {title: "Many best L1 lines", params: {pts: FLAT, loss: "l1", rate: "0.05", steps: "200", m: "-1", c: "-2", k: "0"}}
+  {title: "Noisy line: least squares", params: {pts: NOISY, loss: "l2", rate: "0.05", steps: "60", m: "-0.8", c: "5"}},
+  {title: "Large step: zigzag", params: {pts: NOISY, loss: "l2", rate: "0.1", steps: "60", m: "-0.8", c: "5"}},
+  {title: "Step too large: divergence", params: {pts: NOISY, loss: "l2", rate: "0.115", steps: "60", m: "1.4", c: "0.5"}},
+  {title: "Far from x = 0: a narrow valley", params: {pts: FAR, loss: "l2", rate: "0.04", steps: "200", m: "2.5", c: "-3"}},
+  {title: "An outlier, least squares", params: {pts: OUTLIER, loss: "l2", rate: "0.05", steps: "100", m: "-1", c: "5"}},
+  {title: "An outlier, least absolute deviations", params: {pts: OUTLIER, loss: "l1", rate: "0.05", steps: "300", m: "-1", c: "5"}},
+  {title: "Many best L1 lines", params: {pts: FLAT, loss: "l1", rate: "0.05", steps: "200", m: "-1", c: "-2"}}
 ]

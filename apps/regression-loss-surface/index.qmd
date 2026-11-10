@@ -17,15 +17,6 @@ Authors: Apurva Nakade
 -->
 
 <style>
-/* Two charts side by side need more room than one: a wider default pane
- * than split.css's 56vw, and a narrower text column. Dragging the divider
- * still overrides it. */
-@media (min-width: 992px) {
-  body:has(.vm-split) {
-    --vm-split-app-w: clamp(30rem, 64vw, 80rem);
-  }
-}
-
 /* The two charts: side by side once the block is wide enough for the
  * surface to be roughly square, stacked below that (a phone, a narrow
  * pane). split.js counts side-by-side charts as one row when it shares out
@@ -45,7 +36,7 @@ Authors: Apurva Nakade
 }
 </style>
 
-::::::::: {.vm-split}
+::::::::: {.vm-split .vm-split-wide}
 
 ```{ojs}
 //| output: false
@@ -80,7 +71,7 @@ initial = {
     steps: VM.ui.urlParam("steps", ex.steps),
     m: VM.ui.urlParam("m", Number(ex.m)),
     c: VM.ui.urlParam("c", Number(ex.c)),
-    k: VM.ui.urlParam("k", Number(ex.k))
+    k: VM.ui.urlParam("k", 0)
   }
 }
 ```
@@ -175,6 +166,7 @@ pointsField = {
     set: text => {
       const points = decodePoints(text)
       if (!points) return
+      setWindowPoints(points)
       view.value = points
       view.dispatchEvent(new Event("input", {bubbles: true}))
       view.dispatchEvent(new Event("change", {bubbles: true}))
@@ -190,9 +182,8 @@ pointsField = {
 //| output: false
 // Plain CSS selectors, not direct viewof references (a view recreated by a
 // window change would re-trigger a cell that named it). pts comes first, as
-// in every example: the m and c sliders' bounds follow the points, and the
-// step slider's follow steps.
-exampleFieldSelectors = ({pts: '[data-example-field="pts"]', loss: '[data-example-field="loss"]', rate: '[data-example-field="rate"]', steps: '[data-example-field="steps"]', m: '[data-example-field="m"]', c: '[data-example-field="c"]', k: '[data-example-field="k"]'})
+// in every example: the m and c sliders' bounds follow the points.
+exampleFieldSelectors = ({pts: '[data-example-field="pts"]', loss: '[data-example-field="loss"]', rate: '[data-example-field="rate"]', steps: '[data-example-field="steps"]', m: '[data-example-field="m"]', c: '[data-example-field="c"]'})
 ```
 
 ```{ojs}
@@ -200,14 +191,21 @@ exampleFieldSelectors = ({pts: '[data-example-field="pts"]', loss: '[data-exampl
 // One native "change" listener, not a cell reactive on exampleSelect: a
 // <select> fires input and change per pick, and two applies would race.
 // Nothing to commit afterwards -- every field here is live -- so the trigger
-// is an element with no button in it.
+// is an element with no button in it. An example starts at step 0: the
+// step slider is set before (for a slider rebuilt by a new max) and after.
 applyExampleFromSelect = {
   const nativeSelect = (viewof exampleSelect).querySelector("select")
   if (!nativeSelect) return
-  nativeSelect.addEventListener("change", () => {
+  nativeSelect.addEventListener("change", async () => {
     const example = (viewof exampleSelect).value
     if (!example) return
-    VM.ui.applyExampleParams(exampleFieldSelectors, example.params, document.createElement("div"))
+    lastSlider.k = 0
+    await VM.ui.applyExampleParams(exampleFieldSelectors, example.params, document.createElement("div"))
+    const step = document.querySelector("[data-step-slider]")
+    if (step && step.value !== 0) {
+      step.value = 0
+      step.dispatchEvent(new Event("input", {bubbles: true}))
+    }
   })
 }
 ```
@@ -217,7 +215,7 @@ applyExampleFromSelect = {
 // Keeps the dropdown naming the example the fields hold ("Custom inputs"
 // once none does): it re-runs on every field's change.
 syncExampleFromFields = {
-  committedPoints; lossKind; rateText; stepsText; m; c; k
+  committedPoints; lossKind; rateText; stepsText; m; c
   VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
 }
 ```
@@ -241,9 +239,27 @@ committedPoints = Generators.observe(notify => {
 
 ```{ojs}
 //| output: false
+// The data set the window was last centered on. A view with no DOM, set
+// only by setWindowPoints.
+viewof windowPoints = Inputs.input(initial.pts)
+```
+
+```{ojs}
+//| output: false
+setWindowPoints = points => {
+  const view = viewof windowPoints
+  view.value = points
+  view.dispatchEvent(new Event("input"))
+}
+```
+
+```{ojs}
+//| output: false
 // The (m, c) rectangle the sliders and the surface cover, centered on the
-// least-squares fit. It moves only when the points do, never with a slider.
-win = lossWindow(committedPoints)
+// least-squares fit of a whole new data set: the page's first, New points'
+// or an example's. Editing a point by hand keeps it, so the axes and the m
+// and c sliders hold still while the reader works.
+win = lossWindow(windowPoints)
 ```
 
 ```{ojs}
@@ -257,8 +273,8 @@ rate = {
 
 ```{ojs}
 //| output: false
-// A whole number of steps from 1 to 1000; an unreadable entry keeps the
-// slider at 100.
+// A whole number of steps from 1 to 1000; anything else (marked on the
+// field) keeps the slider at 100.
 maxSteps = {
   const value = Number(stepsText)
   if (!Number.isInteger(value) || value < 1) return 100
@@ -293,6 +309,26 @@ grid = surfaceGrid(pts, lossKind, win)
 ```{ojs}
 //| output: false
 fit = bestFit(pts, lossKind)
+```
+
+```{ojs}
+//| output: false
+// The surface's height axis, from the points as of the last finished edit:
+// it holds still through a drag rather than rescaling on every frame.
+zTop = Math.max(...surfaceGrid(committedPoints, lossKind, win, 31).z.flat())
+```
+
+```{ojs}
+//| output: false
+// A rate or a max the page can't use marks its field, the same way an
+// unparseable formula is marked elsewhere on the site.
+markInvalid = {
+  const mark = (view, bad) => view.querySelector("input")?.classList.toggle("vm-invalid", bad)
+  const steps = Number(stepsText)
+  mark(viewof rateText, rate === null)
+  mark(viewof stepsText, !Number.isInteger(steps) || steps < 1 || steps > 1000)
+  return true
+}
 ```
 
 ```{ojs}
@@ -383,7 +419,9 @@ newPoints = {
   const button = (viewof freshButton).querySelector("button")
   const onClick = () => {
     const view = viewof pts
-    view.value = randomPoints(Math.floor(Math.random() * 2 ** 31))
+    const points = randomPoints(Math.floor(Math.random() * 2 ** 31))
+    setWindowPoints(points)
+    view.value = points
     view.dispatchEvent(new Event("input", {bubbles: true}))
     view.dispatchEvent(new Event("change", {bubbles: true}))
   }
@@ -407,7 +445,7 @@ urlSync = {
     steps: [stepsText, ex.steps],
     m: [short(m), ex.m],
     c: [short(c), ex.c],
-    k: [String(k), ex.k]
+    k: [String(k), "0"]
   })
   return true
 }
@@ -445,7 +483,7 @@ viewof k = {
   const value = Math.min(maxSteps, Math.max(0, Math.round(lastSlider.k)))
   const input = Inputs.range([0, maxSteps], {value, step: 1, label: "Step k"})
   input.classList.add("ojs-fill")
-  input.dataset.exampleField = "k"
+  input.dataset.stepSlider = ""
   return input
 }
 ```
@@ -479,7 +517,7 @@ viewof pts = VM.plotting.draggablePoints(linePlot, {
 // onto the floor, the (m, c) at step k with a drop line to the floor, the
 // best fit and the descent path up to step k. Returns the same div on every run.
 {
-  const zMax = Math.max(...grid.z.flat())
+  const zMax = zTop
   const data = [{
     type: "surface", x: grid.ms, y: grid.cs, z: grid.z, showscale: false, opacity: 0.92,
     colorscale: [[0, chartColors.fn], [1, chartColors.halo]],
@@ -508,11 +546,16 @@ viewof pts = VM.plotting.draggablePoints(linePlot, {
     scene: {
       xaxis: {title: {text: "m"}, range: win.m},
       yaxis: {title: {text: "c"}, range: win.c},
-      zaxis: {title: {text: lossNames[lossKind]}, range: [0, zMax]},
+      zaxis: {title: {text: ""}, range: [0, zMax]},
       aspectmode: "manual", aspectratio: {x: 1, y: 1, z: 0.7},
-      camera: {eye: {x: -1.45, y: -1.55, z: 0.95}}
+      camera: {eye: {x: -1.65, y: -1.75, z: 1.0}}
     },
-    margin: {l: 10, r: 10, t: 10, b: 10},
+    margin: {l: 0, r: 0, t: 0, b: 0},
+    // The height's name as a corner label, not the z-axis title: Plotly
+    // clips a 3-D axis title to the scene, and in a narrow chart the title
+    // is the first thing cut off.
+    annotations: [{xref: "paper", yref: "paper", x: 0, y: 1, xanchor: "left", yanchor: "top", showarrow: false,
+      text: `height = ${lossNames[lossKind]}(m, c)`}],
     uirevision: "static"
   })
 }

@@ -58,6 +58,14 @@ body:has(.vm-split) #title-block-header {
     --vm-split-gutter: max(0px, (100vw - var(--vm-split-max)) / 2);
   }
 
+  /* `.vm-split-wide`: an app with two charts side by side gets a wider
+   * pane by default (and so a narrower text column), and the block stops
+   * growing later, so the wider cap still leaves the text its column. */
+  body:has(.vm-split.vm-split-wide) {
+    --vm-split-app-w: clamp(30rem, 64vw, 80rem);
+    --vm-split-max: 128rem;
+  }
+
   /* Everything in the split except the app is the text column. The app is
    * out of flow, so prose before and after it reads as one column. */
   .vm-split > :not(.vm-app),
@@ -141,6 +149,12 @@ body:has(.vm-split) #title-block-header {
   @media (min-width: 112rem) {
     .vm-split > .vm-app {
       border-right: 1px solid var(--vm-border);
+    }
+  }
+
+  @media (min-width: 112rem) and (max-width: 127.98rem) {
+    .vm-split.vm-split-wide > .vm-app {
+      border-right: 0;
     }
   }
 

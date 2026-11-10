@@ -42,7 +42,20 @@ body:has(.vm-split) #title-block-header {
    * overrides the variable on <body> once the reader drags the divider. */
   body:has(.vm-split) {
     --vm-split-app-w: clamp(30rem, 56vw, 64rem);
-    padding-right: var(--vm-split-app-w);
+    padding-right: calc(var(--vm-split-app-w) + var(--vm-split-gutter));
+    padding-left: var(--vm-split-gutter);
+  }
+
+  /* On a very wide window the pane stops growing at its cap, and everything
+   * left of it went to the text area -- the 36rem column centered in 2000+px,
+   * hundreds of px from both the window's edge and the pane. Past
+   * --vm-split-max the text and the pane stay together as one centered block,
+   * and what is left over is an equal gutter on each side. split.js reads the
+   * gutter back off the pane's position, so the divider's drag and its clamp
+   * work inside the block. */
+  body:has(.vm-split) {
+    --vm-split-max: 112rem;
+    --vm-split-gutter: max(0px, (100vw - var(--vm-split-max)) / 2);
   }
 
   /* Everything in the split except the app is the text column. The app is
@@ -64,7 +77,7 @@ body:has(.vm-split) #title-block-header {
   .vm-split > .vm-app {
     position: fixed;
     top: var(--vm-split-top, 64px);
-    right: 0;
+    right: var(--vm-split-gutter);
     bottom: 0;
     width: var(--vm-split-app-w);
     overflow-y: auto;
@@ -102,7 +115,7 @@ body:has(.vm-split) #title-block-header {
     position: fixed;
     top: var(--vm-split-top, 64px);
     bottom: 0;
-    right: var(--vm-split-app-w);
+    right: calc(var(--vm-split-app-w) + var(--vm-split-gutter));
     width: 10px;
     transform: translateX(50%);
     cursor: col-resize;
@@ -121,6 +134,14 @@ body:has(.vm-split) #title-block-header {
     border-radius: 2px;
     background: var(--vm-border);
     transition: background-color 0.15s;
+  }
+
+  /* With a gutter the pane no longer meets the window's edge, so it gets a
+   * right border to match its left one. */
+  @media (min-width: 112rem) {
+    .vm-split > .vm-app {
+      border-right: 1px solid var(--vm-border);
+    }
   }
 
   .vm-split-handle:hover::after,
@@ -145,6 +166,7 @@ body:has(.vm-split) #title-block-header {
  * the chart takes its height from the rules above, not the pane's. */
 html.vm-embed body:has(.vm-split) {
   padding-right: 0;
+  padding-left: 0;
 }
 
 html.vm-embed .vm-split {

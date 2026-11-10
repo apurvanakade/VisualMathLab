@@ -36,6 +36,22 @@
 // rather than <button>s, so a site's cloud CSS meets no browser button
 // styles. Without JS the cloud stays in the margin. Idempotent: the cloud is
 // marked data-vm-cloud-ready.
+//
+// Back and Forward follow the filter both ways. Quarto pushes a history
+// entry per pick, and the listing page's inline script re-runs
+// quarto-listing-loaded on hashchange, which re-applies the category -- but
+// only a non-empty one: going back to a page with no hash, or to the
+// "#category=" All leaves, kept the last filter and its highlight. Here an
+// empty category clears the filter -- through Quarto's window["quarto-listings"]
+// (the List.js instances its listing script registers), not
+// quartoListingCategory(""), which would push a new entry and drop the
+// Forward history. Any other hash (#fn1, a heading's anchor) is an in-page
+// link, not a listing state, and leaves the filter alone.
+//
+// A pick that leaves the cloud above the viewport scrolls it back into view.
+// A tag on a card far down the grid filters in place too, and the shorter
+// page used to clamp the reader to its bottom, past every card left. The
+// cloud's scroll-margin-top is the site's to set (room for a fixed navbar).
 (function attachCategoryCloud(globalThis) {
   function init() {
     const cloud = document.querySelector(".quarto-listing-category:not([data-vm-cloud-ready])")
@@ -80,6 +96,33 @@
       event.preventDefault()
       entry.click()
     })
+
+    globalThis.addEventListener("hashchange", () => {
+      const hash = globalThis.location.hash
+      if (hash.length > 1 && !/(?:^#|&)category=/.test(hash)) return
+      if (hashCategory(hash) !== "") return
+      for (const entry of cloud.querySelectorAll(".category.active")) entry.classList.remove("active")
+      all.classList.add("active")
+      for (const list of Object.values(globalThis["quarto-listings"] ?? {})) list?.filter()
+    })
+
+    // The observer's callback runs after the whole click handler, so the
+    // list is already filtered and the page already shorter.
+    new MutationObserver(() => {
+      if (wrapper.getBoundingClientRect().top < 0) wrapper.scrollIntoView({ block: "start" })
+    }).observe(cloud, { subtree: true, attributes: true, attributeFilter: ["class"] })
+  }
+
+  // The category in a Quarto listing hash (#category=<uri>&<id>-page=<n>),
+  // decoded; "" when there is none.
+  function hashCategory(hash) {
+    const match = /(?:^#|&)category=([^&]*)/.exec(hash)
+    if (!match) return ""
+    try {
+      return decodeURIComponent(match[1])
+    } catch {
+      return match[1]
+    }
   }
 
   if (document.readyState === "loading") {

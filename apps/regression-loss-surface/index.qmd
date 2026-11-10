@@ -1,0 +1,621 @@
+---
+title: "Regression Loss Surface"
+topic: "Model Fitting"
+description: "Fit a line by walking downhill on its loss surface."
+date: 2026-11-10
+order: 1
+image: regression-loss-surface.png
+categories:
+  - Data Science
+  - Regression
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<style>
+/* The two charts: side by side once the block is wide enough for the
+ * surface to be roughly square, stacked below that (a phone, a narrow
+ * pane). split.js counts side-by-side charts as one row when it shares out
+ * the pane's height. */
+@container vm-chart (min-width: 640px) {
+  .lsurf-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  /* A chart drawn while detached reports Plotly's 700px default as its
+   * minimum width, which would starve the other column. */
+  .lsurf-charts > * {
+    min-width: 0;
+  }
+}
+</style>
+
+::::::::: {.vm-split .vm-split-wide}
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded on every page by the mathviz
+// extension. This page uses VM.plotting.persistentPlot(3d),
+// VM.plotting.draggablePoints, VM.ui.legendOverlay, VM.ui.statRow and the
+// URL/example helpers; loss.js uses VM.numerical.linearRegression and
+// l1Regression.
+VM = window.VM
+```
+
+```{ojs}
+//| output: false
+// The losses, their gradients, the window and the examples are plain
+// functions in loss.js, which loss.test.js checks under `npm test`.
+import {X_RANGE, Y_RANGE, LOSSES, examples, loss, descentPath, bestFit, l2RateLimit, lossWindow, surfaceGrid, randomPoints, encodePoints, decodePoints} from "./loss.js"
+```
+
+```{ojs}
+//| output: false
+// Every input starts from the URL, falling back to the first example (which
+// is therefore what the page opens on).
+initial = {
+  const ex = examples[0].params
+  const pts = decodePoints(VM.ui.urlParam("pts", ex.pts)) ?? decodePoints(ex.pts)
+  let lossValue = VM.ui.urlParam("loss", ex.loss)
+  if (!LOSSES.includes(lossValue)) lossValue = ex.loss
+  return {
+    pts,
+    loss: lossValue,
+    rate: VM.ui.urlParam("rate", ex.rate),
+    steps: VM.ui.urlParam("steps", ex.steps),
+    m: VM.ui.urlParam("m", Number(ex.m)),
+    c: VM.ui.urlParam("c", Number(ex.c)),
+    k: VM.ui.urlParam("k", 0)
+  }
+}
+```
+
+```{ojs}
+//| output: false
+traceOptions = ["Residuals", "Best fit", "Contours", "Descent path"]
+
+// Re-runs on a light/dark toggle, which is what repaints trace colors.
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+chartColors = VM.plotting.colors(vmTheme)
+
+traceColors = new Map([
+  ["Residuals", chartColors.alt],
+  ["Best fit", chartColors.ok],
+  ["Contours", chartColors.muted],
+  ["Descent path", chartColors.accent2]
+])
+
+lossNames = ({l2: "MSE", l1: "MAE"})
+```
+
+```{ojs}
+//| output: false
+// The two charts. Created once, in cells that depend on nothing reactive,
+// so the points laid over the first one are never reset by a redraw.
+linePlot = VM.plotting.persistentPlot()
+surfacePlot = VM.plotting.persistentPlot3d()
+```
+
+<div class="vm-app">
+
+<div class="ojs-panel">
+
+<div class="ojs-grid">
+
+```{ojs}
+viewof exampleSelect = {
+  const select = Inputs.select([null, ...examples], {label: "Try an example", format: e => e ? e.title : "Custom inputs", value: null})
+  select.classList.add("ojs-fill")
+  return select
+}
+```
+
+```{ojs}
+viewof lossKind = {
+  const input = Inputs.radio(LOSSES, {label: "Loss", value: initial.loss, format: k => k === "l2" ? "Squared (L2)" : "Absolute (L1)"})
+  input.dataset.exampleField = "loss"
+  return input
+}
+```
+
+```{ojs}
+viewof rateText = {
+  const input = Inputs.text({label: "Learning rate η", value: initial.rate, placeholder: "Example: 0.05, 1/20"})
+  input.dataset.exampleField = "rate"
+  return input
+}
+```
+
+```{ojs}
+viewof stepsText = {
+  const input = Inputs.text({label: "Max steps", value: initial.steps, placeholder: "Example: 100"})
+  input.dataset.exampleField = "steps"
+  return input
+}
+```
+
+```{ojs}
+// A plain button whose value nothing reads: newPoints below does the work.
+viewof freshButton = {
+  const button = Inputs.button("New points")
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// The "pts" field the example dropdown reads and writes, which has no
+// control of its own (the chart is the control): its value is the points as
+// the URL spells them, and setting it moves the chart's points, firing the
+// chart's input and change as an edit by hand would. A hidden element,
+// since the dropdown finds its fields by selector.
+pointsField = {
+  const view = viewof pts
+  const el = html`<div hidden data-example-field="pts"></div>`
+  Object.defineProperty(el, "value", {
+    get: () => encodePoints(view.value),
+    set: text => {
+      const points = decodePoints(text)
+      if (!points) return
+      setWindowPoints(points)
+      view.value = points
+      view.dispatchEvent(new Event("input", {bubbles: true}))
+      view.dispatchEvent(new Event("change", {bubbles: true}))
+    }
+  })
+  document.body.append(el)
+  invalidation.then(() => el.remove())
+  return el
+}
+```
+
+```{ojs}
+//| output: false
+// Plain CSS selectors, not direct viewof references (a view recreated by a
+// window change would re-trigger a cell that named it). pts comes first, as
+// in every example: the m and c sliders' bounds follow the points.
+exampleFieldSelectors = ({pts: '[data-example-field="pts"]', loss: '[data-example-field="loss"]', rate: '[data-example-field="rate"]', steps: '[data-example-field="steps"]', m: '[data-example-field="m"]', c: '[data-example-field="c"]'})
+```
+
+```{ojs}
+//| output: false
+// One native "change" listener, not a cell reactive on exampleSelect: a
+// <select> fires input and change per pick, and two applies would race.
+// Nothing to commit afterwards -- every field here is live -- so the trigger
+// is an element with no button in it. An example starts at step 0: the
+// step slider is set before (for a slider rebuilt by a new max) and after.
+applyExampleFromSelect = {
+  const nativeSelect = (viewof exampleSelect).querySelector("select")
+  if (!nativeSelect) return
+  nativeSelect.addEventListener("change", async () => {
+    const example = (viewof exampleSelect).value
+    if (!example) return
+    lastSlider.k = 0
+    await VM.ui.applyExampleParams(exampleFieldSelectors, example.params, document.createElement("div"))
+    const step = document.querySelector("[data-step-slider]")
+    if (step && step.value !== 0) {
+      step.value = 0
+      step.dispatchEvent(new Event("input", {bubbles: true}))
+    }
+  })
+}
+```
+
+```{ojs}
+//| output: false
+// Keeps the dropdown naming the example the fields hold ("Custom inputs"
+// once none does): it re-runs on every field's change.
+syncExampleFromFields = {
+  committedPoints; lossKind; rateText; stepsText; m; c
+  VM.ui.syncExampleSelect(viewof exampleSelect, examples, exampleFieldSelectors)
+}
+```
+
+</div>
+
+```{ojs}
+//| output: false
+// The points as of the last finished edit: draggablePoints fires "change"
+// when a drag is released (and on every add, remove, key move or example),
+// so the window below moves once per edit rather than on every frame of a
+// drag, which would also rebuild both sliders on every frame.
+committedPoints = Generators.observe(notify => {
+  const view = viewof pts
+  const update = () => notify(view.value)
+  view.addEventListener("change", update)
+  update()
+  return () => view.removeEventListener("change", update)
+})
+```
+
+```{ojs}
+//| output: false
+// The data set the window was last centered on. A view with no DOM, set
+// only by setWindowPoints.
+viewof windowPoints = Inputs.input(initial.pts)
+```
+
+```{ojs}
+//| output: false
+setWindowPoints = points => {
+  const view = viewof windowPoints
+  view.value = points
+  view.dispatchEvent(new Event("input"))
+}
+```
+
+```{ojs}
+//| output: false
+// The (m, c) rectangle the sliders and the surface cover, centered on the
+// least-squares fit of a whole new data set: the page's first, New points'
+// or an example's. Editing a point by hand keeps it, so the axes and the m
+// and c sliders hold still while the reader works.
+win = lossWindow(windowPoints)
+```
+
+```{ojs}
+//| output: false
+rate = {
+  const value = VM.expressions.makeNumber(window.math, rateText)
+  if (value === null || !Number.isFinite(value) || value <= 0) return null
+  return value
+}
+```
+
+```{ojs}
+//| output: false
+// A whole number of steps from 1 to 1000; anything else (marked on the
+// field) keeps the slider at 100.
+maxSteps = {
+  const value = Number(stepsText)
+  if (!Number.isInteger(value) || value < 1) return 100
+  return Math.min(1000, value)
+}
+```
+
+```{ojs}
+//| output: false
+// Where the sliders were last, so a slider rebuilt for a new window (or a
+// new max) starts there, clamped, rather than jumping back to its default.
+lastSlider = ({m: initial.m, c: initial.c, k: initial.k})
+```
+
+```{ojs}
+//| output: false
+rememberSliders = {
+  lastSlider.m = m
+  lastSlider.c = c
+  lastSlider.k = k
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// Kept out of the chart cells so a slider move doesn't recompute it: the
+// surface depends on the points (live, through a drag) and the loss only.
+grid = surfaceGrid(pts, lossKind, win)
+```
+
+```{ojs}
+//| output: false
+fit = bestFit(pts, lossKind)
+```
+
+```{ojs}
+//| output: false
+// The surface's height axis, from the points as of the last finished edit:
+// it holds still through a drag rather than rescaling on every frame.
+zTop = Math.max(...surfaceGrid(committedPoints, lossKind, win, 31).z.flat())
+```
+
+```{ojs}
+//| output: false
+// A rate or a max the page can't use marks its field, the same way an
+// unparseable formula is marked elsewhere on the site.
+markInvalid = {
+  const mark = (view, bad) => view.querySelector("input")?.classList.toggle("vm-invalid", bad)
+  const steps = Number(stepsText)
+  mark(viewof rateText, rate === null)
+  mark(viewof stepsText, !Number.isInteger(steps) || steps < 1 || steps > 1000)
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// Gradient descent from the sliders' (m, c), all the way to the max, so the
+// step slider only picks an iterate. It ends early where a run leaves the
+// window; with no usable rate it is just the start.
+run = {
+  if (rate === null) return {path: [{m, c}], left: false}
+  return descentPath(pts, m, c, lossKind, rate, maxSteps, win)
+}
+```
+
+```{ojs}
+//| output: false
+// The iterate the step slider points at: the last one there is, when the
+// run left the window before step k.
+shown = Math.min(k, run.path.length - 1)
+here = run.path[shown]
+```
+
+```{ojs}
+//| output: false
+showResiduals = traces.includes("Residuals")
+```
+
+```{ojs}
+//| output: false
+showBest = traces.includes("Best fit")
+```
+
+```{ojs}
+//| output: false
+showContours = traces.includes("Contours")
+```
+
+```{ojs}
+//| output: false
+showPath = traces.includes("Descent path")
+```
+
+```{ojs}
+//| output: false
+// Paints the points chart: the line at step k, its residuals, the best line
+// and the lines descent passed through on the way. The points themselves are
+// draggablePoints' dots, not a trace. No output: the chart is on the page
+// already, as viewof pts.
+{
+  const data = []
+  if (showPath) {
+    const xs = [], ys = []
+    for (const p of run.path.slice(0, shown)) {
+      xs.push(X_RANGE[0], X_RANGE[1], null)
+      ys.push(p.m * X_RANGE[0] + p.c, p.m * X_RANGE[1] + p.c, null)
+    }
+    data.push({x: xs, y: ys, mode: "lines", showlegend: false, hoverinfo: "skip",
+      line: {color: VM.plotting.alpha(chartColors.accent2, 0.35), width: 1.5}})
+  }
+  if (showBest && fit) {
+    data.push({x: X_RANGE, y: [fit.m * X_RANGE[0] + fit.c, fit.m * X_RANGE[1] + fit.c], mode: "lines", showlegend: false, hoverinfo: "skip",
+      line: {color: chartColors.ok, width: 2, dash: "dash"}})
+  }
+  if (showResiduals) {
+    const xs = [], ys = []
+    for (const p of pts) {
+      xs.push(p.x, p.x, null)
+      ys.push(p.y, here.m * p.x + here.c, null)
+    }
+    data.push({x: xs, y: ys, mode: "lines", showlegend: false, hoverinfo: "skip",
+      line: {color: chartColors.alt, width: 1.5}})
+  }
+  data.push({x: X_RANGE, y: [here.m * X_RANGE[0] + here.c, here.m * X_RANGE[1] + here.c], mode: "lines", showlegend: false, hoverinfo: "skip",
+    line: {color: chartColors.fn, width: 3}})
+  return linePlot(data, {
+    xaxis: {title: {text: "x"}, range: X_RANGE, fixedrange: true, zeroline: true},
+    yaxis: {title: {text: "y"}, range: Y_RANGE, fixedrange: true, zeroline: true},
+    dragmode: false, hovermode: false, uirevision: "static"
+  })
+}
+```
+
+
+```{ojs}
+//| output: false
+// "New points": a fresh random data set, as if the reader had edited the
+// chart (input for the live cells, change for the window).
+newPoints = {
+  const button = (viewof freshButton).querySelector("button")
+  const onClick = () => {
+    const view = viewof pts
+    const points = randomPoints(Math.floor(Math.random() * 2 ** 31))
+    setWindowPoints(points)
+    view.value = points
+    view.dispatchEvent(new Event("input", {bubbles: true}))
+    view.dispatchEvent(new Event("change", {bubbles: true}))
+  }
+  button.addEventListener("click", onClick)
+  invalidation.then(() => button.removeEventListener("click", onClick))
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// Every input in the URL. The points as of the last finished edit, not
+// every frame of a drag; m and c to four decimals.
+urlSync = {
+  const ex = examples[0].params
+  const short = v => String(Number(v.toFixed(4)))
+  VM.ui.syncUrlParams({
+    pts: [encodePoints(committedPoints), ex.pts],
+    loss: [lossKind, ex.loss],
+    rate: [rateText, ex.rate],
+    steps: [stepsText, ex.steps],
+    m: [short(m), ex.m],
+    c: [short(c), ex.c],
+    k: [String(k), "0"]
+  })
+  return true
+}
+```
+
+<div class="ojs-chart-block">
+
+<div class="ojs-chart-controls ojs-grid">
+
+```{ojs}
+// Where descent starts. Bounded by the window, which moves only with the
+// points; a rebuilt slider starts where the last one was, clamped.
+viewof m = {
+  const value = Math.min(win.m[1], Math.max(win.m[0], lastSlider.m))
+  const input = Inputs.range(win.m, {value, label: "Start slope m", format: v => v.toFixed(2)})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "m"
+  return input
+}
+```
+
+```{ojs}
+viewof c = {
+  const value = Math.min(win.c[1], Math.max(win.c[0], lastSlider.c))
+  const input = Inputs.range(win.c, {value, label: "Start intercept c", format: v => v.toFixed(2)})
+  input.classList.add("ojs-fill")
+  input.dataset.exampleField = "c"
+  return input
+}
+```
+
+```{ojs}
+// Which step of the run the charts show; mathviz's play button walks it.
+viewof k = {
+  const value = Math.min(maxSteps, Math.max(0, Math.round(lastSlider.k)))
+  const input = Inputs.range([0, maxSteps], {value, step: 1, label: "Step k"})
+  input.classList.add("ojs-fill")
+  input.dataset.stepSlider = ""
+  return input
+}
+```
+
+</div>
+
+```{ojs}
+viewof traces = {
+  const items = []
+  for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
+  return VM.ui.legendOverlay(items, {value: traceOptions})
+}
+```
+
+<div class="lsurf-charts">
+
+```{ojs}
+// The chart is the input: pts is the data, and every drag, add or remove
+// re-runs the cells that read it.
+viewof pts = VM.plotting.draggablePoints(linePlot, {
+  value: initial.pts,
+  xBounds: X_RANGE, yBounds: Y_RANGE,
+  add: true, remove: true, minPoints: 2, maxPoints: 60,
+  label: "Data point", color: "var(--vm-color-ink)",
+  format: p => `x ${p.x.toFixed(2)}, y ${p.y.toFixed(2)}`
+})
+```
+
+```{ojs}
+// Paints the surface: the loss over the window, its level curves projected
+// onto the floor, the (m, c) at step k with a drop line to the floor, the
+// best fit and the descent path up to step k. Returns the same div on every run.
+{
+  const zMax = zTop
+  const data = [{
+    type: "surface", x: grid.ms, y: grid.cs, z: grid.z, showscale: false, opacity: 0.92,
+    colorscale: [[0, chartColors.fn], [1, chartColors.halo]],
+    hovertemplate: `m %{x:.2f}, c %{y:.2f}<br>${lossNames[lossKind]} %{z:.3g}<extra></extra>`,
+    contours: {
+      x: {highlight: false}, y: {highlight: false},
+      z: {show: showContours, start: 0, end: zMax, size: zMax / 16, color: chartColors.muted, usecolormap: false,
+        highlight: false, project: {z: showContours}}
+    }
+  }]
+  const height = loss(pts, here.m, here.c, lossKind)
+  const marker = (x, y, z, color, symbol, size) => ({type: "scatter3d", mode: "markers", x: [x], y: [y], z: [z], showlegend: false, hoverinfo: "skip",
+    marker: {color, size, symbol, line: {color: chartColors.halo, width: 1}}})
+  if (showPath && shown > 0) {
+    const path = run.path.slice(0, shown + 1)
+    data.push({type: "scatter3d", mode: "lines+markers", showlegend: false, hoverinfo: "skip",
+      x: path.map(p => p.m), y: path.map(p => p.c), z: path.map(p => loss(pts, p.m, p.c, lossKind)),
+      line: {color: chartColors.accent2, width: 4}, marker: {color: chartColors.accent2, size: 2.5}})
+  }
+  if (showBest && fit) data.push(marker(fit.m, fit.c, loss(pts, fit.m, fit.c, lossKind), chartColors.ok, "diamond", 6))
+  data.push({type: "scatter3d", mode: "lines", x: [here.m, here.m], y: [here.c, here.c], z: [0, height], showlegend: false, hoverinfo: "skip",
+    line: {color: chartColors.fn, width: 3, dash: "dash"}})
+  data.push(marker(here.m, here.c, height, chartColors.fn, "circle", 8))
+  data.push(marker(here.m, here.c, 0, chartColors.fn, "circle", 3))
+  return surfacePlot(data, {
+    scene: {
+      xaxis: {title: {text: "m"}, range: win.m},
+      yaxis: {title: {text: "c"}, range: win.c},
+      zaxis: {title: {text: ""}, range: [0, zMax]},
+      aspectmode: "manual", aspectratio: {x: 1, y: 1, z: 0.7},
+      camera: {eye: {x: -1.65, y: -1.75, z: 1.0}}
+    },
+    margin: {l: 0, r: 0, t: 0, b: 0},
+    // The height's name as a corner label, not the z-axis title: Plotly
+    // clips a 3-D axis title to the scene, and in a narrow chart the title
+    // is the first thing cut off.
+    annotations: [{xref: "paper", yref: "paper", x: 0, y: 1, xanchor: "left", yanchor: "top", showarrow: false,
+      text: `height = ${lossNames[lossKind]}(m, c)`}],
+    uirevision: "static"
+  })
+}
+```
+
+</div>
+
+```{ojs}
+// The line at step k and its loss beside the best line's, and how fast a
+// descent step can safely be. Always a node, never null.
+stats = {
+  const fmt = v => Number.isFinite(v) ? String(Number(v.toPrecision(4))) : "—"
+  const line = (mm, cc) => `${mm.toFixed(2)}x ${cc < 0 ? "−" : "+"} ${Math.abs(cc).toFixed(2)}`
+  const name = lossNames[lossKind]
+  const items = [
+    {label: `Line at step ${shown}: y =`, value: line(here.m, here.c)},
+    {label: name, value: fmt(loss(pts, here.m, here.c, lossKind)), title: lossKind === "l2" ? "Mean squared error of the line at step k" : "Mean absolute error of the line at step k"},
+    {label: `Best ${name}`, value: fit ? fmt(loss(pts, fit.m, fit.c, lossKind)) : "—", title: fit ? `Best line: y = ${line(fit.m, fit.c)}` : "The points don't determine a line"},
+  ]
+  if (run.left && k > shown) items.push({label: "Left window after", value: String(shown), title: `Step ${shown + 1} lands outside the window`})
+  if (lossKind === "l2") items.push({label: "Stable if η <", value: fmt(l2RateLimit(pts)), title: "2 / the largest eigenvalue of the MSE's Hessian"})
+  return VM.ui.statRow(items)
+}
+```
+
+</div>
+
+</div>
+
+Drag a data point to move it, click the chart to add one, and double-click a point to remove it.
+
+Each line $y = mx + c$ is a point $(m, c)$, and its loss is a height above that point. The best fit is the lowest point on this surface. With residuals $r_i = y_i - (m x_i + c)$,
+
+$$
+\text{MSE} = \frac{1}{n}\sum_i r_i^2,
+\qquad
+\text{MAE} = \frac{1}{n}\sum_i \lvert r_i \rvert .
+$$
+
+The MSE surface is a bowl with one lowest point, the least-squares line. The MAE surface is made of flat panels, so its minimum can be a whole region, and it is pulled far less by an outlier.
+
+::: {#def-gradient-descent}
+## Gradient descent
+From a start $(m_0, c_0)$ and a learning rate $\eta > 0$,
+$$
+(m_{k+1}, c_{k+1}) = (m_k, c_k) - \eta\, \nabla L(m_k, c_k).
+$$
+:::
+
+The sliders set $(m_0, c_0)$, and the step slider shows $(m_k, c_k)$.
+
+::: {#thm-l2-step}
+## Step size for the MSE
+The MSE has the constant Hessian
+$$
+H = \frac{2}{n}\sum_i \begin{pmatrix} x_i^2 & x_i \\ x_i & 1 \end{pmatrix},
+$$
+and gradient descent on it converges from every start if and only if $\eta < 2/\lambda_{\max}(H)$.
+:::
+
+The MAE has no such bound: with a fixed step, descent never settles, and keeps jittering around the minimum.
+
+:::::::::

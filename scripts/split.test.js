@@ -18,7 +18,7 @@ globalThis.window = globalThis
 globalThis.document = { readyState: 'loading', addEventListener: () => {} }
 const here = path.dirname(fileURLToPath(import.meta.url))
 ;(0, eval)(fs.readFileSync(path.join(here, '../_chrome/split.js'), 'utf8'))
-const { clampWidth, chartHeight } = globalThis.VM.chrome.split
+const { clampWidth, chartHeight, chartRows } = globalThis.VM.chrome.split
 
 test('clampWidth keeps a width that leaves both sides room', () => {
   assert.equal(clampWidth(700.4, 1440), 700)
@@ -57,4 +57,14 @@ test('chartHeight lets a chart that came out too tall shrink back', () => {
 
 test('chartHeight is null with no charts', () => {
   assert.equal(chartHeight({ paneHeight: 800, contentHeight: 300, chartsHeight: 0, charts: 0 }), null)
+})
+
+test('chartRows counts side-by-side charts as one row', () => {
+  assert.deepEqual(chartRows([]), { rows: 0, height: 0 })
+  // Stacked: one chart per row.
+  assert.deepEqual(chartRows([{ top: 100, height: 300 }, { top: 410, height: 300 }]), { rows: 2, height: 600 })
+  // Side by side (tops within a pixel): one row, as tall as the taller.
+  assert.deepEqual(chartRows([{ top: 100, height: 300 }, { top: 100.6, height: 320 }]), { rows: 1, height: 320 })
+  // Two side by side over a third.
+  assert.deepEqual(chartRows([{ top: 0, height: 200 }, { top: 0, height: 200 }, { top: 210, height: 150 }]), { rows: 2, height: 350 })
 })

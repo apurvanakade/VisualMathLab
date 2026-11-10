@@ -34,6 +34,14 @@ Authors: Apurva Nakade
     min-width: 0;
   }
 }
+/* m, c and k on one row from a ~1280px window up (tracks ~88px there,
+ * ~123px at 1440px), rather than mathviz's 320px column minimum, chosen
+ * for four-slider bars as a 2x2, which wraps k onto a row of its own until
+ * ~1700px. The number boxes keep mathviz's width: an intercept like
+ * "-13.30" needs all of it. */
+.ojs-chart-controls.ojs-grid.lsurf-sliders {
+  grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
+}
 </style>
 
 ::::::::: {.vm-split .vm-split-wide}
@@ -453,7 +461,7 @@ urlSync = {
 
 <div class="ojs-chart-block">
 
-<div class="ojs-chart-controls ojs-grid">
+<div class="ojs-chart-controls ojs-grid lsurf-sliders">
 
 ```{ojs}
 // Where descent starts. Bounded by the window, which moves only with the

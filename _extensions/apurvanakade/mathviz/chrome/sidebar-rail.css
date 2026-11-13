@@ -1,0 +1,218 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* The sidebar rail's stylesheet, shipped with sidebar-rail.js by
+ * `mathviz: {sidebar-rail: true}` (see mathviz.lua). Quarto makes
+ * #quarto-sidebar an off-canvas panel only below 992px; these rules do it at
+ * every width, driven by .vm-sidebar-open/.vm-sidebar-pinned on <body>
+ * (which sidebar-rail.js owns) rather than Bootstrap's .collapse/.show, and
+ * give the page grid back the sidebar's track so the body column centres.
+ *
+ * Every rule is scoped under html.vm-sidebar-rail. The script puts that
+ * class on <html> the moment it runs (synchronously, in <head>, so nothing
+ * paints first) and takes it off again on a page with no sidebar
+ * navigation. So this file restyles nothing on a page the rail isn't
+ * driving: not on a site that loads it without the script, not on a page
+ * with no sidebar. A page's look without the rail must not depend on this
+ * file being absent -- sidebar-rail.test.js fails any selector here
+ * without the scope. In embed mode (html.vm-embed) the class stays but
+ * only the page grid applies: the sidebar is hidden there, and its track
+ * would otherwise push a framed app off-centre. Every other rule adds
+ * :not(.vm-embed).
+ *
+ * The page grid's widths come from the site's own `grid:` options: the
+ * filter writes them to --vm-rail-body-width, --vm-rail-margin-width and
+ * --vm-rail-gutter (Quarto's defaults when unset), so the column is the
+ * width the site asked for. Consumes --vm-* tokens only, so it re-themes
+ * with them. */
+
+/* ── Page grid ────────────────────────────────────────────────────── */
+/* Scoped to >=992px on purpose. Below that Quarto's own responsive grid
+ * already collapses the sidebar track and sizes the body column to the
+ * viewport, and does it correctly. An unscoped version of this rule forced
+ * a 500px floor onto a 390px phone, which then scrolled sideways; the floor
+ * is minmax(0, ...) for the same reason, so the column can always shrink to
+ * the space there is. The template names every line Quarto's floating and
+ * docked grids use, with the sidebar's tracks collapsed onto one gutter.
+ * Embed mode too (no :not(.vm-embed)): the frame hides the sidebar, and
+ * without this its empty track still sat left of the app. */
+@media (min-width: 992px) {
+  html.vm-sidebar-rail body.floating .page-columns,
+  html.vm-sidebar-rail body.docked .page-columns {
+    grid-template-columns:
+      [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] 5fr
+      [page-start page-start-inset body-start-outset body-start] var(--vm-rail-gutter, 1.5em)
+      [body-content-start] minmax(0, calc(var(--vm-rail-body-width, 800px) - 2 * var(--vm-rail-gutter, 1.5em))) [body-content-end] var(--vm-rail-gutter, 1.5em)
+      [body-end body-end-outset page-end-inset] var(--vm-rail-gutter, 1.5em)
+      [page-end] 5fr [screen-end-inset] var(--vm-rail-gutter, 1.5em) [screen-end] !important;
+  }
+
+  /* ...except on a page with a table of contents. Quarto places
+   * #quarto-margin-sidebar at `grid-column: body-end / page-end`, which the
+   * rule above collapses onto one gutter, so the TOC laid out 26px wide.
+   * This restores Quarto's own right-hand margin tracks (the same 10/60/10%
+   * minmax split of the margin width its floating grid uses) for those
+   * pages only. :has(nav#TOC) rather than Quarto's `fullcontent` body
+   * class, which doesn't track whether a TOC exists. */
+  html.vm-sidebar-rail body.floating:has(nav#TOC) .page-columns,
+  html.vm-sidebar-rail body.docked:has(nav#TOC) .page-columns {
+    grid-template-columns:
+      [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] 5fr
+      [page-start page-start-inset body-start-outset body-start] var(--vm-rail-gutter, 1.5em)
+      [body-content-start] minmax(0, calc(var(--vm-rail-body-width, 800px) - 2 * var(--vm-rail-gutter, 1.5em))) [body-content-end] var(--vm-rail-gutter, 1.5em)
+      [body-end] minmax(calc(0.1 * var(--vm-rail-margin-width, 250px)), calc(0.2 * var(--vm-rail-margin-width, 250px)))
+      [body-end-outset] minmax(calc(0.2 * var(--vm-rail-margin-width, 250px)), calc(0.6 * var(--vm-rail-margin-width, 250px)))
+      [page-end-inset] minmax(calc(0.1 * var(--vm-rail-margin-width, 250px)), calc(0.2 * var(--vm-rail-margin-width, 250px)))
+      [page-end] 5fr [screen-end-inset] var(--vm-rail-gutter, 1.5em) [screen-end] !important;
+  }
+}
+
+/* ── The off-canvas sidebar ───────────────────────────────────────── */
+/* --vm-header-height is #quarto-header's rendered height less the
+ * breadcrumb bar inside it, measured by sidebar-rail.js (66px until it
+ * runs). The sidebar's own box starts below the navbar rather than under
+ * it: padding-top alone would still paint the sidebar's background and
+ * shadow over the navbar's brand, since both are position: fixed and the
+ * sidebar's z-index has to be above the navbar's for the panel to show. */
+html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar.sidebar-navigation {
+  position: fixed !important;
+  top: var(--vm-header-height, 66px) !important;
+  left: 0 !important;
+  bottom: 0 !important;
+  width: min(280px, 85vw) !important;
+  max-width: min(280px, 85vw) !important;
+  height: calc(100vh - var(--vm-header-height, 66px)) !important;
+  z-index: 1055;
+  display: flex !important;
+  flex-direction: column;
+  background: var(--vm-bg);
+  /* No border: the shadow alone separates it, as it does the navbar. */
+  border: none !important;
+  box-shadow: var(--vm-shadow);
+  transform: translateX(-100%);
+  /* Closed, the links are also out of the tab order and the accessibility
+   * tree: visibility goes hidden only after the slide has finished. */
+  visibility: hidden;
+  transition: transform 0.22s ease, visibility 0s linear 0.22s;
+  overflow-y: auto;
+}
+
+html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
+  transform: translateX(0);
+  visibility: visible;
+  transition: transform 0.22s ease, visibility 0s;
+}
+
+/* Quarto's own backdrop is Bootstrap-collapse-driven and unused here:
+ * sidebar-rail.js's click-outside and Escape handling replace it. */
+html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar-glass {
+  display: none !important;
+}
+
+/* Below 992px Quarto draws its own .quarto-secondary-nav bar (a hamburger
+ * plus the breadcrumbs) under the navbar. The rail replaces the hamburger
+ * at every width, and Quarto's button (and the full-width link beside it,
+ * both data-bs-toggle="collapse") would toggle Bootstrap's collapse, which
+ * does nothing here -- two hamburgers, one of them dead. The breadcrumbs
+ * stay. The bar is already display: none from 992px up. */
+html.vm-sidebar-rail:not(.vm-embed) .quarto-secondary-nav [data-bs-toggle="collapse"] {
+  display: none;
+}
+
+/* That bar's height varies with breadcrumb length (and wraps on a narrow
+ * phone), so sidebar-rail.js measures it into --vm-secondary-nav-height.
+ * Below 992px it sits between the navbar and the sidebar/rail, which shift
+ * down by its height. */
+@media (max-width: 991.98px) {
+  html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar.sidebar-navigation,
+  html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail {
+    top: calc(var(--vm-header-height, 66px) + var(--vm-secondary-nav-height, 0px)) !important;
+  }
+
+  html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar.sidebar-navigation {
+    height: calc(100vh - var(--vm-header-height, 66px) - var(--vm-secondary-nav-height, 0px)) !important;
+  }
+}
+
+/* ── The rail ─────────────────────────────────────────────────────── */
+/* Fixed at the left edge, and only as tall as its buttons: an element is
+ * hit-tested whether or not it paints, and a full-height box lay over the
+ * leftmost pixels of the body text below 768px, swallowing clicks. */
+html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail {
+  position: fixed;
+  top: var(--vm-header-height, 66px);
+  left: 0;
+  width: 2.75rem;
+  z-index: 1056;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: left 0.22s ease;
+}
+
+/* The buttons' surface: a tab hanging off the left edge (rounded on the
+ * right only), painted like the navbar and the sidebar panel -- page
+ * background, the shadow alone separating it. */
+html.vm-sidebar-rail:not(.vm-embed) .vm-rail-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.3rem;
+  margin-top: 0.5rem;
+  background: var(--vm-bg);
+  border-radius: 0 var(--vm-radius) var(--vm-radius) 0;
+  box-shadow: var(--vm-shadow);
+}
+
+/* Once open, the sidebar covers x 0-280px in the same z-index band, so the
+ * rail moves out to its right edge rather than sitting on its menu. */
+html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #vm-sidebar-rail {
+  left: min(280px, 85vw);
+}
+
+html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail button {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--vm-radius-sm);
+  background: transparent;
+  color: var(--vm-text-soft);
+  cursor: pointer;
+}
+
+html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail button:hover,
+html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #vm-sidebar-rail button[data-vm-toggle] {
+  background: var(--vm-surface-hover);
+  color: var(--vm-text);
+}
+
+html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
+  color: var(--vm-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar.sidebar-navigation,
+  html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail {
+    transition: none;
+  }
+}
+
+/* Narrow screens: the sidebar takes most of the width, and the rail rides
+ * its right edge. */
+@media (max-width: 768px) {
+  html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar.sidebar-navigation {
+    width: min(85vw, 320px) !important;
+    max-width: min(85vw, 320px) !important;
+  }
+  html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #vm-sidebar-rail {
+    left: min(85vw, 320px);
+  }
+}

@@ -28,8 +28,10 @@
 // one does.
 //
 // The cloud goes above the first grid, default or table listing on the
-// page; a custom-template listing (one that only emits data, say) is
-// skipped. The emptied margin sidebar is removed and <main>, which Quarto
+// page. A custom-template listing is used only when the page has none of
+// those: one beside a built-in listing may only emit data, say, but a page
+// whose one listing is custom (a plain list of posts) wants its cloud
+// there. The emptied margin sidebar is removed and <main>, which Quarto
 // stopped short of it (.column-page-left), takes the full page column.
 // Quarto's entries are click-only divs; every entry, "All" included, also
 // gets role="button", a tab stop, and Enter/Space to activate it. Divs
@@ -55,9 +57,10 @@
 (function attachCategoryCloud(globalThis) {
   function init() {
     const cloud = document.querySelector(".quarto-listing-category:not([data-vm-cloud-ready])")
-    const listing = document.querySelector(
-      ".quarto-listing-container-grid, .quarto-listing-container-default, .quarto-listing-container-table"
-    )
+    const listing =
+      document.querySelector(
+        ".quarto-listing-container-grid, .quarto-listing-container-default, .quarto-listing-container-table"
+      ) ?? document.querySelector(".quarto-listing-container-custom")
     if (!cloud || !listing) return
     cloud.setAttribute("data-vm-cloud-ready", "")
 

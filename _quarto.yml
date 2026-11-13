@@ -54,6 +54,11 @@ mathviz:
   # fonts/fonts.css for why never Google Fonts). The mathviz theme below
   # names both faces; privacy.qmd states that no font request leaves the site.
   fonts: true
+  # The sidebar rail: Quarto's sidebar off-canvas, behind a slim hamburger
+  # strip at the left edge. The string is the localStorage key the pin is
+  # kept under (vml-sidebar-pinned, as before the move to mathviz); keep it
+  # so readers' pins survive. privacy.qmd lists it.
+  sidebar-rail: vml-sidebar-pinned
   # A title search at the top of the sidebar. Full-text search stays in the
   # navbar: Quarto allows one per page, and the sidebar is off-canvas.
   sidebar-search: true
@@ -78,8 +83,8 @@ format:
       dark: [_extensions/apurvanakade/mathviz/theme/mathviz-dark.scss, site.scss]
     toc: false
     html-math-method: mathjax
-    # The sidebar rail, the split layout, the phone notice and vm-flow: this
-    # site's own chrome in _chrome/. See its header comment.
+    # The split layout, the phone notice and vm-flow: this site's own chrome
+    # in _chrome/. See its header comment. (The sidebar rail is mathviz's.)
     include-in-header:
       - _includes/chrome.html
     # Order matters: consent.html looks for the gated <script> that
@@ -93,13 +98,16 @@ format:
       # A tag anywhere but the homepage opens the homepage Gallery filtered
       # to it. See its header comment.
       - _includes/category-links.html
-    # Sidebar columns collapse to 0 above 992px too (the sidebar rail's CSS,
-    # _chrome/sidebar-rail.css), so the remaining body column can
-    # run wider than Quarto's ~750px default -- a 78vh chart needs the room.
+    # Sidebar columns collapse to 0 above 992px too (mathviz's sidebar rail,
+    # sidebar-rail: above), so the remaining body column can run wider than
+    # Quarto's ~750px default -- a 78vh chart needs the room.
     grid:
       body-width: 1000px
       sidebar-width: 260px
-      margin-width: 200px
+      # 240px, not Quarto's 200px: mathviz's rail sizes the TOC margin from
+      # this margin-width formula, and 240px reproduces the old rail's 240px
+      # TOC exactly on TOC pages (measured).
+      margin-width: 240px
 
 website:
   title: "Visual Math Lab"

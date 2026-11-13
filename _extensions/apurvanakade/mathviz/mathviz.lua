@@ -22,6 +22,11 @@
 -- and, each off by default, the site chrome a Quarto website or book built
 -- on mathviz pages can take instead of writing its own:
 --
+--     sidebar-rail: true           # Quarto's sidebar off-canvas at every
+--                                  # width, behind a slim rail at the left
+--                                  # edge; a string names the pin's
+--                                  # localStorage key (true:
+--                                  # "vm-sidebar-pinned")
 --     sidebar-search: true         # a search box atop Quarto's sidebar that
 --                                  # narrows the menu to matching titles
 --     category-cloud: true         # a listing's category cloud above its
@@ -64,16 +69,20 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "1.3.1"
+local VERSION    = "1.4.0"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
 -- The options in force on this page: the project's `mathviz:` map with the
 -- page's `mathviz-page:` keys laid over it (see the header for why a page
--- can't use `mathviz:` itself). Either may be absent.
+-- can't use `mathviz:` itself). Either may be absent -- which is why the
+-- loop walks the two key names, not a table of their values: ipairs stops at
+-- the first nil, so { meta.mathviz, meta["mathviz-page"] } dropped every
+-- page option on a site with no project `mathviz:`.
 local function mergedOptions(meta)
   local opts = {}
-  for _, source in ipairs({ meta.mathviz, meta["mathviz-page"] }) do
+  for _, name in ipairs({ "mathviz", "mathviz-page" }) do
+    local source = meta[name]
     if type(source) == "table" then
       for key, value in pairs(source) do opts[key] = value end
     end
@@ -218,6 +227,30 @@ function Pandoc(doc)
     end
   end
 
+  -- The rail's page grid gives the body column the width the site's
+  -- `grid:` asks for, which a stylesheet can't read (Quarto compiles those
+  -- options into Bootstrap's Sass and exposes none of them at run time).
+  -- A filter does see them, in the page's metadata, so they travel as
+  -- custom properties on :root, Quarto's defaults when unset. Only when
+  -- the rail is on: nothing here reaches a page that doesn't use it.
+  if enabled(opts, "sidebar-rail") then
+    local pin = opts["sidebar-rail"]
+    local pinKey = nil
+    if type(pin) ~= "boolean" then pinKey = pandoc.utils.stringify(pin) end
+    chrome("sidebar-rail", { ["sidebar-pin-key"] = pinKey })
+    local grid = doc.meta.grid
+    local function gridValue(key, default)
+      if pandoc.utils.type(grid) ~= "table" or grid[key] == nil then return default end
+      local value = pandoc.utils.stringify(grid[key])
+      -- A CSS length, nothing that could close the declaration or the tag.
+      if value == "" or value:find("[;{}<>\\]") then return default end
+      return value
+    end
+    headTag("mathviz-sidebar-rail-grid", "<style>:root{"
+      .. "--vm-rail-body-width:" .. gridValue("body-width", "800px") .. ";"
+      .. "--vm-rail-margin-width:" .. gridValue("margin-width", "250px") .. ";"
+      .. "--vm-rail-gutter:" .. gridValue("gutter-width", "1.5em") .. "}</style>")
+  end
   if enabled(opts, "sidebar-search") then
     chrome("sidebar-search")
   end

@@ -165,7 +165,7 @@ test('privacy.qmd: lists every localStorage key the site writes', () => {
     ['vml-analytics-consent', /answer to the analytics question/],
     ['cid_v4', /random identifier/i],
     ['quarto-color-scheme', /light or dark theme/],
-    ['vml-sidebar-pinned', /pinned the navigation sidebar/],
+    ['vm-sidebar-pinned', /pinned the navigation sidebar/],
     ['vml-split-width', /how wide you dragged the app pane/i],
     ['vml-overlay-pos', /dragged the legend/],
     ['vm-playback', /speed and mode/],

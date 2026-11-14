@@ -4,6 +4,14 @@ description: Take a finished Visual Math Lab change all the way to the live site
 argument-hint: "[PR number]  (default: open a PR for the current worktree's changes)"
 ---
 
+## Run in a fresh Sonnet agent
+
+Don't run the steps below in this session. Spawn one `general-purpose` agent
+with the Agent tool, `model: "sonnet"`, not a fork, so it starts without this
+session's context. Its prompt: the arguments given to this skill, then the
+text of this file after the frontmatter, with this section removed and the
+arguments substituted. Wait for it, then relay its final report to the user.
+
 # Ship a change
 
 A change reaches `develop` through a pull request, and `main` only by
@@ -171,7 +179,7 @@ git -C <develop folder> pull
 
 Pushing `main` deploys the site (`publish.yml` → `gh-pages` → GitHub's built-in Pages build).
 
-In the `develop` folder with its preview stopped:
+In the `develop` folder:
 
 ```sh
 git checkout main && git merge --ff-only develop && git push origin main && git checkout develop
@@ -183,7 +191,7 @@ push, and retry. Never force-push `main`.
 
 ## 8. Clean up
 
-Stop the worktree's preview if one is running, then:
+Then:
 
 ```sh
 git worktree remove --force ../VisualMath-<slug>

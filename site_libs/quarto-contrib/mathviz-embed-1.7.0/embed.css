@@ -85,9 +85,9 @@ html.vm-embed #quarto-document-content :not(.vm-app-active):not(.vm-app-active *
  * page's to choose). Quarto/Observable's wrapper divs between the block and
  * the graph div are matched with :has(), as in that chain, so the rule
  * doesn't depend on what they are named. Pages whose figure is an SVG
- * (.ojs-svg-block) draw at their own fixed height and are unaffected: every
- * rule below is gated on .js-plotly-plot, so nothing there is stretched or
- * pushed to the bottom of the frame.
+ * (Observable Plot, a hand-built <svg>) draw at their own fixed height and
+ * are unaffected: every rule below is gated on .js-plotly-plot, so nothing
+ * there is stretched or pushed to the bottom of the frame.
  *
  * The 300px floor is a frame too short for its app -- the chart holds at
  * something readable and the frame scrolls, rather than the chart vanishing
@@ -102,6 +102,10 @@ html.vm-embed .vm-app-active {
   flex-direction: column;
   height: calc(100vh - 1rem);
 }
+/* The theme spaces an app in the article with $vm-block-gap above and below;
+ * in the frame those margins pushed the app past its 100vh and the frame
+ * scrolled. The id out-ranks the theme's rule. */
+html.vm-embed #quarto-document-content .vm-app-active { margin-block: 0; }
 
 html.vm-embed .vm-app-active > .ojs-chart-block:has(.js-plotly-plot) {
   flex: 1 1 auto;

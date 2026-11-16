@@ -8,39 +8,75 @@
 // the localStorage key the pin is kept under; see mathviz.lua). Quarto's
 // sidebar (#quarto-sidebar) is off-canvas only below 992px; sidebar-rail.css
 // makes it off-canvas at every width, driven by .vm-sidebar-open and
-// .vm-sidebar-pinned on <body>, which this script owns. In exchange it
+// .vm-sidebar-pinned on <html>, which this script owns. In exchange it
 // provides a permanently visible way back in: a slim rail at the left edge
 // with a hamburger to open the sidebar and a pin to keep it open across
-// pages. Escape, a click outside, or the hamburger again closes it.
+// pages. Escape, a click outside, or the hamburger again closes an unpinned
+// sidebar; the hamburger or Escape closes and unpins a pinned one.
+//
+// Pinned is the default from 992px up, until the reader chooses otherwise
+// (the choice is what's stored): a reader who never found the pin never
+// found the sidebar either. Pinned there means docked -- the page makes
+// room for the panel instead of sliding under it (sidebar-rail.css). Below
+// 992px the default is closed: the panel takes most of a phone's width.
 //
 // No hover-to-open. It fired on any pointer drift into the left edge, and
-// every accidental open wrote .vm-sidebar-open onto <body>, a class list
-// chart pages observe (VM.plotting.onThemeChange); it also needed a
+// every accidental open wrote .vm-sidebar-open onto a class list chart
+// pages observe (VM.plotting.onThemeChange); it also needed a
 // full-height rail box to catch the pointer, which lay over the body text's
 // left edge below 768px.
 //
 // A plain, synchronous dependency script in <head>. It puts
 // html.vm-sidebar-rail on at once, so the scoped rules in sidebar-rail.css
-// apply before the first paint, and takes it off again at DOMContentLoaded
-// on a page with no Quarto sidebar navigation, where it does nothing else.
-// In embed mode (html.vm-embed) the class stays, for the page grid, and no
-// rail is built.
+// apply before the first paint -- and, when the sidebar is pinned,
+// .vm-sidebar-open and .vm-sidebar-pinned with it, so a docked page is laid
+// out docked from the start rather than jumping sideways (and the panel
+// sliding in) after load on every page. That is why the state classes are
+// on <html>, not <body> (which doesn't exist yet), and why mathviz.lua
+// emits the storage key's <meta> above this script. At DOMContentLoaded it
+// takes all three off again on a page with no Quarto sidebar navigation,
+// where it does nothing else. In embed mode (html.vm-embed) the rail class
+// stays, for the page grid, and no rail is built.
 (function attachSidebarRail() {
   var root = document.documentElement
+  var keyMeta = document.querySelector('meta[name="mathviz:sidebar-pin-key"]')
+  var PIN_KEY = (keyMeta && keyMeta.getAttribute("content")) || "vm-sidebar-pinned"
+
+  // The stored choice, or the default for this width when there is none.
+  function isPinned() {
+    var stored = null
+    try { stored = localStorage.getItem(PIN_KEY) } catch (e) { /* storage unavailable */ }
+    if (stored === "1") return true
+    if (stored === "0") return false
+    return !!(window.matchMedia && window.matchMedia("(min-width: 992px)").matches)
+  }
+
   root.classList.add("vm-sidebar-rail")
+  var startPinned = isPinned()
+  if (startPinned) {
+    root.classList.add("vm-sidebar-open")
+    root.classList.add("vm-sidebar-pinned")
+  }
+
+  function clearState() {
+    root.classList.remove("vm-sidebar-open")
+    root.classList.remove("vm-sidebar-pinned")
+  }
 
   function init() {
     var sidebar = document.getElementById("quarto-sidebar")
     if (!sidebar || !sidebar.classList.contains("sidebar-navigation")) {
       root.classList.remove("vm-sidebar-rail")
+      clearState()
       return
     }
     // Embed mode (?embed=1) hides the sidebar, so there is nothing to open;
     // the class stays so the grid still gives the app the sidebar's track.
-    if (root.classList.contains("vm-embed")) return
+    if (root.classList.contains("vm-embed")) {
+      clearState()
+      return
+    }
 
-    var keyMeta = document.querySelector('meta[name="mathviz:sidebar-pin-key"]')
-    var PIN_KEY = (keyMeta && keyMeta.getAttribute("content")) || "vm-sidebar-pinned"
     var body = document.body
 
     // The sidebar and rail start just under the navbar (--vm-header-height)
@@ -91,29 +127,41 @@
     var toggleBtn = rail.querySelector("[data-vm-toggle]")
     var pinBtn = rail.querySelector("[data-vm-pin]")
 
-    function isPinned() {
-      try { return localStorage.getItem(PIN_KEY) === "1" } catch (e) { return false }
-    }
-
+    // Only a reader's click stores a choice; the default is never written,
+    // so a page load with no stored choice decides from the width again.
     function setPinned(pinned) {
       try { localStorage.setItem(PIN_KEY, pinned ? "1" : "0") } catch (e) { /* storage unavailable */ }
-      body.classList.toggle("vm-sidebar-pinned", pinned)
+      showPinned(pinned)
+    }
+
+    function showPinned(pinned) {
+      root.classList.toggle("vm-sidebar-pinned", pinned)
       pinBtn.setAttribute("aria-pressed", String(pinned))
     }
 
+    // The state on screen, not isPinned(): that re-reads the width, so after a
+    // resize across 992px it would disagree with what the reader sees.
+    function isCurrentlyPinned() {
+      return root.classList.contains("vm-sidebar-pinned")
+    }
+
+    function isOpen() {
+      return root.classList.contains("vm-sidebar-open")
+    }
+
     function openSidebar() {
-      body.classList.add("vm-sidebar-open")
+      root.classList.add("vm-sidebar-open")
       toggleBtn.setAttribute("aria-expanded", "true")
     }
 
     function closeSidebar() {
-      if (isPinned()) return
-      body.classList.remove("vm-sidebar-open")
+      if (isCurrentlyPinned()) return
+      root.classList.remove("vm-sidebar-open")
       toggleBtn.setAttribute("aria-expanded", "false")
     }
 
     toggleBtn.addEventListener("click", function () {
-      if (body.classList.contains("vm-sidebar-open")) {
+      if (isOpen()) {
         setPinned(false)
         closeSidebar()
       } else {
@@ -122,29 +170,28 @@
     })
 
     pinBtn.addEventListener("click", function () {
-      var next = !isPinned()
+      var next = !isCurrentlyPinned()
       setPinned(next)
       if (next) openSidebar()
     })
 
     document.addEventListener("keydown", function (event) {
       if (event.key !== "Escape") return
-      if (!body.classList.contains("vm-sidebar-open")) return
+      if (!isOpen()) return
       setPinned(false)
       closeSidebar()
     })
 
     document.addEventListener("click", function (event) {
-      if (!body.classList.contains("vm-sidebar-open")) return
-      if (isPinned()) return
+      if (!isOpen()) return
+      if (isCurrentlyPinned()) return
       if (sidebar.contains(event.target) || rail.contains(event.target)) return
       closeSidebar()
     })
 
-    if (isPinned()) {
-      setPinned(true)
-      openSidebar()
-    }
+    // The <head> pass already set the classes; this syncs the buttons' ARIA.
+    showPinned(startPinned)
+    if (startPinned) openSidebar()
   }
 
   if (document.readyState === "loading") {

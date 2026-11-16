@@ -69,7 +69,7 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "1.4.0"
+local VERSION    = "1.7.0"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
@@ -219,12 +219,14 @@ function Pandoc(doc)
       scripts = { "chrome/" .. name .. ".js" }
     }
     if not scriptOnly then chromeDep.stylesheets = { "chrome/" .. name .. ".css" } end
-    quarto.doc.add_html_dependency(chromeDep)
+    -- The meta tags go first: sidebar-rail.js reads its storage key while
+    -- <head> is still parsing, before anything below it exists.
     for meta_name, content in pairs(meta_tags or {}) do
       if content ~= nil and content ~= "" then
         headTag("mathviz-" .. meta_name, '<meta name="mathviz:' .. meta_name .. '" content="' .. escapeAttr(content) .. '">')
       end
     end
+    quarto.doc.add_html_dependency(chromeDep)
   end
 
   -- The rail's page grid gives the body column the width the site's

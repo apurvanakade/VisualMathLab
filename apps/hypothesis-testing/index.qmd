@@ -196,14 +196,6 @@ Authors: Apurva Nakade
 }
 
 
-/* Every interesting region of a test is in a tail, and left tails are as
-   common as right ones; the top-right corner is over the far tail only
-   when the curve is a chi-squared or F hump, so start the legend there. */
-.ojs-chart-block .ojs-legend-overlay {
-  left: auto;
-  right: 0.75rem;
-}
-
 /* The sample-size sliders take a row of their own under alpha and the
    statistic, side by side when there are two. */
 .ojs-chart-controls > :has(.ht-sizes) {
@@ -513,7 +505,10 @@ mainPlot({dist, win, decision, observed: stat, test, dfLabel, showsNormal}, show
 viewof traces = {
   const items = []
   for (const label of traceOptions) items.push({label, color: traceColors.get(label)})
-  return VM.ui.legendOverlay(items, {value: traceOptions})
+  // Every interesting region of a test is in a tail, and left tails are as
+  // common as right ones; the top-right corner is over the far tail only
+  // when the curve is a chi-squared or F hump, so start the legend there.
+  return VM.ui.legendOverlay(items, {value: traceOptions, corner: "top-right"})
 }
 ```
 

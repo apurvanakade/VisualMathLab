@@ -7,7 +7,7 @@
 /* The sidebar rail's stylesheet, shipped with sidebar-rail.js by
  * `mathviz: {sidebar-rail: true}` (see mathviz.lua). Quarto makes
  * #quarto-sidebar an off-canvas panel only below 992px; these rules do it at
- * every width, driven by .vm-sidebar-open/.vm-sidebar-pinned on <body>
+ * every width, driven by .vm-sidebar-open/.vm-sidebar-pinned on <html>
  * (which sidebar-rail.js owns) rather than Bootstrap's .collapse/.show, and
  * give the page grid back the sidebar's track so the body column centres.
  *
@@ -21,7 +21,7 @@
  * without the scope. In embed mode (html.vm-embed) the class stays but
  * only the page grid applies: the sidebar is hidden there, and its track
  * would otherwise push a framed app off-centre. Every other rule adds
- * :not(.vm-embed).
+ * :not(.vm-embed), after the state class it needs, if any.
  *
  * The page grid's widths come from the site's own `grid:` options: the
  * filter writes them to --vm-rail-body-width, --vm-rail-margin-width and
@@ -43,7 +43,7 @@
   html.vm-sidebar-rail body.floating .page-columns,
   html.vm-sidebar-rail body.docked .page-columns {
     grid-template-columns:
-      [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] 5fr
+      [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] var(--vm-rail-start-track, 5fr)
       [page-start page-start-inset body-start-outset body-start] var(--vm-rail-gutter, 1.5em)
       [body-content-start] minmax(0, calc(var(--vm-rail-body-width, 800px) - 2 * var(--vm-rail-gutter, 1.5em))) [body-content-end] var(--vm-rail-gutter, 1.5em)
       [body-end body-end-outset page-end-inset] var(--vm-rail-gutter, 1.5em)
@@ -60,7 +60,7 @@
   html.vm-sidebar-rail body.floating:has(nav#TOC) .page-columns,
   html.vm-sidebar-rail body.docked:has(nav#TOC) .page-columns {
     grid-template-columns:
-      [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] 5fr
+      [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] var(--vm-rail-start-track, 5fr)
       [page-start page-start-inset body-start-outset body-start] var(--vm-rail-gutter, 1.5em)
       [body-content-start] minmax(0, calc(var(--vm-rail-body-width, 800px) - 2 * var(--vm-rail-gutter, 1.5em))) [body-content-end] var(--vm-rail-gutter, 1.5em)
       [body-end] minmax(calc(0.1 * var(--vm-rail-margin-width, 250px)), calc(0.2 * var(--vm-rail-margin-width, 250px)))
@@ -100,7 +100,7 @@ html.vm-sidebar-rail:not(.vm-embed) #quarto-sidebar.sidebar-navigation {
   overflow-y: auto;
 }
 
-html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #quarto-sidebar.sidebar-navigation {
+html.vm-sidebar-rail.vm-sidebar-open:not(.vm-embed) #quarto-sidebar.sidebar-navigation {
   transform: translateX(0);
   visibility: visible;
   transition: transform 0.22s ease, visibility 0s;
@@ -137,6 +137,28 @@ html.vm-sidebar-rail:not(.vm-embed) .quarto-secondary-nav [data-bs-toggle="colla
   }
 }
 
+/* Pinned, from 992px up, the sidebar docks: it sits beside the page
+ * rather than over it. Pinned is the default at these widths
+ * (sidebar-rail.js), and an overlaid panel covered the start of every line
+ * of a 1000px column in a 1280px window. The column stays centred in the
+ * window and moves right only as far as it must to clear the panel and the
+ * rail riding its edge, by one gutter: the grid's left side track (5fr,
+ * the page grid's --vm-rail-start-track) gets a floor, so the text's left
+ * edge (gutter + track + gutter) is never under them. Where the window has
+ * room, both side tracks are wider than the floor and nothing moves; where
+ * it doesn't, the right track absorbs the difference, and below that the
+ * body column's minmax(0, ...) shrinks. Padding #quarto-content by the
+ * panel's width instead re-centred the column in what was left, pushing
+ * the text right by half the panel even when nothing overlapped. The
+ * navbar and footer keep the full width, as the panel starts under the
+ * navbar. Below 992px a pinned sidebar still overlays: docking 85vw on a
+ * phone would leave no page. */
+@media (min-width: 992px) {
+  html.vm-sidebar-rail.vm-sidebar-pinned:not(.vm-embed) #quarto-content {
+    --vm-rail-start-track: minmax(calc(280px + 2.75rem - var(--vm-rail-gutter, 1.5em)), 5fr);
+  }
+}
+
 /* ── The rail ─────────────────────────────────────────────────────── */
 /* Fixed at the left edge, and only as tall as its buttons: an element is
  * hit-tested whether or not it paints, and a full-height box lay over the
@@ -170,7 +192,7 @@ html.vm-sidebar-rail:not(.vm-embed) .vm-rail-cluster {
 
 /* Once open, the sidebar covers x 0-280px in the same z-index band, so the
  * rail moves out to its right edge rather than sitting on its menu. */
-html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #vm-sidebar-rail {
+html.vm-sidebar-rail.vm-sidebar-open:not(.vm-embed) #vm-sidebar-rail {
   left: min(280px, 85vw);
 }
 
@@ -189,12 +211,12 @@ html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail button {
 }
 
 html.vm-sidebar-rail:not(.vm-embed) #vm-sidebar-rail button:hover,
-html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #vm-sidebar-rail button[data-vm-toggle] {
+html.vm-sidebar-rail.vm-sidebar-open:not(.vm-embed) #vm-sidebar-rail button[data-vm-toggle] {
   background: var(--vm-surface-hover);
   color: var(--vm-text);
 }
 
-html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-pinned #vm-sidebar-rail button[data-vm-pin] {
+html.vm-sidebar-rail.vm-sidebar-pinned:not(.vm-embed) #vm-sidebar-rail button[data-vm-pin] {
   color: var(--vm-accent);
 }
 
@@ -212,7 +234,7 @@ html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-pinned #vm-sidebar-rail butt
     width: min(85vw, 320px) !important;
     max-width: min(85vw, 320px) !important;
   }
-  html.vm-sidebar-rail:not(.vm-embed) body.vm-sidebar-open #vm-sidebar-rail {
+  html.vm-sidebar-rail.vm-sidebar-open:not(.vm-embed) #vm-sidebar-rail {
     left: min(85vw, 320px);
   }
 }

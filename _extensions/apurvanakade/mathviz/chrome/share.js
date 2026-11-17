@@ -75,8 +75,7 @@
 
   // Not in embed mode: an app framed by another site is that site's
   // content, and a Share button pointing back at this site would be noise
-  // there -- the same reasoning report-bug.js already uses. embed.css hides
-  // it too, belt and braces.
+  // there. embed.css hides it too, belt and braces.
   const embedded = document.documentElement?.classList?.contains("vm-embed")
 
   if (!embedded) {

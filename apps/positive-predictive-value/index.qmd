@@ -584,11 +584,11 @@ viewof layout = {
 </div>
 
 ```{ojs}
-VM.ui.statRow(statTiles(tests))
+drawGrid(people, {rounds: tests})
 ```
 
 ```{ojs}
-drawGrid(people, {rounds: tests})
+VM.ui.statRow(statTiles(tests))
 ```
 
 </div>
@@ -654,10 +654,10 @@ function legendNote(rounds) {
   return html`Only the ${previous.positives} still positive after test ${rounds - 1} were retested; ${previous.truePositives} of them have the condition, and that share is the effective prevalence going into test ${rounds}.`
 }
 
-// statTiles: the stat row above the grid -- the effective prevalence the
+// statTiles: the stat row under the grid -- the effective prevalence the
 // latest test starts from, and that test's PPV and NPV. Before any test there is no
 // PPV or NPV yet, so those tiles show a dash rather than vanishing, which
-// would shift the grid every time the slider crosses 0.
+// would reflow the row every time the slider crosses 0.
 function statTiles(rounds) {
   let effectivePrevalence = prevalence
   let ppv = "—"

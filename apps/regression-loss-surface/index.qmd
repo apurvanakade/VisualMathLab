@@ -42,6 +42,13 @@ Authors: Apurva Nakade
 .ojs-chart-controls.ojs-grid.lsurf-sliders {
   grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr));
 }
+/* How to edit the points, right above the charts: small and in the soft
+ * text color (which keeps text contrast in both themes). */
+.lsurf-hint {
+  margin: 0.25rem 0;
+  font-size: 0.85em;
+  color: var(--vm-text-soft);
+}
 </style>
 
 ::::::::: {.vm-split .vm-split-wide}
@@ -411,9 +418,9 @@ showPath = traces.includes("Descent path")
   data.push({x: X_RANGE, y: [here.m * X_RANGE[0] + here.c, here.m * X_RANGE[1] + here.c], mode: "lines", showlegend: false, hoverinfo: "skip",
     line: {color: chartColors.fn, width: 3}})
   return linePlot(data, {
-    xaxis: {title: {text: "x"}, range: X_RANGE, fixedrange: true, zeroline: true},
-    yaxis: {title: {text: "y"}, range: Y_RANGE, fixedrange: true, zeroline: true},
-    dragmode: false, hovermode: false, uirevision: "static"
+    xaxis: {title: {text: "x"}, range: X_RANGE, zeroline: true},
+    yaxis: {title: {text: "y"}, range: Y_RANGE, zeroline: true},
+    hovermode: false, uirevision: "static"
   })
 }
 ```
@@ -506,15 +513,18 @@ viewof traces = {
 }
 ```
 
+<p class="lsurf-hint">Click to add a point · drag a point to move it · drag empty space to pan · right-click, double-click or long-press a point to remove it.</p>
+
 <div class="lsurf-charts">
 
 ```{ojs}
 // The chart is the input: pts is the data, and every drag, add or remove
-// re-runs the cells that read it.
+// re-runs the cells that read it. With `pan`, a click on the chart adds a
+// point and a drag on empty space pans it.
 viewof pts = VM.plotting.draggablePoints(linePlot, {
   value: initial.pts,
   xBounds: X_RANGE, yBounds: Y_RANGE,
-  add: true, remove: true, minPoints: 2, maxPoints: 60,
+  add: true, pan: true, remove: true, minPoints: 2, maxPoints: 60,
   label: "Data point", color: "var(--vm-color-ink)",
   format: p => `x ${p.x.toFixed(2)}, y ${p.y.toFixed(2)}`
 })
@@ -592,8 +602,6 @@ stats = {
 </div>
 
 </div>
-
-Drag a data point to move it, click the chart to add one, and double-click a point to remove it.
 
 Each line $y = mx + c$ is a point $(m, c)$, and its loss is a height above that point. The best fit is the lowest point on this surface. With residuals $r_i = y_i - (m x_i + c)$,
 

@@ -26,7 +26,10 @@
 --                                  # width, behind a slim rail at the left
 --                                  # edge; a string names the pin's
 --                                  # localStorage key (true:
---                                  # "vm-sidebar-pinned")
+--                                  # "vm-sidebar-pinned"); a map takes
+--                                  # pin-key: (that key) and default:
+--                                  # closed (start closed at every width
+--                                  # instead of pinned from 992px up)
 --     sidebar-search: true         # a search box atop Quarto's sidebar that
 --                                  # narrows the menu to matching titles
 --     category-cloud: true         # a listing's category cloud above its
@@ -69,7 +72,7 @@
 --
 -- Keep VERSION in step with _extension.yml and package.json --
 -- scripts/build.mjs refuses to build when the three disagree.
-local VERSION    = "1.12.0"
+local VERSION    = "1.13.0"
 local PLOTLY_URL = "https://cdn.plot.ly/plotly-2.35.2.min.js"
 local MATHJS_URL = "https://cdn.jsdelivr.net/npm/mathjs@15.2.0/lib/browser/math.js"
 
@@ -236,10 +239,15 @@ function Pandoc(doc)
   -- custom properties on :root, Quarto's defaults when unset. Only when
   -- the rail is on: nothing here reaches a page that doesn't use it.
   if enabled(opts, "sidebar-rail") then
-    local pin = opts["sidebar-rail"]
-    local pinKey = nil
-    if type(pin) ~= "boolean" then pinKey = pandoc.utils.stringify(pin) end
-    chrome("sidebar-rail", { ["sidebar-pin-key"] = pinKey })
+    local rail = opts["sidebar-rail"]
+    local pinKey, startState = nil, nil
+    if pandoc.utils.type(rail) == "table" then
+      pinKey = subOption(opts, "sidebar-rail", "pin-key")
+      startState = subOption(opts, "sidebar-rail", "default")
+    elseif type(rail) ~= "boolean" then
+      pinKey = pandoc.utils.stringify(rail)
+    end
+    chrome("sidebar-rail", { ["sidebar-pin-key"] = pinKey, ["sidebar-default"] = startState })
     local grid = doc.meta.grid
     local function gridValue(key, default)
       if pandoc.utils.type(grid) ~= "table" or grid[key] == nil then return default end

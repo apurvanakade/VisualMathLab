@@ -4,10 +4,8 @@
  * Authors: Apurva Nakade
  */
 
-// Helpers shared by the opt-in site chrome (share.js, report-bug.js), loaded
-// ahead of either as a dependency of its own -- the filter adds it whenever
-// one of them is on, and Quarto emits a dependency once however many ask
-// for it. Not in the always-loaded mathviz.js: a site that turns none of
+// Helpers for the opt-in site chrome (share.js), loaded ahead of it as a
+// dependency of its own -- the filter adds it whenever share is on. Not in the always-loaded mathviz.js: a site that turns none of
 // the chrome on never needs these.
 (function attachChrome(globalThis) {
   // The page's path relative to the site root, which is what a public URL

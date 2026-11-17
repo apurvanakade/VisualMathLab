@@ -1,0 +1,130 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* `quiet-apps: true`: a quieter look for every .vm-app,
+ * for a site whose pages are mostly prose (a blog, lecture notes), where
+ * the default boxed panels read as heavy. Off by default; a site that
+ * doesn't turn it on never loads this file.
+ *
+ * - The controls panel and the slider bar lose their fill and border; the
+ *   inputs, slider and button keep their own chrome. The bar's labels sit
+ *   above their controls, as the panel's do, and a panel grid of sliders
+ *   takes the bar's columns, so the two line up.
+ * - VM.ui.statRow's readouts are inline "label value" pairs on one
+ *   baseline, like a caption line, not tiles, with a hairline between pairs; the row wraps between pairs,
+ *   never inside one, on a narrow screen. Label above value without the
+ *   tile read as numbers floating under their labels.
+ * - The floating legend loses its border, shadow and blur, keeping a faint
+ *   ground so it stays legible over the data.
+ * - The Share button is a plain text link, shown while the pointer is over
+ *   the app (always on a touch screen, which has no hover).
+ */
+
+.vm-app .ojs-panel,
+.vm-app .ojs-chart-controls {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+/* Without the boxes, the slider bar's label-beside-control layout put its
+ * number box and track at a different x from the panel's, whose labels sit
+ * above their controls, and nothing lined up down the app. Stack the bar's
+ * labels too (the mechanism the bar's own phone rule uses: a full-width
+ * label on a wrapped row, so play button, readout and track stay on one
+ * line), so every label and every control starts on the app's left edge.
+ * Specificity (0,4,1) beats Observable's runtime .oi-<hash> rules. */
+.vm-app .ojs-chart-controls form[class^="oi-"]:not([class$="-checkbox"]) {
+  flex-wrap: wrap;
+  row-gap: 0.15rem;
+  /* Observable's fixed 360px form width, which .ojs-panel overrides with
+   * 100% (panel.css) and the bar doesn't: in a bar grid's ~470px column a
+   * track stopped ~110px short of the panel track above it. */
+  width: 100%;
+}
+.vm-app .ojs-chart-controls form[class^="oi-"]:not([class$="-checkbox"]) > label {
+  flex: 0 0 100%;
+}
+
+/* The same for columns: a panel grid's tracks have a 200px floor and a
+ * slider bar grid's 320px (legend-controls.css), so a three-slider panel
+ * above a four-slider bar drew three columns over two, with no edge shared.
+ * A panel grid holding a slider takes the bar's floor, so both split the
+ * app's width into the same columns. A grid of short text fields keeps its
+ * compact 200px tracks. */
+.vm-app .ojs-panel .ojs-grid:has(input[type="range"]),
+.vm-app .ojs-panel.ojs-grid:has(input[type="range"]) {
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+}
+
+.vm-app .vm-stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 1rem;
+  max-width: none;
+  /* Clips the leading rule of each line; see .vm-stat::before. */
+  overflow: hidden;
+}
+.vm-app .vm-stat {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 0.45em;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+/* A hairline centred in the gap to each pair's left. The first pair on a
+ * line, the first or one wrapped on a phone, has its rule outside the
+ * row, where the row's overflow clips it, so every line starts flush with
+ * no rule. Nothing moves the row itself, so stat-row.css's margin under
+ * a chart applies unchanged. */
+.vm-app .vm-stat::before {
+  content: "";
+  position: absolute;
+  top: 0.15em;
+  bottom: 0.15em;
+  left: calc(-0.5rem - 0.5px);
+  border-left: 1px solid var(--vm-border);
+}
+.vm-app .vm-stat-label {
+  font-size: 0.85rem;
+}
+.vm-app .vm-stat-value {
+  font-size: 0.95rem;
+}
+
+.vm-app .ojs-legend-overlay {
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: color-mix(in srgb, var(--vm-bg) 80%, transparent);
+}
+
+.vm-app .vm-share-button {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+.vm-app .vm-share-button:hover {
+  background: none;
+  color: var(--vm-accent);
+}
+@media (hover: hover) {
+  .vm-app .vm-share-bar {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  .vm-app:hover .vm-share-bar,
+  .vm-app .vm-share-bar:focus-within {
+    opacity: 1;
+  }
+}

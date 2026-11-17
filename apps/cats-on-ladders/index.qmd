@@ -110,7 +110,9 @@ catLayout = ({
   autosize: true
 })
 
-catPlot = VM.plotting.persistentPlot({height: "520px"})
+// Square: every chart on the page spans a square at equal scales. The
+// default 72vh cap keeps it on screen in the wide body column.
+catPlot = VM.plotting.persistentPlot({aspectRatio: 1})
 ```
 
 <div class="vm-app" id="cat">
@@ -278,7 +280,7 @@ tusiDefaultT = 0.5
 // different value and an untouched page would get tusi_roll in its URL.
 tusiDefaultRoll = Math.round(catDefaultSlide / 4 * 1000) / 1000
 tusiView = 1.15
-tusiPlot = VM.plotting.persistentPlot({height: "520px"})
+tusiPlot = VM.plotting.persistentPlot({aspectRatio: 1})
 tusiLayout = ({
   ...catLayout,
   xaxis: {...catLayout.xaxis, range: [-tusiView, tusiView]},
@@ -407,7 +409,7 @@ What does this have to do with [hypocycloids](../spirographs/index.html?R=4&r=1&
 envCount = 60
 envView = 1.15
 envDefaultSlide = 0
-envPlot = VM.plotting.persistentPlot({height: "520px"})
+envPlot = VM.plotting.persistentPlot({aspectRatio: 1})
 
 function envTouch(s) {
   const theta = catAngle(s)
@@ -530,7 +532,7 @@ Rolling circles explain the envelope as well. Add a third circle, of radius $L/4
 // tracing point (L cos³ θ, L sin³ θ) lies on the ladder, where the ladder
 // touches the astroid.
 astroDefaultRoll = tusiDefaultRoll
-astroPlot = VM.plotting.persistentPlot({height: "520px"})
+astroPlot = VM.plotting.persistentPlot({aspectRatio: 1})
 ```
 
 <div class="vm-app" id="astroid">

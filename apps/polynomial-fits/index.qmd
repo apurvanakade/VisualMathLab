@@ -318,9 +318,80 @@ points = {
   const pts = []
   for (let i = 0; i < basePoints.linePoints.length; i++) {
     const {x, y} = basePoints.linePoints[i]
-    pts.push({x, y: y + noiseLevel * basePoints.offsets[i]})
+    pts.push({x, y: y + noiseLevel * basePoints.offsets[i] + dragShift[i]})
   }
   return pts
+}
+```
+
+```{ojs}
+//| output: false
+// How far the reader has dragged each point off line + noise: zero for a
+// fresh draw, kept through a noise-slider move. One array per basePoints
+// draw, mutated in place by dragShift below, so only a new draw resets it.
+shifts = new Array(basePoints.linePoints.length).fill(0)
+```
+
+```{ojs}
+//| output: false
+// A copy of `shifts`, re-emitted on every drag frame. A drag moves only y
+// (the x's are fixed, see viewof dragPoints), so the shift is the dot's y
+// less where the line and the current noise put it. Reads the noise
+// slider's view, not its value, so a noise move doesn't re-run this cell.
+dragShift = Generators.observe(notify => {
+  const view = viewof dragPoints
+  const onInput = () => {
+    const noise = (viewof noiseLevel).value
+    const dots = view.value
+    for (let i = 0; i < shifts.length && i < dots.length; i++) {
+      shifts[i] = dots[i].y - (basePoints.linePoints[i].y + noise * basePoints.offsets[i])
+    }
+    notify(shifts.slice())
+  }
+  view.addEventListener("input", onInput)
+  notify(shifts.slice())
+  return () => view.removeEventListener("input", onInput)
+})
+```
+
+```{ojs}
+//| output: false
+// Puts the dots where the points are after a new draw or a noise move.
+// Not on a drag frame (it reads `shifts`, which only a new draw replaces),
+// so it never moves a dot out from under the pointer. Setting the view's
+// value fires no input event.
+syncDots = {
+  const dots = []
+  for (let i = 0; i < basePoints.linePoints.length; i++) {
+    const {x, y} = basePoints.linePoints[i]
+    dots.push({x, y: y + noiseLevel * basePoints.offsets[i] + shifts[i]})
+  }
+  ;(viewof dragPoints).value = dots
+  return true
+}
+```
+
+```{ojs}
+//| output: false
+// The fits to the drag shifts alone, per degree, and their sampled curves.
+// Least-squares coefficients are linear in the y's (see baseFits), so the
+// fit to the dragged points is the line fit + noise * offset fit + this
+// one. Null while nothing is dragged.
+shiftFits = {
+  if (dragShift.every(shift => shift === 0)) return null
+  const math = window.math
+  const shiftPoints = []
+  for (let i = 0; i < basePoints.linePoints.length; i++) {
+    shiftPoints.push({x: basePoints.linePoints[i].x, y: dragShift[i]})
+  }
+  const fits = {}
+  for (let degree = 1; degree <= 5; degree++) {
+    const fit = VM.numerical.polynomialFit(math, shiftPoints, degree)
+    const curve = []
+    for (const x of axisSetup.sampleXs) curve.push(fit ? fit.evaluate(x) : null)
+    fits[degree] = {fit, curve}
+  }
+  return fits
 }
 ```
 
@@ -345,9 +416,16 @@ result = {
       continue
     }
 
+    const shiftFit = shiftFits ? shiftFits[degree].fit : null
+    if (shiftFits && !shiftFit) {
+      fits[degree] = null
+      continue
+    }
+
     const coeffs = []
     for (let k = 0; k < lineFit.coeffs.length; k++) {
-      coeffs.push(lineFit.coeffs[k] + noiseLevel * offsetFit.coeffs[k])
+      const shift = shiftFit ? shiftFit.coeffs[k] : 0
+      coeffs.push(lineFit.coeffs[k] + noiseLevel * offsetFit.coeffs[k] + shift)
     }
 
     const evaluate = x => {
@@ -380,13 +458,14 @@ setup = {
   const curves = {}
   for (let degree = 1; degree <= 5; degree++) {
     const {line, offset} = bufferCurves[degree]
+    const shift = shiftFits ? shiftFits[degree].curve : null
     const ys = []
     for (let i = 0; i < line.length; i++) {
-      if (line[i] === null || offset[i] === null) {
+      if (line[i] === null || offset[i] === null || (shift && shift[i] === null)) {
         ys.push(null)
         continue
       }
-      const y = line[i] + noiseLevel * offset[i]
+      const y = line[i] + noiseLevel * offset[i] + (shift ? shift[i] : 0)
       ys.push(Number.isFinite(y) && Math.abs(y) < 1e6 ? y : null)
     }
     curves[degree] = ys
@@ -401,13 +480,10 @@ setup = {
 // mainPlot draws the data points and, depending on the checkboxes, each
 // fitted curve.
 //
-// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
-// reactive updates — this preserves zoom and pan when the slider or
-// checkboxes change.
+// It paints pointsPlot, which reuses the same DOM node across reactive
+// updates — this preserves zoom and pan when the slider or checkboxes
+// change, and is what the draggable dots sit on.
 mainPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
-
   return ({points, xRange, yRange, sampleXs, curves}, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints) => {
     const pointXs = [], pointYs = []
     for (const p of points) {
@@ -441,27 +517,45 @@ mainPlot = {
       uirevision: "static",
       autosize: true
     }
-    const config = VM.plotting.config()
-
-    if (!_plotDiv) {
-      _plotDiv = document.createElement("div")
-      _plotDiv.className = "plotly-box-large"
-      Plotly.newPlot(_plotDiv, data, layout, config)
-      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
-      // A ResizeObserver catches the real size once it's inserted and laid out.
-      VM.plotting.autoResize(_plotDiv)
-    } else {
-      Plotly.react(_plotDiv, data, layout, config)
-    }
-    return _plotDiv
+    return pointsPlot(data, layout)
   }
 }
+```
+
+```{ojs}
+//| output: false
+// The chart, created once, in a cell that depends on nothing reactive:
+// viewof dragPoints and mainPlot share its div.
+pointsPlot = VM.plotting.persistentPlot()
+```
+
+```{ojs}
+//| output: false
+// Paints the chart. No output: the chart is on the page already, as
+// viewof dragPoints below.
+mainPlot(setup, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints)
 ```
 
 <div class="ojs-chart-block">
 
 ```{ojs}
-mainPlot(setup, showDegree1, showDegree2, showDegree3, showDegree4, showDegree5, showDataPoints)
+// The chart is also an input: each data point is a dot the reader drags
+// up or down (or Tabs to and moves with the arrow keys). Its x stays put.
+// It starts empty, since it depends on nothing reactive; syncDots places
+// the dots.
+viewof dragPoints = VM.plotting.draggablePoints(pointsPlot, {
+  value: [],
+  label: "Data point", color: "var(--vm-color-ink)",
+  constrain: (p, i, current) => ({x: current[i].x, y: p.y}),
+  format: p => `x ${p.x}, y ${p.y.toFixed(2)}`
+})
+```
+
+```{ojs}
+//| output: false
+// The dots go with the Data points legend entry: they aren't a trace,
+// so hiding the trace alone would leave them up.
+(viewof dragPoints).visible = showDataPoints
 ```
 
 ```{ojs}
@@ -513,7 +607,7 @@ $$
 \hat\beta=\operatorname*{arg\,min}_{\beta\in\mathbb{R}^{d+1}}\sum_{i=1}^n\Big(y_i-\sum_{k=0}^{d}\beta_k x_i^k\Big)^2.
 $$
 
-A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider to push 6 points off a line and compare how degree 1–5 fits respond; click "Regenerate points" for a new line and noise pattern.
+A low-degree polynomial (e.g. a line) can't bend to match every point — high **bias**, low **variance**, **underfitting**. A high-degree polynomial can fit the training data almost perfectly but swings wildly between points and reacts violently to small data changes — low bias, high variance, **overfitting**. Drag the noise slider to push 6 points off a line and compare how degree 1–5 fits respond, or drag a single point up or down and watch the degree-5 curve swing; click "Regenerate points" for a new line and noise pattern.
 
 The degree-5 fit has exactly as many parameters as data points, so it always interpolates them exactly — its training error stays at zero no matter how much noise you add, even as the curve itself swings wildly between and beyond the points (try panning out). Degrees 1 and 2 move far less with the noise, at the cost of never capturing real curvature either.
 

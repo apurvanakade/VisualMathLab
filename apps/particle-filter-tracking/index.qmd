@@ -45,7 +45,7 @@ Authors: Dhruv Azad
 
 Particle filtering is a sequential Monte Carlo method for estimating the hidden state of a system that changes over time, updating that estimate each time a new noisy measurement arrives. It represents its belief about the state as a cloud of weighted samples: at every step it moves each sample forward according to how the system evolves, reweights it by how well it explains the new measurement, and resamples when a few samples end up carrying most of the weight.
 
-In the app, we use it to track the position of a jittery moving object (its <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight) using three <span class="vm-swatch vm-swatch-ink">sensors</span> at fixed positions, each of which reports only a *noisy distance to the object*. The <span class="vm-swatch vm-swatch-accent2">particles</span> are the filter's guesses (bigger dots carry more weight), and the <span class="vm-swatch vm-swatch-alt">estimate</span> is the weighted average of the particles.
+In the app, we use it to track the position of a jittery moving object (its <span class="vm-swatch vm-swatch-fn">true position</span> traces a figure eight) using three <span class="vm-swatch vm-swatch-ink">sensors</span>, each of which reports only a *noisy distance to the object*. Drag a sensor to move it; the filter reruns on the same noisy path. The <span class="vm-swatch vm-swatch-accent2">particles</span> are the filter's guesses (bigger dots carry more weight), and the <span class="vm-swatch vm-swatch-alt">estimate</span> is the weighted average of the particles.
 
 **In the example shown, why do you think the particles are falling behind?** Press play to watch it happen.
 
@@ -544,12 +544,14 @@ parseSensors = (text) => {
 // computation rather than reshuffling unrelated randomness.
 result = {
   const math = window.math
+  const committed = liveSensors.committed
   const xFn = VM.expressions.makeFunctionOfT(math, committed.xtText)
   const yFn = VM.expressions.makeFunctionOfT(math, committed.ytText)
   const fallback = t => NaN
   if (!xFn || !yFn) return {rows: [], parsed: false, sensorsParsed: true, noiseParsed: true, xFn: fallback, yFn: fallback}
 
-  const sensors = committed.sensors
+  // The sensors where they are now: as committed, then as dragged.
+  const sensors = liveSensors.sensors
   if (!sensors) return {rows: [], parsed: true, sensorsParsed: false, noiseParsed: true, xFn, yFn}
 
   const sigmaProcess = committed.sigmaProcess
@@ -742,17 +744,19 @@ setup = {
     estimatesYSoFar.push(result.rows[i].estY)
   }
 
-  const sensors = committed.sensors
+  const sensors = liveSensors.sensors
   const currentRow = result.rows[step]
 
-  // Axis ranges from what only Plot can change -- the sensors, the nominal
-  // path and the whole true path -- so no slider ever rescales the axes.
+  // Axis ranges from what only Plot can change -- the sensors as committed
+  // (not as dragged, so a drag never rescales the chart under the pointer),
+  // the nominal path and the whole true path -- so no slider ever rescales
+  // the axes.
   // The particles and the estimate depend on the N, threshold and filter-σ
   // fields, so they are deliberately left out: a cloud that wanders off
   // (too few particles, an overconfident sensor model) leaves the plot
   // rather than zooming it out.
   const allXs = [], allYs = []
-  for (const sensor of sensors) {
+  for (const sensor of liveSensors.committed.sensors) {
     allXs.push(sensor.x)
     allYs.push(sensor.y)
   }
@@ -776,18 +780,62 @@ setup = {
 
 ```{ojs}
 //| output: false
+// The scene's chart, created once, in a cell that depends on nothing
+// reactive: viewof sensorPoints and mainPlot share its div.
+scenePlot = VM.plotting.persistentPlot()
+```
+
+```{ojs}
+//| output: false
+// The sensors the filter runs with: the committed ones after each Plot,
+// then wherever the reader drags them, which keeps the seed, so the path
+// and every reading's noise stay the same. One cell for both, so a Plot
+// runs the filter once rather than once with the old sensors and again
+// with the new. Setting the view's value moves the dots without an input
+// event.
+liveSensors = Generators.observe(notify => {
+  const view = viewof sensorPoints
+  view.value = committed.sensors ?? []
+  const push = () => notify({committed, sensors: committed.sensors ? view.value : null})
+  view.addEventListener("input", push)
+  push()
+  return () => view.removeEventListener("input", push)
+})
+```
+
+```{ojs}
+//| output: false
+// A finished drag writes the sensors back into the Sensors field (so Plot
+// keeps them, and the example dropdown follows) and into the URL.
+sensorsFromDrag = {
+  const view = viewof sensorPoints
+  const field = viewof sensorsText
+  const onChange = () => {
+    const text = view.value.map(p => `(${p.x}, ${p.y})`).join(", ")
+    field.value = text
+    field.dispatchEvent(new Event("input", {bubbles: true}))
+    const params = new URLSearchParams(window.location.search)
+    params.set("sensors", text)
+    history.replaceState(null, "", `${window.location.pathname}?${params}`)
+  }
+  view.addEventListener("change", onChange)
+  invalidation.then(() => view.removeEventListener("change", onChange))
+  return true
+}
+```
+
+```{ojs}
+//| output: false
 // mainPlot: the current step's scene. Equal x/y scale (scaleanchor) is
 // not cosmetic here -- the sensors measure Euclidean distance, and an
 // unequal scale would misstate which positions are equally far from a
 // sensor, the geometry the whole app is demonstrating.
 //
-// _plotDiv is a closure so the same DOM node is reused across reactive
-// re-renders (Plotly.react after the first render) -- this is what
-// preserves the reader's zoom/pan when the step slider moves.
+// It paints scenePlot, whose div is reused across reactive re-renders
+// (Plotly.react after the first render) -- this is what preserves the
+// reader's zoom/pan when the step slider moves, and what the sensors' drag
+// handles sit on.
 mainPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
-
   // The true-position trail shows only its last trailSteps steps, oldest
   // faintest: after a lap the reader knows the path's shape (the nominal
   // path still shows it), and a full two-lap trail buries the cloud. The
@@ -902,17 +950,7 @@ mainPlot = {
       uirevision: `${data.xRange.lo},${data.xRange.hi},${data.yRange.lo},${data.yRange.hi}`,
       autosize: true
     }
-    const config = VM.plotting.config()
-
-    if (!_plotDiv) {
-      _plotDiv = document.createElement("div")
-      _plotDiv.className = "plotly-box-large"
-      Plotly.newPlot(_plotDiv, traces, layout, config)
-      VM.plotting.autoResize(_plotDiv)
-    } else {
-      Plotly.react(_plotDiv, traces, layout, config)
-    }
-    return _plotDiv
+    return scenePlot(traces, layout)
   }
 }
 ```
@@ -948,10 +986,36 @@ sigmaRangeFilter = parseClamped(sigmaRangeFilterText, 0.05, 3, 0.6)
 sigmaProcessFilter = parseClamped(sigmaProcessFilterText, 0.05, 3, 0.15)
 ```
 
+```{ojs}
+//| output: false
+// Paints the scene. No output: the chart is on the page already, as
+// viewof sensorPoints below.
+mainPlot(setup, showNominal, showTrue, showParticles, showEstimate, showSensors)
+```
+
 <div class="ojs-chart-block">
 
 ```{ojs}
-mainPlot(setup, showNominal, showTrue, showParticles, showEstimate, showSensors)
+// The chart is also an input: every sensor is a dot the reader drags (or
+// Tabs to and moves with the arrow keys). Depends on nothing reactive, so
+// a theme toggle repaints the chart without resetting the dots; the
+// sensors' count and starting places come from the Sensors field, through
+// liveSensors.
+viewof sensorPoints = VM.plotting.draggablePoints(scenePlot, {
+  value: parseSensors(new URLSearchParams(window.location.search).get("sensors") ?? "(10, 0), (-5, 9), (-5, -9)") ?? [],
+  label: "Sensor", color: "var(--vm-color-ink)",
+  step: {x: 0.1, y: 0.1},
+  // Two decimals, the precision the Sensors field shows.
+  constrain: p => ({x: Math.round(p.x * 100) / 100, y: Math.round(p.y * 100) / 100}),
+  format: p => `x ${p.x.toFixed(2)}, y ${p.y.toFixed(2)}`
+})
+```
+
+```{ojs}
+//| output: false
+// The dots go with the Sensors legend entry: they aren't a trace, so
+// hiding the trace alone would leave them up.
+(viewof sensorPoints).visible = showSensors
 ```
 
 ```{ojs}

@@ -495,8 +495,13 @@ densityPlot = VM.plotting.persistentPlot()
 ```{ojs}
 //| output: false
 // Paints the chart. No output: the chart is on the page already, as
-// viewof statHandle below.
-mainPlot({dist, win, decision, observed: stat, test, dfLabel, showsNormal}, showCurve, showNormal, showRejection, showPValue, showObserved)
+// viewof statHandle below. It reads that view (not its value, so a drag
+// doesn't re-run it) so it always runs after the view has put the chart's
+// div on the page; run first, the div would land in this hidden cell.
+{
+  viewof statHandle
+  return mainPlot({dist, win, decision, observed: stat, test, dfLabel, showsNormal}, showCurve, showNormal, showRejection, showPValue, showObserved)
+}
 ```
 
 ```{ojs}

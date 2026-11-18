@@ -35,11 +35,14 @@ VM = window.VM
 // point of the demo.
 severityMax = 15
 
-fitOptions = ["L2 fit (least squares)", "L1 fit (least absolute deviations)", "Points", "Outliers"]
+// "Points" covers the outliers too: the draggable dots are one set, so
+// one entry shows or hides them all with their markers.
+fitOptions = ["L2 fit (least squares)", "L1 fit (least absolute deviations)", "Points"]
 
 // Matches the line/marker colors mainPlot uses for each trace, so the
-// overlay legend's swatches double as a color key. #f97316 (orange) has no
-// VM.plotting.colors() token -- left as a literal.
+// overlay legend's swatches double as a color key. The outliers' #f97316
+// (orange, mainPlot and dragPoints) has no VM.plotting.colors() token -- left
+// as a literal; they share the Points entry, so it has no swatch.
 // vmTheme is what makes the colors below reactive. The chart's own chrome
 // (background, axes, gridlines) repaints on a dark-mode toggle by itself,
 // via the relayout patch in plotly-fullscreen-button.js -- but the *trace*
@@ -54,8 +57,7 @@ chartColors = VM.plotting.colors(vmTheme)
 fitColors = new Map([
   ["L2 fit (least squares)", chartColors.alt],
   ["L1 fit (least absolute deviations)", chartColors.fn],
-  ["Points", chartColors.ink],
-  ["Outliers", "#f97316"]
+  ["Points", chartColors.ink]
 ])
 ```
 
@@ -153,13 +155,62 @@ points = {
   const pts = []
   for (let i = 0; i < basePoints.points.length; i++) {
     const p = basePoints.points[i]
-    if (basePoints.outlierIndices.includes(i)) {
-      pts.push({x: p.x, y: p.y + outlierSeverity})
-    } else {
-      pts.push(p)
-    }
+    const severity = basePoints.outlierIndices.includes(i) ? outlierSeverity : 0
+    pts.push({x: p.x + dragShift[i].x, y: p.y + severity + dragShift[i].y})
   }
   return pts
+}
+```
+
+```{ojs}
+//| output: false
+// How far the reader has dragged each point from where the draw and the
+// severity slider put it: zero for a fresh draw, kept through a slider
+// move (a dragged outlier still takes the severity on top). One array per
+// basePoints draw, mutated in place by dragShift below, so only
+// "Regenerate points" resets it.
+shifts = basePoints.points.map(() => ({x: 0, y: 0}))
+```
+
+```{ojs}
+//| output: false
+// A copy of `shifts`, re-emitted on every drag frame: each dot's position
+// less where the draw and the current severity put it. Reads the
+// slider's view, not its value, so a slider move doesn't re-run this cell.
+dragShift = Generators.observe(notify => {
+  const view = viewof dragPoints
+  const copy = () => shifts.map(shift => ({...shift}))
+  const onInput = () => {
+    const severity = (viewof outlierSeverity).value
+    const dots = view.value
+    for (let i = 0; i < shifts.length && i < dots.length; i++) {
+      const p = basePoints.points[i]
+      const outlier = basePoints.outlierIndices.includes(i) ? severity : 0
+      shifts[i] = {x: dots[i].x - p.x, y: dots[i].y - (p.y + outlier)}
+    }
+    notify(copy())
+  }
+  view.addEventListener("input", onInput)
+  notify(copy())
+  return () => view.removeEventListener("input", onInput)
+})
+```
+
+```{ojs}
+//| output: false
+// Puts the dots where the points are after a new draw or a slider move.
+// Not on a drag frame (it reads `shifts`, which only a new draw replaces),
+// so it never moves a dot out from under the pointer. Setting the view's
+// value fires no input event.
+syncDots = {
+  const dots = []
+  for (let i = 0; i < basePoints.points.length; i++) {
+    const p = basePoints.points[i]
+    const severity = basePoints.outlierIndices.includes(i) ? outlierSeverity : 0
+    dots.push({x: p.x + shifts[i].x, y: p.y + severity + shifts[i].y})
+  }
+  ;(viewof dragPoints).value = dots
+  return true
 }
 ```
 
@@ -218,11 +269,6 @@ showPoints = shownFits.includes("Points")
 
 ```{ojs}
 //| output: false
-showOutliers = shownFits.includes("Outliers")
-```
-
-```{ojs}
-//| output: false
 // setup: axis ranges and line endpoints shared by mainPlot.
 setup = {
   const xs = []
@@ -261,14 +307,11 @@ setup = {
 // mainPlot draws the inlier points, the outlier points, and both fitted
 // lines.
 //
-// _plotDiv is kept in a closure so Plotly reuses the same DOM node across
-// reactive updates — this preserves zoom and pan when the slider or button
-// changes.
+// It paints pointsPlot, which reuses the same DOM node across reactive
+// updates — this preserves zoom and pan when the slider or button changes,
+// and is what the draggable dots sit on.
 mainPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
-
-  return ({points, outlierIndices, xRange, yRange, lineXs, l2LineYs, l1LineYs}, showL2, showL1, showPoints, showOutliers) => {
+  return ({points, outlierIndices, xRange, yRange, lineXs, l2LineYs, l1LineYs}, showL2, showL1, showPoints) => {
     const inlierXs = [], inlierYs = [], outlierXs = [], outlierYs = []
     for (let i = 0; i < points.length; i++) {
       if (outlierIndices.includes(i)) {
@@ -289,8 +332,6 @@ mainPlot = {
     }
     if (showPoints) {
       data.push({x: inlierXs, y: inlierYs, type: "scatter", mode: "markers", name: "Points", showlegend: false, marker: {color: chartColors.ink, size: 8, line: {color: chartColors.halo, width: 1}}})
-    }
-    if (showOutliers) {
       data.push({x: outlierXs, y: outlierYs, type: "scatter", mode: "markers", name: "Outliers", showlegend: false, marker: {color: "#f97316", size: 13, symbol: "diamond", line: {color: chartColors.halo, width: 1.5}}})
     }
 
@@ -301,27 +342,50 @@ mainPlot = {
       uirevision: "static",
       autosize: true
     }
-    const config = VM.plotting.config()
-
-    if (!_plotDiv) {
-      _plotDiv = document.createElement("div")
-      _plotDiv.className = "plotly-box-large"
-      Plotly.newPlot(_plotDiv, data, layout, config)
-      // newPlot fires before the div is in the DOM, so Plotly measures 0 width.
-      // A ResizeObserver catches the real size once it's inserted and laid out.
-      VM.plotting.autoResize(_plotDiv)
-    } else {
-      Plotly.react(_plotDiv, data, layout, config)
-    }
-    return _plotDiv
+    return pointsPlot(data, layout)
   }
 }
+```
+
+```{ojs}
+//| output: false
+// The chart, created once, in a cell that depends on nothing reactive:
+// viewof dragPoints and mainPlot share its div.
+pointsPlot = VM.plotting.persistentPlot()
+```
+
+```{ojs}
+//| output: false
+// Paints the chart. No output: the chart is on the page already, as
+// viewof dragPoints below.
+mainPlot(setup, showL2, showL1, showPoints)
 ```
 
 <div class="ojs-chart-block">
 
 ```{ojs}
-mainPlot(setup, showL2, showL1, showPoints, showOutliers)
+// The chart is also an input: every point is a dot the reader drags (or
+// Tabs to and moves with the arrow keys). Rebuilt on "Regenerate points"
+// only, since that picks new outliers and a dot's color and name are fixed
+// when it is made; a theme toggle doesn't re-run it (the colors are CSS
+// tokens, or the outliers' literal, which mainPlot also uses). syncDots
+// places the dots.
+viewof dragPoints = {
+  const outlier = i => basePoints.outlierIndices.includes(i)
+  return VM.plotting.draggablePoints(pointsPlot, {
+    value: basePoints.points.map(p => ({x: p.x, y: p.y})),
+    label: basePoints.points.map((p, i) => `${outlier(i) ? "Outlier" : "Point"} ${i + 1}`),
+    color: basePoints.points.map((p, i) => outlier(i) ? "#f97316" : "var(--vm-color-ink)"),
+    format: p => `x ${p.x.toFixed(2)}, y ${p.y.toFixed(2)}`
+  })
+}
+```
+
+```{ojs}
+//| output: false
+// The dots go with the Points legend entry: they aren't traces, so hiding
+// the traces alone would leave them up.
+(viewof dragPoints).visible = showPoints
 ```
 
 ```{ojs}
@@ -374,7 +438,7 @@ $$
 \text{L1:}\ \min_{m,\,b} \sum_i \lvert y_i - \hat y_i \rvert
 $$
 
-Drag the outlier severity slider, in either direction, to see the two fits diverge.
+Drag the outlier severity slider, in either direction, to see the two fits diverge, or drag any point to move it yourself.
 
 Squaring a residual makes large residuals count far more than small ones, so L2 bends the line hard to shrink one huge outlier's residual. That is why it chases outliers. L1's penalty grows only linearly with distance, so an outlier costs the fit in proportion and never dominates it. This is why L1 is called a **robust** estimator.
 

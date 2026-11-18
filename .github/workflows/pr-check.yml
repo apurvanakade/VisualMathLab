@@ -50,8 +50,10 @@ jobs:
       - name: Install dev tooling
         run: npm ci
 
-      - name: Install the Playwright browser
-        run: npx playwright install --with-deps chromium
+      # Playwright is not a dependency: scripts/playwright.mjs loads the
+      # global copy, so a local checkout reuses its installed browsers.
+      - name: Install Playwright and its browser
+        run: npm install -g playwright && playwright install --with-deps chromium
 
       - name: Structural tests
         run: npm test

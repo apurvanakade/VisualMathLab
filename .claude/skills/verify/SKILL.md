@@ -12,10 +12,10 @@ Visual Math Lab is a static Quarto site (no backend, no bundler). `quarto render
 
 ```bash
 npm install
-npx playwright install chromium
+npm install -g playwright && playwright install chromium   # skip if already installed
 ```
 
-Dev-only tooling (`package.json`, Playwright, math.js) — nothing here ships to `docs/` or affects the site's runtime. The shared `VM.*` library is [mathviz](https://github.com/apurvanakade/mathviz), installed as a release; its unit tests live and run there.
+Playwright is not a dependency: `scripts/playwright.mjs` loads the global copy, so every checkout shares its browsers. Dev-only tooling (`package.json`, Playwright, math.js) — nothing here ships to `docs/` or affects the site's runtime. The shared `VM.*` library is [mathviz](https://github.com/apurvanakade/mathviz), installed as a release; its unit tests live and run there.
 
 ## Tier 1: `npm test` — structural and pure-logic regressions
 

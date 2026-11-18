@@ -46,7 +46,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { spawn, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
+import { chromium } from './playwright.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const repoRoot = path.resolve(__dirname, '..')

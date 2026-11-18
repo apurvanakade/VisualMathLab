@@ -18,7 +18,7 @@ Visual Math Lab is a Quarto website of interactive, browser-based visualizations
 
 **Default verification for a change scoped to one page**: `quarto preview` the project, then load just that page's URL (it renders on demand, nothing else) and check it there — for a scripted check, drive that same URL with a short one-off Playwright script, asserting zero `console.error`/`pageerror` while exercising its controls (see `.claude/skills/verify/SKILL.md`'s gotchas on why `file://` won't work and what to stub). `pr-check.yml` runs the full crawl on every pull request, so for a shared file (a new mathviz release, an include) a look at a page that uses it is enough locally.
 
-There is no lint command. `package.json` is dev-only (Playwright for `npm run verify`) — nothing in it is shipped to `docs/` or affects the site's runtime; the site itself still has no bundler and no build step beyond `quarto render`. JS is served as static files, not bundled.
+There is no lint command. `package.json` is dev-only (math.js for the tests; Playwright for `npm run verify` is installed globally, not a dependency, and loaded by `scripts/playwright.mjs`) — nothing in it is shipped to `docs/` or affects the site's runtime; the site itself still has no bundler and no build step beyond `quarto render`. JS is served as static files, not bundled.
 
 ## Source vs. generated output
 

@@ -1,0 +1,694 @@
+---
+title: "Analysis of Variance"
+topic: "Probability"
+description: "See why comparing several means comes down to comparing two variances."
+date: 2026-11-17
+order: 6
+toc: true
+categories:
+  - Probability
+  - Data Science
+---
+
+<!--
+Copyright (c) 2026 Apurva Nakade. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Apurva Nakade
+-->
+
+<style>
+/* Page-local styles: the side-by-side pair of charts in the pairwise-tests
+   app (a strip plot and its p-value matrix), markup only this page emits.
+   One column on a phone, where two charts side by side would each be too
+   narrow to read. */
+.anova-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .anova-duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+</style>
+
+<!-- TODO(text): introduction. The question ANOVA answers: do several groups share one mean? -->
+
+```{ojs}
+//| output: false
+// VM is the shared utility library, loaded on every page by the mathviz
+// extension. This page uses VM.distributions (sampleStats, studentTCdf,
+// fCdf), VM.sampling (seededRandom,
+// gaussianRandom), VM.plotting (persistentPlot, draggablePoints, colors,
+// alpha) and VM.ui (statRow, renderTable).
+VM = window.VM
+
+vmTheme = Generators.observe(notify => VM.plotting.onThemeChange(notify))
+
+chartColors = VM.plotting.colors(vmTheme)
+
+// The query string as the page was loaded, read once: each control takes its
+// starting value from it. The two urlSync cells write it back.
+urlParams = new URLSearchParams(window.location.search)
+
+// paramNumber: a URL parameter as a number in [lo, hi], or `fallback` when
+// it is missing or not a number (a hand-edited or stale link).
+function paramNumber(key, fallback, lo, hi) {
+  const raw = urlParams.get(key)
+  if (raw === null) return fallback
+  const value = Number(raw)
+  if (!Number.isFinite(value)) return fallback
+  return Math.min(hi, Math.max(lo, value))
+}
+
+function paramInt(key, fallback, lo, hi) {
+  return Math.round(paramNumber(key, fallback, lo, hi))
+}
+
+function mean(values) {
+  let sum = 0
+  for (const v of values) sum += v
+  return sum / values.length
+}
+
+// A fixed, evenly spread vertical offset for the i-th point of a group
+// (the golden-ratio sequence), so a strip plot's points don't sit on one
+// horizontal line and don't jump around between redraws.
+function jitter(i) {
+  return ((i * 0.6180339887) % 1 - 0.5) * 0.25
+}
+
+// A strip plot row's violin: the kernel density estimate of `values`
+// (Gaussian kernel, Silverman's bandwidth on the SD `sd`), mirrored about the
+// row's line y = row, as a filled Plotly trace. Only the shape matters, so
+// every violin is scaled to the same widest point (0.4 of a row either
+// side) whatever its height. It spans the data plus two bandwidths each
+// side, as Plotly's own violins do, clipped to `range`, rather than a
+// hairline across the whole axis.
+function violinTrace(values, row, sd, color, range) {
+  const steps = 200
+  const halfWidth = 0.4
+  const h = 1.06 * sd * values.length ** -0.2
+  const lo = Math.max(range[0], Math.min(...values) - 2 * h)
+  const hi = Math.min(range[1], Math.max(...values) + 2 * h)
+  const xs = []
+  const ds = []
+  for (let i = 0; i <= steps; i++) {
+    const x = lo + (hi - lo) * i / steps
+    let sum = 0
+    for (const v of values) {
+      const z = (x - v) / h
+      sum += Math.exp(-0.5 * z * z)
+    }
+    xs.push(x)
+    ds.push(sum)
+  }
+  const peak = Math.max(...ds)
+  const upper = ds.map(d => row - halfWidth * d / peak)
+  const lower = ds.map(d => row + halfWidth * d / peak)
+  return {
+    x: [...xs, ...xs.slice().reverse(), xs[0]],
+    y: [...upper, ...lower.slice().reverse(), upper[0]],
+    type: "scatter", mode: "lines", fill: "toself", showlegend: false,
+    fillcolor: VM.plotting.alpha(color, 0.12),
+    line: {color, width: 1.5}, hoverinfo: "skip"
+  }
+}
+
+function fmtP(p) {
+  if (!Number.isFinite(p)) return "—"
+  if (p < 1e-4) return "< 0.0001"
+  return p.toFixed(4)
+}
+
+function fmt(v, digits = 2) {
+  if (!Number.isFinite(v)) return "—"
+  return v.toFixed(digits)
+}
+```
+
+## The trouble with pairwise t-tests
+
+<!-- TODO(text): with k groups there are k(k-1)/2 pairs; each test has a 5% false-alarm rate; the chance of at least one false alarm grows quickly. Every group in the app comes from the same population, so every significant pair is a false alarm. -->
+
+```{ojs}
+//| output: false
+// One experiment drives both apps: k groups of n values, each drawn from
+// N(mu, sigma^2), so H0 holds and every significant pairwise test is a
+// false alarm until a group is dragged. Each group's mean is a drag handle
+// in both apps, sitting exactly on the group's sample mean: dragging it
+// shifts the group's points, in both apps, so their mean stays under it.
+// Either app's "Redraw points" draws a fresh sample for both and puts the
+// handles on its sample means.
+model = ({
+  k: 10,
+  n: 50,
+  mu: 50,
+  sigma: 10,
+  alpha: 0.05,
+  // Chosen so the page opens on a draw where the pairwise tests go wrong:
+  // draw 1, undragged, has 5 significant pairs (smallest p ~ 0.0005),
+  // while ANOVA's p ~ 0.22 accepts H0.
+  seed: 1004,
+  valueRange: [0, 100],
+  // Where a group's mean can be dragged: mean +/- 3 sigma stays on the
+  // chart.
+  meanRange: [30, 70]
+})
+
+// Draw d's noise (1-based), as k arrays of n standard normal values.
+// Seeded per draw, so a draw's number in the URL reproduces it exactly.
+function drawNoise(d) {
+  const gauss = VM.sampling.gaussianRandom(VM.sampling.seededRandom(model.seed + 7919 * (d - 1)))
+  const noise = []
+  for (let g = 0; g < model.k; g++) {
+    const z = new Array(model.n)
+    for (let i = 0; i < model.n; i++) z[i] = gauss()
+    noise.push(z)
+  }
+  return noise
+}
+
+// Draw d's sample as drawn, before any drag: k arrays of n values from
+// N(mu, sigma^2).
+drawSample = d => drawNoise(d).map(z => z.map(v => model.mu + model.sigma * v))
+
+// The pooled two-sample t statistic for two groups of the same size n.
+function pooledT(a, b, n) {
+  const pooledVariance = (a.variance + b.variance) / 2
+  return (a.mean - b.mean) / Math.sqrt(pooledVariance * 2 / n)
+}
+
+initialDraw = paramInt("draw", 1, 1, 1e9)
+
+// The group means from the URL ("50.27,49.95,..."), k of them, each in
+// meanRange; otherwise the starting draw's own sample means, undragged.
+initialMeans = {
+  const raw = urlParams.get("means")
+  if (raw !== null) {
+    const ms = raw.split(",").map(Number)
+    if (ms.length === model.k && ms.every(Number.isFinite)) {
+      const [lo, hi] = model.meanRange
+      return ms.map(m => Math.min(hi, Math.max(lo, m)))
+    }
+  }
+  return drawSample(initialDraw).map(mean)
+}
+```
+
+```{ojs}
+//| output: false
+// draw: which draw of the noise is on screen, 1-based -- the URL's, plus
+// one per click of either app's "Redraw points".
+draw = initialDraw + pwRedraw + avRedraw
+
+sample = drawSample(draw)
+
+groupMeans = avMeans.map(p => p.x)
+
+// The experiment on screen, shared by both apps: every group's values, their
+// summaries, every pairwise t-test, and the one-way ANOVA. With equal group
+// sizes the pooled within-group variance is the average of the groups'
+// variances, and F = (variance of the group means) / (pooled variance / n).
+experiment = {
+  const {k, n} = model
+  // Each group as drawn, shifted so its sample mean is its handle.
+  const groups = sample.map((values, g) => {
+    const shift = groupMeans[g] - mean(values)
+    return values.map(v => v + shift)
+  })
+  const stats = groups.map(v => VM.distributions.sampleStats(v))
+  const df = 2 * n - 2
+  const pairs = []
+  let significant = 0
+  for (let i = 1; i < k; i++) {
+    for (let j = 0; j < i; j++) {
+      const t = pooledT(stats[i], stats[j], n)
+      const p = 2 * (1 - VM.distributions.studentTCdf(Math.abs(t), df))
+      if (p < model.alpha) significant++
+      pairs.push({i, j, t, p})
+    }
+  }
+  const means = stats.map(st => st.mean)
+  const grand = mean(means)
+  let ss = 0
+  for (const m of means) ss += (m - grand) ** 2
+  const pooledVar = mean(stats.map(st => st.variance))
+  const varMeans = ss / (k - 1)
+  const chanceVar = pooledVar / n
+  const F = varMeans / chanceVar
+  const df1 = k - 1
+  const df2 = k * (n - 1)
+  const anova = {
+    k, n, means, grand, pooledVar, varMeans, chanceVar, F, df1, df2,
+    p: 1 - VM.distributions.fCdf(F, df1, df2),
+    ssBetween: n * ss,
+    ssWithin: (n - 1) * k * pooledVar
+  }
+  return {groups, stats, pairs, significant, anova}
+}
+
+// Keeps the draw and the group means in the address bar, the means to two
+// decimals (a link shifts a group by at most 0.005). Reads the current
+// query string rather than urlParams, so it keeps an embed= value.
+urlSync = {
+  const params = new URLSearchParams(window.location.search)
+  params.set("draw", String(draw))
+  params.set("means", groupMeans.map(m => m.toFixed(2)).join(","))
+  history.replaceState(null, "", `${window.location.pathname}?${params}`)
+}
+```
+
+```{ojs}
+//| output: false
+// One color per group, shared by every chart on the page, so a reader can
+// follow each group's points from one into the next. Ten groups need ten
+// hues, more than the site palette's eight, so this is Tableau's ten-color
+// scheme, legible on both themes.
+groupColors = d3.schemeTableau10
+
+groupIds = Array.from({length: model.k}, (_, g) => g + 1)
+
+// The strip plot and the p-value matrix: two charts in one holder, side by
+// side on a wide screen and stacked on a phone (.anova-duo). The strip plot
+// runs values along x, like the pooled chart above it, and groups down y,
+// group 1 on top like the matrix's rows. Both axes are fixed by k and
+// valueRange, so a redraw or a drag never rescales them.
+pwStripPlot = VM.plotting.persistentPlot({aspectRatio: 0.75, maxHeight: "760px"})
+
+pwMatrixPlot = VM.plotting.persistentPlot({aspectRatio: 1, maxHeight: "420px"})
+```
+
+```{ojs}
+//| output: false
+// Paints both pairwise charts: the strip plot (the same figure as the ANOVA
+// app's, see stripFigure) and the p-value matrix, into its holder.
+pwPaint = {
+  const c = chartColors
+  const G = model.k
+  const {pairs} = experiment
+
+  pwStripPlot(...stripFigure())
+
+  // ── p-value matrix ──
+  // Every group against every group, 1..G both ways and symmetric: cell
+  // (i, j) and (j, i) are the same test. z is 1 for a significant pair, 0
+  // otherwise, and -1 on the diagonal (a group against itself, no test),
+  // which gets the faintest fill and a dash.
+  const ids = []
+  for (let g = 1; g <= G; g++) ids.push(g)
+  const z = ids.map((_, r) => ids.map((_, col) => r === col ? -1 : null))
+  const custom = ids.map(() => ids.map(() => "no test"))
+  const annotations = []
+  for (let g = 1; g <= G; g++) {
+    annotations.push({x: g, y: g, text: "–", showarrow: false, font: {size: 9, color: c.muted}})
+  }
+  for (const {i, j, p} of pairs) {
+    const sig = p < model.alpha
+    let text = p.toFixed(2).replace(/^0/, "")
+    // "<.01" is a character wider than the rest; a size smaller keeps it
+    // inside its cell.
+    let size = 9
+    if (p < 0.01) {
+      text = "<.01"
+      size = 8
+    }
+    for (const [r, col] of [[i, j], [j, i]]) {
+      z[r][col] = sig ? 1 : 0
+      custom[r][col] = fmtP(p)
+      annotations.push({
+        x: col + 1, y: r + 1, text, showarrow: false,
+        font: {size, color: sig ? c.halo : c.ink}
+      })
+    }
+  }
+  const faint = VM.plotting.alpha(c.muted, 0.08)
+  const plain = VM.plotting.alpha(c.muted, 0.25)
+  pwMatrixPlot([{
+    type: "heatmap", x: ids, y: ids, z, customdata: custom,
+    zmin: -1, zmax: 1, showscale: false, xgap: 2, ygap: 2,
+    colorscale: [[0, faint], [0.5, plain], [1, c.alt]],
+    hovertemplate: "group %{y} vs group %{x}<br>p = %{customdata}<extra></extra>"
+  }], {
+    showlegend: false, dragmode: false,
+    title: {text: "p-value of each pairwise t-test", font: {size: 13}},
+    // Square cells: scaleanchor ties the axes' scales, and constrain:
+    // "domain" shrinks the wider axis's extent rather than padding its range
+    // with empty space, which left a gap between the y labels and the first
+    // column. No axis lines; the tick marks are transparent, there only to
+    // hold the labels a few pixels off the cells.
+    xaxis: {range: [0.5, G + 0.5], tickvals: ids, fixedrange: true, showgrid: false, zeroline: false, showline: false, ticks: "outside", ticklen: 4, tickcolor: "rgba(0,0,0,0)", side: "top", constrain: "domain"},
+    yaxis: {range: [G + 0.5, 0.5], tickvals: ids, fixedrange: true, showgrid: false, zeroline: false, showline: false, ticks: "outside", ticklen: 4, tickcolor: "rgba(0,0,0,0)", scaleanchor: "x", constrain: "domain"},
+    annotations,
+    margin: {t: 60}
+  })
+
+  if (pwMatrixPlot.div.parentNode !== pwMatrixHolder) pwMatrixHolder.append(pwMatrixPlot.div)
+}
+```
+
+<div class="vm-app" id="pairwise">
+
+<div class="ojs-panel">
+
+```{ojs}
+// The app's only control, in the panel where the site's buttons get their
+// accent skin (like the L1 vs L2 page's "Regenerate points"). It draws a fresh sample for both apps and puts the handles on its
+// sample means, like the ANOVA app's own "Redraw points" (see draw and
+// redrawResetsMeans).
+viewof pwRedraw = {
+  const button = Inputs.button("Redraw points", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+<div class="ojs-chart-block ojs-svg-block">
+
+```{ojs}
+// All k * n values in one pile, before any split into groups, under their
+// kernel density estimate (Gaussian kernel, Silverman's bandwidth on the
+// pooled values' SD), so the curve follows the data as groups are dragged
+// apart. Each point sits at a fixed fraction of the curve's height,
+// colored by its group: while H0 holds, every color spreads across the whole
+// bell, one sample. Both axes are fixed, so a redraw or a drag never
+// rescales; a peak taller than the axis (a narrower pile than any the
+// handles allow) would be clipped.
+pwPooled = {
+  const c = chartColors
+  const points = []
+  experiment.groups.forEach((values, g) => {
+    for (const value of values) points.push({value, group: g + 1})
+  })
+  const values = points.map(d => d.value)
+  const h = 1.06 * VM.distributions.sampleStats(values).sd * values.length ** -0.2
+  const norm = 1 / (values.length * h * Math.sqrt(2 * Math.PI))
+  const density = x => {
+    let sum = 0
+    for (const v of values) {
+      const z = (x - v) / h
+      sum += Math.exp(-0.5 * z * z)
+    }
+    return sum * norm
+  }
+  const [lo, hi] = model.valueRange
+  const curve = []
+  for (let i = 0; i <= 200; i++) {
+    const x = lo + (hi - lo) * i / 200
+    curve.push({x, y: density(x)})
+  }
+  points.forEach((d, i) => {
+    d.height = (0.04 + 0.92 * ((i * 0.6180339887) % 1)) * density(d.value)
+  })
+  return Plot.plot(VM.plotting.plotOptions({
+    width, height: 300, marginLeft: 50,
+    x: {domain: model.valueRange, label: `value (all ${model.k} groups pooled)`},
+    y: {domain: [0, 0.045], label: "density"},
+    clip: true,
+    color: {type: "ordinal", domain: groupIds, range: groupColors, legend: true, label: "group"},
+    marks: [
+      Plot.areaY(curve, {x: "x", y: "y", fill: c.muted, fillOpacity: 0.15}),
+      Plot.dot(points, {
+        x: "value", y: "height", fill: "group", r: 2.5, fillOpacity: 0.85,
+        title: d => `group ${d.group}: ${d.value.toFixed(1)}`
+      }),
+      Plot.lineY(curve, {x: "x", y: "y", stroke: c.ink, strokeWidth: 2}),
+      Plot.ruleY([0], {stroke: c.muted})
+    ]
+  }))
+}
+```
+
+</div>
+
+<div class="ojs-chart-block">
+
+<div class="anova-duo">
+
+```{ojs}
+// The pairwise app's handles, the same group means as the ANOVA app's: the
+// two views mirror each other (see meansLink).
+viewof pwMeans = meanHandles(pwStripPlot)
+```
+
+```{ojs}
+// The holder pwPaint draws the p-value matrix into. Created in this visible
+// cell, which depends on nothing reactive: a node made in an output: false
+// cell and shown from another is inspected ("HTMLDivElement {}"), not
+// inserted.
+pwMatrixHolder = html`<div></div>`
+```
+
+</div>
+
+```{ojs}
+// Under the charts: each procedure's verdict on H0 (all k true means equal)
+// for the points on screen -- the pairwise procedure rejects when any one of
+// its tests does. Until a group is dragged, every group is drawn from one
+// population, so every rejection is a false alarm.
+pwStats = {
+  const k = model.k
+  const pairCount = k * (k - 1) / 2
+  const verdict = rejected => rejected ? "H0 rejected" : "H0 not rejected"
+  return VM.ui.statRow([
+    {label: "Sig. pairs", value: `${experiment.significant} of ${pairCount}`, title: "Pairwise t-tests significant at 5% for the points on screen"},
+    {label: "Pairwise", value: verdict(experiment.significant > 0), title: `H0 is rejected when at least one of the ${pairCount} pairwise t-tests is significant at 5%`},
+    {label: "ANOVA", value: verdict(experiment.anova.p < model.alpha), title: `The single ANOVA F-test of all ${k} groups at 5%: p = ${fmtP(experiment.anova.p)}`},
+  ])
+}
+```
+
+</div>
+
+</div>
+
+<!-- TODO(text): what the reader should see -- each test alone keeps its 5% promise, the family of tests doesn't; ANOVA asks one question, so it keeps 5%. The theoretical chart at the bottom of the page shows the general pattern. -->
+
+## Variance between groups, variance within groups
+
+<!-- TODO(text): ANOVA's picture -- the spread of the group means against the spread inside the groups. The points are the ones above; drag a group's mean and its group moves in both apps. -->
+
+```{ojs}
+//| output: false
+// Each app's drag handles on its strip plot: each group's sample mean,
+// dragged left and right (or focused and moved with the arrow keys),
+// carrying the group's points with it. y is pinned to the group; a drag
+// snaps x to half units.
+meanHandles = plot => VM.plotting.draggablePoints(plot, {
+  value: initialMeans.map((m, g) => ({x: m, y: g + 1})),
+  label: "Mean of group",
+  color: groupColors.slice(0, model.k),
+  xBounds: model.meanRange,
+  yBounds: [0.5, model.k + 0.5],
+  step: {x: 0.5, y: 1},
+  constrain: (p, index) => ({x: Math.round(2 * p.x) / 2, y: index + 1}),
+  format: (p, index) => `group ${index + 1}, mean ${p.x.toFixed(2)}`
+})
+
+// Created once, in a cell that depends on nothing reactive: the draggable
+// means (viewof avMeans) and the paint cell share its div.
+avPlot = VM.plotting.persistentPlot({aspectRatio: 0.9, maxHeight: "800px"})
+
+// The strip plot both apps draw, as [data, layout] for a persistentPlot:
+// each group's points with its violin, the grand mean, and, with `band`
+// (the ANOVA app only), the chance band. No legend: every layer always
+// shows. The group means are the handles, not traces.
+function stripFigure({band = false} = {}) {
+  const c = chartColors
+  const {groups, stats, anova} = experiment
+  const {k, grand, chanceVar} = anova
+  const data = []
+
+  // Where the group means would land if every group had the same true mean:
+  // the grand mean +/- 2 standard errors, sqrt(pooled variance / n) each.
+  // Colored by the F-test's verdict, so it always agrees with the ANOVA
+  // readouts: green while H0 is not rejected, red once it is. Not by whether
+  // every mean is inside: the F-test weighs all the means' spread together,
+  // so several means near the edges can reject with all of them inside,
+  // and one stray mean out of many can leave H0 standing.
+  if (band) {
+    const half = 2 * Math.sqrt(chanceVar)
+    const bandColor = anova.p < model.alpha ? c.alt : c.ok
+    data.push({
+      x: [grand - half, grand - half, grand + half, grand + half, grand - half], y: [0.5, k + 0.5, k + 0.5, 0.5, 0.5],
+      type: "scatter", mode: "lines", fill: "toself", showlegend: false,
+      fillcolor: VM.plotting.alpha(bandColor, 0.08), line: {color: VM.plotting.alpha(bandColor, 0.5), width: 1}, hoverinfo: "skip"
+    })
+  }
+
+  // Each group's violin (see violinTrace, on the group's own SD).
+  for (let g = 0; g < k; g++) data.push(violinTrace(groups[g], g + 1, stats[g].sd, groupColors[g], model.valueRange))
+
+  for (let g = 0; g < k; g++) {
+    data.push({
+      x: groups[g], y: groups[g].map((_, i) => g + 1 + jitter(i)),
+      type: "scatter", mode: "markers", showlegend: false,
+      marker: {color: groupColors[g], size: 6, opacity: 0.75},
+      hovertemplate: `group ${g + 1}<br>%{x:.1f}<extra></extra>`
+    })
+  }
+
+  data.push({
+    x: [grand, grand], y: [0.5, k + 0.5], type: "scatter", mode: "lines", showlegend: false,
+    line: {color: c.ink, width: 1.5, dash: "dash"}, hoverinfo: "skip"
+  })
+
+  const ticks = []
+  for (let g = 1; g <= k; g++) ticks.push(g)
+  return [data, {
+    showlegend: false, hovermode: "closest", dragmode: false,
+    xaxis: {title: "value", range: model.valueRange, fixedrange: true, zeroline: false},
+    yaxis: {range: [k + 0.5, 0.5], tickvals: ticks, ticktext: ticks.map(g => `group ${g}`), fixedrange: true, showgrid: false, zeroline: false},
+    margin: {t: 20}
+  }]
+}
+
+// Either "Redraw points" also puts the handles on the new draw's own sample
+// means, undoing any drag, so a redraw is a fresh experiment under H0. Set
+// on the ANOVA app's handles; meansLink carries it to the pairwise app's.
+// A native listener on each button, attached once; the buttons' values are
+// already counted when their "input" fires.
+redrawResetsMeans = {
+  const reset = () => {
+    const d = initialDraw + (viewof pwRedraw).value + (viewof avRedraw).value
+    const means = drawSample(d).map(mean)
+    const view = viewof avMeans
+    view.value = means.map((m, g) => ({x: m, y: g + 1}))
+    view.dispatchEvent(new Event("input", {bubbles: true}))
+  }
+  for (const button of [viewof pwRedraw, viewof avRedraw]) button.addEventListener("input", reset)
+}
+
+// Keeps the two apps' handles together: a drag in either sets the other's
+// value and fires its "input", so its cells re-run too. A native listener
+// on each, attached once (see CLAUDE.md); the equality check stops the
+// mirrored event from bouncing back.
+meansLink = {
+  const same = (u, v) => u.length === v.length && u.every((p, i) => p.x === v[i].x)
+  const mirror = (from, to) => from.addEventListener("input", () => {
+    if (same(from.value, to.value)) return
+    to.value = from.value
+    to.dispatchEvent(new Event("input", {bubbles: true}))
+  })
+  mirror(viewof avMeans, viewof pwMeans)
+  mirror(viewof pwMeans, viewof avMeans)
+}
+```
+
+<div class="vm-app" id="anova">
+
+<div class="ojs-panel">
+
+```{ojs}
+// The same control as the pairwise app's, synced with it (see draw and
+// redrawResetsMeans).
+viewof avRedraw = {
+  const button = Inputs.button("Redraw points", {value: 0, reduce: v => v + 1})
+  button.classList.add("ojs-auto")
+  return button
+}
+```
+
+</div>
+
+<div class="ojs-chart-block">
+
+```{ojs}
+// The chart is also the input: each group's mean is a handle. Moving it
+// shifts the group's points, here and in the pairwise app.
+viewof avMeans = meanHandles(avPlot)
+```
+
+```{ojs}
+//| output: false
+// Paints the chart the handles live on. No output: the chart is already on
+// the page, as viewof avMeans.
+avPaint = {
+  avPlot(...stripFigure({band: true}))
+}
+```
+
+```{ojs}
+avStats = {
+  const a = experiment.anova
+  return VM.ui.statRow([
+    {label: "Var(means)", value: fmt(a.varMeans, 1), title: "The sample variance of the group means: how far apart they are"},
+    {label: "s²/n", value: fmt(a.chanceVar, 1), title: "How much the group means would vary if every group had the same true mean: the pooled within-group variance divided by the group size"},
+    {label: "F", value: fmt(a.F, 2), title: `F = variance of the means / (s²/n), with ${a.df1} and ${a.df2} degrees of freedom`},
+    {label: "p-value", value: fmtP(a.p), title: "The chance of an F at least this large if every group had the same true mean"},
+    {label: "ANOVA", value: a.p < model.alpha ? "H0 rejected" : "H0 not rejected", title: "H0: every group has the same true mean. Rejected when the p-value is below 5%."}
+  ])
+}
+```
+
+</div>
+
+</div>
+
+<!-- TODO(text): what to try -- drag one group away and watch F and the band; redraw and watch the band stay green about 95% of the time. -->
+
+::: {.callout-note collapse="true" title="ANOVA table"}
+
+```{ojs}
+anovaTable = {
+  const a = experiment.anova
+  const dfTotal = a.k * a.n - 1
+  return VM.ui.renderTable({
+    html,
+    headers: ["Source", "Sum of squares", "df", "Mean square", "F", "p-value"],
+    filename: "anova-table.csv",
+    rows: [
+      ["Between groups", fmt(a.ssBetween, 1), String(a.df1), fmt(a.ssBetween / a.df1, 2), fmt(a.F, 3), fmtP(a.p)],
+      ["Within groups", fmt(a.ssWithin, 1), String(a.df2), fmt(a.ssWithin / a.df2, 2), "", ""],
+      ["Total", fmt(a.ssBetween + a.ssWithin, 1), String(dfTotal), "", "", ""]
+    ]
+  })
+}
+```
+
+:::
+
+## Why variance tells us about means
+
+<!-- TODO(text): the non-trivial reason. Under H0 the group means are k draws from N(mu, sigma^2/n), so their sample variance estimates sigma^2/n; the within-group variance estimates sigma^2 whether or not H0 holds. Comparing means = asking whether the means vary more than sigma^2/n allows, so the test statistic is a ratio of two variance estimates: n * Var(means) / s_p^2 = MS_between / MS_within. -->
+
+## How fast false alarms pile up
+
+<!-- TODO(text): with k groups there are m = k(k-1)/2 pairwise tests; if each had its own independent 5% chance of a false alarm, the chance of at least one is 1 - 0.95^m. ANOVA is one test, so it stays at 5% for every k. (The pairwise tests share groups, so they aren't independent, and the true rate sits a little below this curve; the shape is the same.) -->
+
+```{ojs}
+// The false-alarm rate against the number of groups k, in theory: some
+// pairwise t-test rejects, 1 - (1 - alpha)^m with m = k(k-1)/2 tests treated
+// as independent, against the single ANOVA F-test's alpha. No inputs: a
+// fixed chart of the formula.
+rateChart = {
+  const c = chartColors
+  const rows = []
+  for (let k = 2; k <= 20; k++) {
+    const m = k * (k - 1) / 2
+    rows.push({k, m, rate: 1 - (1 - model.alpha) ** m, procedure: "Pairwise t-tests"})
+    rows.push({k, m, rate: model.alpha, procedure: "ANOVA"})
+  }
+  return Plot.plot(VM.plotting.plotOptions({
+    width, height: 320, marginLeft: 50,
+    x: {domain: [2, 20], label: "number of groups k", ticks: 10},
+    y: {domain: [0, 1], label: "false-alarm rate", tickFormat: "%"},
+    color: {domain: ["Pairwise t-tests", "ANOVA"], range: [c.alt, c.fn], legend: true},
+    marks: [
+      Plot.ruleY([0], {stroke: c.muted}),
+      Plot.lineY(rows, {x: "k", y: "rate", stroke: "procedure", strokeWidth: 2.5}),
+      Plot.dot(rows, {
+        x: "k", y: "rate", fill: "procedure", r: 3.5,
+        title: d => d.procedure === "ANOVA"
+          ? `k = ${d.k}: one F-test, ${(100 * d.rate).toFixed(0)}%`
+          : `k = ${d.k}: ${d.m} tests, 1 − 0.95^${d.m} = ${(100 * d.rate).toFixed(1)}%`
+      })
+    ]
+  }))
+}
+```

@@ -393,9 +393,6 @@ dfLabel = dfs.length === 0 ? "" : `df = ${dfs.join(", ")}`
 // rejection region and the hatched p-value area. The window depends only on
 // the test, so no slider ever rescales the axes.
 mainPlot = {
-  const Plotly = window.Plotly
-  let _plotDiv = null
-
   return ({dist, win, decision, observed, test, dfLabel, showsNormal}, showCurve, showNormal, showRejection, showPValue, showObserved) => {
     const {lo, hi, yMax} = win
     const N = 600
@@ -465,9 +462,9 @@ mainPlot = {
       }
     }
     if (showObserved) {
-      shapes.push({type: "line", x0: observed, x1: observed, y0: 0, y1: yMax * 0.78, line: {color: chartColors.ink, width: 2.5}})
+      shapes.push({type: "line", x0: observed, x1: observed, y0: 0, y1: observedTop(yMax), line: {color: chartColors.ink, width: 2.5}})
       annotations.push({
-        x: observed, y: yMax * 0.78, yanchor: "bottom", showarrow: false,
+        x: observed, y: observedTop(yMax), yanchor: "bottom", showarrow: false,
         text: `<b>${test.symbol} = ${fmt(observed, 2)}</b>`, font: {color: chartColors.ink, size: 13},
         bgcolor: chartColors.halo
       })
@@ -481,24 +478,58 @@ mainPlot = {
       uirevision: test.id,
       autosize: true
     }
-    const config = VM.plotting.config()
-    if (!_plotDiv) {
-      _plotDiv = document.createElement("div")
-      _plotDiv.className = "plotly-box-large"
-      Plotly.newPlot(_plotDiv, data, layout, config)
-      VM.plotting.autoResize(_plotDiv)
-    } else {
-      Plotly.react(_plotDiv, data, layout, config)
-    }
-    return _plotDiv
+    return densityPlot(data, layout)
   }
 }
+```
+
+```{ojs}
+//| output: false
+// The chart, created once, in a cell that depends on nothing reactive:
+// viewof statHandle and mainPlot share its div, which is reused across
+// reactive updates (Plotly.react after the first draw), keeping the
+// reader's zoom.
+densityPlot = VM.plotting.persistentPlot()
+```
+
+```{ojs}
+//| output: false
+// Paints the chart. No output: the chart is on the page already, as
+// viewof statHandle below.
+mainPlot({dist, win, decision, observed: stat, test, dfLabel, showsNormal}, showCurve, showNormal, showRejection, showPValue, showObserved)
+```
+
+```{ojs}
+//| output: false
+// How high the observed statistic's line reaches, where its handle sits.
+observedTop = yMax => yMax * 0.78
 ```
 
 <div class="ojs-chart-block">
 
 ```{ojs}
-mainPlot({dist, win, decision, observed: stat, test, dfLabel, showsNormal}, showCurve, showNormal, showRejection, showPValue, showObserved)
+// The chart is also an input: the top of the observed statistic's line is
+// a dot the reader drags left or right (or Tabs to and moves with the
+// arrow keys), which moves the Observed statistic slider. Re-made only
+// when the test changes its window, never on a theme toggle; statHandleSync
+// keeps it on the slider's value.
+viewof statHandle = {
+  const clampX = x => Math.min(win.hi, Math.max(win.lo, Math.round(x * 100) / 100))
+  return VM.plotting.draggablePoints(densityPlot, {
+    value: {x: clampX(remembered(testId, "stat")), y: observedTop(win.yMax)},
+    label: "Observed statistic", color: "var(--vm-color-ink)",
+    step: {x: 0.01},
+    constrain: (p, i, current) => ({x: clampX(p.x), y: current[0].y}),
+    format: p => `${p.x.toFixed(2)}`
+  })
+}
+```
+
+```{ojs}
+//| output: false
+// The dot goes with the Observed statistic legend entry: it isn't a
+// trace, so hiding the trace alone would leave it up.
+(viewof statHandle).visible = showObserved
 ```
 
 ```{ojs}
@@ -579,6 +610,30 @@ viewof sizes = {
 </div>
 
 ```{ojs}
+//| output: false
+// A drag sets the slider, with an input event as if the reader had moved
+// it (the slider's own listener remembers it per test); the slider places
+// the dot, on load, on a slider move and after a test change. Setting the
+// view's value fires no input event.
+statFromHandle = {
+  const view = viewof statHandle
+  const slider = viewof stat
+  const onInput = () => {
+    slider.value = view.value.x
+    slider.dispatchEvent(new Event("input", {bubbles: true}))
+  }
+  view.addEventListener("input", onInput)
+  invalidation.then(() => view.removeEventListener("input", onInput))
+  return true
+}
+
+statHandleSync = {
+  ;(viewof statHandle).value = {x: stat, y: observedTop(win.yMax)}
+  return true
+}
+```
+
+```{ojs}
 // The numbers behind the picture. Always a node, so Quarto never hides it.
 stats = {
   const row = VM.ui.statRow([
@@ -597,7 +652,7 @@ stats = {
 
 </div>
 
-Choose a test from the app's **Test** menu to see when to use it, what it assumes and how it decides.
+Choose a test from the app's **Test** menu to see when to use it, what it assumes and how it decides. Drag the dot at the top of the observed statistic's line, or its slider, and watch the p-value and the decision change.
 
 ```{ojs}
 //| output: false

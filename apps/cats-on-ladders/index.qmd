@@ -118,8 +118,11 @@ catPlot = VM.plotting.persistentPlot({aspectRatio: 1})
 ```{ojs}
 //| output: false
 // Paints the cat chart. No output: the chart is on the page already, as
-// viewof catHandles below.
+// viewof catHandles below. It reads that view (not its value, so a drag
+// doesn't re-run it) so it always runs after the view has put the chart's
+// div on the page; run first, the div would land in this hidden cell.
 catDraw = {
+  viewof catHandles
   const theta = catAngle(catSlide)
   const cat = catPosition(catT, catSlide)
 

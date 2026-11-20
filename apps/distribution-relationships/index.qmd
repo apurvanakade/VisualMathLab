@@ -282,10 +282,23 @@ Authors: Dhruv Azad
   margin: 0.35rem 0;
 }
 
-.ojs-detail-note {
-  display: block;
-  margin-top: 0.6rem;
-  color: var(--vm-text-soft);
+/* Plain text on the page, like the prose around it: no panel box. */
+.ojs-detail {
+  margin-bottom: 0.5rem;
+}
+
+/* Labelled points under the formula, one fact per item. */
+.ojs-detail-points {
+  margin: 0.75rem 0 0 0;
+  padding-left: 1.1rem;
+}
+
+.ojs-detail-points li + li {
+  margin-top: 0.35rem;
+}
+
+.ojs-detail-label {
+  font-weight: 550;
 }
 
 .ojs-detail-empty {
@@ -455,7 +468,10 @@ nodeConfigs = ({
     title: "Bernoulli",
     formula: "P(X=1)=p, \\quad P(X=0)=1-p",
     statsFormula: "\\begin{gathered} p \\in (0,1) \\\\[2pt] \\text{Mean} = p, \\quad \\text{Variance} = p(1-p) \\end{gathered}",
-    note: "The Bernoulli distribution is the probability distribution of a single trial with two possible outcomes, conventionally labelled success and failure, which occur with probabilities p and 1 − p. It is the simplest non-trivial distribution, specified entirely by the single parameter p. Most of the counting distributions on this map are built by combining Bernoulli trials, so the assumptions made at this level, namely that the trials are independent and that p does not change between them, are inherited by every distribution downstream. In practice, binomial models fail on real data most often because one of those two assumptions does not hold.",
+    points: [
+      ["Models", "A single trial with two outcomes: success ($X=1$) with probability $p$, failure ($X=0$) with probability $1-p$."],
+      ["Assumptions", "Distributions built from Bernoulli trials inherit two: the trials are independent, and $p$ is constant. Binomial models fail on real data most often because one of these fails."]
+    ],
     integerSource: true,
     params: [{key: "p", label: "p", min: 0.05, max: 0.95, step: 0.05, default: 0.5}],
     density: (x, prm) => VM.distributions.bernoulliPmf(x, prm.p),
@@ -465,7 +481,12 @@ nodeConfigs = ({
     title: "Binomial",
     formula: "P(X=k)=\\binom{n}{k}p^k(1-p)^{n-k}",
     statsFormula: "\\begin{gathered} n \\in \\mathbb{Z}^+, \\quad p \\in (0,1) \\\\[2pt] \\text{Mean} = np, \\quad \\text{Variance} = np(1-p) \\end{gathered}",
-    note: "The binomial distribution gives the number of successes in a fixed number n of independent trials, each having the same success probability p. It describes such quantities as the number of defective items in a batch of n, the number of favourable responses in a survey of n people, or the number of heads in n coin tosses. Two features distinguish it from its neighbours on this map. The number of trials is fixed in advance, whereas the geometric and negative binomial distributions instead fix the number of successes and leave the number of trials random. The trials are also independent, unlike those of the hypergeometric distribution, where sampling without replacement makes each draw depend on the ones before it.",
+    points: [
+      ["Models", "The number of successes in $n$ independent trials, each with success probability $p$."],
+      ["Examples", "Defective items in a batch of $n$; favourable responses among $n$ people surveyed; heads in $n$ coin tosses."],
+      ["Versus geometric, negative binomial", "Those fix the number of successes and make the number of trials random; here $n$ is fixed."],
+      ["Versus hypergeometric", "Here the trials are independent; there, sampling without replacement makes each draw depend on the earlier ones."]
+    ],
     integerSource: true,
     params: [{key: "n", label: "n", min: 1, max: 100, step: 1, default: 20}, {key: "p", label: "p", min: 0.02, max: 0.98, step: 0.02, default: 0.5}],
     density: (x, prm) => VM.distributions.binomialPmf(x, prm.n, prm.p),
@@ -480,8 +501,14 @@ nodeConfigs = ({
   hypergeometric: {
     title: "Hypergeometric",
     formula: "P(X=k)=\\dfrac{\\binom{K}{k}\\binom{N-K}{n-k}}{\\binom{N}{n}}",
-    statsFormula: "\\begin{gathered} N \\ \\text{population}, \\ K \\ \\text{successes}, \\ n \\ \\text{drawn} \\\\[2pt] \\text{Mean} = n\\tfrac{K}{N}, \\quad \\text{Variance} = n\\tfrac{K}{N}\\left(1-\\tfrac{K}{N}\\right)\\tfrac{N-n}{N-1} \\end{gathered}",
-    note: "The hypergeometric distribution describes the number of successes among n items drawn without replacement from a finite population of N items containing K successes. Because each draw removes an item from the population, the draws are not independent, and obtaining a success lowers the probability that the next draw is also a success. This dependence reduces the variance by the finite population correction factor (N − n)/(N − 1). The distribution arises in acceptance sampling, in card games, and in capture–recapture estimates of population size. When the population is large relative to the sample, the effect of removing items becomes negligible and the distribution approaches the binomial.",
+    statsFormula: "\\begin{gathered} N \\ \\text{population}, \\ K \\ \\text{successes}, \\ n \\ \\text{drawn} \\\\[2pt] \\text{Mean} = n\\dfrac{K}{N}, \\quad \\text{Variance} = n\\dfrac{K}{N}\\left(1-\\dfrac{K}{N}\\right)\\dfrac{N-n}{N-1} \\end{gathered}",
+    points: [
+      ["Models", "The number of successes among $n$ items drawn without replacement from $N$ items, $K$ of which are successes."],
+      ["Dependence", "Each draw removes an item, so a success lowers the chance that the next draw is a success."],
+      ["Variance", "Smaller than the binomial's by the finite population correction $\\frac{N-n}{N-1}$."],
+      ["Examples", "Acceptance sampling; card games; capture–recapture estimates of population size."],
+      ["Limit", "For $N \\gg n$, removing items barely matters, and the distribution approaches the binomial."]
+    ],
     integerSource: true,
     params: [
       {key: "N", label: "N (population)", min: 10, max: 200, step: 1, default: 50},
@@ -495,7 +522,12 @@ nodeConfigs = ({
     title: "Poisson",
     formula: "P(X=k)=\\dfrac{\\lambda^k e^{-\\lambda}}{k!}",
     statsFormula: "\\begin{gathered} \\lambda > 0 \\\\[2pt] \\text{Mean} = \\text{Variance} = \\lambda \\end{gathered}",
-    note: "The Poisson distribution gives the number of events occurring in a fixed interval when events occur independently at a constant average rate λ. Typical applications include arrivals per minute at a queue, typographical errors per page, and radioactive decays per second. Its mean and its variance are both equal to λ, a constraint that makes the model unusually easy to check against data. Observed counts are frequently more dispersed than this equality permits, a condition known as overdispersion, which indicates that events are clustering rather than arriving independently. The distribution arises as a limit of the binomial in which the trials are many and each individual success is rare, which is why it needs no parameter recording how many trials took place.",
+    points: [
+      ["Models", "The number of events in a fixed interval, when events occur independently at a constant average rate $\\lambda$."],
+      ["Examples", "Arrivals per minute at a queue; typos per page; radioactive decays per second."],
+      ["Mean equals variance", "$E[X] = \\operatorname{Var}(X) = \\lambda$, which makes the model easy to check against data. Counts with $\\operatorname{Var}(X) > E[X]$ are *overdispersed*: events cluster rather than arrive independently."],
+      ["Origin", "The limit of the binomial with many trials, each success rare. Hence no parameter for the number of trials."]
+    ],
     integerSource: true,
     params: [{key: "lambda", label: "λ", min: 0.5, max: 60, step: 0.5, default: 4}],
     density: (x, prm) => VM.distributions.poissonPmf(x, prm.lambda),
@@ -504,8 +536,12 @@ nodeConfigs = ({
   geometric: {
     title: "Geometric",
     formula: "P(X=k)=(1-p)^{k-1}p,\\ \\ k=1,2,\\dots",
-    statsFormula: "\\begin{gathered} p \\in (0,1) \\\\[2pt] \\text{Mean} = \\tfrac{1}{p}, \\quad \\text{Variance} = \\tfrac{1-p}{p^2} \\end{gathered}",
-    note: "The geometric distribution gives the number of trials required to obtain the first success in a sequence of independent trials with constant success probability p. It is the only discrete distribution that is memoryless: conditional on the first ten trials having failed, the distribution of the remaining wait is identical to the original one. This property is the precise sense in which a run of failures does not make a success more likely, since past failures leave no trace in the model. The exponential distribution is memoryless for the same reason, and a limit on this map connects the two.",
+    statsFormula: "\\begin{gathered} p \\in (0,1) \\\\[2pt] \\text{Mean} = \\dfrac{1}{p}, \\quad \\text{Variance} = \\dfrac{1-p}{p^2} \\end{gathered}",
+    points: [
+      ["Models", "The number of trials up to and including the first success, in independent trials with success probability $p$."],
+      ["Memoryless", "$P(X > m + k \\mid X > m) = P(X > k)$: after $m$ failures, the remaining wait has the original distribution. The only discrete distribution with this property."],
+      ["Continuous analogue", "The exponential, also memoryless."]
+    ],
     integerSource: true,
     params: [{key: "p", label: "p", min: 0.02, max: 0.9, step: 0.02, default: 0.3}],
     density: (x, prm) => VM.distributions.geometricPmf(x, prm.p),
@@ -514,8 +550,12 @@ nodeConfigs = ({
   negativeBinomial: {
     title: "Negative Binomial",
     formula: "P(X=k)=\\binom{k-1}{r-1}p^r(1-p)^{k-r},\\ \\ k=r,r+1,\\dots",
-    statsFormula: "\\begin{gathered} r \\in \\mathbb{Z}^+, \\quad p \\in (0,1) \\\\[2pt] \\text{Mean} = \\tfrac{r}{p}, \\quad \\text{Variance} = \\tfrac{r(1-p)}{p^2} \\end{gathered}",
-    note: "The negative binomial distribution gives the number of trials required to obtain r successes, and so stands to the geometric distribution as the binomial stands to the Bernoulli: it is a sum of r independent copies, and setting r = 1 recovers the geometric. It has a second and largely unrelated use in count modelling. Its variance always exceeds its mean, which makes it the usual replacement for the Poisson distribution when count data are overdispersed. Under this reading it is a Poisson distribution whose rate is itself random, an interpretation that accounts for its prevalence in ecology and in the analysis of sequencing data.",
+    statsFormula: "\\begin{gathered} r \\in \\mathbb{Z}^+, \\quad p \\in (0,1) \\\\[2pt] \\text{Mean} = \\dfrac{r}{p}, \\quad \\text{Variance} = \\dfrac{r(1-p)}{p^2} \\end{gathered}",
+    points: [
+      ["Models", "The number of trials needed for $r$ successes."],
+      ["Structure", "A sum of $r$ independent $\\text{Geometric}(p)$ variables; $r = 1$ is the geometric."],
+      ["Use", "The usual replacement for the Poisson on overdispersed counts, e.g. in ecology and sequencing data. There it is read as a Poisson with a gamma-distributed rate."]
+    ],
     integerSource: true,
     params: [
       {key: "r", label: "r (successes)", min: 1, max: 20, step: 1, default: 3},
@@ -527,8 +567,12 @@ nodeConfigs = ({
   uniform: {
     title: "Uniform",
     formula: "f(x)=1,\\ \\ 0<x<1",
-    statsFormula: "\\begin{gathered} \\text{Support } (0,1) \\\\[2pt] \\text{Mean} = \\tfrac{1}{2}, \\quad \\text{Variance} = \\tfrac{1}{12} \\end{gathered}",
-    note: "The continuous uniform distribution assigns equal probability density to every value in an interval. Its role on this map is as raw material rather than as a model of any particular phenomenon. A uniform draw is what a pseudorandom number generator produces, and passing such a draw through the inverse cumulative distribution function of any distribution yields a draw from that distribution. Every continuous distribution shown here is therefore reachable from the uniform, either by such a transformation or, in the case of the beta distribution, as the single member of a family that happens to be flat.",
+    statsFormula: "\\begin{gathered} \\text{Support } (0,1) \\\\[2pt] \\text{Mean} = \\dfrac{1}{2}, \\quad \\text{Variance} = \\dfrac{1}{12} \\end{gathered}",
+    points: [
+      ["Models", "Equal density at every point of an interval, here $(0,1)$."],
+      ["Use", "The output of a pseudorandom number generator, and the raw material for sampling every other distribution."],
+      ["Inverse transform", "If $U \\sim \\text{Uniform}(0,1)$ and $F$ is a CDF, then $F^{-1}(U)$ has CDF $F$."]
+    ],
     integerSource: false,
     params: [],
     density: (x) => (x >= 0 && x <= 1 ? 1 : 0),
@@ -537,8 +581,12 @@ nodeConfigs = ({
   exponential: {
     title: "Exponential",
     formula: "f(x)=\\lambda e^{-\\lambda x},\\ \\ x>0",
-    statsFormula: "\\begin{gathered} \\lambda > 0 \\ \\text{(rate)} \\\\[2pt] \\text{Mean} = \\tfrac{1}{\\lambda}, \\quad \\text{Variance} = \\tfrac{1}{\\lambda^2} \\end{gathered}",
-    note: "The exponential distribution describes the waiting time until the next event of a process occurring at a constant rate λ. Like the geometric distribution it is memoryless, which in continuous time has a strong consequence: a component that has already operated for an hour is exactly as likely to fail during the next hour as a new one, so the distribution cannot represent wear or ageing at all. The Weibull distribution exists to lift this restriction, adding a shape parameter that allows the failure rate to rise or fall with age and recovering the exponential when that shape equals 1.",
+    statsFormula: "\\begin{gathered} \\lambda > 0 \\ \\text{(rate)} \\\\[2pt] \\text{Mean} = \\dfrac{1}{\\lambda}, \\quad \\text{Variance} = \\dfrac{1}{\\lambda^2} \\end{gathered}",
+    points: [
+      ["Models", "The waiting time until the next event of a process with constant rate $\\lambda$."],
+      ["Memoryless", "$P(X > s + t \\mid X > s) = P(X > t)$. A component that has run for an hour is as likely to fail in the next hour as a new one, so the distribution cannot model wear or ageing."],
+      ["Generalisation", "The Weibull adds a shape $k$ that lets the failure rate rise or fall with age; $k = 1$ recovers the exponential."]
+    ],
     integerSource: false,
     params: [{key: "lambda", label: "λ (rate)", min: 0.1, max: 5, step: 0.1, default: 1}],
     density: (x, prm) => VM.distributions.exponentialPdf(x, prm.lambda),
@@ -547,8 +595,12 @@ nodeConfigs = ({
   weibull: {
     title: "Weibull",
     formula: "f(x)=\\dfrac{k}{\\lambda}\\left(\\dfrac{x}{\\lambda}\\right)^{k-1}e^{-(x/\\lambda)^k},\\ \\ x>0",
-    statsFormula: "\\begin{gathered} k > 0 \\ \\text{(shape)}, \\quad \\lambda > 0 \\ \\text{(scale)} \\\\[2pt] \\text{Mean} = \\lambda\\,\\Gamma\\!\\left(1+\\tfrac{1}{k}\\right) \\end{gathered}",
-    note: "The Weibull distribution generalises the exponential by allowing the failure rate to vary with age rather than remain constant. A shape parameter below 1 gives a failure rate that decreases with age, characteristic of early-life defects being eliminated; a shape above 1 gives one that increases, characteristic of wear; and a shape of exactly 1 gives the exponential distribution. This single parameter accounts for the distribution's standard role in reliability engineering and survival analysis, where the fitted shape indicates whether the population under study is burning in, wearing out, or doing neither.",
+    statsFormula: "\\begin{gathered} k > 0 \\ \\text{(shape)}, \\quad \\lambda > 0 \\ \\text{(scale)} \\\\[2pt] \\text{Mean} = \\lambda\\,\\Gamma\\!\\left(1+\\dfrac{1}{k}\\right) \\end{gathered}",
+    points: [
+      ["Models", "Lifetimes whose failure rate changes with age."],
+      ["Shape $k$", "$k < 1$: decreasing failure rate (early defects weeded out). $k = 1$: constant, the exponential. $k > 1$: increasing (wear)."],
+      ["Use", "Reliability engineering and survival analysis: the fitted $k$ says whether a population is burning in, wearing out, or neither."]
+    ],
     integerSource: false,
     params: [
       {key: "shape", label: "k (shape)", min: 0.3, max: 5, step: 0.1, default: 1.5},
@@ -561,7 +613,10 @@ nodeConfigs = ({
     title: "Normal",
     formula: "f(x)=\\dfrac{1}{\\sqrt{2\\pi\\sigma^2}}\\,e^{-(x-\\mu)^2/2\\sigma^2}",
     statsFormula: "\\begin{gathered} \\mu \\in \\mathbb{R}, \\quad \\sigma^2 > 0 \\\\[2pt] \\text{Mean} = \\mu, \\quad \\text{Variance} = \\sigma^2 \\end{gathered}",
-    note: "The normal distribution, also called the Gaussian distribution, is the limiting distribution of sums of many small independent contributions, largely irrespective of how the individual terms are distributed. This universality is the content of the central limit theorem, and it is why four separate limits on this map, from the binomial, Poisson, gamma and beta distributions, all terminate here. The theorem concerns sums, and its scope is correspondingly limited: quantities produced by repeated multiplication converge to the lognormal distribution instead, and the ratio of two normal variables follows the Cauchy distribution, which has no mean at all.",
+    points: [
+      ["Also called", "The Gaussian distribution."],
+      ["Central limit theorem", "If $X_1, X_2, \\dots$ are independent and identically distributed with mean $\\mu$ and finite variance $\\sigma^2$, and $S_n = X_1 + \\cdots + X_n$, then $$\\frac{S_n - n\\mu}{\\sigma\\sqrt{n}} \\xrightarrow{\\ d\\ } N(0,1) \\quad (n \\to \\infty).$$ Only the mean and variance of $X_i$ matter, not the shape of its distribution."]
+    ],
     integerSource: false,
     params: [{key: "mean", label: "μ", min: -10, max: 10, step: 0.5, default: 0}, {key: "variance", label: "σ²", min: 0.2, max: 20, step: 0.2, default: 1}],
     density: (x, prm) => VM.distributions.normalPdf(x, prm.mean, prm.variance),
@@ -574,7 +629,12 @@ nodeConfigs = ({
     title: "Lognormal",
     formula: "f(x)=\\dfrac{1}{x\\sqrt{2\\pi\\sigma^2}}\\,e^{-(\\ln x-\\mu)^2/2\\sigma^2},\\ \\ x>0",
     statsFormula: "\\begin{gathered} \\mu \\in \\mathbb{R}, \\quad \\sigma^2 > 0 \\ (\\text{of } \\ln X) \\\\[2pt] \\text{Mean} = e^{\\mu+\\sigma^2/2}, \\quad \\text{Median} = e^{\\mu} \\end{gathered}",
-    note: "A random variable has a lognormal distribution if its logarithm is normally distributed. Where the central limit theorem sends sums to the normal distribution, it sends products here, which makes the lognormal the natural model for quantities generated by repeated proportional change, such as incomes, city populations, particle diameters and asset prices. It is positive by construction and right-skewed, with a tail long enough that its mean lies well above its median, so an average of lognormal quantities is often a misleading summary. Its two parameters describe the underlying normal distribution rather than the mean and variance of the lognormal itself.",
+    points: [
+      ["Definition", "$X$ is lognormal if $\\ln X$ is normal."],
+      ["Origin", "The central limit theorem for products: repeated proportional change. Examples: incomes, city populations, particle diameters, asset prices."],
+      ["Shape", "Positive and right-skewed. The mean $e^{\\mu + \\sigma^2/2}$ lies well above the median $e^{\\mu}$, so an average of lognormal quantities often misleads."],
+      ["Parameters", "$\\mu$ and $\\sigma^2$ are the mean and variance of $\\ln X$, not of $X$."]
+    ],
     integerSource: false,
     params: [
       {key: "mean", label: "μ (of ln X)", min: -2, max: 3, step: 0.1, default: 0},
@@ -587,7 +647,11 @@ nodeConfigs = ({
     title: "Cauchy",
     formula: "f(x)=\\dfrac{1}{\\pi\\gamma\\left[1+\\left(\\frac{x-x_0}{\\gamma}\\right)^2\\right]}",
     statsFormula: "\\begin{gathered} x_0 \\in \\mathbb{R} \\ \\text{(median)}, \\quad \\gamma > 0 \\ \\text{(scale)} \\\\[2pt] \\text{Mean and variance do not exist} \\end{gathered}",
-    note: "The Cauchy distribution is a continuous distribution with a perfectly well-defined density but no mean and no variance, since both defining integrals diverge. Its tails are heavy enough that averaging brings no benefit: the sample mean of n independent Cauchy variables has exactly the same Cauchy distribution as a single observation, so collecting more data does not improve the estimate and the central limit theorem does not apply. The distribution is not a contrived counterexample, as it arises as the ratio of two independent standard normal variables and as Student's t-distribution with one degree of freedom.",
+    points: [
+      ["Moments", "None: the integrals for the mean and the variance both diverge."],
+      ["Sample mean", "The mean of $n$ independent Cauchy variables has the same distribution as a single one. More data does not help, and the central limit theorem does not apply."],
+      ["Arises as", "$Z_1/Z_2$ for independent standard normals; Student's $t$ with one degree of freedom."]
+    ],
     integerSource: false,
     params: [
       {key: "location", label: "x₀ (median)", min: -5, max: 5, step: 0.5, default: 0},
@@ -599,8 +663,12 @@ nodeConfigs = ({
   gamma: {
     title: "Gamma",
     formula: "f(x)=\\dfrac{\\beta^\\alpha x^{\\alpha-1}e^{-\\beta x}}{\\Gamma(\\alpha)},\\ \\ x>0",
-    statsFormula: "\\begin{gathered} \\alpha, \\beta > 0 \\ \\text{(shape, rate)} \\\\[2pt] \\text{Mean} = \\tfrac{\\alpha}{\\beta}, \\quad \\text{Variance} = \\tfrac{\\alpha}{\\beta^2} \\end{gathered}",
-    note: "The gamma distribution describes the total waiting time for α events of a process occurring at rate β, and generalises the exponential distribution in the way that the binomial generalises the Bernoulli. The shape parameter α determines the form of the density: at α = 1 the density is largest at zero and decreases from there, while as α grows the mass moves away from zero into an increasingly symmetric peak, because averaging over many waits reduces the relative variability of each. The chi-squared distribution is a member of this same family, at shape k/2 and rate 1/2.",
+    statsFormula: "\\begin{gathered} \\alpha, \\beta > 0 \\ \\text{(shape, rate)} \\\\[2pt] \\text{Mean} = \\dfrac{\\alpha}{\\beta}, \\quad \\text{Variance} = \\dfrac{\\alpha}{\\beta^2} \\end{gathered}",
+    points: [
+      ["Models", "The total waiting time for $\\alpha$ events of a process with rate $\\beta$."],
+      ["Shape $\\alpha$", "$\\alpha = 1$: density largest at $0$, decreasing. Larger $\\alpha$: the mass moves away from $0$ into an increasingly symmetric peak."],
+      ["Special cases", "$\\text{Gamma}(1, \\beta) = \\text{Exponential}(\\beta)$. $\\text{Gamma}(k/2,\\ 1/2) = \\chi^2(k)$."]
+    ],
     integerSource: false,
     params: [{key: "shape", label: "α (shape)", min: 1, max: 20, step: 1, default: 2}, {key: "rate", label: "β (rate)", min: 0.2, max: 5, step: 0.2, default: 1}],
     density: (x, prm) => VM.distributions.gammaPdf(x, prm.shape, prm.rate),
@@ -609,8 +677,12 @@ nodeConfigs = ({
   beta: {
     title: "Beta",
     formula: "f(x)=\\dfrac{x^{a-1}(1-x)^{b-1}}{B(a,b)},\\ \\ 0<x<1",
-    statsFormula: "\\begin{gathered} a, b > 0 \\\\[2pt] \\text{Mean} = \\tfrac{a}{a+b}, \\quad \\text{Variance} = \\tfrac{ab}{(a+b)^2(a+b+1)} \\end{gathered}",
-    note: "The beta distribution is supported on the interval (0, 1), which makes it a natural way to represent uncertainty about a probability. Its two parameters behave like tallies of evidence, with a acting as a count of successes already observed and b as a count of failures. Setting a = b = 1 gives the uniform distribution, representing the absence of any evidence, while larger values concentrate the density around a/(a + b). This behaviour is why the beta is the standard prior distribution for a binomial probability: observing new data simply increments a and b, leaving the posterior distribution in the same family.",
+    statsFormula: "\\begin{gathered} a, b > 0 \\\\[2pt] \\text{Mean} = \\dfrac{a}{a+b}, \\quad \\text{Variance} = \\dfrac{ab}{(a+b)^2(a+b+1)} \\end{gathered}",
+    points: [
+      ["Models", "Uncertainty about a probability: the support is $(0,1)$."],
+      ["Parameters", "$a$ acts as a count of successes, $b$ of failures. $a = b = 1$: uniform, no evidence. Larger $a, b$: the density concentrates around $\\frac{a}{a+b}$."],
+      ["Conjugate prior", "For a binomial $p$: observing data increments $a$ and $b$, and the posterior stays beta."]
+    ],
     integerSource: false,
     params: [{key: "a", label: "a", min: 0.5, max: 20, step: 0.5, default: 2}, {key: "b", label: "b", min: 0.5, max: 20, step: 0.5, default: 2}],
     density: (x, prm) => VM.distributions.betaPdf(x, prm.a, prm.b),
@@ -620,7 +692,11 @@ nodeConfigs = ({
     title: "Chi-squared",
     formula: "f(x)=\\dfrac{x^{k/2-1}e^{-x/2}}{2^{k/2}\\Gamma(k/2)},\\ \\ x>0",
     statsFormula: "\\begin{gathered} k \\in \\mathbb{Z}^+ \\ \\text{(degrees of freedom)} \\\\[2pt] \\text{Mean} = k, \\quad \\text{Variance} = 2k \\end{gathered}",
-    note: "The chi-squared distribution with k degrees of freedom is the distribution of the sum of the squares of k independent standard normal variables. Squaring discards the sign and retains only magnitude, which is precisely the operation a sample variance performs, so the distribution describes how much a variance estimate fluctuates and provides the reference against which observed variability is judged. It also plays a structural role, appearing in the denominator of both Student's t and the F-distribution, which is the formal expression of the fact that both correct for a scale having been estimated rather than known.",
+    points: [
+      ["Definition", "The distribution of $Z_1^2 + \\cdots + Z_k^2$, for independent standard normals $Z_i$."],
+      ["Use", "How a sample variance fluctuates: the reference distribution for judging observed variability."],
+      ["Appears in", "The denominators of Student's $t$ and the $F$-distribution, which correct for an estimated scale."]
+    ],
     integerSource: false,
     params: [{key: "k", label: "k", min: 1, max: 40, step: 1, default: 4}],
     density: (x, prm) => VM.distributions.chiSquaredPdf(x, prm.k),
@@ -629,8 +705,12 @@ nodeConfigs = ({
   studentT: {
     title: "Student's t",
     formula: "f(x)=\\dfrac{\\Gamma(\\frac{k+1}{2})}{\\sqrt{k\\pi}\\,\\Gamma(\\frac{k}{2})}\\left(1+\\dfrac{x^2}{k}\\right)^{-(k+1)/2}",
-    statsFormula: "\\begin{gathered} k \\in \\mathbb{Z}^+ \\ \\text{(degrees of freedom)} \\\\[2pt] \\text{Mean} = 0 \\ (k>1), \\quad \\text{Variance} = \\tfrac{k}{k-2} \\ (k>2) \\end{gathered}",
-    note: "Student's t-distribution arises when a normal mean is standardised using a standard deviation estimated from the same sample rather than a known value. That estimate is itself subject to sampling error, and the additional uncertainty appears as heavier tails, which is why confidence intervals from small samples are wider than the ±1.96 standard errors appropriate to a known variance. The degrees of freedom k control the size of the effect: at k = 1 the tails are heavy enough that the mean does not exist and the distribution is exactly Cauchy, while as k grows the estimate sharpens and the distribution converges to the normal.",
+    statsFormula: "\\begin{gathered} k \\in \\mathbb{Z}^+ \\ \\text{(degrees of freedom)} \\\\[2pt] \\text{Mean} = 0 \\ (k>1), \\quad \\text{Variance} = \\dfrac{k}{k-2} \\ (k>2) \\end{gathered}",
+    points: [
+      ["Models", "A normal mean standardised by the sample's own standard deviation instead of a known $\\sigma$."],
+      ["Tails", "Heavier than the normal's, from the sampling error in that estimate. Hence small-sample confidence intervals are wider than $\\pm 1.96$ standard errors."],
+      ["Degrees of freedom $k$", "$k = 1$: Cauchy, no mean. $k \\to \\infty$: $N(0,1)$."]
+    ],
     integerSource: false,
     params: [{key: "k", label: "k", min: 1, max: 40, step: 1, default: 5}],
     density: (x, prm) => VM.distributions.studentTPdf(x, prm.k),
@@ -639,8 +719,12 @@ nodeConfigs = ({
   f: {
     title: "F-distribution",
     formula: "f(x)=\\dfrac{1}{xB(\\frac{d_1}{2},\\frac{d_2}{2})}\\sqrt{\\dfrac{(d_1x)^{d_1}d_2^{d_2}}{(d_1x+d_2)^{d_1+d_2}}},\\ \\ x>0",
-    statsFormula: "\\begin{gathered} d_1, d_2 \\in \\mathbb{Z}^+ \\\\[2pt] \\text{Mean} = \\tfrac{d_2}{d_2-2} \\ (d_2>2) \\end{gathered}",
-    note: "The F-distribution is the distribution of the ratio of two independent variance estimates, each divided by its own degrees of freedom so that the comparison does not depend on sample size. It is therefore the natural distribution for testing whether one source of variation exceeds another, which is the question addressed by the analysis of variance, where the variation between groups is compared with the variation within them. Because it is built from two independent chi-squared variables it carries two degrees-of-freedom parameters, one for the numerator and one for the denominator, and these are not interchangeable.",
+    statsFormula: "\\begin{gathered} d_1, d_2 \\in \\mathbb{Z}^+ \\\\[2pt] \\text{Mean} = \\dfrac{d_2}{d_2-2} \\ (d_2>2) \\end{gathered}",
+    points: [
+      ["Definition", "The ratio of two independent variance estimates, each divided by its degrees of freedom so the comparison does not depend on sample size."],
+      ["Use", "Testing whether one source of variation exceeds another, as in the analysis of variance: between-group against within-group variation."],
+      ["Parameters", "$d_1$ (numerator) and $d_2$ (denominator), one for each of the two independent $\\chi^2$ variables. They are not interchangeable."]
+    ],
     integerSource: false,
     params: [{key: "d1", label: "d₁", min: 1, max: 30, step: 1, default: 5}, {key: "d2", label: "d₂", min: 1, max: 30, step: 1, default: 10}],
     density: (x, prm) => VM.distributions.fPdf(x, prm.d1, prm.d2),
@@ -652,142 +736,230 @@ nodeConfigs = ({
 ```{ojs}
 //| output: false
 // edgeText: the descriptive blurb shown in the detail panel when an edge is
-// clicked -- title, the identity in TeX, and a one-line note.
+// clicked -- title, the identity in TeX, and labelled points (see detail).
 edgeText = ({
   "hypergeometric-binomial": {
     title: "Hypergeometric → Binomial",
-    formula: "\\begin{aligned} X_N &\\sim \\text{Hypergeometric}(N, pN, n) \\\\[2pt] X_N &\\xrightarrow{\\ d\\ } \\text{Binomial}(n, p) \\quad (N \\to \\infty) \\end{aligned}",
-    note: "Sampling without replacement differs from sampling with replacement only in that each draw depletes the population. When the population is large relative to the sample that depletion is negligible, since removing ten items from a million barely alters the remaining proportion, so the draws are effectively independent and the count is approximately binomial. A common rule of thumb is that the approximation is adequate when the sample is less than about a tenth of the population, below which the finite population correction (N − n)/(N − 1) is close enough to 1 to be ignored."
+    formula: "\\begin{aligned} X_N &\\sim \\text{Hypergeometric}(N, pN, n) \\\\[2pt] X_N &\\xrightarrow[N \\to \\infty]{\\ d\\ } \\text{Binomial}(n, p) \\end{aligned}",
+    points: [
+      ["Condition", "$N \\gg n$: removing a few items barely changes the proportion of successes, so the draws are effectively independent."],
+      ["Rule of thumb", "Adequate when $n < N/10$; then the correction $\\frac{N-n}{N-1}$ is close to $1$."]
+    ]
   },
   "bernoulli-binomial": {
     title: "Bernoulli ↔ Binomial",
-    formula: "\\begin{aligned} X_1,\\dots,X_n &\\stackrel{\\text{iid}}{\\sim} \\text{Bernoulli}(p) \\implies \\textstyle\\sum_i X_i \\sim \\text{Binomial}(n,p) \\\\[2pt] \\text{Binomial}(1,p) &= \\text{Bernoulli}(p) \\end{aligned}",
-    note: "The relationship holds in both directions. A sum of n independent Bernoulli indicators is binomial, and a binomial distribution with a single trial reduces to a Bernoulli. What the sum inherits is the assumption of independence, which is made once at the level of the individual trial and from which the properties of the binomial follow. If the trials are correlated, as when surveyed individuals influence one another or manufactured parts share a common faulty batch, the total is no longer binomial even though each individual trial remains Bernoulli."
+    formula: "\\begin{aligned} X_1, \\dots, X_n &\\stackrel{\\text{iid}}{\\sim} \\text{Bernoulli}(p) \\\\[2pt] X_1 + \\cdots + X_n &\\sim \\text{Binomial}(n, p) \\\\[2pt] \\text{Binomial}(1, p) &= \\text{Bernoulli}(p) \\end{aligned}",
+    points: [
+      ["Assumption", "The trials are independent; the binomial's properties follow from this."],
+      ["Failure", "Correlated trials (people influencing one another, parts from one faulty batch): each trial is still Bernoulli, but the total is not binomial."]
+    ]
   },
   "binomial-poisson": {
     title: "Binomial → Poisson",
-    formula: "\\begin{aligned} X_n &\\sim \\text{Binomial}(n,\\ \\lambda/n) \\\\[2pt] \\lim_{n \\to \\infty} P(X_n = k) &= \\frac{\\lambda^k e^{-\\lambda}}{k!} \\end{aligned}",
-    note: "This limit is known as the law of rare events: a large number of opportunities, each individually unlikely, with the expected number of successes held fixed at λ. In the limit the number of trials disappears from the result entirely, which is what makes the Poisson distribution useful in practice, since accidents per month or mutations per genome can be modelled without knowing how many opportunities for one there were. The approximation is accurate when p is small; when p is moderate the binomial's upper bound at n still matters and the normal limit is the better approximation."
+    formula: "\\begin{aligned} X_n &\\sim \\text{Binomial}(n,\\ \\lambda/n) \\\\[2pt] X_n &\\xrightarrow[n \\to \\infty]{\\ d\\ } \\text{Poisson}(\\lambda) \\end{aligned}",
+    points: [
+      ["Name", "The *law of rare events*: many trials, each unlikely, with $np = \\lambda$ fixed."],
+      ["Use", "$n$ drops out, so accidents per month or mutations per genome can be modelled without knowing the number of opportunities."],
+      ["Accuracy", "Good for small $p$. For moderate $p$ the normal limit is better."]
+    ]
   },
   "binomial-normal": {
     title: "Binomial → Normal",
-    formula: "\\begin{aligned} X_n &\\sim \\text{Binomial}(n,p) \\\\[2pt] \\frac{X_n - np}{\\sqrt{np(1-p)}} &\\xrightarrow{\\ d\\ } N(0,1) \\quad (n \\to \\infty) \\end{aligned}",
-    note: "This is the earliest form of the central limit theorem, proved by Abraham de Moivre in 1733 for the case p = 1/2 and extended to general p by Laplace. It justifies treating a sample proportion as approximately normal, and hence the ±1.96 standard errors quoted as margins of error in survey results. Convergence is fastest at p = 1/2, where the binomial distribution is already symmetric, and slowest for p near 0 or 1, where it remains visibly skewed. That is precisely the regime in which the Poisson limit is the more accurate approximation."
+    formula: "\\begin{aligned} X_n &\\sim \\text{Binomial}(n, p) \\\\[2pt] \\frac{X_n - np}{\\sqrt{np(1-p)}} &\\xrightarrow[n \\to \\infty]{\\ d\\ } N(0,1) \\end{aligned}",
+    points: [
+      ["History", "The first central limit theorem: de Moivre (1733) for $p = 1/2$, Laplace for general $p$."],
+      ["Use", "A sample proportion is approximately normal: the $\\pm 1.96$ standard-error margins of error in surveys."],
+      ["Accuracy", "Best at $p = 1/2$, where the binomial is symmetric. Worst near $p = 0$ or $1$, where it is skewed and the Poisson limit is better."]
+    ]
   },
   "geometric-negativebinomial": {
     title: "Geometric ↔ Negative Binomial",
-    formula: "\\begin{aligned} X_1,\\dots,X_r &\\stackrel{\\text{iid}}{\\sim} \\text{Geometric}(p) \\implies \\textstyle\\sum_i X_i \\sim \\text{NegBinomial}(r,p) \\\\[2pt] \\text{NegBinomial}(1,p) &= \\text{Geometric}(p) \\end{aligned}",
-    note: "Waiting for r successes consists of waiting for the first, then beginning again and waiting for the second, and so on. Because the geometric distribution is memoryless, beginning again is genuinely equivalent to starting from scratch, with no residual effect from the failures already observed. The total is therefore a sum of r independent geometric variables, and setting r = 1 returns the geometric distribution itself. This is the same sum-of-copies construction that relates the Bernoulli to the binomial, one level up: there the fixed quantity is the number of trials, here it is the number of successes."
+    formula: "\\begin{aligned} X_1, \\dots, X_r &\\stackrel{\\text{iid}}{\\sim} \\text{Geometric}(p) \\\\[2pt] X_1 + \\cdots + X_r &\\sim \\text{NegBinomial}(r, p) \\\\[2pt] \\text{NegBinomial}(1, p) &= \\text{Geometric}(p) \\end{aligned}",
+    points: [
+      ["Construction", "Wait for the first success, restart, wait for the second, and so on. Memorylessness makes each restart a fresh start, so the $r$ waits are independent."],
+      ["Analogy", "Bernoulli → binomial fixes the number of trials; geometric → negative binomial fixes the number of successes."]
+    ]
   },
   "negativebinomial-poisson": {
     title: "Negative Binomial → Poisson",
-    formula: "\\begin{aligned} Y_r &\\sim \\text{NegBinomial counting failures},\\ \\ r(1-p) = \\lambda \\\\[2pt] Y_r &\\xrightarrow{\\ d\\ } \\text{Poisson}(\\lambda) \\quad (r \\to \\infty,\\ p \\to 1) \\end{aligned}",
-    note: "The variance of the negative binomial distribution always exceeds its mean, by a factor that shrinks as r grows. Taking r to infinity while holding the mean fixed removes that excess, leaving mean and variance equal, which characterises the Poisson distribution. The relationship underlies a standard modelling practice: a negative binomial distribution is fitted to overdispersed counts, and the fitted value of r measures how far the data depart from the Poisson case, with a large r indicating that a Poisson model would have been adequate."
+    formula: "\\begin{aligned} Y_r &= \\text{failures before success } r \\\\[2pt] r(1-p) &= \\lambda \\\\[2pt] Y_r &\\xrightarrow[r \\to \\infty]{\\ d\\ } \\text{Poisson}(\\lambda) \\end{aligned}",
+    points: [
+      ["Variance", "The excess $\\operatorname{Var} - E$ shrinks as $r$ grows; in the limit $\\operatorname{Var} = E$, as for the Poisson."],
+      ["Use", "Fitted to overdispersed counts, $r$ measures the departure from Poisson. Large $r$: a Poisson model suffices."]
+    ]
   },
   "poisson-normal": {
     title: "Poisson → Normal",
-    formula: "\\begin{aligned} X_\\lambda &\\sim \\text{Poisson}(\\lambda) \\\\[2pt] \\frac{X_\\lambda - \\lambda}{\\sqrt{\\lambda}} &\\xrightarrow{\\ d\\ } N(0,1) \\quad (\\lambda \\to \\infty) \\end{aligned}",
-    note: "A Poisson count over a long interval is the sum of the counts over many shorter disjoint intervals, and those are independent, so the central limit theorem applies directly with λ playing the role of the sample size. For small λ the distribution is strongly skewed and bounded below by zero, so no normal distribution approximates it well. By about λ = 20 the skew has largely disappeared and the normal approximation is routine, which is the basis for the square-root-of-the-count error bars commonly quoted for count data."
+    formula: "\\begin{aligned} X_\\lambda &\\sim \\text{Poisson}(\\lambda) \\\\[2pt] \\frac{X_\\lambda - \\lambda}{\\sqrt{\\lambda}} &\\xrightarrow[\\lambda \\to \\infty]{\\ d\\ } N(0,1) \\end{aligned}",
+    points: [
+      ["Structure", "A count over a long interval is a sum of independent counts over short disjoint intervals: the central limit theorem with $\\lambda$ as the sample size."],
+      ["Accuracy", "Poor for small $\\lambda$ (skewed, bounded below by $0$). Routine by $\\lambda \\approx 20$."],
+      ["Use", "The $\\sqrt{\\text{count}}$ error bars quoted for count data."]
+    ]
   },
   "poisson-exponential": {
     title: "Poisson ↔ Exponential",
     formula: "\\begin{aligned} \\text{gaps } T_{i+1}-T_i &\\stackrel{\\text{iid}}{\\sim} \\text{Exponential}(\\lambda) \\\\[2pt] \\text{count } N(W) &\\sim \\text{Poisson}(\\lambda W) \\end{aligned}",
-    note: "The two distributions are alternative descriptions of a single process, which is why the relationship runs in both directions. Counting the events that occur in a fixed interval gives a Poisson distribution, while measuring the gaps between consecutive events gives exponential distributions. Either description determines the other completely and the same rate λ appears in both, so they are not two models but two ways of parameterising one. The memorylessness of the gaps and the independence of counts in disjoint intervals are likewise the same assumption stated twice."
+    points: [
+      ["Process", "One Poisson process of rate $\\lambda$: counts in fixed intervals are Poisson, gaps between events are exponential."],
+      ["Equivalence", "Either description determines the other. Memoryless gaps and independent counts in disjoint intervals are the same assumption."]
+    ]
   },
   "geometric-exponential": {
     title: "Geometric → Exponential",
-    formula: "\\begin{aligned} G_m &\\sim \\text{Geometric}(\\lambda/m) \\\\[2pt] \\tfrac{1}{m} G_m &\\xrightarrow{\\ d\\ } \\text{Exponential}(\\lambda) \\quad (m \\to \\infty) \\end{aligned}",
-    note: "Dividing time into m steps per unit and giving each step a success probability of λ/m keeps the expected number of successes per unit time equal to λ. As the steps become finer, the discrete waiting time, rescaled to continuous time, converges to the exponential distribution. This is the sense in which the exponential is the continuous-time analogue of the geometric, and it accounts for both being memoryless, since at no stage of the construction does the process record how long it has already waited."
+    formula: "\\begin{aligned} G_m &\\sim \\text{Geometric}(\\lambda/m) \\\\[2pt] \\tfrac{1}{m} G_m &\\xrightarrow[m \\to \\infty]{\\ d\\ } \\text{Exponential}(\\lambda) \\end{aligned}",
+    points: [
+      ["Construction", "$m$ steps per unit time, each a success with probability $\\lambda/m$: the expected number of successes per unit time stays $\\lambda$."],
+      ["Analogy", "The exponential is the continuous-time geometric; both are memoryless."]
+    ]
   },
   "uniform-exponential": {
     title: "Uniform ↔ Exponential",
-    formula: "\\begin{aligned} U &\\sim \\text{Uniform}(0,1) \\implies -\\tfrac{1}{\\lambda}\\ln U \\sim \\text{Exponential}(\\lambda) \\\\[2pt] X &\\sim \\text{Exponential}(\\lambda) \\implies e^{-\\lambda X} \\sim \\text{Uniform}(0,1) \\end{aligned}",
-    note: "This is an instance of inverse transform sampling: applying the inverse cumulative distribution function of a distribution to a uniform draw produces a draw from that distribution, and applying the cumulative distribution function reverses the map. For the exponential distribution both directions are available in closed form, which is why simulation software generates exponential waiting times in exactly this way rather than by any approximation. The same construction is what makes the uniform distribution the common ancestor of every continuous distribution on this map."
+    formula: "U \\sim \\text{Uniform}(0,1) \\iff -\\tfrac{1}{\\lambda}\\ln U \\sim \\text{Exponential}(\\lambda)",
+    points: [
+      ["Inverse transform sampling", "$F^{-1}(U)$ has CDF $F$, and $F(X)$ reverses the map. For the exponential, $F(x) = 1 - e^{-\\lambda x}$, both are closed-form (using $1 - U \\sim \\text{Uniform}(0,1)$)."],
+      ["Use", "How simulation software generates exponential waiting times: exact, not approximate."]
+    ]
   },
   "exponential-weibull": {
     title: "Exponential ↔ Weibull",
-    formula: "\\begin{aligned} X &\\sim \\text{Exponential}(1) \\implies \\lambda X^{1/k} \\sim \\text{Weibull}(k, \\lambda) \\\\[2pt] \\text{Weibull}(1, \\lambda) &= \\text{Exponential}(1/\\lambda) \\end{aligned}",
-    note: "Raising an exponential waiting time to a power stretches or compresses the time axis unevenly, and that is what converts a constant failure rate into one that varies with age. A shape parameter k greater than 1 makes later failures relatively more likely, corresponding to wear, while a value below 1 makes early failures dominate, corresponding to manufacturing defects. Setting k = 1 leaves the time axis unchanged and returns the exponential distribution, so the exponential is precisely the Weibull distribution that is neutral about ageing."
+    formula: "\\begin{aligned} X &\\sim \\text{Exponential}(1) \\\\[2pt] \\lambda X^{1/k} &\\sim \\text{Weibull}(k, \\lambda) \\\\[2pt] \\text{Weibull}(1, \\lambda) &= \\text{Exponential}(1/\\lambda) \\end{aligned}",
+    points: [
+      ["Transform", "The power $1/k$ stretches the time axis unevenly, so the constant failure rate becomes age-dependent."],
+      ["Shape $k$", "$k < 1$: early failures dominate (defects). $k = 1$: the exponential, no ageing. $k > 1$: later failures likelier (wear)."]
+    ]
   },
   "exponential-gamma": {
     title: "Exponential ↔ Gamma",
-    formula: "\\begin{aligned} X_1,\\dots,X_n &\\stackrel{\\text{iid}}{\\sim} \\text{Exponential}(\\lambda) \\implies \\textstyle\\sum_i X_i \\sim \\text{Gamma}(n,\\lambda) \\\\[2pt] \\text{Gamma}(1,\\lambda) &= \\text{Exponential}(\\lambda) \\end{aligned}",
-    note: "Waiting for the n-th event of a Poisson process amounts to adding n independent exponential waits, and the total follows a gamma distribution with shape n. The shape parameter supplies what the exponential lacks. At n = 1 the density is greatest at zero, because the next instant is the single most likely moment for the first event to occur, whereas for n greater than 1 the density must vanish at zero, since accumulating several waits in no time at all is impossible. Memorylessness is lost in the sum, as progress towards the n-th event is genuinely recorded."
+    formula: "\\begin{aligned} X_1, \\dots, X_n &\\stackrel{\\text{iid}}{\\sim} \\text{Exponential}(\\lambda) \\\\[2pt] X_1 + \\cdots + X_n &\\sim \\text{Gamma}(n, \\lambda) \\\\[2pt] \\text{Gamma}(1, \\lambda) &= \\text{Exponential}(\\lambda) \\end{aligned}",
+    points: [
+      ["Process", "$\\text{Gamma}(n, \\lambda)$ is the wait for the $n$-th event of a Poisson process: $n$ independent exponential waits."],
+      ["Shape", "$n = 1$: density largest at $0$. $n > 1$: density $0$ at $0$, since several waits cannot all finish instantly."],
+      ["Memory", "The exponential is memoryless; for $n > 1$ the gamma is not, since the sum records progress."]
+    ]
   },
   "gamma-beta": {
     title: "Gamma → Beta",
-    formula: "\\begin{aligned} X &\\sim \\text{Gamma}(a, \\beta), \\quad Y \\sim \\text{Gamma}(b, \\beta), \\quad \\text{independent} \\\\[2pt] \\frac{X}{X+Y} &\\sim \\text{Beta}(a, b) \\end{aligned}",
-    note: "Given two independent gamma variables sharing a common rate, the fraction of their total accounted for by the first follows a beta distribution. The shared rate cancels completely, since the proportion does not depend on the units in which time was measured, only on how the two shape parameters compare. This construction is the origin of the beta distribution's role as a distribution over proportions, and it also explains why its parameters behave like counts: they are the shape parameters of the two gamma variables being compared."
+    formula: "\\begin{aligned} X &\\stackrel{\\text{indep}}{\\sim} \\text{Gamma}(a, \\beta) \\\\[2pt] Y &\\stackrel{\\text{indep}}{\\sim} \\text{Gamma}(b, \\beta) \\\\[2pt] \\frac{X}{X+Y} &\\sim \\text{Beta}(a, b) \\end{aligned}",
+    points: [
+      ["Rate", "Cancels: the share $\\frac{X}{X+Y}$ does not depend on the unit of time, only on $a$ and $b$."],
+      ["Use", "The origin of the beta as a distribution over proportions, and why $a$ and $b$ act like counts."]
+    ]
   },
   "beta-uniform": {
     title: "Beta → Uniform",
-    formula: "X \\sim \\text{Beta}(1,1) \\implies X \\sim \\text{Uniform}(0,1)",
-    note: "The uniform distribution is the flat member of the beta family, occurring at a = b = 1 and nowhere else. In Bayesian terms this is the prior distribution expressing no information about a probability: having observed neither successes nor failures, every value in (0, 1) is equally credible. Observing data increments a and b, which bends the density towards whichever outcome predominates. The uniform distribution is therefore not a special case appended to the family but its natural starting point."
+    formula: "\\text{Beta}(1,1) = \\text{Uniform}(0,1)",
+    points: [
+      ["Prior", "$\\text{Beta}(1,1)$ is the no-information prior for a probability: every value in $(0,1)$ is equally credible."],
+      ["Updating", "Each success adds $1$ to $a$, each failure $1$ to $b$, bending the density towards the more frequent outcome."]
+    ]
   },
   "beta-normal": {
     title: "Beta → Normal",
-    formula: "\\begin{aligned} X &\\sim \\text{Beta}(a, b) \\\\[2pt] X &\\xrightarrow{\\ d\\ } N\\!\\left(\\tfrac{a}{a+b},\\ \\tfrac{ab}{(a+b)^2(a+b+1)}\\right) \\quad (a, b \\to \\infty) \\end{aligned}",
-    note: "As both parameters grow, the beta distribution concentrates around a/(a + b) and its shape becomes symmetric and approximately normal. Read as a posterior distribution, this is the familiar statement that a probability estimated from a large quantity of data has approximately normal uncertainty. Convergence is fastest when a and b grow at similar rates, and the approximation is poor when either stays small or when the mean lies near an endpoint, since the beta distribution is confined to (0, 1) while a normal distribution is not."
+    formula: "\\begin{aligned} X &\\sim \\text{Beta}(a, b) \\\\[2pt] \\mu &= \\dfrac{a}{a+b} \\\\[2pt] \\sigma^2 &= \\dfrac{ab}{(a+b)^2(a+b+1)} \\\\[2pt] \\frac{X - \\mu}{\\sigma} &\\xrightarrow[a, b \\to \\infty]{\\ d\\ } N(0,1) \\end{aligned}",
+    points: [
+      ["Bayesian reading", "A probability estimated from much data has approximately normal uncertainty."],
+      ["Accuracy", "Best when $a$ and $b$ grow at similar rates. Poor if either stays small or the mean is near $0$ or $1$: the beta lives on $(0,1)$, the normal does not."]
+    ]
   },
   "gamma-normal": {
     title: "Gamma → Normal",
-    formula: "\\begin{aligned} X &\\sim \\text{Gamma}(\\alpha, \\beta) \\\\[2pt] \\frac{X - \\alpha/\\beta}{\\sqrt{\\alpha}/\\beta} &\\xrightarrow{\\ d\\ } N(0,1) \\quad (\\alpha \\to \\infty) \\end{aligned}",
-    note: "For integer shape parameters the gamma distribution is a sum of α independent exponential variables, so the central limit theorem applies with α in the role of the sample size, and the result extends to non-integer shapes as well. The skew that dominates at small α, inherited from the sharp peak of the exponential density at zero, is averaged away as the individual waits are combined. Because the chi-squared distribution is a member of the gamma family, the same argument explains why a chi-squared distribution with many degrees of freedom is approximately normal."
+    formula: "\\begin{aligned} X &\\sim \\text{Gamma}(\\alpha, \\beta) \\\\[2pt] \\frac{X - \\alpha/\\beta}{\\sqrt{\\alpha}/\\beta} &\\xrightarrow[\\alpha \\to \\infty]{\\ d\\ } N(0,1) \\end{aligned}",
+    points: [
+      ["Structure", "For integer $\\alpha$, a sum of $\\alpha$ independent $\\text{Exponential}(\\beta)$ variables: the central limit theorem with $\\alpha$ as the sample size. It holds for non-integer $\\alpha$ too."],
+      ["Special case", "$\\chi^2(k) = \\text{Gamma}(k/2,\\ 1/2)$, so $\\chi^2(k)$ is approximately normal for large $k$."]
+    ]
   },
   "normal-lognormal": {
     title: "Normal → Lognormal",
-    formula: "X \\sim N(\\mu, \\sigma^2) \\implies e^{X} \\sim \\text{Lognormal}(\\mu, \\sigma^2)",
-    note: "Exponentiation converts sums into products, and that single fact is the substance of the relationship. Wherever the central limit theorem gives a normal distribution for an accumulation of additive effects, it gives a lognormal distribution for an accumulation of multiplicative ones, such as repeated percentage growth, successive fragmentation, or compounding returns. The parameters carry over unchanged but now describe the logarithm of the quantity, which is why the mean of a lognormal variable, exp(μ + σ²/2), lies above its median exp(μ) rather than on it."
+    formula: "\\begin{aligned} X &\\sim N(\\mu, \\sigma^2) \\\\[2pt] e^X &\\sim \\text{Lognormal}(\\mu, \\sigma^2) \\end{aligned}",
+    points: [
+      ["Use", "$\\exp$ turns sums into products, so multiplicative effects (percentage growth, fragmentation, compounding returns) give a lognormal as additive ones give a normal."],
+      ["Parameters", "$\\mu$ and $\\sigma^2$ describe $\\ln X$. Mean $e^{\\mu + \\sigma^2/2}$, median $e^{\\mu}$."]
+    ]
   },
   "normal-cauchy": {
     title: "Normal → Cauchy",
     formula: "\\begin{aligned} X, Y &\\stackrel{\\text{iid}}{\\sim} N(0,1) \\\\[2pt] \\frac{X}{Y} &\\sim \\text{Cauchy}(0,1) \\end{aligned}",
-    note: "The ratio of two independent standard normal variables follows a Cauchy distribution, which has neither a mean nor a variance despite being built from two of the best-behaved objects in probability theory. The denominator is responsible: it takes values near zero often enough that the ratio attains very large values with non-negligible probability, and the resulting tail is too heavy for the integral defining the mean to converge. The relationship is a standard illustration that ratios of estimates can behave far worse than the estimates from which they are formed."
+    points: [
+      ["Moments", "None, although $X$ and $Y$ have all moments."],
+      ["Tails", "$Y$ is near $0$ often enough that $X/Y$ is very large with non-negligible probability: too heavy a tail for a mean."],
+      ["Ratios of estimates", "Can behave far worse than the estimates themselves."]
+    ]
   },
   "normal-chisquared": {
     title: "Normal → Chi-squared",
-    formula: "Z_1,\\dots,Z_k \\stackrel{\\text{iid}}{\\sim} N(0,1) \\implies Z_1^2+\\cdots+Z_k^2 \\sim \\chi^2(k)",
-    note: "Squaring removes the sign, so the sum measures total deviation without regard to direction, which is exactly what a sample variance computes. This is how the chi-squared distribution enters statistical inference: it is the distribution of the sum of squared residuals when the underlying errors are normal, and therefore the reference distribution for any test concerning a variance. The parameter k counts the genuinely free squared terms, which is why estimating a mean from the same data costs one degree of freedom."
+    formula: "\\begin{aligned} Z_1, \\dots, Z_k &\\stackrel{\\text{iid}}{\\sim} N(0,1) \\\\[2pt] Z_1^2 + \\cdots + Z_k^2 &\\sim \\chi^2(k) \\end{aligned}",
+    points: [
+      ["Use", "The sum of squared residuals under normal errors: the reference distribution for tests about a variance."],
+      ["Degrees of freedom", "$k$ counts the free squared terms; estimating the mean from the same data costs one."]
+    ]
   },
   "gamma-chisquared": {
     title: "Gamma ↔ Chi-squared",
-    formula: "\\text{Gamma}\\!\\left(\\tfrac{k}{2},\\ \\tfrac{1}{2}\\right) = \\chi^2(k) \\quad \\text{for every } k",
-    note: "This relationship is an exact identity rather than an approximation. The chi-squared distribution is not an independent distribution so much as a single curve through the gamma family, at shape k/2 and rate 1/2. Results already established for the gamma distribution therefore transfer directly: its normal limit at large shape becomes the normal limit at large degrees of freedom, and the fact that independent gamma variables with a common rate add becomes the fact that independent chi-squared variables add their degrees of freedom."
+    formula: "\\text{Gamma}\\!\\left(\\tfrac{k}{2},\\ \\tfrac{1}{2}\\right) = \\chi^2(k)",
+    points: [
+      ["Type", "An exact identity: $\\chi^2$ is the gamma family at shape $k/2$, rate $1/2$."],
+      ["Transferred results", "Normal limit at large shape → at large $k$. Independent gammas with a common rate add shapes → independent $\\chi^2$ add degrees of freedom."]
+    ]
   },
   "chisquared-exponential": {
     title: "Chi-squared → Exponential",
     formula: "\\chi^2(2) = \\text{Gamma}(1, \\tfrac{1}{2}) = \\text{Exponential}(\\tfrac{1}{2})",
-    note: "At two degrees of freedom the chi-squared distribution is exactly an exponential distribution of rate 1/2. This follows immediately from the gamma identity, since a shape of k/2 equals 1 when k = 2 and a gamma distribution of shape 1 is exponential. The special case is worth noting on its own, because it means the squared length of a two-dimensional standard normal vector has a memoryless distribution. That fact underlies the Box–Muller transform, which generates normal samples from uniform ones."
+    points: [
+      ["Derivation", "$k = 2$ gives shape $k/2 = 1$, and a gamma of shape $1$ is exponential."],
+      ["Use", "$Z_1^2 + Z_2^2$, the squared length of a 2-D standard normal vector, is exponential: the basis of the Box–Muller transform."]
+    ]
   },
   "chisquared-studentt": {
     title: "Chi-squared → Student's t",
-    formula: "\\begin{aligned} Z &\\sim N(0,1), \\quad V \\sim \\chi^2(k), \\quad \\text{independent} \\\\[2pt] \\frac{Z}{\\sqrt{V/k}} &\\sim t(k) \\end{aligned}",
-    note: "The numerator is the standardised quantity that would be used if the variance were known, while the denominator is an estimate of the scale, carrying its own sampling error. Dividing by a random denominator rather than a constant is what thickens the tails: an unusually small variance estimate inflates the ratio, so large values occur more often than they would under a normal distribution. As the degrees of freedom increase the estimate stabilises and the correction becomes negligible."
+    formula: "\\begin{aligned} Z &\\stackrel{\\text{indep}}{\\sim} N(0,1) \\\\[2pt] V &\\stackrel{\\text{indep}}{\\sim} \\chi^2(k) \\\\[2pt] \\frac{Z}{\\sqrt{V/k}} &\\sim t(k) \\end{aligned}",
+    points: [
+      ["Numerator", "$Z$, the standardised quantity if the variance were known."],
+      ["Denominator", "$\\sqrt{V/k}$, an estimate of the scale, with its own sampling error."],
+      ["Tails", "Heavier than normal: a small variance estimate inflates the ratio."],
+      ["Large $k$", "The estimate stabilises and the correction vanishes."]
+    ]
   },
   "chisquared-f": {
     title: "Chi-squared → F-distribution",
-    formula: "\\begin{aligned} U &\\sim \\chi^2(d_1), \\quad V \\sim \\chi^2(d_2), \\quad \\text{independent} \\\\[2pt] \\frac{U/d_1}{V/d_2} &\\sim F(d_1,d_2) \\end{aligned}",
-    note: "Each chi-squared variable is divided by its own degrees of freedom before the ratio is formed, so the quantities being compared are two variance estimates rather than two raw sums of squares. Without that scaling the ratio would grow merely because one group contained more observations. With it, the expected value sits near 1 when the two variances are genuinely equal, which is what makes the F-distribution usable as a test statistic in the analysis of variance."
+    formula: "\\begin{aligned} U &\\stackrel{\\text{indep}}{\\sim} \\chi^2(d_1) \\\\[2pt] V &\\stackrel{\\text{indep}}{\\sim} \\chi^2(d_2) \\\\[2pt] \\frac{U/d_1}{V/d_2} &\\sim F(d_1, d_2) \\end{aligned}",
+    points: [
+      ["Scaling", "Each $\\chi^2$ is divided by its degrees of freedom, so the ratio compares two variance estimates; unscaled, it would grow with group size."],
+      ["Use", "Its expected value is near $1$ when the variances are equal: the test statistic of the analysis of variance."]
+    ]
   },
   "f-chisquared": {
     title: "F → Chi-squared",
-    formula: "\\begin{aligned} X &\\sim F(d_1, d_2) \\\\[2pt] d_1 X &\\xrightarrow{\\ d\\ } \\chi^2(d_1) \\quad (d_2 \\to \\infty) \\end{aligned}",
-    note: "The denominator of an F-distributed variable is a variance estimate built from d₂ degrees of freedom. As d₂ grows that estimate converges to the true value, so the random denominator becomes effectively constant and the distribution collapses to its numerator alone, a chi-squared variable on d₁ degrees of freedom after rescaling. The argument parallels the convergence of Student's t to the normal distribution, one level up: in both cases, once the denominator stops being uncertain, the correction for having estimated it disappears."
+    formula: "\\begin{aligned} X &\\sim F(d_1, d_2) \\\\[2pt] d_1 X &\\xrightarrow[d_2 \\to \\infty]{\\ d\\ } \\chi^2(d_1) \\end{aligned}",
+    points: [
+      ["Limit", "As $d_2 \\to \\infty$, the denominator $V/d_2 \\to 1$, leaving the numerator."],
+      ["Analogy", "As for $t(k) \\to N(0,1)$: once the estimated scale is exact, the correction disappears."]
+    ]
   },
   "studentt-cauchy": {
     title: "Student's t → Cauchy",
     formula: "t(1) = \\text{Cauchy}(0,1)",
-    note: "With one degree of freedom the variance estimate in the denominator is as unreliable as it can be, consisting of a single squared normal variable that is frequently near zero, and the resulting tails are heavy enough that the mean ceases to exist. The distribution is then exactly Cauchy. Taken together with the limit to the normal distribution, this brackets the whole family: t with one degree of freedom has no mean, t with infinitely many is normal, and each finite value in between has progressively more of its moments defined."
+    points: [
+      ["Tails", "At $k = 1$ the scale estimate is a single squared normal, often near $0$; the mean does not exist."],
+      ["Moments", "$t(k)$ has moments of order below $k$: none at $k = 1$, all as $k \\to \\infty$."]
+    ]
   },
   "studentt-normal": {
     title: "Student's t → Normal",
-    formula: "\\begin{aligned} X &\\sim t(k) \\\\[2pt] X &\\xrightarrow{\\ d\\ } N(0,1) \\quad (k \\to \\infty) \\end{aligned}",
-    note: "As the degrees of freedom grow, the variance estimate in the denominator concentrates on the true value, the denominator becomes effectively constant, and the ratio is left as a plain standard normal variable. Convergence is rapid in practice: by about k = 30 the two distributions differ little enough that the normal critical value of 1.96 is commonly used in place of the corresponding t value, which is the origin of the familiar rule of thumb about large samples."
+    formula: "\\begin{aligned} X_k &\\sim t(k) \\\\[2pt] X_k &\\xrightarrow[k \\to \\infty]{\\ d\\ } N(0,1) \\end{aligned}",
+    points: [
+      ["Limit", "As $k \\to \\infty$ the scale estimate converges and the denominator becomes constant."],
+      ["Rule of thumb", "By $k \\approx 30$, the normal critical value $1.96$ replaces the $t$ value."]
+    ]
   },
   "studentt-f": {
     title: "Student's t → F",
-    formula: "X \\sim t(k) \\implies X^2 \\sim F(1, k)",
-    note: "The square of a t-distributed variable follows an F-distribution with one numerator degree of freedom. The two are therefore the same test expressed differently: a two-sided t-test on a single parameter and an F-test on that same parameter are algebraically identical, which is why regression software may report either without inconsistency. Squaring discards the sign, so the F-test is inherently two-sided and cannot indicate the direction in which an effect went."
+    formula: "\\begin{aligned} X &\\sim t(k) \\\\[2pt] X^2 &\\sim F(1, k) \\end{aligned}",
+    points: [
+      ["Tests", "A two-sided $t$-test on one parameter and the $F$-test on it are identical; regression software may report either."],
+      ["Direction", "The $F$-test is two-sided: squaring loses the sign of the effect."]
+    ]
   }
 })
 ```
@@ -870,10 +1042,12 @@ graph; ?embed=details&sel=<node|edge>:<id> shows one selection's details. -->
 ```{ojs}
 // detail: the math blurb. For a distribution, its density formula plus its
 // parameter ranges and moments; for an edge, the identity relating the two
-// distributions. Both end with a plain-language note.
+// distributions. Both are followed by short labelled points, set the way a
+// textbook sets remarks: an italic run-in label, then a sentence or two with
+// inline math.
 detail = {
   const panel = document.createElement("div")
-  panel.className = "ojs-panel"
+  panel.className = "ojs-detail"
 
   if (!selection) {
     const empty = document.createElement("em")
@@ -906,11 +1080,63 @@ detail = {
   // Only a distribution carries a second line, of support and moments.
   if (info.statsFormula) addMath(info.statsFormula)
 
-  const note = document.createElement("span")
-  note.className = "ojs-detail-note"
-  note.textContent = info.note
-  panel.append(note)
+  const list = document.createElement("ul")
+  list.className = "ojs-detail-points"
+  for (const [label, text] of info.points) {
+    const item = document.createElement("li")
+    const run = document.createElement("em")
+    run.className = "ojs-detail-label"
+    run.append(...richText(label), ".")
+    item.append(run, " ", ...richText(text))
+    list.append(item)
+  }
+  panel.append(list)
   return panel
+}
+```
+
+```{ojs}
+//| output: false
+// richText: the points' markup -- $$...$$ for a centred display line, $...$
+// for inline TeX, *...* for an emphasised (defined) term, everything else
+// plain text. Returns nodes, not HTML, so the prose can never inject markup.
+richText = (source) => {
+  const nodes = []
+  source.split("$$").forEach((chunk, d) => {
+    if (d % 2 === 1) {
+      const line = document.createElement("div")
+      line.className = "ojs-detail-math"
+      line.append(tex.block`${chunk}`)
+      nodes.push(line)
+    } else {
+      nodes.push(...richInline(chunk))
+    }
+  })
+  return nodes
+}
+```
+
+```{ojs}
+//| output: false
+richInline = (source) => {
+  const nodes = []
+  source.split("$").forEach((part, i) => {
+    if (i % 2 === 1) {
+      nodes.push(tex`${part}`)
+      return
+    }
+    part.split("*").forEach((piece, j) => {
+      if (!piece) return
+      if (j % 2 === 1) {
+        const em = document.createElement("em")
+        em.textContent = piece
+        nodes.push(em)
+      } else {
+        nodes.push(document.createTextNode(piece))
+      }
+    })
+  })
+  return nodes
 }
 ```
 

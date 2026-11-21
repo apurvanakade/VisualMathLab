@@ -22,7 +22,7 @@ Authors: Apurva Nakade
 
 ```{ojs}
 //| output: false
-// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.numerical.lagrangeQuadratic, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.numerical.simpsonEstimate, VM.ui.applyExampleParams.
+// VM is the shared utility library, loaded on every page by the mathviz extension. This page uses VM.numerical.lagrangeQuadratic, VM.expressions.makeFunction, VM.expressions.makeNumber, VM.plotting.paddedRange, VM.ui.renderTable, VM.ui.applyExampleParams (and, through method.js, VM.numerical.simpsonEstimate).
 VM = window.VM
 ```
 
@@ -61,33 +61,10 @@ traceColors = new Map([
 
 ```{ojs}
 //| output: false
-// examples backs the "Try an example" dropdown near the top controls.
-examples = [
-  {
-    title: "Oscillation near an endpoint",
-    params: {max: "15", f: "sin(1 / (x + 0.3))", a: "0", b: "pi"}
-  },
-  {
-    title: "Challenging oscillations",
-    params: {max: "15", f: "sin(1/x)", a: "0.05", b: "1"}
-  },
-  {
-    title: "Narrow spike",
-    params: {max: "15", f: "1/(0.01 + x^2)", a: "-1", b: "1"}
-  },
-  {
-    title: "Steep transition",
-    params: {max: "15", f: "tanh(20*(x - 0.2))", a: "-1", b: "1"}
-  },
-  {
-    title: "Nonsmooth corner",
-    params: {max: "15", f: "abs(x)", a: "-2", b: "2"}
-  },
-  {
-    title: "Endpoint behavior",
-    params: {max: "15", f: "sqrt(x)", a: "0", b: "1"}
-  }
-]
+// The examples, the adaptive rule, the reference integral and the
+// tolerance sweep behind the convergence plots live in method.js, which
+// method.test.js runs under Node.
+import {examples, adaptiveSimpson, referenceIntegral, toleranceSweep, toleranceExponents, logPoints, tolerancePoints} from "./method.js"
 ```
 
 <div class="vm-app">
@@ -99,7 +76,7 @@ examples = [
 ```{ojs}
 viewof fText = {
   const params = new URLSearchParams(window.location.search)
-  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "sin(1 / (x + 0.3))", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
+  const fTextInput = Inputs.text({label: "Function f(x)", value: params.get("f") ?? "tanh(20*(x - 1/pi))", placeholder: "Example: sin(x), x^3 - x, 1 / (1 + x^2)"})
   fTextInput.classList.add("ojs-fill")
   fTextInput.dataset.exampleField = "f"
   return fTextInput
@@ -125,7 +102,7 @@ viewof plotTrigger = {
 ```{ojs}
 viewof a0 = {
   const params = new URLSearchParams(window.location.search)
-  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "0", placeholder: "Example: 0, -pi"})
+  const a0Input = Inputs.text({label: "Left endpoint a", value: params.get("a") ?? "-1", placeholder: "Example: 0, -pi"})
   a0Input.dataset.exampleField = "a"
   return a0Input
 }
@@ -134,7 +111,7 @@ viewof a0 = {
 ```{ojs}
 viewof b0 = {
   const params = new URLSearchParams(window.location.search)
-  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "pi", placeholder: "Example: pi, 3.14"})
+  const b0Input = Inputs.text({label: "Right endpoint b", value: params.get("b") ?? "1", placeholder: "Example: pi, 3.14"})
   b0Input.dataset.exampleField = "b"
   return b0Input
 }
@@ -288,88 +265,46 @@ showPartitionPoints = traces.includes("Partition points")
 
 ```{ojs}
 //| output: false
-// result: runs adaptive Simpson quadrature on [a, b] at the current
-// tolerance ε (recursing until each leaf's local error estimate is within
-// its share of ε, or maxDepth is reached).
+// result: runs adaptive Simpson quadrature (method.js's adaptiveSimpson) on
+// [a, b] at the current tolerance ε.
 //   leaves — array of { a, b, mid, fa, fmid, fb, estimate, errorEstimate,
 //     depth, width }, one entry per accepted subinterval, left to right
 //   f — parsed function, reused for curve sampling in setup
+//   lo, hi — the interval, endpoints in increasing order
 //   totalEstimate — sum of leaf estimates (the adaptive quadrature's answer)
 //   totalErrorEstimate — sum of leaf Richardson error estimates
-//   trueIntegral — reference integral via a very fine composite Simpson's rule
+//   trueIntegral — reference integral (method.js's referenceIntegral)
 //   actualError — |totalEstimate - trueIntegral|
 result = {
   const math = window.math
-
   const f = VM.expressions.makeFunction(math, committed.fText)
-  const fallback = x => NaN
-
-  if (!f) return {leaves: [], f: fallback, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  const empty = {leaves: [], f: x => NaN, lo: NaN, hi: NaN, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  if (!f) return empty
 
   const a = committed.a0
   const b = committed.b0
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {leaves: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {...empty, f}
 
   const lo = Math.min(a, b)
   const hi = Math.max(a, b)
+  const run = adaptiveSimpson(f, lo, hi, tolerance, maxDepth)
+  if (!run) return {...empty, f}
 
-  const fa = f(lo)
-  const fb = f(hi)
-  if (!Number.isFinite(fa) || !Number.isFinite(fb)) return {leaves: [], f, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
+  const trueIntegral = referenceIntegral(f, lo, hi)
+  const actualError = Math.abs(run.totalEstimate - trueIntegral)
+  return {leaves: run.leaves, f, lo, hi, totalEstimate: run.totalEstimate, totalErrorEstimate: run.totalErrorEstimate, trueIntegral, actualError}
+}
+```
 
-  const depthLimit = maxDepth
-  // Safety valve: caps total leaves so a pathological (e.g. non-converging
-  // or discontinuous) function can't hang the browser with an exponential
-  // blow-up of subdivisions.
-  const maxLeaves = 4000
-
-  // Simpson's rule on [x0, x1], reusing the already-evaluated endpoint
-  // values y0, y1 and computing only the new midpoint value.
-  const simpsonPiece = (x0, x1, y0, y1) => {
-    const mid = (x0 + x1) / 2
-    const ymid = f(mid)
-    const value = (x1 - x0) / 6 * (y0 + 4 * ymid + y1)
-    return {mid, ymid, value}
-  }
-
-  const leaves = []
-
-  const recurse = (a0, b0, fa0, fmid0, fb0, whole, tol, depth) => {
-    const c = (a0 + b0) / 2
-
-    if (leaves.length >= maxLeaves) {
-      leaves.push({a: a0, b: b0, mid: c, fa: fa0, fmid: fmid0, fb: fb0, estimate: whole, errorEstimate: 0, depth, width: b0 - a0})
-      return
-    }
-
-    const left = simpsonPiece(a0, c, fa0, fmid0)
-    const right = simpsonPiece(c, b0, fmid0, fb0)
-    const combined = left.value + right.value
-    const errorEst = (combined - whole) / 15
-
-    if (!Number.isFinite(combined) || depth >= depthLimit || Math.abs(combined - whole) <= 15 * tol) {
-      leaves.push({a: a0, b: b0, mid: c, fa: fa0, fmid: fmid0, fb: fb0, estimate: combined + errorEst, errorEstimate: Math.abs(errorEst), depth, width: b0 - a0})
-      return
-    }
-
-    recurse(a0, c, fa0, left.ymid, fmid0, left.value, tol / 2, depth + 1)
-    recurse(c, b0, fmid0, right.ymid, fb0, right.value, tol / 2, depth + 1)
-  }
-
-  const whole0 = simpsonPiece(lo, hi, fa, fb)
-  recurse(lo, hi, fa, whole0.ymid, fb, whole0.value, tolerance, 0)
-
-  let totalEstimate = 0
-  let totalErrorEstimate = 0
-  for (const leaf of leaves) {
-    totalEstimate += leaf.estimate
-    totalErrorEstimate += leaf.errorEstimate
-  }
-
-  const trueIntegral = VM.numerical.simpsonEstimate(f, lo, hi, 4000)
-  const actualError = Math.abs(totalEstimate - trueIntegral)
-
-  return {leaves, f, totalEstimate, totalErrorEstimate, trueIntegral, actualError}
+```{ojs}
+//| output: false
+// sweep reruns the adaptive rule at every tolerance on the slider's range
+// (and the same rule on equal panels at equal cost) for the convergence
+// plots. It doesn't depend on the slider, so moving it only moves the
+// plots' current-ε markers.
+sweep = {
+  if (!Number.isFinite(result.lo)) return {rows: [], trueIntegral: NaN}
+  return toleranceSweep(result.f, result.lo, result.hi, maxDepth)
 }
 ```
 
@@ -573,7 +508,7 @@ stats = {
   const exp = v => Number.isFinite(v) ? v.toExponential(3) : "—"
   return VM.ui.statRow([
     {label: "Adaptive estimate", value: fmt(result.totalEstimate)},
-    {label: "Reference integral", value: fmt(result.trueIntegral), title: "Composite Simpson's rule with 4000 panels"},
+    {label: "Reference integral", value: fmt(result.trueIntegral), title: "Adaptive Simpson's rule run to near machine precision"},
     {label: "Actual error", value: exp(result.actualError)},
     {label: "Estimated error", value: exp(result.totalErrorEstimate), title: "The sum of every panel's error estimate E"},
     {label: "Panels", value: String(result.leaves.length)}
@@ -603,10 +538,134 @@ $$
 
 It is then compared with the tolerance $\varepsilon$ set by the slider:
 
-- **Accept** if $E \le \varepsilon$: keep $[p,q]$ as a panel of the final partition, using the finer estimate.
+- **Accept** if $E \le \varepsilon$: keep $[p,q]$ as a panel of the final partition, using the finer estimate $S[p,m] + S[m,q]$.
 - **Refine** if $E > \varepsilon$: bisect at $m$ and recurse on each half with $\varepsilon/2$, so the total error stays bounded by the original tolerance.
 
 A larger $\varepsilon$ means fewer, wider panels and a coarser partition; a smaller $\varepsilon$ means more panels, clustered exactly where $f$ is hardest to approximate.
+
+:::: {.callout-note collapse="false" title="Convergence plots"}
+
+::: {layout-ncol=2}
+
+```{ojs}
+// toleranceErrorPlot draws the actual and the estimated error as multiples
+// of the tolerance they were run at, log₁₀ (error / ε) against the exponent
+// e. The line at 0 is error = ε and the band above it is where ε was
+// missed. Plotting the errors themselves would show three parallel lines:
+// the stopping rule ties both to ε. A labelled vertical rule marks the
+// slider's ε;
+// a grey band, named along its edge, the tolerances at which some panel
+// stopped at Max depth.
+toleranceErrorPlot = {
+  const actualName = "Actual error / ε"
+  const estimatedName = "Estimated error Σ E / ε"
+  const actual = tolerancePoints(sweep.rows, sweep.trueIntegral, "adaptiveError")
+  const estimated = tolerancePoints(sweep.rows, sweep.trueIntegral, "estimatedError")
+  const firstExponent = toleranceExponents[0]
+  const lastExponent = toleranceExponents[toleranceExponents.length - 1]
+
+  // The y range always spans [-2, 1], so the band above 0 never fills the
+  // chart, and grows to hold every point.
+  let top = 1
+  let bottom = -2
+  for (const point of actual.concat(estimated)) {
+    top = Math.max(top, point.y + 0.3)
+    bottom = Math.min(bottom, point.y - 0.3)
+  }
+
+  const marks = [
+    Plot.rect([{x1: firstExponent, x2: lastExponent, y1: 0, y2: top}], {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: chartColors.alt, fillOpacity: 0.12}),
+    Plot.text([{x: firstExponent, y: top}], {x: "x", y: "y", text: () => "error > ε", fill: chartColors.alt, textAnchor: "start", lineAnchor: "top", dx: 4, dy: 4}),
+    Plot.ruleY([0], {stroke: chartColors.ink, strokeDasharray: "4,3"}),
+    Plot.ruleX([tolExponent], {stroke: chartColors.muted}),
+    Plot.text([tolExponent], {x: d => d, frameAnchor: "top", text: () => "current ε", fill: chartColors.muted, textAnchor: tolExponent > 8 ? "end" : "start", dx: tolExponent > 8 ? -4 : 4, dy: 16}),
+    Plot.line(estimated, {x: "exponent", y: "y", stroke: () => estimatedName}),
+    Plot.dot(estimated, {x: "exponent", y: "y", fill: () => estimatedName, r: 3}),
+    Plot.line(actual, {x: "exponent", y: "y", stroke: () => actualName}),
+    Plot.dot(actual, {x: "exponent", y: "y", fill: () => actualName, r: 3})
+  ]
+
+  // A panel accepted only because it reached Max depth may miss its share
+  // of ε. Mark the first ε at which that happens.
+  let firstLimited = null
+  for (const row of sweep.rows) {
+    if (row.depthLimited) {
+      firstLimited = row
+      break
+    }
+  }
+  if (firstLimited) {
+    // A shaded band over every ε from there on, named along its left edge.
+    const labelInside = firstLimited.exponent <= lastExponent - 0.5
+    marks.push(
+      Plot.rect([{x1: firstLimited.exponent, x2: lastExponent, y1: bottom, y2: top}], {x1: "x1", x2: "x2", y1: "y1", y2: "y2", fill: chartColors.muted, fillOpacity: 0.18}),
+      Plot.ruleX([firstLimited.exponent], {stroke: chartColors.muted}),
+      Plot.text([firstLimited], {x: "exponent", y: () => bottom, text: () => "stopped at Max depth", fill: chartColors.ink, rotate: -90, textAnchor: "start", lineAnchor: labelInside ? "top" : "bottom", dx: labelInside ? 4 : -4, dy: -6})
+    )
+  }
+
+  const colorDomain = [actualName, estimatedName]
+  const colorRange = [chartColors.ok, chartColors.warn]
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "e (ε = 10⁻ᵉ)", domain: [firstExponent, lastExponent]},
+    y: {label: "log₁₀ (error / ε)", domain: [bottom, top]},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const container = document.createElement("div")
+  container.append(chart, Plot.legend({color: {domain: colorDomain, range: colorRange}}))
+  return container
+}
+```
+
+```{ojs}
+// costErrorPlot draws log₁₀ error against log₁₀ (evaluations of f) for the
+// adaptive rule and the same rule on a uniform grid at equal cost, one point
+// per tolerance, with a labelled vertical rule at the slider's ε, as in
+// toleranceErrorPlot (both curves have a point there, at the same cost).
+costErrorPlot = {
+  const adaptiveName = "Adaptive panels"
+  const uniformName = "Uniform panels, same cost"
+  const adaptive = logPoints(sweep.rows, sweep.trueIntegral, "evaluations", "adaptiveError")
+  const uniform = logPoints(sweep.rows, sweep.trueIntegral, "evaluations", "uniformError")
+  // Both curves have a point at the slider's ε, at the same cost.
+  const current = []
+  for (const point of adaptive) {
+    if (point.exponent === tolExponent) current.push(point.x)
+  }
+  const lastCost = adaptive.length ? adaptive[adaptive.length - 1].x : 0
+  const labelLeft = current.length > 0 && current[0] > 0.75 * lastCost
+
+  const marks = [
+    Plot.ruleX(current, {stroke: chartColors.muted}),
+    Plot.text(current, {x: d => d, frameAnchor: "top", text: () => "current ε", fill: chartColors.muted, textAnchor: labelLeft ? "end" : "start", dx: labelLeft ? -4 : 4, dy: 4}),
+    Plot.line(uniform, {x: "x", y: "y", stroke: () => uniformName}),
+    Plot.dot(uniform, {x: "x", y: "y", fill: () => uniformName, r: 3}),
+    Plot.line(adaptive, {x: "x", y: "y", stroke: () => adaptiveName}),
+    Plot.dot(adaptive, {x: "x", y: "y", fill: () => adaptiveName, r: 3})
+  ]
+
+  const colorDomain = [adaptiveName, uniformName]
+  const colorRange = [chartColors.ok, chartColors.alt]
+  const chart = Plot.plot({
+    width: 340, height: 300, marginLeft: 46,
+    x: {label: "log₁₀ evaluations of f"},
+    y: {label: "log₁₀ error"},
+    color: {domain: colorDomain, range: colorRange},
+    marks
+  })
+  const container = document.createElement("div")
+  container.append(chart, Plot.legend({color: {domain: colorDomain, range: colorRange}}))
+  return container
+}
+```
+
+:::
+
+"Same cost" means both rules evaluate $f$ the same number of times.
+
+::::
 
 :::: {.callout-note collapse="true" title="Partition table"}
 

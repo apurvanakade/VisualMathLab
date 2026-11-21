@@ -10,8 +10,9 @@
 // which its OJS cells import, and a method.test.js that runs every example
 // through them and checks the number the plot reports. These check that
 // each such page has both files, and that its examples only set fields the
-// page can apply. (A convergence plot that reports no number, like the
-// filter pages' running RMSE, needs neither.)
+// page can apply. A page with a method.js but no fitted order (adaptive
+// integration) gets the same checks. (A convergence plot that reports no
+// number, like the filter pages' running RMSE, needs neither file.)
 
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -48,8 +49,11 @@ function exampleFieldKeys (qmd) {
 const convergencePages = []
 for (const dir of appDirs()) {
   // A page reports an order or slope, or fits one (the _template starter
-  // draws its fitted line without a number).
-  if (/(order|slope) ≈|convergenceFit|VM\.numerical\.orderFrom/.test(read(path.join(dir, 'index.qmd')))) convergencePages.push(dir)
+  // draws its fitted line without a number), or keeps its method in a
+  // method.js anyway (adaptive integration, whose plots fit no order): the
+  // checks below hold for all of them.
+  if (fs.existsSync(path.join(repoRoot, dir, 'method.js')) ||
+    /(order|slope) ≈|convergenceFit|VM\.numerical\.orderFrom/.test(read(path.join(dir, 'index.qmd')))) convergencePages.push(dir)
 }
 
 test('the pages that report a convergence order are found', () => {

@@ -265,6 +265,23 @@ showPartitionPoints = traces.includes("Partition points")
 
 ```{ojs}
 //| output: false
+// integrand parses the committed formula and interval. It doesn't read the
+// tolerance, so sweep, which reads it instead of result, doesn't rerun when
+// the tolerance slider moves.
+//   f — parsed function, or null for an unparseable formula
+//   lo, hi — the interval, endpoints in increasing order (NaN when the
+//     endpoints aren't finite and distinct)
+integrand = {
+  const f = VM.expressions.makeFunction(window.math, committed.fText)
+  const a = committed.a0
+  const b = committed.b0
+  if (!f || !Number.isFinite(a) || !Number.isFinite(b) || a === b) return {f, lo: NaN, hi: NaN}
+  return {f, lo: Math.min(a, b), hi: Math.max(a, b)}
+}
+```
+
+```{ojs}
+//| output: false
 // result: runs adaptive Simpson quadrature (method.js's adaptiveSimpson) on
 // [a, b] at the current tolerance ε.
 //   leaves — array of { a, b, mid, fa, fmid, fb, estimate, errorEstimate,
@@ -276,17 +293,11 @@ showPartitionPoints = traces.includes("Partition points")
 //   trueIntegral — reference integral (method.js's referenceIntegral)
 //   actualError — |totalEstimate - trueIntegral|
 result = {
-  const math = window.math
-  const f = VM.expressions.makeFunction(math, committed.fText)
+  const {f, lo, hi} = integrand
   const empty = {leaves: [], f: x => NaN, lo: NaN, hi: NaN, totalEstimate: NaN, totalErrorEstimate: NaN, trueIntegral: NaN, actualError: NaN}
   if (!f) return empty
+  if (!Number.isFinite(lo)) return {...empty, f}
 
-  const a = committed.a0
-  const b = committed.b0
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) return {...empty, f}
-
-  const lo = Math.min(a, b)
-  const hi = Math.max(a, b)
   const run = adaptiveSimpson(f, lo, hi, tolerance, maxDepth)
   if (!run) return {...empty, f}
 
@@ -300,11 +311,11 @@ result = {
 //| output: false
 // sweep reruns the adaptive rule at every tolerance on the slider's range
 // (and the same rule on equal panels at equal cost) for the convergence
-// plots. It doesn't depend on the slider, so moving it only moves the
-// plots' current-ε markers.
+// plots. It reads integrand, not result, so it doesn't depend on the
+// slider: moving it only moves the plots' current-ε markers.
 sweep = {
-  if (!Number.isFinite(result.lo)) return {rows: [], trueIntegral: NaN}
-  return toleranceSweep(result.f, result.lo, result.hi, maxDepth)
+  if (!Number.isFinite(integrand.lo)) return {rows: [], trueIntegral: NaN}
+  return toleranceSweep(integrand.f, integrand.lo, integrand.hi, maxDepth)
 }
 ```
 

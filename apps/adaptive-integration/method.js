@@ -4,9 +4,10 @@
  * Authors: Apurva Nakade
  */
 
-// The Adaptive Integration page's examples, method, tolerance sweep and
-// convergence fit, imported by its OJS cells and by method.test.js, which
-// checks what its convergence plots show for every example. Uses
+// The Adaptive Integration page's examples, method, tolerance sweep and the
+// logPoints/tolerancePoints helpers its convergence plots draw (they fit no
+// order), imported by its OJS cells and by method.test.js, which checks
+// what those plots show for every example. Uses
 // VM.numerical.simpsonEstimate from the mathviz library.
 
 // examples backs the "Try an example" dropdown near the top controls.

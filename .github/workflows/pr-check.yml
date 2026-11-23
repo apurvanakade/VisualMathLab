@@ -54,8 +54,11 @@ jobs:
 
       # Playwright is not a dependency: scripts/playwright.mjs loads the
       # global copy, so a local checkout reuses its installed browsers.
+      # Pinned, like Quarto above: a new Playwright ships a new Chromium, and
+      # a layout check can pass on one and fail on the other. Bump it
+      # deliberately, with the local copy.
       - name: Install Playwright and its browser
-        run: npm install -g playwright && playwright install --with-deps chromium
+        run: npm install -g playwright@1.64.0 && playwright install --with-deps chromium
 
       - name: Structural tests
         run: npm test

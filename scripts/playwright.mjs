@@ -1,5 +1,5 @@
 // Playwright isn't a dependency: every script uses the one copy installed
-// globally (`npm install -g playwright && playwright install chromium`), so
+// globally (`npm install -g playwright@1.64.0 && playwright install chromium`), so
 // its browsers are already there and no checkout downloads its own.
 // An ES module `import 'playwright'` never looks in the global folder, so
 // resolve it here: NODE_PATH or a local install first, then `npm root -g`.
@@ -19,7 +19,7 @@ function load () {
     return require(path.join(root, 'playwright'))
   } catch {
     throw new Error(`Playwright isn't installed globally${root ? ` (looked in ${root})` : ''}. ` +
-      'Install it once: npm install -g playwright && playwright install chromium')
+      'Install it once: npm install -g playwright@1.64.0 && playwright install chromium')
   }
 }
 

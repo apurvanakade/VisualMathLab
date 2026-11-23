@@ -19,8 +19,9 @@
  * with no sidebar. A page's look without the rail must not depend on this
  * file being absent -- sidebar-rail.test.js fails any selector here
  * without the scope. In embed mode (html.vm-embed) the class stays but
- * only the page grid applies: the sidebar is hidden there, and its track
- * would otherwise push a framed app off-centre. Every other rule adds
+ * only the TOC-less page grid applies, on every page: the sidebar and the
+ * TOC are hidden there, and their tracks would otherwise push a framed app
+ * off-centre. Every other rule adds
  * :not(.vm-embed), after the state class it needs, if any.
  *
  * The page grid's widths come from the site's own `grid:` options: the
@@ -50,23 +51,49 @@
       [page-end] 5fr [screen-end-inset] var(--vm-rail-gutter, 1.5em) [screen-end] !important;
   }
 
-  /* ...except on a page with a table of contents. Quarto places
-   * #quarto-margin-sidebar at `grid-column: body-end / page-end`, which the
-   * rule above collapses onto one gutter, so the TOC laid out 26px wide.
-   * This restores Quarto's own right-hand margin tracks (the same 10/60/10%
-   * minmax split of the margin width its floating grid uses) for those
-   * pages only. :has(nav#TOC) rather than Quarto's `fullcontent` body
-   * class, which doesn't track whether a TOC exists. */
-  html.vm-sidebar-rail body.floating:has(nav#TOC) .page-columns,
-  html.vm-sidebar-rail body.docked:has(nav#TOC) .page-columns {
+  /* ...except on a page with a table of contents, which keeps a right-hand
+   * margin for it (the rule above collapses Quarto's margin tracks onto one
+   * gutter, where the TOC laid out 26px wide). The body column stays where
+   * a page without a TOC has it, centred in the window, and the TOC hangs
+   * in the space to its right: the right side track carries the TOC and has
+   * the margin's width (grid: margin-width) as its floor. Where the window
+   * has room, both side tracks are wider than that and equal, so moving
+   * between a page with a TOC and one without doesn't shift the text; where
+   * it doesn't, the left track gives up the difference and the column moves
+   * left only as far as the TOC needs. Beside a docked sidebar the left
+   * track can't give way (it has the panel's floor), so there the column
+   * narrows and the TOC keeps its width, as under Quarto's tracks, whose
+   * low growth limits filled before the column's. (Quarto's own 10/60/10% margin
+   * tracks, restored here before, centred the column and the TOC as a pair,
+   * which put the text half a margin left of a TOC-less page's at every
+   * width.) body-end keeps a gutter between the column and the margin, and
+   * page-end is the right track's far edge, so the margin sidebar's
+   * `body-end / page-end` placement, and a margin note's, span it.
+   * :has(nav#TOC) rather than Quarto's `fullcontent` body class, which
+   * doesn't track whether a TOC exists. Not in a frame: embed mode hides
+   * the TOC, and a track kept for it would hold the app left of centre, so
+   * a frame takes the TOC-less grid above. */
+  html.vm-sidebar-rail:not(.vm-embed) body.floating:has(nav#TOC) .page-columns,
+  html.vm-sidebar-rail:not(.vm-embed) body.docked:has(nav#TOC) .page-columns {
     grid-template-columns:
       [screen-start] var(--vm-rail-gutter, 1.5em) [screen-start-inset] var(--vm-rail-start-track, 5fr)
       [page-start page-start-inset body-start-outset body-start] var(--vm-rail-gutter, 1.5em)
       [body-content-start] minmax(0, calc(var(--vm-rail-body-width, 800px) - 2 * var(--vm-rail-gutter, 1.5em))) [body-content-end] var(--vm-rail-gutter, 1.5em)
-      [body-end] minmax(calc(0.1 * var(--vm-rail-margin-width, 250px)), calc(0.2 * var(--vm-rail-margin-width, 250px)))
-      [body-end-outset] minmax(calc(0.2 * var(--vm-rail-margin-width, 250px)), calc(0.6 * var(--vm-rail-margin-width, 250px)))
-      [page-end-inset] minmax(calc(0.1 * var(--vm-rail-margin-width, 250px)), calc(0.2 * var(--vm-rail-margin-width, 250px)))
-      [page-end] 5fr [screen-end-inset] var(--vm-rail-gutter, 1.5em) [screen-end] !important;
+      [body-end] var(--vm-rail-gutter, 1.5em)
+      [body-end-outset] minmax(var(--vm-rail-margin-width, 250px), 5fr)
+      [page-end-inset page-end screen-end-inset] var(--vm-rail-gutter, 1.5em) [screen-end] !important;
+  }
+}
+
+/* The TOC's box: from the gutter's far side, and no wider than the margin,
+ * so in a wide window its entries wrap at the margin's width rather than
+ * running the length of the side track. */
+@media (min-width: 992px) {
+  html.vm-sidebar-rail:not(.vm-embed) body.floating:has(nav#TOC) #quarto-margin-sidebar,
+  html.vm-sidebar-rail:not(.vm-embed) body.docked:has(nav#TOC) #quarto-margin-sidebar {
+    grid-column: body-end-outset / page-end;
+    width: var(--vm-rail-margin-width, 250px);
+    max-width: 100%;
   }
 }
 

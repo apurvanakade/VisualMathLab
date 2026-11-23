@@ -1,0 +1,25 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* Smooth scroll: a same-page link scrolls to its target instead of
+ * jumping. On by default; a site that sets `smooth-scroll: false` never
+ * loads this file.
+ *
+ * Both rules wait for html.vm-smooth-scroll, which smooth-scroll.js sets
+ * once it has measured Quarto's fixed navbar into --vm-scroll-offset: with
+ * `scroll-behavior: smooth` on the root, Quarto stops making room for the
+ * navbar itself (see the script's header), so the property must never be on
+ * without the padding.
+ *
+ * And both sit inside the media query. A reader whose OS asks for reduced
+ * motion keeps Quarto's jump, and Quarto's own navbar offset with it; the
+ * padding on top of that would leave room for the navbar twice. */
+@media (prefers-reduced-motion: no-preference) {
+  html.vm-smooth-scroll {
+    scroll-behavior: smooth;
+    scroll-padding-top: var(--vm-scroll-offset, 0px);
+  }
+}

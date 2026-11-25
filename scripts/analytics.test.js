@@ -8,7 +8,7 @@
 // wiring described in CLAUDE.md's "Analytics and consent" section:
 //   - _includes/analytics.html: the vendored minimal GA4 snippet, plus this
 //     project's local patches (tid, localhost guard, DNT/GPC guard, no
-//     query string in `dl`, empty searchKeys).
+//     query string in `dl` or `dr`, empty searchKeys).
 //   - _includes/consent.html: the consent gate and banner.
 //
 // This file checks two different things:

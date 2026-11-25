@@ -8,7 +8,7 @@
 // wiring described in CLAUDE.md's "Analytics and consent" section:
 //   - _includes/analytics.html: the vendored minimal GA4 snippet, plus this
 //     project's local patches (tid, localhost guard, DNT/GPC guard, no
-//     query string in `dl`, empty searchKeys).
+//     query string in `dl` or `dr`, empty searchKeys).
 //   - _includes/consent.html: the consent gate and banner.
 //
 // This file checks two different things:
@@ -198,7 +198,7 @@ test('consent.html: re-creates the gated script rather than mutating .type in pl
 // 2. Runtime behavior of the analytics snippet, in a stubbed DOM
 // -----------------------------------------------------------------------
 
-function runSnippet(hostname, { search = '', privacySignal = null } = {}) {
+function runSnippet(hostname, { search = '', referrer = '', privacySignal = null } = {}) {
   const store = new Map()
   const localStorage = {
     getItem: (k) => (store.has(k) ? store.get(k) : null),
@@ -217,7 +217,7 @@ function runSnippet(hostname, { search = '', privacySignal = null } = {}) {
   }
   const document = {
     title: 'Butcher Tableau',
-    referrer: '',
+    referrer,
     location,
     documentElement: { scrollHeight: 2000, clientHeight: 800, scrollTop: 0 },
     body: { scrollHeight: 2000, scrollTop: 0 },
@@ -268,6 +268,21 @@ test('analytics snippet: sends exactly one page_view on a real page, with correc
   assert.equal(params.get('dl'), 'https://www.visualmathlab.com/apps/butcher-tableau/')
   assert.equal(params.get('ep.search_term'), null, 'the "s" query param is a stage count here, not a search')
   assert.ok(store.get('cid_v4'), 'expected a client id to be generated and persisted')
+})
+
+test('analytics snippet: reported referrer has no query string or fragment', () => {
+  // With `referrer: same-origin`, the previous page of this site arrives
+  // whole, the visitor's math input included -- patch 7 in analytics.html.
+  const from = 'https://www.visualmathlab.com/apps/newton-method/'
+  const { beacons } = runSnippet('www.visualmathlab.com', { referrer: from + '?f=x%5E2-2&x0=1#top' })
+  assert.equal(new URL(beacons[0]).searchParams.get('dr'), from)
+  const none = runSnippet('www.visualmathlab.com')
+  assert.equal(new URL(none.beacons[0]).searchParams.get('dr'), null, 'no referrer, no dr')
+})
+
+test('analytics.html: dr is the stripped referrer, not document.referrer', () => {
+  assert.match(analyticsHtml, /dr:vmlReferrer\|\|0\[0\]/)
+  assert.doesNotMatch(analyticsHtml, /dr:t\.referrer/)
 })
 
 test('analytics snippet: registers scroll, click, and visibilitychange listeners', () => {

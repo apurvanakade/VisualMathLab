@@ -149,10 +149,22 @@ async function main() {
       check('cookies set', (await ctx.cookies()).length, 0)
       check('console errors', errors.length, 0)
       // Choice persists across navigation: no second banner, measurement continues.
-      await page.goto(`${base}/privacy.html`, { waitUntil: 'networkidle' })
+      // Followed by clicking the footer's Privacy link, not page.goto (which
+      // sends no referrer), so the next page_view carries a real same-origin
+      // referrer -- the page above, query string included -- and exercises
+      // the "dr drops the query string" local patch.
+      await Promise.all([
+        page.waitForURL('**/privacy.html', { timeout: 15000 }),
+        page.click('footer a[href$="privacy.html"]'),
+      ])
+      await page.waitForLoadState('networkidle')
       await page.waitForTimeout(300)
       check('no banner on next page', await page.locator('#vml-consent').isVisible(), false)
       check('measurement continues on next page', hits.length >= 2, true)
+      const next = hits.map((u) => new URLSearchParams(new URL(u).search))
+        .find((p) => p.get('en') === 'page_view' && /privacy\.html$/.test(p.get('dl') || ''))
+      check('page_view on next page', Boolean(next), true)
+      check('dr has no query string', next && next.get('dr'), `${base}/apps/butcher-tableau/index.html`)
       await ctx.close()
     }
 

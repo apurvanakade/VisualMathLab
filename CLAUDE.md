@@ -60,7 +60,9 @@ Usage analytics only — no ads signals, no remarketing, no Google Signals.
   link that reopens the banner) documents exactly what is sent and what is
   stored. **It is a factual claim about the code**: if you change what the
   snippet collects or what is stored, change that page in the same commit.
-- The snippet drops the query string from the reported page location. On this
+- The snippet drops the query string from the reported page location, and
+  from the reported referrer (a same-origin referrer is the previous page's
+  full address, input included). On this
   site a query string is the visitor's own math input (see the URL-shareable
   inputs section below), which doesn't belong in an analytics report and would
   fragment one page into hundreds of addresses.

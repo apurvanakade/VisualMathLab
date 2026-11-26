@@ -715,7 +715,7 @@ loadExampleButtons = {
       for (const s of t.sizes) setField(s.key, t.defaults[s.key])
       await sleep(120)
       setField("stat", t.defaults.stat)
-      if (window.innerWidth < 992) document.querySelector(".vm-app")?.scrollIntoView({behavior: "smooth"})
+      if (window.innerWidth < 992) { const app = document.querySelector(".vm-app"); if (app) VM.ui.scrollIntoView(app, {behavior: "smooth"}) }
     })
   }
 }

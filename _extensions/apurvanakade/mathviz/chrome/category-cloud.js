@@ -110,9 +110,12 @@
     })
 
     // The observer's callback runs after the whole click handler, so the
-    // list is already filtered and the page already shorter.
+    // list is already filtered and the page already shorter. "instant"
+    // because this puts back a cloud the filter moved off screen, which
+    // isn't a move for the reader to follow: with `smooth-scroll` on, the
+    // default would animate it.
     new MutationObserver(() => {
-      if (wrapper.getBoundingClientRect().top < 0) wrapper.scrollIntoView({ block: "start" })
+      if (wrapper.getBoundingClientRect().top < 0) wrapper.scrollIntoView({ block: "start", behavior: "instant" })
     }).observe(cloud, { subtree: true, attributes: true, attributeFilter: ["class"] })
   }
 

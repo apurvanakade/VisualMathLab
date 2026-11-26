@@ -52,14 +52,14 @@
 }
 
 /* The same for columns: a panel grid's tracks have a 200px floor and a
- * slider bar grid's 320px (legend-controls.css), so a three-slider panel
- * above a four-slider bar drew three columns over two, with no edge shared.
- * A panel grid holding a slider takes the bar's floor, so both split the
- * app's width into the same columns. A grid of short text fields keeps its
- * compact 200px tracks. */
+ * slider bar grid holds at most two per row (legend-controls.css), so a
+ * three-slider panel above a four-slider bar drew three columns over two,
+ * with no edge shared. A panel grid holding a slider takes the bar's tracks,
+ * so both split the app's width into the same columns. A grid of short text
+ * fields keeps its compact 200px tracks. */
 .vm-app .ojs-panel .ojs-grid:has(input[type="range"]),
 .vm-app .ojs-panel.ojs-grid:has(input[type="range"]) {
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, max(280px, (100% - 0.6rem) / 2)), 1fr));
 }
 
 .vm-app .vm-stat-row {

@@ -1,0 +1,92 @@
+/*
+ * Copyright (c) 2026 Apurva Nakade. All rights reserved.
+ * Released under Apache 2.0 license as described in the file LICENSE.
+ * Authors: Apurva Nakade
+ */
+
+/* `quiet-toc: true`: a quieter table of contents, for a site whose pages
+ * are mostly prose, where Quarto's list beside the text reads as clutter.
+ * It stays in the right margin of every page that has one and recedes
+ * beside the text. Off by default; a site that doesn't turn it on never
+ * loads this file.
+ *
+ * - No "On this page" heading and no rule down the list's left edge.
+ * - Small, soft text; the section being read keeps Quarto's accent colour.
+ * - The whole list is faded until the pointer or keyboard focus is on it.
+ * - The list sits at the middle of the window's height, not under the
+ *   navbar.
+ *
+ * Every rule selects the list itself (nav#TOC inside Quarto's margin
+ * sidebar) or the margin sidebar that holds one, so a page without a table
+ * of contents, or with one placed elsewhere (toc-location: left or body),
+ * is untouched: quiet-toc.test.js fails a selector without that scope, and
+ * a `display` set where Quarto or embed mode hides the sidebar.
+ * Consumes --vm-* tokens only, so it re-themes with them. */
+
+#quarto-margin-sidebar nav#TOC #toc-title {
+  display: none;
+}
+
+/* `body` outranks Quarto's `.sidebar nav[role="doc-toc"] ul > li > a`
+ * rules, which draw the rule and set the colour. A subsection keeps
+ * Quarto's indent, and the active entry Quarto's own colour. */
+body #quarto-margin-sidebar nav#TOC ul > li > a {
+  border-left: 0;
+  font-size: 0.8rem;
+  color: var(--vm-text-soft);
+}
+
+body #quarto-margin-sidebar nav#TOC ul > li > a:hover {
+  color: var(--vm-accent);
+}
+
+/* Faded only where there is a pointer to bring it back: a touch screen has
+ * no hover, and a list stuck at 40% there would just be hard to read. */
+@media (hover: hover) {
+  #quarto-margin-sidebar nav#TOC {
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+  }
+
+  #quarto-margin-sidebar nav#TOC:hover,
+  #quarto-margin-sidebar nav#TOC:focus-within {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #quarto-margin-sidebar nav#TOC {
+    transition: none;
+  }
+}
+
+/* The list at the middle of the window's height. Quarto pins the margin
+ * sidebar below the navbar and moves it up when the navbar slides away
+ * (headroom), and at the foot of the page the footer pushes the sidebar,
+ * a box as tall as the window with the list at its top, up off the screen.
+ * Here that box is stuck to the window's top whatever the navbar does
+ * (!important outranks the inline `top` and `max-height` Quarto's script
+ * writes), with the list centred in it: the navbar never reaches the list,
+ * and the footer only nudges it. Auto margins, not justify-content, so a
+ * list taller than the window still scrolls from its first entry. Only a
+ * margin sidebar that holds a list: one with margin notes alone keeps
+ * Quarto's layout.
+ *
+ * And only where the margin sidebar is shown. Below 768px Quarto hides it
+ * (`#quarto-margin-sidebar { display: none }`), and embed mode hides it in
+ * a frame (`html.vm-embed #quarto-margin-sidebar`); both rules lose to
+ * this one's specificity, so an unguarded `display: flex` put the list
+ * back, on a phone as a window-tall strip in the right-hand gutter. */
+@media (min-width: 768px) {
+  html:not(.vm-embed) #quarto-margin-sidebar:has(nav#TOC) {
+    top: 0 !important;
+    height: 100vh;
+    max-height: 100vh !important;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #quarto-margin-sidebar nav#TOC {
+    margin-block: auto;
+  }
+}

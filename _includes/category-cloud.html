@@ -19,21 +19,11 @@ to miss. The selected entry (All while nothing is filtered, which mathviz
 marks `.active`) is the only filled chip, bold, with a check mark, so it
 reads as selected without comparing it to its neighbours. All gets no
 outline of its own: an always-outlined All read as a second selection.
-scroll-margin-top keeps the fixed navbar off the cloud when mathviz scrolls
-it back into view after a pick. mathviz's smooth scroll (on unless the OS
-asks for reduced motion) already pads the root by the navbar's height
-(--vm-scroll-offset), and the two add up, so there the margin keeps only the
-rest of the gap.
+When mathviz scrolls the cloud back into view after a pick, it leaves room
+for the fixed navbar itself (mathviz v1.17.0+), so the cloud sets no
+scroll-margin-top.
 -->
 <style>
-.vm-category-cloud {
-  scroll-margin-top: 4.5rem;
-}
-@media (prefers-reduced-motion: no-preference) {
-  html.vm-smooth-scroll .vm-category-cloud {
-    scroll-margin-top: max(0px, 4.5rem - var(--vm-scroll-offset, 0px));
-  }
-}
 .vm-category-cloud .quarto-listing-category {
   gap: 0.4rem;
   margin: 0 0 1.25rem;

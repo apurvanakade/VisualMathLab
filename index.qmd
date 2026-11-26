@@ -537,18 +537,6 @@ Authors: Apurva Nakade
   76%, 86% { opacity: 1; transform: scale(1); }
   94%, 100% { opacity: 0; transform: scale(1); }
 }
-/* Room for the fixed navbar when a #category= link scrolls here. mathviz's
-   smooth scroll (on unless the OS asks for reduced motion) already pads the
-   root by the navbar's height (--vm-scroll-offset), and scrollIntoView adds
-   both, so there the margin keeps only the rest of the gap. */
-#gallery {
-  scroll-margin-top: 4.5rem;
-}
-@media (prefers-reduced-motion: no-preference) {
-  html.vm-smooth-scroll #gallery {
-    scroll-margin-top: max(0px, 4.5rem - var(--vm-scroll-offset, 0px));
-  }
-}
 </style>
 
 ::: {.vm-hero}
@@ -738,11 +726,14 @@ Authors: Apurva Nakade
 // A tag anywhere else on the site links here as index.html#category=<tag>
 // (_includes/category-links.html). Quarto filters the Gallery from the
 // hash; the hash names no element, so scroll to the Gallery ourselves.
+// VM.ui.scrollIntoView (mathviz v1.17.0+) leaves it just below the fixed
+// navbar in every scroll mode, so #gallery sets no scroll-margin-top (one
+// would add to the navbar room a plain #gallery link already gets).
 // (mathviz's category-cloud chrome moves the cloud above the cards;
 // _includes/category-cloud.html styles it.)
 window.addEventListener("DOMContentLoaded", function () {
   if (location.hash.indexOf("#category=") === 0) {
-    document.getElementById("gallery").scrollIntoView()
+    VM.ui.scrollIntoView(document.getElementById("gallery"))
   }
 })
 </script>

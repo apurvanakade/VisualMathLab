@@ -22,6 +22,13 @@
 // wrapping and whether the collapsed menu is open. So it is measured here
 // into --vm-scroll-offset, and re-measured whenever the header resizes.
 //
+// Neither offset reaches element.scrollIntoView() the same way: the padding
+// is there only with this on and motion allowed, Quarto's step only on a
+// hashchange. A script's scroll to an element goes through
+// VM.ui.scrollIntoView (src/js/ui/scroll-into-view.js), which measures the
+// navbar itself and lands where a link would in every mode; the class and
+// --vm-scroll-offset are this file's internals, not for sites to read.
+//
 // The stylesheet's rules are scoped to the class this script sets, so the
 // property is never on without the offset (a blocked or failed script
 // leaves Quarto's own jump, navbar offset included).

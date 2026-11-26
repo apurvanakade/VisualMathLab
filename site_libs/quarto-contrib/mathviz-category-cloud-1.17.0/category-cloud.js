@@ -53,7 +53,11 @@
 // A pick that leaves the cloud above the viewport scrolls it back into view.
 // A tag on a card far down the grid filters in place too, and the shorter
 // page used to clamp the reader to its bottom, past every card left. The
-// cloud's scroll-margin-top is the site's to set (room for a fixed navbar).
+// scroll goes through VM.ui.scrollIntoView (the bundle, which the filter
+// loads on every page, deferred, so it is there by DOMContentLoaded), which
+// stops the cloud just below Quarto's fixed navbar in every scroll mode: a
+// site sets no scroll-margin-top for the navbar. One it sets anyway adds
+// to that room.
 (function attachCategoryCloud(globalThis) {
   function init() {
     const cloud = document.querySelector(".quarto-listing-category:not([data-vm-cloud-ready])")
@@ -115,7 +119,7 @@
     // isn't a move for the reader to follow: with `smooth-scroll` on, the
     // default would animate it.
     new MutationObserver(() => {
-      if (wrapper.getBoundingClientRect().top < 0) wrapper.scrollIntoView({ block: "start", behavior: "instant" })
+      if (wrapper.getBoundingClientRect().top < 0) globalThis.VM.ui.scrollIntoView(wrapper, { behavior: "instant" })
     }).observe(cloud, { subtree: true, attributes: true, attributeFilter: ["class"] })
   }
 

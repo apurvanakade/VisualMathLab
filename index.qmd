@@ -537,9 +537,17 @@ Authors: Apurva Nakade
   76%, 86% { opacity: 1; transform: scale(1); }
   94%, 100% { opacity: 0; transform: scale(1); }
 }
-/* Room for the fixed navbar when a #category= link scrolls here. */
+/* Room for the fixed navbar when a #category= link scrolls here. mathviz's
+   smooth scroll (on unless the OS asks for reduced motion) already pads the
+   root by the navbar's height (--vm-scroll-offset), and scrollIntoView adds
+   both, so there the margin keeps only the rest of the gap. */
 #gallery {
   scroll-margin-top: 4.5rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html.vm-smooth-scroll #gallery {
+    scroll-margin-top: max(0px, 4.5rem - var(--vm-scroll-offset, 0px));
+  }
 }
 </style>
 

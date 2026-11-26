@@ -54,7 +54,8 @@ with several figures takes `?embed=<id>` to pick one. See
 The chart theming, control-panel styling, slider playback, floating legend
 and numerical helpers every page uses are a separate library,
 [mathviz](https://github.com/apurvanakade/mathviz), packaged as a Quarto
-extension and vendored here under `_extensions/`. This repository is the
+extension that `scripts/update-mathviz.sh` installs into `_extensions/`
+(untracked) before every render. This repository is the
 content: the app pages, the topic listings, the theme and the site chrome.
 To change something every page shares, change it there.
 
